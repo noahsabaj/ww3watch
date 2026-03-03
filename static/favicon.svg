@@ -1,0 +1,15 @@
+<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect width="32" height="32" fill="#0a0a0b" rx="4"/>
+  <!-- Radar rings -->
+  <circle cx="16" cy="16" r="12"   stroke="#cbd5e1" stroke-width="1.5"/>
+  <circle cx="16" cy="16" r="7.5"  stroke="#cbd5e1" stroke-width="1"   opacity="0.5"/>
+  <circle cx="16" cy="16" r="3"    stroke="#cbd5e1" stroke-width="1"   opacity="0.3"/>
+  <!-- Faint cardinal axes -->
+  <line x1="4"  y1="16" x2="28" y2="16" stroke="#cbd5e1" stroke-width="0.5" opacity="0.15"/>
+  <line x1="16" y1="4"  x2="16" y2="28" stroke="#cbd5e1" stroke-width="0.5" opacity="0.15"/>
+  <!-- Sweep line (upper-right, 45°) -->
+  <line x1="16" y1="16" x2="24.5" y2="7.5" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Red blip — detected on middle ring, same bearing as sweep -->
+  <circle cx="21" cy="11" r="3" fill="#ef4444"/>
+</svg>
