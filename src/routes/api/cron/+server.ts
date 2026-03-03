@@ -3,6 +3,7 @@ import { CRON_SECRET } from '$env/static/private'
 import { FEEDS } from '$lib/feeds'
 import { fetchFeed } from '$lib/server/rss'
 import { supabaseAdmin } from '$lib/server/supabase'
+import { isRelevant } from '$lib/relevance'
 import type { RequestHandler } from './$types'
 
 const BATCH_SIZE = 200
@@ -19,6 +20,7 @@ export const GET: RequestHandler = async ({ request }) => {
     .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof fetchFeed>>> => r.status === 'fulfilled')
     .flatMap(r => r.value)
     .filter(a => a.guid !== '')
+    .filter(a => isRelevant(a.title, a.summary ?? '', a.source_lang))
 
   if (articles.length === 0) {
     return json({ inserted: 0, total: 0 })
