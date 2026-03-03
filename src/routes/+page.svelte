@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import { supabase } from '$lib/supabase'
   import type { Article, SourceRegion } from '$lib/types'
   import ArticleCard from '$lib/components/ArticleCard.svelte'
@@ -15,7 +15,7 @@
     'Russian', 'Chinese', 'South Asian', 'Independent/OSINT',
   ]
 
-  let articles = $state<Article[]>((data.articles ?? []) as Article[])
+  let articles = $state<Article[]>(untrack(() => (data.articles as Article[]) ?? []))
   let newQueue = $state<Article[]>([])
   let scrollY = $state(0)
   let searchQuery = $state('')
