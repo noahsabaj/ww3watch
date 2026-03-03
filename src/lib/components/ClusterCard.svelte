@@ -31,6 +31,10 @@
     [...new Set(cluster.articles.map(a => a.source_region))].slice(0, 5)
   )
   const repFlag = $derived(langFlag(rep.source_lang))
+  const isBreaking = $derived(
+    !!rep.published_at &&
+    Date.now() - new Date(rep.published_at).getTime() < 30 * 60 * 1000
+  )
 </script>
 
 <article class="border-l-4 {REGION_BORDER[rep.source_region]} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
@@ -39,6 +43,9 @@
     <span class="text-xs font-semibold px-2 py-0.5 rounded {REGION_COLORS[rep.source_region]}">
       {rep.source_region}
     </span>
+    {#if isBreaking}
+      <span class="bg-red-950/60 border border-red-800/60 text-red-400 text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded">BREAKING</span>
+    {/if}
     <span class="text-sm font-medium text-gray-300">
       {repFlag}{repFlag ? ' ' : ''}{rep.source_name}
     </span>
