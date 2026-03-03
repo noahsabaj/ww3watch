@@ -62,7 +62,7 @@
 
   <!-- Summary -->
   {#if rep.summary}
-    <p class="text-sm text-gray-400 line-clamp-2 mb-2">{rep.summary}</p>
+    <p class="text-sm text-gray-400 line-clamp-2 {isSingle ? '' : 'mb-2'}">{rep.summary}</p>
   {/if}
 
   <!-- Expand toggle -->
