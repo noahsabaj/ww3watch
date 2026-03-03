@@ -58,7 +58,8 @@ export const FEEDS: Feed[] = [
   { name: 'Financial Tribune',  url: 'https://financialtribune.com/rss',                                        region: 'Iranian State', lang: 'en' },
 
   // ── IRANIAN INDEPENDENT ───────────────────────────────────────────
-  { name: 'Iran International', url: 'https://www.iranintl.com/en/rss',                                        region: 'Iranian Independent', lang: 'en' },
+  { name: 'Iran International', url: 'https://www.iranintl.com/en/feed',                                       region: 'Iranian Independent', lang: 'en' },
+  { name: 'Iran International (FA)', url: 'https://www.iranintl.com/feed',                                     region: 'Iranian Independent', lang: 'fa' },
   { name: 'Radio Farda',        url: 'https://www.radiofarda.com/api/ztrqtqpym/rss.xml',                       region: 'Iranian Independent', lang: 'en' },
 
   // ── IRANIAN LOCAL (PERSIAN) ──────────────────────────────────────
