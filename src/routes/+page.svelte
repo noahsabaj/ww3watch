@@ -4,7 +4,9 @@
   import type { Article, SourceRegion } from '$lib/types'
   import { ALL_REGIONS } from '$lib/types'
   import ArticleCard from '$lib/components/ArticleCard.svelte'
+  import ClusterCard from '$lib/components/ClusterCard.svelte'
   import FilterBar from '$lib/components/FilterBar.svelte'
+  import { clusterArticles } from '$lib/cluster'
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
@@ -14,6 +16,7 @@
   let scrollY = $state(0)
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
+  let clusterMode = $state(true)
 
   let isPaused = $derived(scrollY > 300)
 
@@ -27,6 +30,7 @@
       return matchesRegion && matchesSearch
     })
   )
+  let clustered = $derived(clusterArticles(filtered))
 
   function flushQueue() {
     articles = [...newQueue, ...articles]
@@ -68,7 +72,21 @@
           <span class="text-xs text-gray-400 uppercase tracking-wider">Live</span>
         </div>
       </div>
-      <span class="text-xs text-gray-500">{filtered.length.toLocaleString()} articles</span>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500">
+          {clusterMode
+            ? `${clustered.length.toLocaleString()} stories`
+            : `${filtered.length.toLocaleString()} articles`}
+        </span>
+        <button
+          onclick={() => clusterMode = !clusterMode}
+          class="text-xs px-2 py-1 rounded border transition-colors {clusterMode
+            ? 'border-blue-500 text-blue-400 bg-blue-500/10'
+            : 'border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300'}"
+        >
+          Cluster
+        </button>
+      </div>
     </div>
   </header>
 
@@ -93,10 +111,14 @@
       <div class="py-20 text-center text-gray-500 text-sm">
         {articles.length === 0 ? 'Loading articles...' : 'No articles match your filters.'}
       </div>
+    {:else if clusterMode}
+      {#each clustered as cluster (cluster.id)}
+        <ClusterCard {cluster} />
+      {/each}
+    {:else}
+      {#each filtered as article (article.id)}
+        <ArticleCard {article} />
+      {/each}
     {/if}
-
-    {#each filtered as article (article.id)}
-      <ArticleCard {article} />
-    {/each}
   </main>
 </div>
