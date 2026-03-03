@@ -5,6 +5,7 @@
   import { ALL_REGIONS } from '$lib/types'
   import ArticleCard from '$lib/components/ArticleCard.svelte'
   import ClusterCard from '$lib/components/ClusterCard.svelte'
+  import TopStories from '$lib/components/TopStories.svelte'
   import FilterBar from '$lib/components/FilterBar.svelte'
   import { clusterArticles } from '$lib/cluster'
   import type { PageData } from './$types'
@@ -17,6 +18,10 @@
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
   let clusterMode = $state(true)
+
+  // Two separate cluster passes: allClustered uses the full article list (global top stories),
+  // clustered uses the filtered list (feed view). They cannot be shared.
+  const TOP_STORIES_WINDOW_MS = 60 * 60 * 1000
 
   let isPaused = $derived(scrollY > 300)
 
@@ -31,6 +36,17 @@
     })
   )
   let clustered = $derived(clusterArticles(filtered))
+  let allClustered = $derived(clusterArticles(articles))
+  let topStories = $derived(
+    allClustered
+      .filter(c =>
+        c.representative.published_at
+          ? Date.now() - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
+          : false
+      )
+      .sort((a, b) => b.sourceCount - a.sourceCount)
+      .slice(0, 3)
+  )
 
   function flushQueue() {
     articles = [...newQueue, ...articles]
@@ -89,6 +105,9 @@
       </div>
     </div>
   </header>
+
+  <!-- Trending Now -->
+  <TopStories stories={topStories} />
 
   <!-- Filter Bar -->
   <FilterBar bind:activeRegions bind:searchQuery />
