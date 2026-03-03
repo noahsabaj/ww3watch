@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { SourceRegion } from '$lib/types'
-  import { REGION_COLORS } from '$lib/types'
+  import { REGION_COLORS, ALL_REGIONS } from '$lib/types'
 
   let {
     activeRegions = $bindable(),
@@ -9,13 +9,6 @@
     activeRegions: Set<SourceRegion>
     searchQuery: string
   } = $props()
-
-  const ALL_REGIONS: SourceRegion[] = [
-    'US/Western', 'UK', 'European', 'Israeli',
-    'Iranian State', 'Iranian Independent', 'Iranian Local',
-    'Arab/Gulf', 'Kurdish', 'Turkish',
-    'Russian', 'Chinese', 'South Asian', 'Independent/OSINT',
-  ]
 
   function toggleRegion(region: SourceRegion) {
     const next = new Set(activeRegions)

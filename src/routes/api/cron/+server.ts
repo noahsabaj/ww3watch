@@ -5,14 +5,14 @@ import { fetchFeed } from '$lib/server/rss'
 import { supabaseAdmin } from '$lib/server/supabase'
 import type { RequestHandler } from './$types'
 
+const BATCH_SIZE = 200
+
 export const GET: RequestHandler = async ({ request }) => {
-  // Authenticate — Vercel sends Authorization: Bearer <CRON_SECRET>
   const auth = request.headers.get('authorization')
   if (auth !== `Bearer ${CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
   }
 
-  // Fetch all feeds in parallel — individual failures are swallowed
   const results = await Promise.allSettled(FEEDS.map(feed => fetchFeed(feed)))
 
   const articles = results
@@ -24,16 +24,21 @@ export const GET: RequestHandler = async ({ request }) => {
     return json({ inserted: 0, total: 0 })
   }
 
-  // Upsert with ignoreDuplicates — guid is the unique key
-  const { error } = await supabaseAdmin
-    .from('articles')
-    .upsert(articles, { onConflict: 'guid', ignoreDuplicates: true })
+  // Batch upserts to avoid hitting PostgREST request size limits
+  let totalInserted = 0
+  for (let i = 0; i < articles.length; i += BATCH_SIZE) {
+    const batch = articles.slice(i, i + BATCH_SIZE)
+    const { error } = await supabaseAdmin
+      .from('articles')
+      .upsert(batch, { onConflict: 'guid', ignoreDuplicates: true })
 
-  if (error) {
-    console.error('[cron] Supabase upsert error:', error)
-    return json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error(`[cron] Supabase upsert error on batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error)
+    } else {
+      totalInserted += batch.length
+    }
   }
 
-  console.log(`[cron] Fetched ${articles.length} articles, upserted successfully`)
-  return json({ inserted: articles.length, total: articles.length })
+  console.log(`[cron] Fetched ${articles.length} articles, inserted ${totalInserted} new`)
+  return json({ inserted: totalInserted, total: articles.length })
 }

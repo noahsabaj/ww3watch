@@ -1,4 +1,3 @@
-// src/lib/server/rss.ts
 import Parser from 'rss-parser'
 import type { Feed, SourceRegion } from '../types'
 
@@ -17,7 +16,7 @@ type ArticleInsert = {
 const parser = new Parser({
   timeout: 8000,
   headers: {
-    'User-Agent': 'WW3Watch/1.0 (news aggregator; contact: admin@ww3watch.com)',
+    'User-Agent': 'WW3Watch/1.0 (news aggregator)',
     'Accept': 'application/rss+xml, application/xml, text/xml, */*'
   }
 })
@@ -39,8 +38,6 @@ export async function fetchFeed(feed: Feed): Promise<ArticleInsert[]> {
       }
     })
 
-    clearTimeout(timer)
-
     if (!response.ok) return []
 
     const xml = await response.text()
@@ -60,7 +57,8 @@ export async function fetchFeed(feed: Feed): Promise<ArticleInsert[]> {
       }))
       .filter(a => a.guid !== '')
   } catch {
-    clearTimeout(timer)
     return []
+  } finally {
+    clearTimeout(timer)
   }
 }

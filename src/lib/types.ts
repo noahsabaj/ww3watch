@@ -70,3 +70,10 @@ export const REGION_BORDER: Record<SourceRegion, string> = {
   'South Asian':         'border-emerald-600',
   'Independent/OSINT':   'border-gray-600',
 }
+
+export const ALL_REGIONS: SourceRegion[] = [
+  'US/Western', 'UK', 'European', 'Israeli',
+  'Iranian State', 'Iranian Independent', 'Iranian Local',
+  'Arab/Gulf', 'Kurdish', 'Turkish',
+  'Russian', 'Chinese', 'South Asian', 'Independent/OSINT',
+]

@@ -6,7 +6,7 @@ export const FEEDS: Feed[] = [
   { name: 'Reuters',            url: 'https://feeds.reuters.com/reuters/worldNews',                              region: 'US/Western', lang: 'en' },
   { name: 'AP News',            url: 'https://rsshub.app/apnews/topics/ap-top-news',                            region: 'US/Western', lang: 'en' },
   { name: 'NPR World',          url: 'https://feeds.npr.org/1004/rss.xml',                                      region: 'US/Western', lang: 'en' },
-  { name: 'CNN World',          url: 'http://rss.cnn.com/rss/edition_world.rss',                                region: 'US/Western', lang: 'en' },
+  { name: 'CNN World',          url: 'https://rss.cnn.com/rss/edition_world.rss',                               region: 'US/Western', lang: 'en' },
   { name: 'Fox News World',     url: 'https://moxie.foxnews.com/google-publisher/world.xml',                    region: 'US/Western', lang: 'en' },
   { name: 'New York Times',     url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',                  region: 'US/Western', lang: 'en' },
   { name: 'Washington Post',    url: 'https://feeds.washingtonpost.com/rss/world',                              region: 'US/Western', lang: 'en' },
@@ -129,7 +129,7 @@ export const FEEDS: Feed[] = [
   { name: 'The Moscow Times',   url: 'https://www.themoscowtimes.com/rss',                                      region: 'Russian', lang: 'en' },
 
   // ── CHINESE ───────────────────────────────────────────────────────
-  { name: 'Xinhua',             url: 'http://www.xinhuanet.com/english/rss/worldrss.xml',                       region: 'Chinese', lang: 'en' },
+  { name: 'Xinhua',             url: 'https://www.xinhuanet.com/english/rss/worldrss.xml',                      region: 'Chinese', lang: 'en' },
   { name: 'Global Times',       url: 'https://www.globaltimes.cn/rss/outbrain.xml',                             region: 'Chinese', lang: 'en' },
   { name: 'China Daily',        url: 'https://www.chinadaily.com.cn/rss/world_rss.xml',                         region: 'Chinese', lang: 'en' },
   { name: 'CGTN',               url: 'https://www.cgtn.com/subscribe/rss/section/world-news.do',                region: 'Chinese', lang: 'en' },

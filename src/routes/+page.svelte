@@ -2,18 +2,12 @@
   import { onMount, untrack } from 'svelte'
   import { supabase } from '$lib/supabase'
   import type { Article, SourceRegion } from '$lib/types'
+  import { ALL_REGIONS } from '$lib/types'
   import ArticleCard from '$lib/components/ArticleCard.svelte'
   import FilterBar from '$lib/components/FilterBar.svelte'
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
-
-  const ALL_REGIONS: SourceRegion[] = [
-    'US/Western', 'UK', 'European', 'Israeli',
-    'Iranian State', 'Iranian Independent', 'Iranian Local',
-    'Arab/Gulf', 'Kurdish', 'Turkish',
-    'Russian', 'Chinese', 'South Asian', 'Independent/OSINT',
-  ]
 
   let articles = $state<Article[]>(untrack(() => (data.articles as Article[]) ?? []))
   let newQueue = $state<Article[]>([])
