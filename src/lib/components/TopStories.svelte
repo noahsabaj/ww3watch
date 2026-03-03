@@ -8,11 +8,11 @@
 </script>
 
 {#if stories.length > 0}
-  <div class="border-b border-gray-800 bg-[#0a0a0b]">
+  <div class="border-b border-gray-800 bg-[#0a0a0b] px-4">
     <div class="max-w-3xl mx-auto">
       <button
         onclick={() => open = !open}
-        class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-gray-600 hover:text-gray-400 transition-colors px-4 pt-3 pb-2 w-full text-left"
+        class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-gray-600 hover:text-gray-400 transition-colors pt-3 pb-2 w-full text-left"
       >
         <span class="inline-block transition-transform {open ? '' : '-rotate-90'}">▾</span>
         Trending Now
