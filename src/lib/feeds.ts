@@ -22,16 +22,16 @@ export const FEEDS: Feed[] = [
   { name: 'The Intercept',      url: 'https://theintercept.com/feed/?rss',                                      region: 'US/Western', lang: 'en' },
 
   // ── UK ───────────────────────────────────────────────────────────
-  { name: 'BBC World',          url: 'https://feeds.bbci.co.uk/news/world/rss.xml',                             region: 'UK', lang: 'en' },
-  { name: 'The Guardian',       url: 'https://www.theguardian.com/world/rss',                                   region: 'UK', lang: 'en' },
+  { name: 'BBC World',          url: 'https://feeds.bbci.co.uk/news/world/middle_east/rss.xml',                region: 'UK', lang: 'en' },
+  { name: 'The Guardian',       url: 'https://www.theguardian.com/world/middleeast/rss',                        region: 'UK', lang: 'en' },
   { name: 'Sky News',           url: 'https://feeds.skynews.com/feeds/rss/world.xml',                           region: 'UK', lang: 'en' },
   { name: 'The Independent',    url: 'https://www.independent.co.uk/news/world/rss',                            region: 'UK', lang: 'en' },
   { name: 'The Economist',      url: 'https://www.economist.com/the-world-this-week/rss.xml',                   region: 'UK', lang: 'en' },
   { name: 'Middle East Eye',    url: 'https://www.middleeasteye.net/rss',                                       region: 'UK', lang: 'en' },
 
   // ── EUROPEAN ─────────────────────────────────────────────────────
-  { name: 'Deutsche Welle',     url: 'https://rss.dw.com/rdf/rss-en-world',                                    region: 'European', lang: 'en' },
-  { name: 'France 24',          url: 'https://www.france24.com/en/rss',                                         region: 'European', lang: 'en' },
+  { name: 'Deutsche Welle',     url: 'https://rss.dw.com/rdf/rss-en-middle-east',                              region: 'European', lang: 'en' },
+  { name: 'France 24',          url: 'https://www.france24.com/en/middle-east/rss',                            region: 'European', lang: 'en' },
   { name: 'Euronews',           url: 'https://www.euronews.com/rss',                                            region: 'European', lang: 'en' },
   { name: 'RFI English',        url: 'https://www.rfi.fr/en/rss',                                               region: 'European', lang: 'en' },
   { name: 'Swiss Info',         url: 'https://www.swissinfo.ch/eng/rss/world',                                  region: 'European', lang: 'en' },
