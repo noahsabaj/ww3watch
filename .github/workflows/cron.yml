@@ -1,0 +1,16 @@
+name: Poll RSS Feeds
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger cron endpoint
+        run: |
+          curl -sf -X POST "${{ secrets.CRON_URL }}/api/cron" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 60
