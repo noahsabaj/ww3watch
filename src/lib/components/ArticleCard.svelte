@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Article } from '$lib/types'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
+  import { timeAgo } from '$lib/utils'
 
   let { article }: { article: Article } = $props()
 
@@ -8,17 +9,6 @@
     !!article.published_at &&
     Date.now() - new Date(article.published_at).getTime() < 30 * 60 * 1000
   )
-
-  function timeAgo(dateStr: string | null): string {
-    if (!dateStr) return 'unknown time'
-    const diff = Date.now() - new Date(dateStr).getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
-    return `${Math.floor(hrs / 24)}d ago`
-  }
 
   function langFlag(lang: string): string {
     const flags: Record<string, string> = {

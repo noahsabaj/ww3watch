@@ -1,19 +1,9 @@
 <script lang="ts">
   import type { Cluster } from '$lib/cluster'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
+  import { timeAgo } from '$lib/utils'
 
   let { stories }: { stories: Cluster[] } = $props()
-
-  function timeAgo(dateStr: string | null): string {
-    if (!dateStr) return 'unknown time'
-    const diff = Date.now() - new Date(dateStr).getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
-    return `${Math.floor(hrs / 24)}d ago`
-  }
 </script>
 
 {#if stories.length > 0}
@@ -27,6 +17,7 @@
             href={rep.url}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={rep.title}
             class="flex-1 min-w-[180px] border-l-4 {REGION_BORDER[rep.source_region]} bg-[#0d0d0f] hover:bg-[#131315] transition-colors px-3 py-2.5"
           >
             <div class="flex items-center justify-between gap-2 mb-1.5">
