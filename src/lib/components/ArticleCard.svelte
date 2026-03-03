@@ -4,6 +4,11 @@
 
   let { article }: { article: Article } = $props()
 
+  const isBreaking = $derived(
+    !!article.published_at &&
+    Date.now() - new Date(article.published_at).getTime() < 30 * 60 * 1000
+  )
+
   function timeAgo(dateStr: string | null): string {
     if (!dateStr) return 'unknown time'
     const diff = Date.now() - new Date(dateStr).getTime()
@@ -31,6 +36,9 @@
     <span class="text-xs font-semibold px-2 py-0.5 rounded {REGION_COLORS[article.source_region]}">
       {article.source_region}
     </span>
+    {#if isBreaking}
+      <span class="bg-red-950/60 border border-red-800/60 text-red-400 text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded">BREAKING</span>
+    {/if}
     <span class="text-sm font-medium text-gray-300">
       {langFlag(article.source_lang)}{langFlag(article.source_lang) ? ' ' : ''}{article.source_name}
     </span>
