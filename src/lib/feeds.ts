@@ -6,15 +6,14 @@ export const FEEDS: Feed[] = [
   { name: 'Reuters',            url: 'https://feeds.reuters.com/reuters/worldNews',                              region: 'US/Western', lang: 'en' },
   { name: 'AP News',            url: 'https://rsshub.app/apnews/topics/ap-top-news',                            region: 'US/Western', lang: 'en' },
   { name: 'NPR World',          url: 'https://feeds.npr.org/1004/rss.xml',                                      region: 'US/Western', lang: 'en' },
-  { name: 'CNN World',          url: 'https://rss.cnn.com/rss/edition_world.rss',                               region: 'US/Western', lang: 'en' },
-  { name: 'Fox News World',     url: 'https://moxie.foxnews.com/google-publisher/world.xml',                    region: 'US/Western', lang: 'en' },
-  { name: 'New York Times',     url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',                  region: 'US/Western', lang: 'en' },
+  { name: 'CNN Middle East',    url: 'https://rss.cnn.com/rss/edition_meast.rss',                              region: 'US/Western', lang: 'en' },
+  { name: 'Fox News Nat Sec',   url: 'https://moxie.foxnews.com/google-publisher/national-security.xml',        region: 'US/Western', lang: 'en' },
+  { name: 'New York Times',     url: 'https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml',             region: 'US/Western', lang: 'en' },
   { name: 'Washington Post',    url: 'https://feeds.washingtonpost.com/rss/world',                              region: 'US/Western', lang: 'en' },
   { name: 'NBC News',           url: 'https://feeds.nbcnews.com/nbcnews/public/world',                          region: 'US/Western', lang: 'en' },
   { name: 'ABC News',           url: 'https://abcnews.go.com/abcnews/internationalheadlines',                   region: 'US/Western', lang: 'en' },
   { name: 'CBS News',           url: 'https://www.cbsnews.com/latest/rss/world',                                region: 'US/Western', lang: 'en' },
-  { name: 'The Hill',           url: 'https://thehill.com/feed/',                                               region: 'US/Western', lang: 'en' },
-  { name: 'Axios',              url: 'https://api.axios.com/feed/',                                             region: 'US/Western', lang: 'en' },
+
   { name: 'Voice of America',   url: 'https://www.voanews.com/api/ztrqtqpym/rss.xml',                          region: 'US/Western', lang: 'en' },
   { name: 'Radio Free Europe',  url: 'https://www.rferl.org/api/zmpiqormvy/rss.xml',                           region: 'US/Western', lang: 'en' },
   { name: 'UPI',                url: 'https://rss.upi.com/news/world-news.rss',                                 region: 'US/Western', lang: 'en' },
@@ -24,7 +23,7 @@ export const FEEDS: Feed[] = [
   // ── UK ───────────────────────────────────────────────────────────
   { name: 'BBC World',          url: 'https://feeds.bbci.co.uk/news/world/middle_east/rss.xml',                region: 'UK', lang: 'en' },
   { name: 'The Guardian',       url: 'https://www.theguardian.com/world/middleeast/rss',                        region: 'UK', lang: 'en' },
-  { name: 'Sky News',           url: 'https://feeds.skynews.com/feeds/rss/world.xml',                           region: 'UK', lang: 'en' },
+  { name: 'Sky News',           url: 'https://feeds.skynews.com/feeds/rss/middle-east.xml',                     region: 'UK', lang: 'en' },
   { name: 'The Independent',    url: 'https://www.independent.co.uk/news/world/rss',                            region: 'UK', lang: 'en' },
   { name: 'The Economist',      url: 'https://www.economist.com/the-world-this-week/rss.xml',                   region: 'UK', lang: 'en' },
   { name: 'Middle East Eye',    url: 'https://www.middleeasteye.net/rss',                                       region: 'UK', lang: 'en' },
@@ -124,7 +123,7 @@ export const FEEDS: Feed[] = [
   // ── RUSSIAN ───────────────────────────────────────────────────────
   { name: 'TASS',               url: 'https://tass.com/rss/v2.xml',                                             region: 'Russian', lang: 'en' },
   { name: 'RT',                 url: 'https://www.rt.com/rss/',                                                  region: 'Russian', lang: 'en' },
-  { name: 'Sputnik',            url: 'https://sputniknews.com/export/rss2/world/index.xml',                     region: 'Russian', lang: 'en' },
+  { name: 'Sputnik',            url: 'https://sputniknews.com/export/rss2/military_news/index.xml',            region: 'Russian', lang: 'en' },
   { name: 'Meduza',             url: 'https://meduza.io/en/rss/all',                                            region: 'Russian', lang: 'en' },
   { name: 'The Moscow Times',   url: 'https://www.themoscowtimes.com/rss',                                      region: 'Russian', lang: 'en' },
 
