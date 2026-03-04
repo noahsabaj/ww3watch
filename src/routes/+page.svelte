@@ -7,6 +7,7 @@
   import ClusterCard from '$lib/components/ClusterCard.svelte'
   import TopStories from '$lib/components/TopStories.svelte'
   import FilterBar from '$lib/components/FilterBar.svelte'
+  import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { clusterArticles } from '$lib/cluster'
   import type { PageData } from './$types'
 
@@ -18,6 +19,7 @@
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
   let clusterMode = $state(true)
+  let selectedArticle = $state<Article | null>(null)
 
   // Two separate cluster passes: allClustered uses the full article list (global top stories),
   // clustered uses the filtered list (feed view). They cannot be shared.
@@ -143,12 +145,14 @@
       </div>
     {:else if clusterMode}
       {#each clustered as cluster (cluster.id)}
-        <ClusterCard {cluster} />
+        <ClusterCard {cluster} onselect={(a) => selectedArticle = a} />
       {/each}
     {:else}
       {#each filtered as article (article.id)}
-        <ArticleCard {article} />
+        <ArticleCard {article} onselect={(a) => selectedArticle = a} />
       {/each}
     {/if}
   </main>
+
+  <ArticlePanel article={selectedArticle} onclose={() => selectedArticle = null} />
 </div>
