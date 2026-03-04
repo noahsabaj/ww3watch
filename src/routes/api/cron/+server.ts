@@ -4,6 +4,7 @@ import { FEEDS } from '$lib/feeds'
 import { fetchFeed } from '$lib/server/rss'
 import { supabaseAdmin } from '$lib/server/supabase'
 import { classifyArticles } from '$lib/server/classify'
+import { updateTrending } from '$lib/server/trending'
 import type { RequestHandler } from './$types'
 
 const BATCH_SIZE = 200
@@ -44,5 +45,6 @@ export const GET: RequestHandler = async ({ request }) => {
   }
 
   console.log(`[cron] Fetched ${articles.length} articles, inserted ${totalInserted} new`)
+  await updateTrending()
   return json({ inserted: totalInserted, total: articles.length })
 }

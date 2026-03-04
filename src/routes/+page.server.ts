@@ -3,17 +3,24 @@ import { supabaseAdmin } from '$lib/server/supabase'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async () => {
-  const { data: articles, error: dbError } = await supabaseAdmin
-    .from('articles')
-    .select('*')
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .order('fetched_at', { ascending: false })
-    .limit(500)
+  const [articlesResult, trendingResult] = await Promise.all([
+    supabaseAdmin
+      .from('articles')
+      .select('*')
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('fetched_at', { ascending: false })
+      .limit(500),
+    supabaseAdmin
+      .from('trending')
+      .select('article_id, rank')
+      .order('rank', { ascending: true }),
+  ])
 
-  if (dbError) {
-    console.error('[load] Supabase error:', dbError)
+  if (articlesResult.error) {
+    console.error('[load] Supabase error:', articlesResult.error)
     throw error(503, 'Could not load articles. Please try again.')
   }
 
-  return { articles: articles ?? [] }
+  const trendingIds: string[] = (trendingResult.data ?? []).map(t => t.article_id)
+  return { articles: articlesResult.data ?? [], trendingIds }
 }

@@ -9,6 +9,7 @@
   import FilterBar from '$lib/components/FilterBar.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { clusterArticles } from '$lib/cluster'
+  import type { Cluster } from '$lib/cluster'
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
@@ -39,15 +40,20 @@
   )
   let clustered = $derived(clusterArticles(filtered))
   let allClustered = $derived(clusterArticles(articles))
+  let trendingIds = $derived((data.trendingIds ?? []) as string[])
   let topStories = $derived(
-    allClustered
-      .filter(c =>
-        c.representative.published_at
-          ? Date.now() - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
-          : false
-      )
-      .sort((a, b) => b.sourceCount - a.sourceCount)
-      .slice(0, 3)
+    trendingIds.length > 0
+      ? trendingIds
+          .map(id => allClustered.find(c => c.representative.id === id))
+          .filter((c): c is Cluster => c !== undefined)
+      : allClustered
+          .filter(c =>
+            c.representative.published_at
+              ? Date.now() - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
+              : false
+          )
+          .sort((a, b) => b.sourceCount - a.sourceCount)
+          .slice(0, 3)
   )
 
   function flushQueue() {
