@@ -38,19 +38,30 @@ function similarity(a: string, b: string): number {
 }
 
 export function groupByClusterId(articles: Article[]): Cluster[] {
+  // Articles with LLM-assigned cluster_id: group by that ID (O(n))
+  const assigned = articles.filter(a => a.cluster_id !== null)
+  const unassigned = articles.filter(a => a.cluster_id === null)
+
   const map = new Map<string, Article[]>()
-  for (const a of articles) {
-    const key = a.cluster_id ?? a.id
+  for (const a of assigned) {
+    const key = a.cluster_id!
     const group = map.get(key) ?? []
     group.push(a)
     map.set(key, group)
   }
-  return [...map.values()].map(group => ({
-    id: group[0].cluster_id ?? group[0].id,
+  const dbClusters: Cluster[] = [...map.values()].map(group => ({
+    id: group[0].cluster_id!,
     representative: group[0],
     articles: group,
     sourceCount: new Set(group.map(a => a.source_name)).size,
   }))
+
+  // Articles without cluster_id: fall back to Jaccard (covers existing DB articles)
+  const jaccardClusters = clusterArticles(unassigned)
+
+  // DB clusters are newest-first (assigned array is sorted DESC);
+  // Jaccard clusters follow in same relative order.
+  return [...dbClusters, ...jaccardClusters]
 }
 
 export function clusterArticles(articles: Article[]): Cluster[] {
