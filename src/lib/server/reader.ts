@@ -18,7 +18,7 @@ export async function extractArticle(url: string): Promise<ArticleContent | null
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; WW3Watch/1.0; +https://ww3watch.vercel.app)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml',
       },
       signal: AbortSignal.timeout(8000),
