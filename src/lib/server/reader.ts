@@ -8,6 +8,11 @@ export interface ArticleContent {
   siteName: string | null
 }
 
+function stripEventHandlers(html: string): string {
+  // Remove inline event handler attributes (on*)
+  return html.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+}
+
 export async function extractArticle(url: string): Promise<ArticleContent | null> {
   let html: string
   try {
@@ -33,7 +38,7 @@ export async function extractArticle(url: string): Promise<ArticleContent | null
     return {
       title: article.title ?? '',
       byline: article.byline ?? null,
-      content: article.content ?? '',
+      content: stripEventHandlers(article.content ?? ''),
       siteName: article.siteName ?? null,
     }
   } catch (err) {

@@ -21,8 +21,9 @@
       reader = { status: 'idle' }
       return
     }
+    const controller = new AbortController()
     reader = { status: 'loading' }
-    fetch(`/api/reader?url=${encodeURIComponent(article.url)}`)
+    fetch(`/api/reader?url=${encodeURIComponent(article.url)}`, { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         if (data.error) {
@@ -31,7 +32,10 @@
           reader = { status: 'loaded', title: data.title, byline: data.byline, content: data.content }
         }
       })
-      .catch(() => { reader = { status: 'failed' } })
+      .catch((err) => {
+        if (err.name !== 'AbortError') reader = { status: 'failed' }
+      })
+    return () => controller.abort()
   })
 
   function handleKeydown(e: KeyboardEvent) {
