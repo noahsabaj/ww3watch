@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { extractArticle } from './reader'
 
 describe('extractArticle', () => {
+  afterEach(() => vi.restoreAllMocks())
+
   it('returns null on network error', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network failure'))
     const result = await extractArticle('https://example.com/article')

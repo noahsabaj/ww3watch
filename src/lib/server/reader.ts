@@ -20,7 +20,8 @@ export async function extractArticle(url: string): Promise<ArticleContent | null
     })
     if (!res.ok) return null
     html = await res.text()
-  } catch {
+  } catch (err) {
+    console.error('[reader] fetch failed:', url, err)
     return null
   }
 
@@ -35,7 +36,8 @@ export async function extractArticle(url: string): Promise<ArticleContent | null
       content: article.content ?? '',
       siteName: article.siteName ?? null,
     }
-  } catch {
+  } catch (err) {
+    console.error('[reader] parse failed:', url, err)
     return null
   }
 }
