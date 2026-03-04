@@ -8,7 +8,7 @@
   import TopStories from '$lib/components/TopStories.svelte'
   import FilterBar from '$lib/components/FilterBar.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
-  import { clusterArticles } from '$lib/cluster'
+  import { groupByClusterId } from '$lib/cluster'
   import type { Cluster } from '$lib/cluster'
   import type { PageData } from './$types'
 
@@ -38,8 +38,8 @@
       return matchesRegion && matchesSearch
     })
   )
-  let clustered = $derived(clusterArticles(filtered))
-  let allClustered = $derived(clusterArticles(articles))
+  let clustered = $derived(groupByClusterId(filtered))
+  let allClustered = $derived(groupByClusterId(articles))
   let trendingIds = $derived((data.trendingIds ?? []) as string[])
   let topStories = $derived(
     trendingIds.length > 0

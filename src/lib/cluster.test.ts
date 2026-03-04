@@ -13,6 +13,7 @@ function makeArticle(id: string, title: string, published_at?: string | null): A
     fetched_at: new Date().toISOString(),
     source_name: 'Test Source',
     source_region: 'US/Western',
+    cluster_id: null,
     source_lang: 'en',
     feed_url: 'https://example.com/rss',
   }

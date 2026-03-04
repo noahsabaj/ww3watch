@@ -37,6 +37,22 @@ function similarity(a: string, b: string): number {
   return intersection / Math.min(setA.size, setB.size)
 }
 
+export function groupByClusterId(articles: Article[]): Cluster[] {
+  const map = new Map<string, Article[]>()
+  for (const a of articles) {
+    const key = a.cluster_id ?? a.id
+    const group = map.get(key) ?? []
+    group.push(a)
+    map.set(key, group)
+  }
+  return [...map.values()].map(group => ({
+    id: group[0].cluster_id ?? group[0].id,
+    representative: group[0],
+    articles: group,
+    sourceCount: new Set(group.map(a => a.source_name)).size,
+  }))
+}
+
 export function clusterArticles(articles: Article[]): Cluster[] {
   const clusters: Cluster[] = []
 

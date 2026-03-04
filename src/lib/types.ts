@@ -28,6 +28,7 @@ export interface Article {
   source_region: SourceRegion
   source_lang: string
   feed_url: string
+  cluster_id: string | null
 }
 
 export interface Feed {
