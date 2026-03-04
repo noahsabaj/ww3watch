@@ -3,7 +3,7 @@
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
   import { timeAgo } from '$lib/utils'
 
-  let { article }: { article: Article } = $props()
+  let { article, onselect }: { article: Article; onselect?: (a: Article) => void } = $props()
 
   const isBreaking = $derived(
     !!article.published_at &&
@@ -41,7 +41,8 @@
     href={article.url}
     target="_blank"
     rel="noopener noreferrer"
-    class="block text-white font-semibold leading-snug hover:text-blue-400 transition-colors mb-1"
+    class="block text-white font-semibold leading-snug hover:text-blue-400 transition-colors mb-1 cursor-pointer"
+    onclick={(e) => { if (onselect) { e.preventDefault(); onselect(article) } }}
   >
     {article.title}
   </a>
