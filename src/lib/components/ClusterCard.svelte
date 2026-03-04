@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Cluster } from '$lib/cluster'
+  import type { Article } from '$lib/types'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
   import { timeAgo } from '$lib/utils'
 
-  let { cluster }: { cluster: Cluster } = $props()
+  let { cluster, onselect }: { cluster: Cluster; onselect?: (a: Article) => void } = $props()
   let expanded = $state(false)
 
   function langFlag(lang: string): string {
@@ -55,7 +56,8 @@
     href={rep.url}
     target="_blank"
     rel="noopener noreferrer"
-    class="block text-white font-semibold leading-snug hover:text-blue-400 transition-colors mb-1"
+    class="block text-white font-semibold leading-snug hover:text-blue-400 transition-colors mb-1 cursor-pointer"
+    onclick={(e) => { if (onselect) { e.preventDefault(); onselect(rep) } }}
   >
     {rep.title}
   </a>
