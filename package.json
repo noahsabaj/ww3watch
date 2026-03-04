@@ -27,7 +27,9 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@mozilla/readability": "^0.6.0",
 		"@supabase/supabase-js": "^2.98.0",
+		"linkedom": "^0.18.12",
 		"rss-parser": "^3.13.0"
 	}
 }
