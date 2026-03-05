@@ -16,7 +16,7 @@
         Trending Now
       </button>
       {#if open}
-        <ol class="pb-3">
+        <ol class="pb-2">
           {#each stories as cluster, i (cluster.id)}
             {@const rep = cluster.representative}
             <li class="border-t border-gray-800/40 first:border-t-0">
@@ -24,9 +24,9 @@
                 href={rep.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex items-baseline gap-2.5 py-2 group"
+                class="flex items-baseline gap-2 py-1 group"
               >
-                <span class="text-xs text-gray-500 font-mono w-3 shrink-0 text-right">{i + 1}</span>
+                <span class="text-xs text-gray-500 font-mono shrink-0">{i + 1}</span>
                 <span class="flex-1 text-sm text-gray-200 group-hover:text-white transition-colors leading-snug line-clamp-2">
                   {rep.title}<span class="text-gray-600 font-normal"> · {cluster.sourceCount} sources</span>
                 </span>
