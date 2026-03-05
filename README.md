@@ -1,42 +1,31 @@
-# sv
+# WW3Watch
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A real-time global news aggregator focused on geopolitical conflict and world events. Aggregates articles from dozens of sources across every major region, clusters related stories using LLM-assisted grouping, and surfaces trending stories as they break.
 
-## Creating a project
+**Live at [ww3watch.vercel.app](https://ww3watch.vercel.app)**
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Features
 
-```sh
-# create a new project
-npx sv create my-app
-```
+- **Real-time feed** — new articles appear live via Supabase Realtime without a page refresh
+- **Story clustering** — related articles from multiple sources are grouped together automatically
+- **Trending Now** — LLM-ranked top stories updated continuously
+- **In-app reader** — read articles without leaving the site; falls back to summary if extraction fails
+- **Multi-source view** — see every outlet covering a story and switch between versions in the reader
+- **Region filtering** — filter by US/Western, European, Arab/Gulf, Chinese, Russian, South Asian, and more
+- **PWA** — installable on mobile, works as a home screen app
 
-To recreate this project with the same configuration:
+## Stack
 
-```sh
-# recreate this project
-npx sv@0.12.4 create --template minimal --types ts --no-install .
-```
+- [SvelteKit](https://kit.svelte.dev/) + Svelte 5 runes
+- [Supabase](https://supabase.com/) (Postgres + Realtime)
+- [Tailwind CSS v4](https://tailwindcss.com/)
+- [Vercel](https://vercel.com/) (hosting + serverless functions)
 
-## Developing
+## Development
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Requires a `.env` with Supabase and LLM API credentials.
