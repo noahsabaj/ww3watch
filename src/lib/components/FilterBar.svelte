@@ -24,7 +24,7 @@
   function clearAll() { activeRegions = new Set() }
 </script>
 
-<div class="sticky top-0 z-10 bg-[#0a0a0b]/95 backdrop-blur border-b border-gray-800 px-4 py-3">
+<div class="sticky top-0 z-10 bg-[#0a0a0b]/95 backdrop-blur border-b border-gray-800 px-4 py-3 hidden md:block">
   <div class="max-w-3xl mx-auto space-y-2">
     <div class="flex items-center gap-2">
       <input
