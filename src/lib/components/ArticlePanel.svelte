@@ -56,7 +56,7 @@
   <!-- Panel -->
   <aside
     class="fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-[#0a0a0b] border-l border-gray-800 z-50 flex flex-col"
-    style="animation: slideIn 200ms ease-out;"
+    style="animation: slideIn 200ms ease-out; padding-top: env(safe-area-inset-top, 0px);"
   >
     <!-- Top bar -->
     <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 flex-wrap">
