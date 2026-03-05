@@ -59,9 +59,13 @@ export function groupByClusterId(articles: Article[]): Cluster[] {
   // Articles without cluster_id: fall back to Jaccard (covers existing DB articles)
   const jaccardClusters = clusterArticles(unassigned)
 
-  // DB clusters are newest-first (assigned array is sorted DESC);
-  // Jaccard clusters follow in same relative order.
-  return [...dbClusters, ...jaccardClusters]
+  // Merge and sort by representative published_at DESC so Jaccard clusters
+  // (articles not yet LLM-processed) don't get buried below all DB clusters.
+  return [...dbClusters, ...jaccardClusters].sort((a, b) => {
+    const aTime = a.representative.published_at ? new Date(a.representative.published_at).getTime() : 0
+    const bTime = b.representative.published_at ? new Date(b.representative.published_at).getTime() : 0
+    return bTime - aTime
+  })
 }
 
 export function clusterArticles(articles: Article[]): Cluster[] {
