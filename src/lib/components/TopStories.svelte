@@ -1,9 +1,19 @@
 <script lang="ts">
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
+  import { REGION_COLORS } from '$lib/types'
+  import { timeAgo } from '$lib/utils'
 
   let { stories, onselect }: { stories: Cluster[], onselect: (a: Article) => void } = $props()
   let open = $state(true)
+  let expandedIds = $state(new Set<string>())
+
+  function toggleExpanded(id: string) {
+    const next = new Set(expandedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    expandedIds = next
+  }
 </script>
 
 {#if stories.length > 0}
@@ -20,16 +30,49 @@
         <ol class="pb-2">
           {#each stories as cluster, i (cluster.id)}
             {@const rep = cluster.representative}
-            <li class="border-t border-gray-800/40 first:border-t-0">
-              <button
-                onclick={() => onselect(rep)}
-                class="flex items-baseline gap-2 py-1 group w-full text-left"
-              >
+            {@const isExpanded = expandedIds.has(cluster.id)}
+            <li class="border-t border-gray-800/40 first:border-t-0 py-1">
+              <div class="flex items-baseline gap-2">
                 <span class="text-xs text-gray-500 font-mono shrink-0">{i + 1}</span>
-                <span class="flex-1 text-sm text-gray-200 group-hover:text-white transition-colors leading-snug line-clamp-2">
-                  {rep.title}<span class="text-gray-600 font-normal"> · {cluster.sourceCount} sources</span>
-                </span>
-              </button>
+                <div class="flex-1 min-w-0">
+                  <button
+                    onclick={() => onselect(rep)}
+                    class="text-sm text-gray-200 hover:text-white transition-colors leading-snug text-left"
+                  >
+                    {rep.title}
+                  </button>
+                  {#if cluster.sourceCount > 1}
+                    <button
+                      onclick={() => toggleExpanded(cluster.id)}
+                      class="text-xs text-gray-600 hover:text-gray-400 transition-colors ml-1.5"
+                    >
+                      · {cluster.sourceCount} sources
+                    </button>
+                  {:else}
+                    <span class="text-xs text-gray-600 ml-1.5">· 1 source</span>
+                  {/if}
+
+                  {#if isExpanded}
+                    <div class="mt-1.5 space-y-0.5 border-t border-gray-800/40 pt-1.5">
+                      {#each cluster.articles as article (article.id)}
+                        <div class="flex items-center gap-2 py-0.5">
+                          <span class="text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 {REGION_COLORS[article.source_region]}">
+                            {article.source_region}
+                          </span>
+                          <span class="text-xs text-gray-500 shrink-0">{article.source_name}</span>
+                          <button
+                            onclick={() => onselect(article)}
+                            class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-left"
+                          >
+                            {article.title}
+                          </button>
+                          <span class="text-xs text-gray-600 shrink-0">{timeAgo(article.published_at)}</span>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              </div>
             </li>
           {/each}
         </ol>
