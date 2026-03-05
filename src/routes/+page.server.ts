@@ -1,4 +1,3 @@
-import { error } from '@sveltejs/kit'
 import { supabaseAdmin } from '$lib/server/supabase'
 import type { PageServerLoad } from './$types'
 
@@ -17,8 +16,7 @@ export const load: PageServerLoad = async () => {
   ])
 
   if (articlesResult.error) {
-    console.error('[load] Supabase error:', articlesResult.error)
-    throw error(503, 'Could not load articles. Please try again.')
+    console.error('[load] Supabase error (returning empty, realtime will recover):', articlesResult.error)
   }
 
   const trendingIds: string[] = (trendingResult.data ?? []).map(t => t.article_id)
