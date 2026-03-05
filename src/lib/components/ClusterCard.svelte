@@ -30,25 +30,25 @@
 
 <article class="border-l-4 {REGION_BORDER[rep.source_region]} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
   <!-- Header row -->
-  <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-    <span class="text-xs font-semibold px-2 py-0.5 rounded {REGION_COLORS[rep.source_region]}">
+  <div class="flex items-center gap-2 mb-1.5 min-w-0">
+    <span class="text-xs font-semibold px-2 py-0.5 rounded shrink-0 {REGION_COLORS[rep.source_region]}">
       {rep.source_region}
     </span>
     {#if isBreaking}
-      <span class="bg-red-950/60 border border-red-800/60 text-red-400 text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded">BREAKING</span>
+      <span class="bg-red-950/60 border border-red-800/60 text-red-400 text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded shrink-0">BREAKING</span>
     {/if}
-    <span class="text-sm font-medium text-gray-300">
+    <span class="text-sm font-medium text-gray-300 truncate min-w-0">
       {repFlag}{repFlag ? ' ' : ''}{rep.source_name}
     </span>
     {#if !isSingle}
-      <div class="flex items-center gap-1 ml-1">
+      <div class="flex items-center gap-1 shrink-0">
         {#each regionDots as region}
           <span class="w-2 h-2 rounded-full {REGION_COLORS[region]?.split(' ')[0] ?? 'bg-gray-500'}"></span>
         {/each}
         <span class="text-xs text-gray-400 font-medium ml-0.5">+{cluster.sourceCount - 1} more</span>
       </div>
     {/if}
-    <span class="text-xs text-gray-500 ml-auto" title={rep.published_at ?? ''}>{timeAgo(rep.published_at)}</span>
+    <span class="text-xs text-gray-500 ml-auto shrink-0 whitespace-nowrap" title={rep.published_at ?? ''}>{timeAgo(rep.published_at)}</span>
   </div>
 
   <!-- Headline -->

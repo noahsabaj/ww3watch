@@ -59,23 +59,23 @@
     style="animation: slideIn 200ms ease-out; padding-top: env(safe-area-inset-top, 0px);"
   >
     <!-- Top bar -->
-    <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 flex-wrap">
-      <span class="text-xs font-semibold px-2 py-0.5 rounded {REGION_COLORS[article.source_region]}">
+    <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
+      <span class="text-xs font-semibold px-2 py-0.5 rounded shrink-0 {REGION_COLORS[article.source_region]}">
         {article.source_region}
       </span>
-      <span class="text-sm font-medium text-gray-300">{article.source_name}</span>
-      <span class="text-xs text-gray-500">{timeAgo(article.published_at)}</span>
+      <span class="text-sm font-medium text-gray-300 truncate min-w-0">{article.source_name}</span>
+      <span class="text-xs text-gray-500 shrink-0 whitespace-nowrap">{timeAgo(article.published_at)}</span>
       <a
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"
-        class="ml-auto text-xs text-gray-500 hover:text-gray-300 transition-colors"
+        class="ml-auto text-xs text-gray-500 hover:text-gray-300 transition-colors shrink-0 whitespace-nowrap"
       >
         Read original ↗
       </a>
       <button
         onclick={onclose}
-        class="text-gray-500 hover:text-gray-200 transition-colors text-lg leading-none ml-2"
+        class="text-gray-500 hover:text-gray-200 transition-colors text-lg leading-none shrink-0 ml-1"
         aria-label="Close reader"
       >
         ✕
