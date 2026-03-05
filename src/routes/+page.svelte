@@ -19,6 +19,11 @@
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
   let selectedArticle = $state<Article | null>(null)
+  let selectedCluster = $derived(
+    selectedArticle
+      ? allClustered.find(c => c.articles.some(a => a.id === selectedArticle!.id)) ?? null
+      : null
+  )
   let filterSheetOpen = $state(false)
   let filterDropdownOpen = $state(false)
 
@@ -270,5 +275,5 @@
   <!-- Mobile filter sheet -->
   <FilterSheet bind:open={filterSheetOpen} bind:activeRegions bind:searchQuery />
 
-  <ArticlePanel article={selectedArticle} onclose={() => selectedArticle = null} />
+  <ArticlePanel article={selectedArticle} cluster={selectedCluster} onclose={() => selectedArticle = null} onselect={(a) => selectedArticle = a} />
 </div>

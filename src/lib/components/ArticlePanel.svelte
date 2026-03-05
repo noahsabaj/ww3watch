@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { Article } from '$lib/types'
+  import type { Cluster } from '$lib/cluster'
   import { timeAgo } from '$lib/utils'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
 
-  let { article, onclose }: {
+  let { article, cluster = null, onclose, onselect }: {
     article: Article | null
+    cluster?: Cluster | null
     onclose: () => void
+    onselect?: (a: Article) => void
   } = $props()
 
   type ReaderState =
@@ -130,6 +133,31 @@
         >
           Full article unavailable — read original ↗
         </a>
+      {/if}
+
+      {#if cluster && cluster.sourceCount > 1 && reader.status !== 'loading'}
+        <div class="mt-8 pt-5 border-t border-gray-800">
+          <p class="text-[10px] uppercase tracking-widest text-gray-600 mb-3">{cluster.sourceCount} sources covered this</p>
+          <div class="space-y-2">
+            {#each cluster.articles as other (other.id)}
+              <div class="flex items-center gap-2 py-0.5">
+                <RegionBadge region={other.source_region} size="sm" />
+                <span class="text-xs text-gray-500 shrink-0">{other.source_name}</span>
+                {#if other.id === article.id}
+                  <span class="text-xs text-blue-400 line-clamp-1 flex-1 min-w-0">← reading now</span>
+                {:else}
+                  <button
+                    onclick={() => onselect?.(other)}
+                    class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-left"
+                  >
+                    {other.title}
+                  </button>
+                {/if}
+                <span class="text-xs text-gray-600 shrink-0">{timeAgo(other.published_at)}</span>
+              </div>
+            {/each}
+          </div>
+        </div>
       {/if}
 
     </div>
