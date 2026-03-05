@@ -7,6 +7,7 @@
   import ClusterCard from '$lib/components/ClusterCard.svelte'
   import TopStories from '$lib/components/TopStories.svelte'
   import FilterBar from '$lib/components/FilterBar.svelte'
+  import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { groupByClusterId } from '$lib/cluster'
   import type { Cluster } from '$lib/cluster'
@@ -21,6 +22,11 @@
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
   let clusterMode = $state(true)
   let selectedArticle = $state<Article | null>(null)
+  let filterSheetOpen = $state(false)
+
+  // Install prompt
+  let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null)
+  let installDismissed = $state(false)
 
   // Two separate cluster passes: allClustered uses the full article list (global top stories),
   // clustered uses the filtered list (feed view). They cannot be shared.
@@ -62,7 +68,27 @@
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function handleInstall() {
+    if (!installPromptEvent) return
+    installPromptEvent.prompt()
+    installPromptEvent = null
+  }
+
+  function dismissInstall() {
+    installDismissed = true
+    localStorage.setItem('pwa-install-dismissed', '1')
+  }
+
   onMount(() => {
+    if (localStorage.getItem('pwa-install-dismissed')) {
+      installDismissed = true
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault()
+      installPromptEvent = e as BeforeInstallPromptEvent
+    })
+
     const channel = supabase
       .channel('articles-feed')
       .on(
@@ -86,8 +112,11 @@
 <svelte:window bind:scrollY />
 
 <div class="min-h-screen bg-[#0a0a0b]">
-  <!-- Header -->
-  <header class="border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]">
+  <!-- Header — padding-top accounts for iOS notch via viewport-fit=cover -->
+  <header
+    class="border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]"
+    style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px))"
+  >
     <div class="max-w-3xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
         <h1 class="text-white font-bold text-lg tracking-tight">WW3Watch</h1>
@@ -125,10 +154,30 @@
     </div>
   </header>
 
+  <!-- Install prompt banner (mobile only, dismissible) -->
+  {#if installPromptEvent && !installDismissed}
+    <div class="md:hidden bg-blue-950/80 border-b border-blue-900 px-4 py-2 flex items-center gap-3">
+      <span class="text-sm text-blue-200 flex-1">Add WW3Watch to your home screen</span>
+      <button
+        onclick={handleInstall}
+        class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-medium transition-colors shrink-0"
+      >
+        Install
+      </button>
+      <button
+        onclick={dismissInstall}
+        class="text-gray-400 hover:text-gray-200 transition-colors text-lg leading-none shrink-0"
+        aria-label="Dismiss"
+      >
+        ✕
+      </button>
+    </div>
+  {/if}
+
   <!-- Trending Now -->
   <TopStories stories={topStories} />
 
-  <!-- Filter Bar -->
+  <!-- Filter Bar (desktop only — mobile uses FilterSheet via FAB) -->
   <FilterBar bind:activeRegions bind:searchQuery />
 
   <!-- New articles banner -->
@@ -144,7 +193,10 @@
   {/if}
 
   <!-- Feed -->
-  <main class="max-w-3xl mx-auto divide-y divide-gray-800/50 pb-20">
+  <main
+    class="max-w-3xl mx-auto divide-y divide-gray-800/50"
+    style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px))"
+  >
     {#if filtered.length === 0}
       <div class="py-20 text-center text-gray-500 text-sm">
         {articles.length === 0 ? 'Loading articles...' : 'No articles match your filters.'}
@@ -159,6 +211,23 @@
       {/each}
     {/if}
   </main>
+
+  <!-- Mobile FAB: opens FilterSheet -->
+  <button
+    class="fixed right-4 z-30 md:hidden w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
+    style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px))"
+    onclick={() => filterSheetOpen = true}
+    aria-label="Open filters"
+  >
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="4" y1="6" x2="20" y2="6"/>
+      <line x1="4" y1="12" x2="16" y2="12"/>
+      <line x1="4" y1="18" x2="12" y2="18"/>
+    </svg>
+  </button>
+
+  <!-- Mobile filter sheet -->
+  <FilterSheet bind:open={filterSheetOpen} bind:activeRegions bind:searchQuery />
 
   <ArticlePanel article={selectedArticle} onclose={() => selectedArticle = null} />
 </div>
