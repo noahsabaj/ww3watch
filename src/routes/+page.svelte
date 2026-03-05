@@ -132,10 +132,6 @@
       <!-- Brand -->
       <div class="flex items-center gap-3 shrink-0">
         <h1 class="text-white font-bold text-lg tracking-tight">WW3Watch</h1>
-        <div class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-          <span class="text-xs text-gray-400 uppercase tracking-wider">Live</span>
-        </div>
       </div>
 
       <!-- Search input (desktop only) -->
