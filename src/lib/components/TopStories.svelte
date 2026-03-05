@@ -16,7 +16,7 @@
         Trending Now
       </button>
       {#if open}
-        <ol class="pb-3 pl-4">
+        <ol class="pb-3">
           {#each stories as cluster, i (cluster.id)}
             {@const rep = cluster.representative}
             <li class="border-t border-gray-800/40 first:border-t-0">
