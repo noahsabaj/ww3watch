@@ -38,6 +38,11 @@
     return () => controller.abort()
   })
 
+  $effect(() => {
+    document.body.style.overflow = article ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  })
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') onclose()
   }
