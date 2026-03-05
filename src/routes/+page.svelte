@@ -165,7 +165,7 @@
   {/if}
 
   <!-- Trending Now -->
-  <TopStories stories={topStories} />
+  <TopStories stories={topStories} onselect={(a) => selectedArticle = a} />
 
   <!-- Filter Bar (desktop only — mobile uses FilterSheet via FAB) -->
   <FilterBar bind:activeRegions bind:searchQuery />

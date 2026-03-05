@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Cluster } from '$lib/cluster'
+  import type { Article } from '$lib/types'
 
-  let { stories }: { stories: Cluster[] } = $props()
+  let { stories, onselect }: { stories: Cluster[], onselect: (a: Article) => void } = $props()
   let open = $state(true)
 </script>
 
@@ -20,17 +21,15 @@
           {#each stories as cluster, i (cluster.id)}
             {@const rep = cluster.representative}
             <li class="border-t border-gray-800/40 first:border-t-0">
-              <a
-                href={rep.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex items-baseline gap-2 py-1 group"
+              <button
+                onclick={() => onselect(rep)}
+                class="flex items-baseline gap-2 py-1 group w-full text-left"
               >
                 <span class="text-xs text-gray-500 font-mono shrink-0">{i + 1}</span>
                 <span class="flex-1 text-sm text-gray-200 group-hover:text-white transition-colors leading-snug line-clamp-2">
                   {rep.title}<span class="text-gray-600 font-normal"> · {cluster.sourceCount} sources</span>
                 </span>
-              </a>
+              </button>
             </li>
           {/each}
         </ol>
