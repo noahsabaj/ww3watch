@@ -46,9 +46,9 @@
   )
   let clustered = $derived(groupByClusterId(filtered))
   let allClustered = $derived(groupByClusterId(articles))
-  let trendingIds = $derived((data.trendingIds ?? []) as string[])
-  let topStories = $derived(
-    trendingIds.length > 0
+  let topStories = $derived.by(() => {
+    const trendingIds = (data.trendingIds ?? []) as string[]
+    return trendingIds.length > 0
       ? trendingIds
           .map(id => allClustered.find(c => c.representative.id === id))
           .filter((c): c is Cluster => c !== undefined)
@@ -60,7 +60,7 @@
           )
           .sort((a, b) => b.sourceCount - a.sourceCount)
           .slice(0, 3)
-  )
+  })
 
   function flushQueue() {
     articles = [...newQueue, ...articles]
@@ -84,10 +84,11 @@
       installDismissed = true
     }
 
-    window.addEventListener('beforeinstallprompt', (e) => {
+    function onBeforeInstallPrompt(e: Event) {
       e.preventDefault()
       installPromptEvent = e as BeforeInstallPromptEvent
-    })
+    }
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
 
     const channel = supabase
       .channel('articles-feed')
@@ -105,7 +106,10 @@
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      supabase.removeChannel(channel)
+    }
   })
 </script>
 
@@ -182,7 +186,7 @@
 
   <!-- New articles banner -->
   {#if newQueue.length > 0 && isPaused}
-    <div class="fixed top-[120px] left-1/2 -translate-x-1/2 z-20">
+    <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(7.5rem + env(safe-area-inset-top, 0px))">
       <button
         onclick={flushQueue}
         class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-full shadow-lg transition-colors"

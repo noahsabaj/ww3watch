@@ -26,14 +26,14 @@
 {#if open}
   <!-- Backdrop -->
   <div
-    class="fixed inset-0 bg-black/60 z-40 md:hidden"
+    class="fixed inset-0 bg-black/60 z-60 md:hidden"
     onclick={() => open = false}
     role="presentation"
   ></div>
 
   <!-- Sheet -->
   <div
-    class="fixed bottom-0 left-0 right-0 z-50 bg-[#111113] rounded-t-2xl border-t border-gray-800 md:hidden"
+    class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 md:hidden"
     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
   >
     <!-- Drag handle -->
