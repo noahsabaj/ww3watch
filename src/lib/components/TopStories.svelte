@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
-  import { REGION_COLORS } from '$lib/types'
   import { timeAgo } from '$lib/utils'
+  import RegionBadge from '$lib/components/RegionBadge.svelte'
 
   let { stories, onselect }: { stories: Cluster[], onselect: (a: Article) => void } = $props()
   let open = $state(true)
@@ -56,9 +56,7 @@
                     <div class="mt-1.5 space-y-0.5 border-t border-gray-800/40 pt-1.5">
                       {#each cluster.articles as article (article.id)}
                         <div class="flex items-center gap-2 py-0.5">
-                          <span class="text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 {REGION_COLORS[article.source_region]}">
-                            {article.source_region}
-                          </span>
+                          <RegionBadge region={article.source_region} size="sm" />
                           <span class="text-xs text-gray-500 shrink-0">{article.source_name}</span>
                           <button
                             onclick={() => onselect(article)}

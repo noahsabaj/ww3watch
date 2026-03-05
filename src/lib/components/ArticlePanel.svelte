@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Article } from '$lib/types'
-  import { REGION_COLORS } from '$lib/types'
   import { timeAgo } from '$lib/utils'
+  import RegionBadge from '$lib/components/RegionBadge.svelte'
 
   let { article, onclose }: {
     article: Article | null
@@ -65,9 +65,7 @@
   >
     <!-- Top bar -->
     <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
-      <span class="text-xs font-semibold px-2 py-0.5 rounded shrink-0 {REGION_COLORS[article.source_region]}">
-        {article.source_region}
-      </span>
+      <RegionBadge region={article.source_region} />
       <span class="text-sm font-medium text-gray-300 truncate min-w-0">{article.source_name}</span>
       <span class="text-xs text-gray-500 shrink-0 whitespace-nowrap">{timeAgo(article.published_at)}</span>
       <a

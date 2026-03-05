@@ -2,18 +2,11 @@
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
-  import { timeAgo } from '$lib/utils'
+  import { timeAgo, langFlag, isBreaking } from '$lib/utils'
+  import RegionBadge from '$lib/components/RegionBadge.svelte'
 
   let { cluster, onselect }: { cluster: Cluster; onselect?: (a: Article) => void } = $props()
   let expanded = $state(false)
-
-  function langFlag(lang: string): string {
-    const flags: Record<string, string> = {
-      fa: '🇮🇷', ar: '🇸🇦', he: '🇮🇱', ru: '🇷🇺',
-      zh: '🇨🇳', tr: '🇹🇷', fr: '🇫🇷', de: '🇩🇪', ur: '🇵🇰',
-    }
-    return flags[lang] ?? ''
-  }
 
   const rep = $derived(cluster.representative)
   const others = $derived(cluster.articles.slice(1))
@@ -22,19 +15,14 @@
     [...new Set(cluster.articles.map(a => a.source_region))].slice(0, 5)
   )
   const repFlag = $derived(langFlag(rep.source_lang))
-  const isBreaking = $derived(
-    !!rep.published_at &&
-    Date.now() - new Date(rep.published_at).getTime() < 30 * 60 * 1000
-  )
+  const breaking = $derived(isBreaking(rep.published_at))
 </script>
 
 <article class="border-l-4 {REGION_BORDER[rep.source_region]} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
   <!-- Header row -->
   <div class="flex items-center gap-2 mb-1.5 min-w-0">
-    <span class="text-xs font-semibold px-2 py-0.5 rounded shrink-0 {REGION_COLORS[rep.source_region]}">
-      {rep.source_region}
-    </span>
-    {#if isBreaking}
+    <RegionBadge region={rep.source_region} />
+    {#if breaking}
       <span class="bg-red-950/60 border border-red-800/60 text-red-400 text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded shrink-0">BREAKING</span>
     {/if}
     <span class="text-sm font-medium text-gray-300 truncate min-w-0">
@@ -81,9 +69,7 @@
       <div class="mt-2 space-y-1 border-t border-gray-800 pt-2">
         {#each others as article (article.id)}
           <div class="flex items-center gap-2 py-0.5">
-            <span class="text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 {REGION_COLORS[article.source_region]}">
-              {article.source_region}
-            </span>
+            <RegionBadge region={article.source_region} size="sm" />
             <span class="text-xs text-gray-400 shrink-0">
               {langFlag(article.source_lang)}{article.source_name}
             </span>

@@ -1,4 +1,4 @@
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } from '$env/static/private'
+import { callLLM } from '$lib/server/llm'
 
 const SYSTEM_PROMPT = `You are the clustering engine for WW3Watch — a real-time news aggregator tracking global conflicts.
 
@@ -43,29 +43,10 @@ export async function assignClusters(
 
   let parsed: unknown
   try {
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LLM_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: LLM_MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userContent },
-        ],
-        temperature: 0,
-        max_tokens: newArticles.length * 15 + 20,
-      }),
-      signal: AbortSignal.timeout(9000),
-    })
-
-    if (!res.ok) throw new Error(`LLM ${res.status}: ${await res.text()}`)
-
-    const data = await res.json()
-    const text: string = data.choices?.[0]?.message?.content?.trim() ?? ''
-    const clean = text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim()
+    const clean = await callLLM(
+      [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userContent }],
+      newArticles.length * 15 + 20,
+    )
     parsed = JSON.parse(clean)
   } catch (err) {
     console.error('[cluster-llm] LLM call failed, using singleton fallback:', err)

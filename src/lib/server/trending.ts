@@ -1,4 +1,4 @@
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } from '$env/static/private'
+import { callLLM } from '$lib/server/llm'
 import { clusterArticles } from '$lib/cluster'
 import { supabaseAdmin } from '$lib/server/supabase'
 
@@ -49,29 +49,10 @@ export async function updateTrending(): Promise<void> {
 
   let indices: number[]
   try {
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LLM_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: LLM_MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userContent },
-        ],
-        temperature: 0,
-        max_tokens: 40,
-      }),
-      signal: AbortSignal.timeout(9000),
-    })
-
-    if (!res.ok) throw new Error(`LLM ${res.status}: ${await res.text()}`)
-
-    const data = await res.json()
-    const text: string = data.choices?.[0]?.message?.content?.trim() ?? ''
-    const clean = text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim()
+    const clean = await callLLM(
+      [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userContent }],
+      40,
+    )
     const parsed: unknown = JSON.parse(clean)
 
     if (
