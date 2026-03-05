@@ -25,11 +25,10 @@ export async function assignClusters(
   newArticles: Array<{ id: string; title: string }>,
   existingClusters: Array<{ id: string; title: string }>
 ): Promise<Map<string, string>> {
-  const fallback = (): Map<string, string> => {
-    const m = new Map<string, string>()
-    for (const a of newArticles) m.set(a.id, a.id)
-    return m
-  }
+  // On LLM failure, return empty map so articles stay cluster_id=null
+  // and fall through to Jaccard clustering on the frontend.
+  // (Assigning cluster_id=id as singletons would bypass Jaccard entirely.)
+  const fallback = (): Map<string, string> => new Map()
 
   if (newArticles.length === 0) return new Map()
 
