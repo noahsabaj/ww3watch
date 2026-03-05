@@ -3,7 +3,6 @@
   import { supabase } from '$lib/supabase'
   import type { Article, SourceRegion } from '$lib/types'
   import { ALL_REGIONS } from '$lib/types'
-  import ArticleCard from '$lib/components/ArticleCard.svelte'
   import ClusterCard from '$lib/components/ClusterCard.svelte'
   import TopStories from '$lib/components/TopStories.svelte'
   import FilterBar from '$lib/components/FilterBar.svelte'
@@ -20,7 +19,6 @@
   let scrollY = $state(0)
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
-  let clusterMode = $state(true)
   let selectedArticle = $state<Article | null>(null)
   let filterSheetOpen = $state(false)
 
@@ -130,19 +128,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-500">
-          {clusterMode
-            ? `${clustered.length.toLocaleString()} stories`
-            : `${filtered.length.toLocaleString()} articles`}
-        </span>
-        <button
-          onclick={() => clusterMode = !clusterMode}
-          class="text-xs px-2 py-1 rounded border transition-colors {clusterMode
-            ? 'border-blue-500 text-blue-400 bg-blue-500/10'
-            : 'border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300'}"
-        >
-          Cluster
-        </button>
+        <span class="text-xs text-gray-500">{clustered.length.toLocaleString()} stories</span>
         <a
           href="https://github.com/noahsabaj/ww3watch"
           target="_blank"
@@ -201,17 +187,13 @@
     class="max-w-3xl mx-auto divide-y divide-gray-800/50"
     style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px))"
   >
-    {#if filtered.length === 0}
+    {#if clustered.length === 0}
       <div class="py-20 text-center text-gray-500 text-sm">
         {articles.length === 0 ? 'Loading articles...' : 'No articles match your filters.'}
       </div>
-    {:else if clusterMode}
+    {:else}
       {#each clustered as cluster (cluster.id)}
         <ClusterCard {cluster} onselect={(a) => selectedArticle = a} />
-      {/each}
-    {:else}
-      {#each filtered as article (article.id)}
-        <ArticleCard {article} onselect={(a) => selectedArticle = a} />
       {/each}
     {/if}
   </main>
