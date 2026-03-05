@@ -2,10 +2,9 @@
   import { onMount, untrack } from 'svelte'
   import { supabase } from '$lib/supabase'
   import type { Article, SourceRegion } from '$lib/types'
-  import { ALL_REGIONS } from '$lib/types'
+  import { ALL_REGIONS, REGION_COLORS } from '$lib/types'
   import ClusterCard from '$lib/components/ClusterCard.svelte'
   import TopStories from '$lib/components/TopStories.svelte'
-  import FilterBar from '$lib/components/FilterBar.svelte'
   import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { groupByClusterId } from '$lib/cluster'
@@ -21,6 +20,16 @@
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
   let selectedArticle = $state<Article | null>(null)
   let filterSheetOpen = $state(false)
+  let filterDropdownOpen = $state(false)
+
+  function toggleRegion(region: SourceRegion) {
+    const next = new Set(activeRegions)
+    if (next.has(region)) next.delete(region)
+    else next.add(region)
+    activeRegions = next
+  }
+  function selectAll() { activeRegions = new Set(ALL_REGIONS) }
+  function clearAll() { activeRegions = new Set() }
 
   // Install prompt
   let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null)
@@ -119,16 +128,69 @@
     class="border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]"
     style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px))"
   >
-    <div class="max-w-3xl mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-3">
+    <div class="max-w-3xl mx-auto flex items-center gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3 shrink-0">
         <h1 class="text-white font-bold text-lg tracking-tight">WW3Watch</h1>
         <div class="flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
           <span class="text-xs text-gray-400 uppercase tracking-wider">Live</span>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+
+      <!-- Search input (desktop only) -->
+      <input
+        type="text"
+        placeholder="Search headlines..."
+        bind:value={searchQuery}
+        class="hidden md:block flex-1 min-w-0 bg-[#18181b] border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+      />
+
+      <!-- Right actions -->
+      <div class="flex items-center gap-2 ml-auto md:ml-0 shrink-0">
         <span class="text-xs text-gray-500">{clustered.length.toLocaleString()} stories</span>
+
+        <!-- Region filter button + dropdown (desktop only) -->
+        <div class="relative hidden md:block">
+          <button
+            onclick={() => filterDropdownOpen = !filterDropdownOpen}
+            aria-label="Filter by region"
+            class="flex items-center justify-center w-7 h-7 rounded transition-colors {filterDropdownOpen || activeRegions.size < ALL_REGIONS.length ? 'text-blue-400' : 'text-gray-600 hover:text-gray-300'}"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+              <circle cx="9" cy="18" r="2" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+
+          {#if filterDropdownOpen}
+            <div class="fixed inset-0 z-40" onclick={() => filterDropdownOpen = false} role="presentation"></div>
+            <div class="absolute right-0 top-full mt-2 z-50 bg-[#111113] border border-gray-700 rounded-lg p-3 w-80 shadow-xl">
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-[10px] text-gray-600 uppercase tracking-widest">Regions</span>
+                <div class="flex gap-1">
+                  <button onclick={selectAll} class="text-xs text-gray-400 hover:text-white px-2 py-0.5 transition-colors">All</button>
+                  <button onclick={clearAll} class="text-xs text-gray-400 hover:text-white px-2 py-0.5 transition-colors">None</button>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                {#each ALL_REGIONS as region}
+                  <button
+                    onclick={() => toggleRegion(region)}
+                    class="text-xs px-2 py-0.5 rounded font-medium transition-opacity cursor-pointer {REGION_COLORS[region]} {activeRegions.has(region) ? 'opacity-100' : 'opacity-30'}"
+                  >
+                    {region}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+
         <a
           href="https://github.com/noahsabaj/ww3watch"
           target="_blank"
@@ -167,12 +229,9 @@
   <!-- Trending Now -->
   <TopStories stories={topStories} onselect={(a) => selectedArticle = a} />
 
-  <!-- Filter Bar (desktop only — mobile uses FilterSheet via FAB) -->
-  <FilterBar bind:activeRegions bind:searchQuery />
-
   <!-- New articles banner -->
   {#if newQueue.length > 0 && isPaused}
-    <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(7.5rem + env(safe-area-inset-top, 0px))">
+    <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(3.5rem + env(safe-area-inset-top, 0px))">
       <button
         onclick={flushQueue}
         class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-full shadow-lg transition-colors"
