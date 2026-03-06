@@ -52,10 +52,11 @@
 
   async function share() {
     if (!article) return
+    const shareUrl = `${window.location.origin}/?article=${article.id}`
     if (navigator.share) {
-      await navigator.share({ title: article.title, url: article.url })
+      await navigator.share({ title: article.title, url: shareUrl })
     } else {
-      await navigator.clipboard.writeText(article.url)
+      await navigator.clipboard.writeText(shareUrl)
     }
   }
 </script>

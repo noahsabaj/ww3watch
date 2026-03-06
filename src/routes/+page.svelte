@@ -96,6 +96,15 @@
       installDismissed = true
     }
 
+    // Deep link: ?article=<id> opens that article in the reader
+    const params = new URLSearchParams(window.location.search)
+    const articleId = params.get('article')
+    if (articleId) {
+      const target = articles.find(a => a.id === articleId)
+      if (target) selectedArticle = target
+      history.replaceState({}, '', window.location.pathname)
+    }
+
     function onBeforeInstallPrompt(e: Event) {
       e.preventDefault()
       installPromptEvent = e as BeforeInstallPromptEvent
