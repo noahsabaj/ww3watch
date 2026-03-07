@@ -1,22 +1,27 @@
 // src/lib/types.ts
 
-export type SourceRegion =
-  | 'US/Western'
-  | 'UK'
-  | 'European'
-  | 'Israeli'
-  | 'Iranian State'
-  | 'Iranian Independent'
-  | 'Iranian Local'
-  | 'Arab/Gulf'
-  | 'Kurdish'
-  | 'Turkish'
-  | 'Russian'
-  | 'Chinese'
-  | 'South Asian'
-  | 'East Asian'
-  | 'African'
-  | 'Independent/OSINT'
+// ── Single source of truth for regions ──────────────────────────────────────
+// To add a new region: add one entry here. Everything else is derived.
+export const REGIONS = {
+  'US/Western':          { color: 'bg-blue-600 text-white',    border: 'border-blue-600'    },
+  'UK':                  { color: 'bg-blue-400 text-white',    border: 'border-blue-400'    },
+  'European':            { color: 'bg-indigo-500 text-white',  border: 'border-indigo-500'  },
+  'Israeli':             { color: 'bg-orange-500 text-white',  border: 'border-orange-500'  },
+  'Iranian State':       { color: 'bg-red-700 text-white',     border: 'border-red-700'     },
+  'Iranian Independent': { color: 'bg-amber-500 text-black',   border: 'border-amber-500'   },
+  'Iranian Local':       { color: 'bg-yellow-400 text-black',  border: 'border-yellow-400'  },
+  'Arab/Gulf':           { color: 'bg-teal-600 text-white',    border: 'border-teal-600'    },
+  'Kurdish':             { color: 'bg-purple-600 text-white',  border: 'border-purple-600'  },
+  'Turkish':             { color: 'bg-slate-500 text-white',   border: 'border-slate-500'   },
+  'Russian':             { color: 'bg-rose-700 text-white',    border: 'border-rose-700'    },
+  'Chinese':             { color: 'bg-red-500 text-white',     border: 'border-red-500'     },
+  'South Asian':         { color: 'bg-emerald-600 text-white', border: 'border-emerald-600' },
+  'East Asian':          { color: 'bg-cyan-600 text-white',    border: 'border-cyan-600'    },
+  'African':             { color: 'bg-lime-600 text-white',    border: 'border-lime-600'    },
+  'Independent/OSINT':   { color: 'bg-gray-600 text-white',    border: 'border-gray-600'    },
+} as const
+
+export type SourceRegion = keyof typeof REGIONS
 
 export interface Article {
   id: string
@@ -40,47 +45,10 @@ export interface Feed {
   lang: string
 }
 
-export const REGION_COLORS: Record<SourceRegion, string> = {
-  'US/Western':          'bg-blue-600 text-white',
-  'UK':                  'bg-blue-400 text-white',
-  'European':            'bg-indigo-500 text-white',
-  'Israeli':             'bg-orange-500 text-white',
-  'Iranian State':       'bg-red-700 text-white',
-  'Iranian Independent': 'bg-amber-500 text-black',
-  'Iranian Local':       'bg-yellow-400 text-black',
-  'Arab/Gulf':           'bg-teal-600 text-white',
-  'Kurdish':             'bg-purple-600 text-white',
-  'Turkish':             'bg-slate-500 text-white',
-  'Russian':             'bg-rose-700 text-white',
-  'Chinese':             'bg-red-500 text-white',
-  'South Asian':         'bg-emerald-600 text-white',
-  'East Asian':          'bg-cyan-600 text-white',
-  'African':             'bg-lime-600 text-white',
-  'Independent/OSINT':   'bg-gray-600 text-white',
-}
-
-export const REGION_BORDER: Record<SourceRegion, string> = {
-  'US/Western':          'border-blue-600',
-  'UK':                  'border-blue-400',
-  'European':            'border-indigo-500',
-  'Israeli':             'border-orange-500',
-  'Iranian State':       'border-red-700',
-  'Iranian Independent': 'border-amber-500',
-  'Iranian Local':       'border-yellow-400',
-  'Arab/Gulf':           'border-teal-600',
-  'Kurdish':             'border-purple-600',
-  'Turkish':             'border-slate-500',
-  'Russian':             'border-rose-700',
-  'Chinese':             'border-red-500',
-  'South Asian':         'border-emerald-600',
-  'East Asian':          'border-cyan-600',
-  'African':             'border-lime-600',
-  'Independent/OSINT':   'border-gray-600',
-}
-
-export const ALL_REGIONS: SourceRegion[] = [
-  'US/Western', 'UK', 'European', 'Israeli',
-  'Iranian State', 'Iranian Independent', 'Iranian Local',
-  'Arab/Gulf', 'Kurdish', 'Turkish',
-  'Russian', 'Chinese', 'South Asian', 'East Asian', 'African', 'Independent/OSINT',
-]
+export const ALL_REGIONS = Object.keys(REGIONS) as SourceRegion[]
+export const REGION_COLORS = Object.fromEntries(
+  Object.entries(REGIONS).map(([k, v]) => [k, v.color])
+) as Record<SourceRegion, string>
+export const REGION_BORDER = Object.fromEntries(
+  Object.entries(REGIONS).map(([k, v]) => [k, v.border])
+) as Record<SourceRegion, string>
