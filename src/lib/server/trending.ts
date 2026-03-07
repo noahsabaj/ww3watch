@@ -60,7 +60,7 @@ export async function updateTrending(): Promise<void> {
       parsed.length !== PICK_COUNT ||
       !parsed.every((v): v is number => typeof v === 'number' && v >= 0 && v < clusters.length)
     ) {
-      throw new Error(`Bad LLM response: ${text}`)
+      throw new Error(`Bad LLM response: ${clean}`)
     }
 
     indices = parsed as number[]
