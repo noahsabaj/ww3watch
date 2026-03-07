@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.ww3watch.twa",
+        "sha256_cert_fingerprints": ["5B:6B:25:42:A8:83:1F:7A:41:85:EB:0E:6C:D3:A0:B2:08:39:29:47:34:EB:F6:16:CD:73:6F:26:CA:BC:B0:E9"]
+      }
+    }]
