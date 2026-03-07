@@ -14,6 +14,8 @@ export type SourceRegion =
   | 'Russian'
   | 'Chinese'
   | 'South Asian'
+  | 'East Asian'
+  | 'African'
   | 'Independent/OSINT'
 
 export interface Article {
@@ -52,6 +54,8 @@ export const REGION_COLORS: Record<SourceRegion, string> = {
   'Russian':             'bg-rose-700 text-white',
   'Chinese':             'bg-red-500 text-white',
   'South Asian':         'bg-emerald-600 text-white',
+  'East Asian':          'bg-cyan-600 text-white',
+  'African':             'bg-lime-600 text-white',
   'Independent/OSINT':   'bg-gray-600 text-white',
 }
 
@@ -69,6 +73,8 @@ export const REGION_BORDER: Record<SourceRegion, string> = {
   'Russian':             'border-rose-700',
   'Chinese':             'border-red-500',
   'South Asian':         'border-emerald-600',
+  'East Asian':          'border-cyan-600',
+  'African':             'border-lime-600',
   'Independent/OSINT':   'border-gray-600',
 }
 
@@ -76,5 +82,5 @@ export const ALL_REGIONS: SourceRegion[] = [
   'US/Western', 'UK', 'European', 'Israeli',
   'Iranian State', 'Iranian Independent', 'Iranian Local',
   'Arab/Gulf', 'Kurdish', 'Turkish',
-  'Russian', 'Chinese', 'South Asian', 'Independent/OSINT',
+  'Russian', 'Chinese', 'South Asian', 'East Asian', 'African', 'Independent/OSINT',
 ]
