@@ -22,6 +22,16 @@ No markdown, no explanation, no wrapping.`
     6000,
   )
 
-  const parsed = JSON.parse(clean)
+  let parsed: { title?: string; content?: string }
+  try {
+    parsed = JSON.parse(clean)
+  } catch {
+    return json({ error: 'Failed to parse translation response' }, { status: 500 })
+  }
+
+  if (!parsed.title || !parsed.content) {
+    return json({ error: 'Incomplete translation response' }, { status: 500 })
+  }
+
   return json({ title: parsed.title, content: parsed.content })
 }

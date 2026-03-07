@@ -72,7 +72,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content, lang: article.source_lang }),
       })
+      if (!res.ok) throw new Error('Translation failed')
       const data = await res.json()
+      if (!data.title || !data.content) throw new Error('Empty translation')
       translation = { status: 'done', title: data.title, content: data.content }
       showTranslated = true
     } catch {
