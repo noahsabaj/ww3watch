@@ -19,11 +19,21 @@
 
   let reader = $state<ReaderState>({ status: 'idle' })
 
+  type TranslateState =
+    | { status: 'idle' }
+    | { status: 'loading' }
+    | { status: 'done'; title: string; content: string }
+
+  let translation = $state<TranslateState>({ status: 'idle' })
+  let showTranslated = $state(false)
+
   $effect(() => {
     if (!article) {
       reader = { status: 'idle' }
       return
     }
+    translation = { status: 'idle' }
+    showTranslated = false
     const controller = new AbortController()
     reader = { status: 'loading' }
     fetch(`/api/reader?url=${encodeURIComponent(article.url)}`, { signal: controller.signal })
@@ -48,6 +58,26 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') onclose()
+  }
+
+  async function translate() {
+    if (!article || translation.status === 'loading') return
+    if (translation.status === 'done') { showTranslated = !showTranslated; return }
+    translation = { status: 'loading' }
+    const title = reader.status === 'loaded' ? reader.title : article.title
+    const content = reader.status === 'loaded' ? reader.content : (article.summary ?? '')
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content, lang: article.source_lang }),
+      })
+      const data = await res.json()
+      translation = { status: 'done', title: data.title, content: data.content }
+      showTranslated = true
+    } catch {
+      translation = { status: 'idle' }
+    }
   }
 
   async function share() {
@@ -133,18 +163,40 @@
         </div>
 
       {:else if reader.status === 'loaded'}
-        <h1 class="text-xl font-bold text-white leading-snug mb-2">{reader.title}</h1>
+        <h1 class="text-xl font-bold text-white leading-snug mb-2">
+          {showTranslated && translation.status === 'done' ? translation.title : reader.title}
+        </h1>
         {#if reader.byline}
-          <p class="text-xs text-gray-500 mb-5">{reader.byline}</p>
+          <p class="text-xs text-gray-500 mb-3">{reader.byline}</p>
+        {/if}
+        {#if article.source_lang !== 'en'}
+          <button
+            onclick={translate}
+            class="text-xs text-blue-400 hover:text-blue-300 transition-colors mb-4 block"
+          >
+            {translation.status === 'loading' ? 'Translating…' : showTranslated ? 'Show original' : 'Translate to English'}
+          </button>
         {/if}
         <div class="prose-reader">
-          {@html reader.content}
+          {@html showTranslated && translation.status === 'done' ? translation.content : reader.content}
         </div>
 
       {:else if reader.status === 'failed'}
-        <h1 class="text-xl font-bold text-white leading-snug mb-3">{article.title}</h1>
+        <h1 class="text-xl font-bold text-white leading-snug mb-3">
+          {showTranslated && translation.status === 'done' ? translation.title : article.title}
+        </h1>
+        {#if article.source_lang !== 'en'}
+          <button
+            onclick={translate}
+            class="text-xs text-blue-400 hover:text-blue-300 transition-colors mb-3 block"
+          >
+            {translation.status === 'loading' ? 'Translating…' : showTranslated ? 'Show original' : 'Translate to English'}
+          </button>
+        {/if}
         {#if article.summary}
-          <p class="text-gray-300 leading-relaxed mb-6">{article.summary}</p>
+          <p class="text-gray-300 leading-relaxed mb-6">
+            {showTranslated && translation.status === 'done' ? translation.content : article.summary}
+          </p>
         {/if}
         <a
           href={article.url}
