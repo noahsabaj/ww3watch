@@ -32,6 +32,15 @@ describe('buildGuid', () => {
   it('returns empty string if both missing', () => {
     expect(buildGuid({})).toBe('')
   })
+
+  it('extracts text when rss-parser returns guid as an object (XML attrs)', () => {
+    // rss-parser shape for <guid isPermaLink="false">id-9</guid>
+    expect(buildGuid({ guid: { _: 'id-9', $: { isPermaLink: 'false' } }, link: 'https://x/y' })).toBe('id-9')
+  })
+
+  it('falls back to link when guid is an empty/garbage object', () => {
+    expect(buildGuid({ guid: { $: { isPermaLink: 'false' } }, link: 'https://x/y' })).toBe('https://x/y')
+  })
 })
 
 describe('fetchFeed', () => {

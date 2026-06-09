@@ -15,7 +15,9 @@ import { updateTrending } from '../src/lib/server/trending'
 import { supabaseAdmin } from '../src/lib/server/supabase'
 
 const UPSERT_BATCH = 200
-const GUID_QUERY_CHUNK = 1000
+// Keep the guid `.in(...)` list small: guids are often long URLs, and a big list
+// makes a GET URL that PostgREST/Kong rejects (414).
+const GUID_QUERY_CHUNK = 100
 const MAX_UNASSIGNED_PER_RUN = 100 // bound the clustering LLM prompt size
 
 async function main() {

@@ -21,8 +21,17 @@ const parser = new Parser({
   }
 })
 
-export function buildGuid(item: { guid?: string; link?: string }): string {
-  return item.guid ?? item.link ?? ''
+export function buildGuid(item: { guid?: unknown; link?: string }): string {
+  const g = item.guid
+  if (typeof g === 'string' && g.trim() !== '') return g
+  // rss-parser returns guid as an object { _: 'text', $: {...} } when the <guid>
+  // element carries XML attributes (e.g. isPermaLink). Pull out the text — passing
+  // the object downstream blows up PostgREST's .in('guid', ...) serialization.
+  if (g && typeof g === 'object') {
+    const text = (g as { _?: unknown })._
+    if (typeof text === 'string' && text.trim() !== '') return text
+  }
+  return item.link ?? ''
 }
 
 // Some feeds (notably locale-formatted Persian/Arabic ones) emit pubDate strings
