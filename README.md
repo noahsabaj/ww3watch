@@ -68,7 +68,7 @@ One-time setup (all free tier):
      supabase secrets set LLM_BASE_URL=https://api.cerebras.ai/v1 LLM_API_KEY=... LLM_MODEL=gpt-oss-120b
      ```
 3. **GitHub**
-   - Repo **Settings → Secrets and variables → Actions** → add: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`.
+   - Repo **Settings → Secrets and variables → Actions** → add: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (the `sb_secret_…` key), `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`.
    - **Settings → Pages** → Source = **GitHub Actions**.
    - Push to `main`: [deploy.yml](.github/workflows/deploy.yml) publishes the site; [pipeline.yml](.github/workflows/pipeline.yml) ingests every 15 min (or run it manually via **Actions → Ingestion pipeline → Run workflow**).
 

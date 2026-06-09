@@ -15,7 +15,8 @@ function required(name: string): string {
 }
 
 export const SUPABASE_URL = required('SUPABASE_URL')
-export const SUPABASE_SERVICE_ROLE_KEY = required('SUPABASE_SERVICE_ROLE_KEY')
+// Modern `sb_secret_...` key (replaces the legacy service_role JWT); bypasses RLS.
+export const SUPABASE_SECRET_KEY = required('SUPABASE_SECRET_KEY')
 export const LLM_BASE_URL = required('LLM_BASE_URL')
 export const LLM_API_KEY = required('LLM_API_KEY')
 export const LLM_MODEL = required('LLM_MODEL')

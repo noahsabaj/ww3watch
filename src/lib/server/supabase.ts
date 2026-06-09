@@ -1,8 +1,9 @@
 // src/lib/server/supabase.ts
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from './env'
+import { SUPABASE_URL, SUPABASE_SECRET_KEY } from './env'
 
-// Service role client — server only, never expose to browser
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+// Privileged (RLS-bypassing) client — server only, never expose to browser.
+// SUPABASE_SECRET_KEY is the modern `sb_secret_...` key (replaces legacy service_role).
+export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
   auth: { persistSession: false }
 })
