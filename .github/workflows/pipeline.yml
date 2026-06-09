@@ -15,10 +15,10 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20 # classify is rate-limited (LLM_MAX_RPM); leave headroom
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -30,3 +30,9 @@ jobs:
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          # Groq free tier is ~6K tokens/min — keep call starts sparse so heavy
+          # runs don't live in 429 backoff (which leaks junk through the keyword path).
+          LLM_MAX_RPM: '2'
+          # Optional: route WAF-blocked feeds through the Cloudflare proxy.
+          FEED_PROXY_URL: ${{ secrets.FEED_PROXY_URL }}
+          FEED_PROXY_SECRET: ${{ secrets.FEED_PROXY_SECRET }}

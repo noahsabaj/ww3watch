@@ -1,39 +1,47 @@
 import { callLLM } from './llm'
 
+// Response protocol: compact labels instead of raw UUIDs. UUID answers (~14
+// tokens each) overflowed max_tokens at scale and truncated the JSON — cluster
+// assignment silently failed on every run from March to June. Labels are ~4
+// tokens, and the strict ^[EN]\d+$ validation also catches hallucinated values
+// (previously an invented UUID was silently treated as a new-cluster label).
 const SYSTEM_PROMPT = `You are the clustering engine for WW3Watch — a real-time news aggregator tracking global conflicts.
 
 You will receive two sections:
 
-EXISTING CLUSTERS: recent story clusters already in the system. Each line is:
-<uuid>: "headline"
+EXISTING CLUSTERS: recent story clusters already in the system, each labeled E0, E1, E2, ...:
+E<i>: "headline"
 
-NEW ARTICLES: fresh articles that need to be assigned to clusters. Each line is:
+NEW ARTICLES: fresh articles that need to be assigned to clusters, numbered:
 <index>. "headline"
 
 Rules:
-- If a new article covers the same story as an EXISTING CLUSTER, assign it that cluster's UUID
-- If multiple new articles cover the same story as each other (but no existing cluster matches), assign them the same label: "NEW_0", "NEW_1", etc.
-- If a new article is a unique story with no matches anywhere, give it its own unique new label
+- If a new article covers the same story as an EXISTING CLUSTER, answer with that cluster's label (e.g. "E4").
+- If multiple new articles cover the same story as each other (but no existing cluster matches), give them the same new label: "N0", "N1", etc.
+- If a new article is a unique story with no matches anywhere, give it its own new label.
+- If EXISTING CLUSTERS is (none), use only N labels.
+- Articles may be in different languages — the same event reported in English, Persian, Arabic, Russian etc. belongs in the same cluster.
 
-Return ONLY a JSON array of N strings, one per new article (in the same order as input).
-Values are either an existing cluster UUID or a label like "NEW_0", "NEW_1", etc.
-No explanation. No markdown. No other text.
-Example (5 articles, 2nd and 3rd are same new story, 4th joins existing cluster):
-["NEW_0", "NEW_1", "NEW_1", "abc-def-123", "NEW_2"]`
+Return ONLY a JSON array of strings, one per new article (same order as input).
+Each string must be an existing label like "E4" or a new label like "N0". No explanation. No markdown.
+Example (5 articles; 2nd and 3rd are the same new story; 4th joins existing cluster E2):
+["N0", "N1", "N1", "E2", "N2"]`
+
+const LABEL_RE = /^[EN]\d+$/
 
 export async function assignClusters(
   newArticles: Array<{ id: string; title: string }>,
   existingClusters: Array<{ id: string; title: string }>
 ): Promise<Map<string, string>> {
-  // On LLM failure, return empty map so articles stay cluster_id=null
-  // and fall through to Jaccard clustering on the frontend.
-  // (Assigning cluster_id=id as singletons would bypass Jaccard entirely.)
+  // On any failure, return an empty map so articles stay cluster_id=null —
+  // they're re-selected by the next cron run (15 min), and the frontend's
+  // Jaccard fallback covers them meanwhile. No in-run retry needed.
   const fallback = (): Map<string, string> => new Map()
 
   if (newArticles.length === 0) return new Map()
 
   const existingSection = existingClusters.length > 0
-    ? 'EXISTING CLUSTERS:\n' + existingClusters.map(c => `${c.id}: "${c.title}"`).join('\n')
+    ? 'EXISTING CLUSTERS:\n' + existingClusters.map((c, i) => `E${i}: "${c.title}"`).join('\n')
     : 'EXISTING CLUSTERS:\n(none)'
 
   const newSection = 'NEW ARTICLES:\n' +
@@ -45,27 +53,37 @@ export async function assignClusters(
   try {
     const clean = await callLLM(
       [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userContent }],
-      newArticles.length * 15 + 20,
+      newArticles.length * 6 + 60,
     )
     parsed = JSON.parse(clean)
   } catch (err) {
-    console.error('[cluster-llm] LLM call failed, using singleton fallback:', err)
+    console.error('[cluster-llm] LLM call failed, using empty-map fallback:', err)
     return fallback()
   }
 
   if (
     !Array.isArray(parsed) ||
     parsed.length !== newArticles.length ||
-    !parsed.every((v): v is string => typeof v === 'string')
+    !parsed.every((v): v is string => typeof v === 'string' && LABEL_RE.test(v))
   ) {
-    console.error('[cluster-llm] Unexpected LLM response shape, using singleton fallback:', parsed)
+    console.error(
+      '[cluster-llm] invalid response shape, using empty-map fallback:',
+      JSON.stringify(parsed)?.slice(0, 200),
+    )
     return fallback()
   }
 
   const labels = parsed as string[]
-  const existingIds = new Set(existingClusters.map(c => c.id))
 
-  // Map NEW_X labels to the first article that received them
+  // Every E-index must reference a real existing cluster.
+  for (const label of labels) {
+    if (label[0] === 'E' && Number(label.slice(1)) >= existingClusters.length) {
+      console.error('[cluster-llm] E-label out of range, using empty-map fallback:', label)
+      return fallback()
+    }
+  }
+
+  // N labels: first article that received a label becomes the representative.
   const newLabelToRepId = new Map<string, string>()
   const result = new Map<string, string>()
 
@@ -73,11 +91,9 @@ export async function assignClusters(
     const article = newArticles[i]
     const label = labels[i]
 
-    if (existingIds.has(label)) {
-      // Joins an existing cluster
-      result.set(article.id, label)
+    if (label[0] === 'E') {
+      result.set(article.id, existingClusters[Number(label.slice(1))].id)
     } else {
-      // NEW_X label — first occurrence becomes the representative
       const repId = newLabelToRepId.get(label) ?? article.id
       newLabelToRepId.set(label, repId)
       result.set(article.id, repId)
