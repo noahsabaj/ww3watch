@@ -25,6 +25,16 @@ export function buildGuid(item: { guid?: string; link?: string }): string {
   return item.guid ?? item.link ?? ''
 }
 
+// Some feeds (notably locale-formatted Persian/Arabic ones) emit pubDate strings
+// that `new Date()` can't parse. `new Date('garbage').toISOString()` throws a
+// RangeError — and because the throw happens inside the items .map() below, it
+// used to drop the ENTIRE feed. Return null on any unparseable date instead.
+export function parseDate(pubDate: string | undefined): string | null {
+  if (!pubDate) return null
+  const d = new Date(pubDate)
+  return isNaN(d.getTime()) ? null : d.toISOString()
+}
+
 export async function fetchFeed(feed: Feed): Promise<ArticleInsert[]> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 8000)
@@ -49,7 +59,7 @@ export async function fetchFeed(feed: Feed): Promise<ArticleInsert[]> {
         title:         item.title?.trim() ?? '(no title)',
         url:           item.link ?? feed.url,
         summary:       item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null,
-        published_at:  item.pubDate ? new Date(item.pubDate).toISOString() : null,
+        published_at:  parseDate(item.pubDate),
         source_name:   feed.name,
         source_region: feed.region as SourceRegion,
         source_lang:   feed.lang,

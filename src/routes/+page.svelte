@@ -19,6 +19,8 @@
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
   let selectedArticle = $state<Article | null>(null)
+  // allClustered uses the full (unfiltered) article list — see note below.
+  let allClustered = $derived(groupByClusterId(articles))
   let selectedCluster = $derived(
     selectedArticle
       ? allClustered.find(c => c.articles.some(a => a.id === selectedArticle!.id)) ?? null
@@ -57,7 +59,6 @@
     })
   )
   let clustered = $derived(groupByClusterId(filtered))
-  let allClustered = $derived(groupByClusterId(articles))
   let topStories = $derived.by(() => {
     const trendingIds = (data.trendingIds ?? []) as string[]
     return trendingIds.length > 0
@@ -258,7 +259,19 @@
   >
     {#if clustered.length === 0}
       <div class="py-20 text-center text-gray-500 text-sm">
-        {articles.length === 0 ? 'Loading articles...' : 'No articles match your filters.'}
+        {#if data.loadError && articles.length === 0}
+          <p class="mb-3">Couldn't load the feed.</p>
+          <button
+            onclick={() => location.reload()}
+            class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+          >
+            Retry
+          </button>
+        {:else if articles.length === 0}
+          No stories yet — new ones appear here live.
+        {:else}
+          No articles match your filters.
+        {/if}
       </div>
     {:else}
       {#each clustered as cluster (cluster.id)}

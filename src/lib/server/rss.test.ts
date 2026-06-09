@@ -1,9 +1,24 @@
 // src/lib/server/rss.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildGuid, fetchFeed } from './rss'
+import { buildGuid, fetchFeed, parseDate } from './rss'
 import type { Feed } from '../types'
 
 const mockFeed: Feed = { name: 'Test', url: 'https://example.com/rss', region: 'US/Western', lang: 'en' }
+
+describe('parseDate', () => {
+  it('returns null for missing date', () => {
+    expect(parseDate(undefined)).toBeNull()
+  })
+
+  it('returns null for an unparseable date (instead of throwing)', () => {
+    expect(parseDate('۱۴۰۳/۱۲/۱۵')).toBeNull()
+    expect(parseDate('not a date')).toBeNull()
+  })
+
+  it('returns an ISO string for a valid date', () => {
+    expect(parseDate('Mon, 03 Mar 2026 10:00:00 GMT')).toBe('2026-03-03T10:00:00.000Z')
+  })
+})
 
 describe('buildGuid', () => {
   it('returns guid if present', () => {
@@ -71,6 +86,27 @@ describe('fetchFeed', () => {
     expect(result[0].source_name).toBe('Test')
     expect(result[0].source_region).toBe('US/Western')
     expect(result[0].source_lang).toBe('en')
+  })
+
+  it('keeps the feed when an item has an unparseable pubDate (regression)', async () => {
+    const rssXml = `<?xml version="1.0"?>
+<rss version="2.0">
+  <channel>
+    <title>Test Feed</title>
+    <item>
+      <title>Bad date item</title>
+      <link>https://example.com/article-bad-date</link>
+      <guid>https://example.com/article-bad-date</guid>
+      <pubDate>۱۴۰۳/۱۲/۱۵ - garbage</pubDate>
+    </item>
+  </channel>
+</rss>`
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/rss+xml' } })
+    )
+    const result = await fetchFeed(mockFeed)
+    expect(result).toHaveLength(1) // previously this threw and dropped the whole feed
+    expect(result[0].published_at).toBeNull()
   })
 
   it('skips items with no guid and no link', async () => {

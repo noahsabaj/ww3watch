@@ -1,0 +1,32 @@
+name: Ingestion pipeline
+
+# Fetches RSS feeds, classifies + clusters, and writes to Supabase.
+# Replaces the old Vercel cron + cron-job.org trigger. Runs on a Node runner so
+# rss-parser and the rest of the npm pipeline work natively (no edge runtime).
+on:
+  schedule:
+    - cron: '*/15 * * * *' # every 15 min (GitHub's min is 5; runs are best-effort)
+  workflow_dispatch: {} # manual "Run workflow" button
+
+concurrency:
+  group: ww3watch-pipeline
+  cancel-in-progress: false # never interrupt an in-flight ingestion run
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
