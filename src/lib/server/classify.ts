@@ -32,23 +32,40 @@ async function classifyBatch(articles: ArticleInput[]): Promise<boolean[]> {
   )
   const parsed: unknown = JSON.parse(clean)
 
-  if (!Array.isArray(parsed) || parsed.length !== articles.length) {
-    throw new Error(`Bad LLM response shape (got ${parsed}), expected ${articles.length} items`)
+  // Strict: every element must be exactly 0 or 1. Strings ("1"), booleans, or
+  // anything else mean the model went off-script — treat as batch failure rather
+  // than verdicts. Critical now that rejections are recorded permanently: a
+  // `["1","0",...]` response slipping through the old shape check would have
+  // rejected an entire batch (including relevant articles) forever.
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length !== articles.length ||
+    !parsed.every((v): v is 0 | 1 => v === 0 || v === 1)
+  ) {
+    throw new Error(`Bad LLM response shape, expected ${articles.length} 0/1 ints: ${JSON.stringify(parsed)?.slice(0, 120)}`)
   }
 
-  return (parsed as number[]).map(v => v === 1)
+  return parsed.map(v => v === 1)
 }
 
-export async function classifyArticles(articles: ArticleInput[]): Promise<Set<string>> {
-  const relevant = new Set<string>()
-  if (articles.length === 0) return relevant
+export interface ClassifyResult {
+  relevant: Set<string>
+  /** Rejections from SUCCESSFUL LLM batches only — these are recorded permanently
+   *  (classified_rejects) so they're never re-classified. Keyword-fallback
+   *  decisions are deliberately NOT included: those articles stay "new" and get
+   *  a real LLM verdict on the next run. */
+  rejected: Set<string>
+}
 
-  // Batch ALL articles (every language) through the LLM — Cerebras is multilingual
-  // and judges by meaning. Previously non-English auto-passed, which flooded the
-  // feed with general non-English news (Iranian regional/economics/city dailies,
-  // Russian general, NRK/SVT). On a batch's LLM failure we fall back to the keyword
-  // filter, which still leniently keeps non-English (isRelevant returns true for
-  // lang !== 'en'), so transient failures never drop foreign conflict coverage.
+export async function classifyArticles(articles: ArticleInput[]): Promise<ClassifyResult> {
+  const relevant = new Set<string>()
+  const rejected = new Set<string>()
+  if (articles.length === 0) return { relevant, rejected }
+
+  // Batch ALL articles (every language) through the LLM — it judges by meaning.
+  // On a batch's LLM failure we fall back to the keyword filter, which leniently
+  // keeps non-English (isRelevant returns true for lang !== 'en'), so transient
+  // failures never drop foreign conflict coverage.
   const batches: ArticleInput[][] = []
   for (let i = 0; i < articles.length; i += BATCH_SIZE) {
     batches.push(articles.slice(i, i + BATCH_SIZE))
@@ -61,6 +78,7 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Set<st
     if (result.status === 'fulfilled') {
       result.value.forEach((isRel, j) => {
         if (isRel) relevant.add(batch[j].guid)
+        else rejected.add(batch[j].guid)
       })
     } else {
       console.error('[classify] batch failed, using keyword fallback:', result.reason)
@@ -70,5 +88,5 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Set<st
     }
   })
 
-  return relevant
+  return { relevant, rejected }
 }
