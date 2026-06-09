@@ -20,3 +20,7 @@ export const SUPABASE_SECRET_KEY = required('SUPABASE_SECRET_KEY')
 export const LLM_BASE_URL = required('LLM_BASE_URL')
 export const LLM_API_KEY = required('LLM_API_KEY')
 export const LLM_MODEL = required('LLM_MODEL')
+
+// Max LLM requests/minute the pipeline will start (tune to the provider's free
+// tier: Groq ~30, Cerebras 5). callLLM also retries 429s with backoff.
+export const LLM_MAX_RPM = Math.max(1, Number(process.env.LLM_MAX_RPM ?? '8') || 8)

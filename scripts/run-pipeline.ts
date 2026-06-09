@@ -19,6 +19,9 @@ const UPSERT_BATCH = 200
 // makes a GET URL that PostgREST/Kong rejects (414).
 const GUID_QUERY_CHUNK = 100
 const MAX_UNASSIGNED_PER_RUN = 100 // bound the clustering LLM prompt size
+// Cap classify volume per run so a backlog can't blow the Action's time budget
+// under the rate limiter. Deferred articles stay "new" and are picked next run.
+const MAX_CLASSIFY_PER_RUN = 600
 
 async function main() {
   const startedAt = Date.now()
@@ -53,10 +56,16 @@ async function main() {
     return
   }
 
-  // 3. Classify only the new articles (LLM, with keyword fallback per failed batch).
-  const relevantGuids = await classifyArticles(fresh)
-  const articles = fresh.filter((a) => relevantGuids.has(a.guid))
-  console.log(`[pipeline] ${articles.length}/${fresh.length} new articles are relevant`)
+  // 3. Classify new articles (LLM, rate-limited + 429-retried; keyword fallback
+  //    per failed batch). Newest first, capped per run; the rest defer to next run.
+  const ordered = [...fresh].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
+  const toClassify = ordered.slice(0, MAX_CLASSIFY_PER_RUN)
+  if (fresh.length > toClassify.length) {
+    console.log(`[pipeline] deferring ${fresh.length - toClassify.length} new articles to next run (classify cap)`)
+  }
+  const relevantGuids = await classifyArticles(toClassify)
+  const articles = toClassify.filter((a) => relevantGuids.has(a.guid))
+  console.log(`[pipeline] ${articles.length}/${toClassify.length} classified articles are relevant`)
 
   // 4. Upsert. ignoreDuplicates => ON CONFLICT DO NOTHING, and .select() returns
   //    only the rows actually inserted, so the count is honest.
