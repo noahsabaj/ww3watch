@@ -15,7 +15,10 @@ const STOPWORDS = new Set([
   'his', 'her', 'their', 'our', 'who', 'what', 'how', 'when', 'where', 'why',
 ])
 
-const CLUSTER_THRESHOLD = 0.4
+// True-Jaccard threshold. Genuine same-story headlines score ~0.5-0.85; the
+// over-merge false positives (a short headline whose tokens are a subset of a
+// longer unrelated one) score ~0.2 and are now rejected.
+const CLUSTER_THRESHOLD = 0.35
 const CLUSTER_WINDOW_MS = 8 * 60 * 60 * 1000
 
 function tokenize(title: string): Set<string> {
@@ -34,7 +37,10 @@ function similarity(a: string, b: string): number {
   for (const word of setA) {
     if (setB.has(word)) intersection++
   }
-  return intersection / Math.min(setA.size, setB.size)
+  // True Jaccard: intersection / union. (Was intersection / min(sizes) — the
+  // overlap coefficient — which scored a short title fully contained in a longer
+  // unrelated one as 1.0 and over-merged.)
+  return intersection / (setA.size + setB.size - intersection)
 }
 
 export function groupByClusterId(articles: Article[]): Cluster[] {
@@ -87,7 +93,8 @@ export function clusterArticles(articles: Article[]): Cluster[] {
 
       if (similarity(article.title, cluster.representative.title) >= CLUSTER_THRESHOLD) {
         cluster.articles.push(article)
-        cluster.sourceCount = cluster.articles.length
+        // distinct outlets, matching the DB-cluster path above (groupByClusterId)
+        cluster.sourceCount = new Set(cluster.articles.map(a => a.source_name)).size
         matched = true
         break
       }

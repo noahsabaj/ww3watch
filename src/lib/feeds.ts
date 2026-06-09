@@ -207,7 +207,6 @@ export const FEEDS: Feed[] = [
   { name: 'Sudan Tribune',      url: 'https://sudantribune.com/feed/',                                          region: 'African', lang: 'en' },
   { name: 'Libya Herald',       url: 'https://libyaherald.com/feed/',                                           region: 'African', lang: 'en' },
   { name: 'Morocco World News', url: 'https://www.moroccoworldnews.com/feed/',                                  region: 'African', lang: 'en' },
-  { name: 'The New Arab (Africa)', url: 'https://www.newarab.com/rss.xml',                                      region: 'African', lang: 'en' },
 
   // ── ARAB / GULF — additions ───────────────────────────────────────
   // (see above section for existing entries)

@@ -61,18 +61,29 @@
   let clustered = $derived(groupByClusterId(filtered))
   let topStories = $derived.by(() => {
     const trendingIds = (data.trendingIds ?? []) as string[]
-    return trendingIds.length > 0
-      ? trendingIds
-          .map(id => allClustered.find(c => c.representative.id === id))
-          .filter((c): c is Cluster => c !== undefined)
-      : allClustered
-          .filter(c =>
-            c.representative.published_at
-              ? Date.now() - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
-              : false
-          )
-          .sort((a, b) => b.sourceCount - a.sourceCount)
-          .slice(0, 3)
+    if (trendingIds.length > 0) {
+      // Resolve each curated article to whatever cluster CONTAINS it (not by
+      // representative id — the server picks representatives differently, which
+      // silently dropped stories). Dedupe in case two land in the same cluster.
+      const seen = new Set<string>()
+      const result: Cluster[] = []
+      for (const id of trendingIds) {
+        const c = allClustered.find(cl => cl.articles.some(a => a.id === id))
+        if (c && !seen.has(c.id)) {
+          seen.add(c.id)
+          result.push(c)
+        }
+      }
+      return result
+    }
+    return allClustered
+      .filter(c =>
+        c.representative.published_at
+          ? Date.now() - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
+          : false
+      )
+      .sort((a, b) => b.sourceCount - a.sourceCount)
+      .slice(0, 3)
   })
 
   function flushQueue() {
