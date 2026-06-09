@@ -1,5 +1,5 @@
 import { callLLM } from './llm'
-import { clusterArticles } from '../cluster'
+import { groupByClusterId } from '../cluster'
 import { supabaseAdmin } from './supabase'
 
 const TRENDING_WINDOW_HOURS = 4
@@ -31,8 +31,10 @@ export async function updateTrending(): Promise<void> {
     return
   }
 
+  // Same grouping the client renders (LLM-assigned cluster_ids + Jaccard for
+  // stragglers), so candidate sourceCounts match what users see.
   const now = Date.now()
-  const clusters = clusterArticles(recent)
+  const clusters = groupByClusterId(recent)
     .sort((a, b) => b.sourceCount - a.sourceCount)
     .slice(0, CANDIDATE_LIMIT)
 
@@ -58,7 +60,10 @@ export async function updateTrending(): Promise<void> {
     if (
       !Array.isArray(parsed) ||
       parsed.length !== PICK_COUNT ||
-      !parsed.every((v): v is number => typeof v === 'number' && v >= 0 && v < clusters.length)
+      !parsed.every((v): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < clusters.length) ||
+      // Duplicate indices would insert duplicate article_id PKs AFTER the delete
+      // succeeded, leaving trending empty — reject and keep the previous selection.
+      new Set(parsed).size !== PICK_COUNT
     ) {
       throw new Error(`Bad LLM response: ${clean}`)
     }
@@ -75,7 +80,14 @@ export async function updateTrending(): Promise<void> {
     selected_at: new Date().toISOString(),
   }))
 
-  await supabaseAdmin.from('trending').delete().neq('article_id', '')
+  // The .neq filter only exists to satisfy safeupdate (no unfiltered deletes).
+  // If the delete fails, abort — inserting would PK-conflict and empty nothing,
+  // but we'd log noise; keeping the previous selection is the correct outcome.
+  const { error: deleteError } = await supabaseAdmin.from('trending').delete().neq('article_id', '')
+  if (deleteError) {
+    console.error('[trending] delete failed, keeping previous selection:', deleteError)
+    return
+  }
   const { error } = await supabaseAdmin.from('trending').insert(rows)
   if (error) console.error('[trending] Supabase insert error:', error)
   else console.log(`[trending] Updated: ${rows.map(r => r.article_id).join(', ')}`)

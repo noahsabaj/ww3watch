@@ -45,6 +45,8 @@
   // Two separate cluster passes: allClustered uses the full article list (global top stories),
   // clustered uses the filtered list (feed view). They cannot be shared.
   const TOP_STORIES_WINDOW_MS = 60 * 60 * 1000
+  // Cap in-memory list growth on long-lived tabs (realtime keeps prepending).
+  const MAX_ARTICLES = 800
 
   let isPaused = $derived(scrollY > 300)
 
@@ -87,7 +89,7 @@
   })
 
   function flushQueue() {
-    articles = [...newQueue, ...articles]
+    articles = [...newQueue, ...articles].slice(0, MAX_ARTICLES)
     newQueue = []
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -130,10 +132,28 @@
         { event: 'INSERT', schema: 'public', table: 'articles' },
         (payload) => {
           const article = payload.new as Article
+          // Dedupe against both lists — realtime can replay events on reconnect.
+          if (articles.some(a => a.id === article.id) || newQueue.some(a => a.id === article.id)) return
           if (isPaused) {
             newQueue = [article, ...newQueue]
           } else {
-            articles = [article, ...articles]
+            articles = [article, ...articles].slice(0, MAX_ARTICLES)
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'articles' },
+        (payload) => {
+          // Cluster assignments arrive minutes after the INSERT — patch in place
+          // (in whichever list holds the article) so open tabs regroup live.
+          // Unknown ids no-op: the pipeline also updates backlog articles far
+          // outside our 500-row window.
+          const updated = payload.new as Article
+          if (articles.some(a => a.id === updated.id)) {
+            articles = articles.map(a => (a.id === updated.id ? updated : a))
+          } else if (newQueue.some(a => a.id === updated.id)) {
+            newQueue = newQueue.map(a => (a.id === updated.id ? updated : a))
           }
         }
       )

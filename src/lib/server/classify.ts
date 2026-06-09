@@ -63,9 +63,10 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Classi
   if (articles.length === 0) return { relevant, rejected }
 
   // Batch ALL articles (every language) through the LLM — it judges by meaning.
-  // On a batch's LLM failure we fall back to the keyword filter, which leniently
-  // keeps non-English (isRelevant returns true for lang !== 'en'), so transient
-  // failures never drop foreign conflict coverage.
+  // On a batch's LLM failure: English falls back to the keyword filter;
+  // non-English gets NO verdict (not relevant, not rejected) so it stays "new"
+  // and receives a real LLM verdict on the next run (~15 min) — noise can't
+  // leak in through a fallback that can't read the language.
   const batches: ArticleInput[][] = []
   for (let i = 0; i < articles.length; i += BATCH_SIZE) {
     batches.push(articles.slice(i, i + BATCH_SIZE))
@@ -81,9 +82,9 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Classi
         else rejected.add(batch[j].guid)
       })
     } else {
-      console.error('[classify] batch failed, using keyword fallback:', result.reason)
+      console.error('[classify] batch failed, keyword fallback (en only):', result.reason)
       batch.forEach(a => {
-        if (isRelevant(a.title, a.summary ?? '', a.source_lang)) relevant.add(a.guid)
+        if (a.source_lang === 'en' && isRelevant(a.title, a.summary ?? '')) relevant.add(a.guid)
       })
     }
   })

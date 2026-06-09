@@ -33,16 +33,17 @@ describe('classifyArticles', () => {
       { guid: 'en1', title: 'Army shells city, dozens killed', summary: null, source_lang: 'en' },
       { guid: 'fa1', title: 'یک خبر محلی', summary: null, source_lang: 'fa' },
     ])
-    // Fallback path: keyword filter keeps en conflict story + non-English leniently…
+    // Fallback path: keyword filter keeps the en conflict story; non-English is
+    // DEFERRED (no verdict either way — re-judged by the LLM next run)…
     expect(relevant.has('en1')).toBe(true)
-    expect(relevant.has('fa1')).toBe(true)
+    expect(relevant.has('fa1')).toBe(false)
     // …and crucially records NO permanent rejections.
     expect(rejected.size).toBe(0)
   })
 
-  it('keyword fallback (malformed LLM response) records no rejections', async () => {
-    // Malformed JSON → classifyBatch throws → keyword fallback (same path as an
-    // LLM network failure). Uses a resolved-but-bad value to avoid vitest-4
+  it('keyword fallback (malformed LLM response) defers non-English, records no rejections', async () => {
+    // Malformed JSON → classifyBatch throws → fallback (same path as an LLM
+    // network failure). Uses a resolved-but-bad value to avoid vitest-4
     // surfacing a mock rejection that downstream code already catches.
     mockedCallLLM.mockResolvedValue('not json')
     const { relevant, rejected } = await classifyArticles([
@@ -51,6 +52,7 @@ describe('classifyArticles', () => {
     ])
     expect(relevant.has('en1')).toBe(false) // keyword-dropped this run…
     expect(rejected.has('en1')).toBe(false) // …but NOT permanently rejected
-    expect(relevant.has('fa1')).toBe(true) // non-English kept leniently on fallback
+    expect(relevant.has('fa1')).toBe(false) // non-English deferred (no verdict)
+    expect(rejected.has('fa1')).toBe(false)
   })
 })

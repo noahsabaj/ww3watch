@@ -6,7 +6,8 @@
 //
 // Pipeline: fetch all feeds -> de-dup (within run + against DB+rejects) ->
 // classify only NEW articles -> upsert + record rejects -> assign clusters to
-// unclustered -> recompute trending.
+// unclustered -> recompute trending. Every run writes one pipeline_runs row
+// (stats jsonb + error) for dashboard observability.
 
 import { FEEDS } from '../src/lib/feeds'
 import { fetchFeed, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
@@ -25,6 +26,8 @@ const MAX_UNASSIGNED_PER_RUN = 50
 // under the rate limiter. Deferred articles stay "new" and are picked next run.
 const MAX_CLASSIFY_PER_RUN = 300
 
+type RunStats = Record<string, unknown>
+
 function logFeedSummary(results: FeedFetchResult[]) {
   const ok = results.filter((r) => !r.error)
   const direct = ok.filter((r) => r.via === 'direct').length
@@ -40,6 +43,8 @@ function logFeedSummary(results: FeedFetchResult[]) {
   for (const r of failed) {
     console.log(`[feed-fail] ${r.feed.name} [${r.feed.region}] ${r.error!.kind}: ${r.error!.detail}`)
   }
+
+  return { feeds_ok: ok.length, feeds_direct: direct, feeds_proxy: proxy, feeds_failed: failed.length, fail_kinds: byKind }
 }
 
 async function existingGuids(guids: string[]): Promise<Set<string>> {
@@ -53,7 +58,23 @@ async function existingGuids(guids: string[]): Promise<Set<string>> {
   return existing
 }
 
-async function main() {
+async function recordRun(startedAt: Date, stats: RunStats, error: unknown): Promise<void> {
+  // Best-effort: a run-log failure must never fail the run (and a total
+  // Supabase-connectivity fatal can't record itself — accepted).
+  try {
+    const { error: insertError } = await supabaseAdmin.from('pipeline_runs').insert({
+      started_at: startedAt.toISOString(),
+      finished_at: new Date().toISOString(),
+      error: error ? String(error).slice(0, 1000) : null,
+      stats,
+    })
+    if (insertError) console.error('[pipeline] run-log write failed:', insertError)
+  } catch (err) {
+    console.error('[pipeline] run-log write failed:', err)
+  }
+}
+
+async function run(stats: RunStats): Promise<void> {
   const startedAt = Date.now()
 
   // 1. Fetch every feed in parallel; failures are recorded (and proxy-retried),
@@ -64,7 +85,7 @@ async function main() {
       ? s.value
       : { feed: FEEDS[i], via: 'direct', articles: [], error: { kind: 'network', detail: String(s.reason) } },
   )
-  logFeedSummary(results)
+  Object.assign(stats, logFeedSummary(results))
 
   const candidates = results.flatMap((r) => r.articles).filter((a) => a.guid !== '')
 
@@ -76,6 +97,7 @@ async function main() {
   const existing = await existingGuids(uniqueByGuid.map((a) => a.guid))
   const fresh = uniqueByGuid.filter((a) => !existing.has(a.guid))
   console.log(`[pipeline] ${candidates.length} items -> ${uniqueByGuid.length} unique -> ${fresh.length} new`)
+  Object.assign(stats, { items: candidates.length, unique: uniqueByGuid.length, new: fresh.length })
 
   if (fresh.length === 0) {
     console.log('[pipeline] no new articles; refreshing trending only')
@@ -94,6 +116,12 @@ async function main() {
   const { relevant, rejected } = await classifyArticles(toClassify)
   const articles = toClassify.filter((a) => relevant.has(a.guid))
   console.log(`[pipeline] ${articles.length} relevant, ${rejected.size} rejected of ${toClassify.length} classified`)
+  Object.assign(stats, {
+    classified: toClassify.length,
+    deferred: fresh.length - toClassify.length,
+    relevant: articles.length,
+    rejected: rejected.size,
+  })
 
   // 4. Upsert relevant articles + record rejects so they're never re-classified.
   let inserted = 0
@@ -107,6 +135,7 @@ async function main() {
     else inserted += data?.length ?? 0
   }
   console.log(`[pipeline] inserted ${inserted} new articles`)
+  stats.inserted = inserted
 
   if (rejected.size > 0) {
     const rejectRows = [...rejected].map((guid) => ({ guid }))
@@ -146,6 +175,7 @@ async function main() {
 
   if (unassigned.length > 0) {
     const assignments = await assignClusters(unassigned, existingClusters)
+    stats.clusters_assigned = assignments.size
     if (assignments.size === 0) {
       console.error(`[pipeline] cluster assignment FAILED (0 of ${unassigned.length} assigned)`)
     } else {
@@ -166,6 +196,22 @@ async function main() {
   // 6. Recompute trending (keeps previous selection on LLM failure).
   await updateTrending()
   console.log(`[pipeline] done in ${Date.now() - startedAt}ms`)
+}
+
+async function main() {
+  const startedAt = new Date()
+  const stats: RunStats = {}
+  let runError: unknown = null
+  try {
+    await run(stats)
+  } catch (err) {
+    runError = err
+    throw err
+  } finally {
+    // Exactly one run-log row per run — including the no-new-articles early
+    // return and fatal paths (finally runs before the rethrow propagates).
+    await recordRun(startedAt, stats, runError)
+  }
 }
 
 main()

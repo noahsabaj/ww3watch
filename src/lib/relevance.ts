@@ -62,9 +62,10 @@ const PHRASE_KEYWORDS = [
   'iron dome',
 ]
 
-export function isRelevant(title: string, summary: string, lang: string): boolean {
-  if (lang !== 'en') return true
-
+// English-keyword heuristic. Used ONLY as the fallback when an LLM classify
+// batch fails — and only for English articles (non-English defer to the next
+// run's LLM verdict; that language rule lives in classify.ts, not here).
+export function isRelevant(title: string, summary: string): boolean {
   const text = `${title} ${summary}`.toLowerCase()
   const words = new Set(text.split(/\W+/))
 
