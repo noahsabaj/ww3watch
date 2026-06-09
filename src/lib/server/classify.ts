@@ -1,7 +1,7 @@
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } from './env'
+import { callLLM } from './llm'
 import { isRelevant } from '../relevance'
 
-const BATCH_SIZE = 20
+const BATCH_SIZE = 30
 
 const SYSTEM_PROMPT = `You are the relevance filter for WW3Watch — a real-time feed tracking escalating global conflicts: wars, military strikes, assassinations, regime changes, nuclear threats, coups, and major geopolitical crises.
 
@@ -22,31 +22,14 @@ async function classifyBatch(articles: ArticleInput[]): Promise<boolean[]> {
     .map((a, i) => `${i + 1}. "${a.title}" | ${(a.summary ?? '').slice(0, 200)}`)
     .join('\n')
 
-  const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${LLM_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: LLM_MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userContent },
-      ],
-      temperature: 0,
-      max_tokens: BATCH_SIZE * 5,
-    }),
-    signal: AbortSignal.timeout(9000),
-  })
-
-  if (!res.ok) throw new Error(`LLM ${res.status}: ${await res.text()}`)
-
-  const data = await res.json()
-  const text: string = data.choices?.[0]?.message?.content?.trim() ?? ''
-
-  // Strip markdown code fences if the model wraps the JSON
-  const clean = text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim()
+  // callLLM handles rate-limiting, 429 retry/backoff, and fence stripping.
+  const clean = await callLLM(
+    [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: userContent },
+    ],
+    BATCH_SIZE * 5,
+  )
   const parsed: unknown = JSON.parse(clean)
 
   if (!Array.isArray(parsed) || parsed.length !== articles.length) {
