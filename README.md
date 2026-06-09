@@ -1,8 +1,8 @@
 # WW3Watch
 
-A real-time global news aggregator focused on geopolitical conflict and world events. Aggregates articles from dozens of sources across every major region, clusters related stories using LLM-assisted grouping, and surfaces trending stories as they break.
+A real-time global news aggregator focused on geopolitical conflict and world events. Aggregates articles from 200+ sources across every major region, clusters related stories using LLM-assisted grouping, and surfaces trending stories as they break.
 
-**Live at [ww3watch.vercel.app](https://ww3watch.vercel.app)**
+**Live at [noahsabaj.github.io/ww3watch](https://noahsabaj.github.io/ww3watch/)**
 
 ## Features
 
@@ -16,16 +16,62 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 
 ## Stack
 
-- [SvelteKit](https://kit.svelte.dev/) + Svelte 5 runes
-- [Supabase](https://supabase.com/) (Postgres + Realtime)
+All free-tier, no provider that pauses idle hobby projects:
+
+- [SvelteKit](https://kit.svelte.dev/) + Svelte 5 runes — static SPA (`adapter-static`)
+- [GitHub Pages](https://pages.github.com/) — hosting · [GitHub Actions](https://docs.github.com/actions) — scheduled ingestion pipeline
+- [Supabase](https://supabase.com/) — Postgres + Realtime + two Deno Edge Functions (`reader`, `translate`)
+- [Cerebras](https://cloud.cerebras.ai/) — OpenAI-compatible LLM (classification, clustering, trending, translation)
 - [Tailwind CSS v4](https://tailwindcss.com/)
-- [Vercel](https://vercel.com/) (hosting + serverless functions)
+
+## Architecture
+
+```
+GitHub Actions (cron, every 15 min)        Browser (static SPA on GitHub Pages)
+  scripts/run-pipeline.ts                     +page.ts  ── anon read ──►  Supabase
+    fetch 200+ RSS feeds                       realtime sub ◄── INSERTs ── Postgres
+    de-dup vs DB (only new GUIDs)              ArticlePanel ──► Edge Functions
+    classify + cluster (LLM)                                     reader   (extract)
+    upsert ─────────────────►  Supabase Postgres                translate (LLM)
+    recompute trending
+```
+
+- **Ingestion** is a Node script run by GitHub Actions ([.github/workflows/pipeline.yml](.github/workflows/pipeline.yml)). It reuses `src/lib/server/*` and writes to Supabase. RSS/Readability libs need Node, which the Actions runner provides.
+- **Frontend** is a static SPA. The initial load ([src/routes/+page.ts](src/routes/+page.ts)) reads with the anon key; [Realtime](src/routes/+page.svelte) keeps it live.
+- **`reader` / `translate`** run as Supabase Edge Functions ([supabase/functions](supabase/functions)) — they need a server (SSRF-guarded fetch, the LLM key). Returned HTML is sanitized on the client with DOMPurify before `{@html}`.
 
 ## Development
 
 ```bash
 npm install
-npm run dev
+npm run dev          # frontend (needs PUBLIC_SUPABASE_* in .env)
+npm test             # vitest
+npm run check        # svelte-check
+
+# run the ingestion pipeline once, locally:
+node --import tsx --env-file=.env scripts/run-pipeline.ts
 ```
 
-Requires a `.env` with Supabase and LLM API credentials.
+Copy `.env.example` → `.env` and fill in credentials.
+
+## Deploy / setup
+
+One-time setup (all free tier):
+
+1. **Cerebras** — create an API key at [cloud.cerebras.ai](https://cloud.cerebras.ai/); note the model (`gpt-oss-120b`).
+2. **Supabase**
+   - Enable RLS on `articles` and `trending` with policies allowing **anon `SELECT`** (the SPA + realtime read with the anon key; writes stay service-role only).
+   - Ensure `articles` is in the `supabase_realtime` publication.
+   - Deploy the functions and set their secrets:
+     ```bash
+     supabase functions deploy reader translate
+     supabase secrets set LLM_BASE_URL=https://api.cerebras.ai/v1 LLM_API_KEY=... LLM_MODEL=gpt-oss-120b
+     ```
+3. **GitHub**
+   - Repo **Settings → Secrets and variables → Actions** → add: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (the `sb_secret_…` key), `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`.
+   - **Settings → Pages** → Source = **GitHub Actions**.
+   - Push to `main`: [deploy.yml](.github/workflows/deploy.yml) publishes the site; [pipeline.yml](.github/workflows/pipeline.yml) ingests every 15 min (or run it manually via **Actions → Ingestion pipeline → Run workflow**).
+
+> The site deploys to `https://<user>.github.io/ww3watch` (the `BASE_PATH=/ww3watch` in the deploy workflow handles the sub-path). For a custom domain, set `BASE_PATH` to empty and add a `CNAME`.
+
+> Scheduled GitHub Actions are auto-disabled after 60 days of **repo** inactivity — ordinary commits keep them alive.

@@ -1,6 +1,6 @@
-import { callLLM } from '$lib/server/llm'
-import { clusterArticles } from '$lib/cluster'
-import { supabaseAdmin } from '$lib/server/supabase'
+import { callLLM } from './llm'
+import { clusterArticles } from '../cluster'
+import { supabaseAdmin } from './supabase'
 
 const TRENDING_WINDOW_HOURS = 4
 const CANDIDATE_LIMIT = 20                      // max clusters to send to LLM

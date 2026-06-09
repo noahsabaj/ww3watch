@@ -3,6 +3,10 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vitest/config'
 import { SvelteKitPWA } from '@vite-pwa/sveltekit'
 
+// Must match kit.paths.base in svelte.config.js (e.g. /ww3watch on a GitHub
+// project page). Empty for a custom domain or root deploy.
+const base = process.env.BASE_PATH ?? ''
+
 export default defineConfig({
   plugins: [
     tailwindcss(),
@@ -17,8 +21,8 @@ export default defineConfig({
         background_color: '#0a0a0b',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
-        scope: '/',
+        start_url: `${base}/`,
+        scope: `${base}/`,
         icons: [
           { src: 'pwa-192x192.png',          sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png',           sizes: '512x512', type: 'image/png' },

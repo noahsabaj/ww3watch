@@ -2,6 +2,9 @@
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
   import { timeAgo } from '$lib/utils'
+  import { supabase } from '$lib/supabase'
+  import { cleanHtml } from '$lib/sanitize-html'
+  import { base } from '$app/paths'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
 
   let { article, cluster = null, onclose, onselect }: {
@@ -28,27 +31,33 @@
   let showTranslated = $state(false)
 
   $effect(() => {
-    if (!article) {
+    const current = article
+    if (!current) {
       reader = { status: 'idle' }
       return
     }
     translation = { status: 'idle' }
     showTranslated = false
-    const controller = new AbortController()
     reader = { status: 'loading' }
-    fetch(`/api/reader?url=${encodeURIComponent(article.url)}`, { signal: controller.signal })
-      .then(r => r.json())
-      .then(data => {
-        if (data.error) {
+    // Staleness guard instead of fetch-abort: ignore the response if the user
+    // switched articles before it resolved.
+    let cancelled = false
+    supabase.functions
+      .invoke('reader', { body: { url: current.url } })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error || !data || data.error) {
           reader = { status: 'failed' }
         } else {
           reader = { status: 'loaded', title: data.title, byline: data.byline, content: data.content }
         }
       })
-      .catch((err) => {
-        if (err.name !== 'AbortError') reader = { status: 'failed' }
+      .catch(() => {
+        if (!cancelled) reader = { status: 'failed' }
       })
-    return () => controller.abort()
+    return () => {
+      cancelled = true
+    }
   })
 
   $effect(() => {
@@ -67,14 +76,10 @@
     const title = reader.status === 'loaded' ? reader.title : article.title
     const content = reader.status === 'loaded' ? reader.content : (article.summary ?? '')
     try {
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, lang: article.source_lang }),
+      const { data, error } = await supabase.functions.invoke('translate', {
+        body: { title, content, lang: article.source_lang },
       })
-      if (!res.ok) throw new Error('Translation failed')
-      const data = await res.json()
-      if (!data.title || !data.content) throw new Error('Empty translation')
+      if (error || !data?.title || !data?.content) throw new Error('Translation failed')
       translation = { status: 'done', title: data.title, content: data.content }
       showTranslated = true
     } catch {
@@ -84,7 +89,7 @@
 
   async function share() {
     if (!article) return
-    const shareUrl = `${window.location.origin}/?article=${article.id}`
+    const shareUrl = `${window.location.origin}${base}/?article=${article.id}`
     if (navigator.share) {
       await navigator.share({ title: article.title, url: shareUrl })
     } else {
@@ -180,7 +185,8 @@
           </button>
         {/if}
         <div class="prose-reader">
-          {@html showTranslated && translation.status === 'done' ? translation.content : reader.content}
+          <!-- cleanHtml = DOMPurify; sanitizes article + translation HTML before render -->
+          {@html cleanHtml(showTranslated && translation.status === 'done' ? translation.content : reader.content)}
         </div>
 
       {:else if reader.status === 'failed'}

@@ -1,5 +1,5 @@
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } from '$env/static/private'
-import { isRelevant } from '$lib/relevance'
+import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } from './env'
+import { isRelevant } from '../relevance'
 
 const BATCH_SIZE = 20
 

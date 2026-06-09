@@ -1,4 +1,4 @@
-import { callLLM } from '$lib/server/llm'
+import { callLLM } from './llm'
 
 const SYSTEM_PROMPT = `You are the clustering engine for WW3Watch — a real-time news aggregator tracking global conflicts.
 

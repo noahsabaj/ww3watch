@@ -1,4 +1,4 @@
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } from '$env/static/private'
+import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } from './env'
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant'
