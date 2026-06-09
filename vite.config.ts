@@ -46,6 +46,15 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ['src/**/*.{test,spec}.{js,ts}']
+    include: ['src/**/*.{test,spec}.{js,ts}'],
+    // Dummy values so server modules that read these at import (src/lib/server/env.ts)
+    // load under vitest. Tests mock the actual network/LLM/DB calls.
+    env: {
+      SUPABASE_URL: 'http://localhost',
+      SUPABASE_SECRET_KEY: 'test-secret',
+      LLM_BASE_URL: 'http://localhost/v1',
+      LLM_API_KEY: 'test-key',
+      LLM_MODEL: 'test-model',
+    },
   }
 })

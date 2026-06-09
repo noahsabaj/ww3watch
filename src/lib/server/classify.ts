@@ -5,6 +5,7 @@ const BATCH_SIZE = 20
 
 const SYSTEM_PROMPT = `You are the relevance filter for WW3Watch — a real-time feed tracking escalating global conflicts: wars, military strikes, assassinations, regime changes, nuclear threats, coups, and major geopolitical crises.
 
+Articles may be in any language (Persian, Arabic, Russian, etc.) — judge by meaning, not language.
 For each numbered article, output 1 if it belongs on WW3Watch, or 0 if not.
 Return ONLY a valid JSON array of integers (0 or 1), one per article, same order as input.
 No explanation. No markdown. Just the array. Example: [1,0,1,1,0]`
@@ -57,19 +58,17 @@ async function classifyBatch(articles: ArticleInput[]): Promise<boolean[]> {
 
 export async function classifyArticles(articles: ArticleInput[]): Promise<Set<string>> {
   const relevant = new Set<string>()
+  if (articles.length === 0) return relevant
 
-  // Non-English articles auto-pass — they come exclusively from specialist
-  // regional sources (Iranian, Arabic) whose every article is conflict-relevant.
-  const nonEnglish = articles.filter(a => a.source_lang !== 'en')
-  nonEnglish.forEach(a => relevant.add(a.guid))
-
-  const english = articles.filter(a => a.source_lang === 'en')
-  if (english.length === 0) return relevant
-
-  // Slice into batches and classify all in parallel
+  // Batch ALL articles (every language) through the LLM — Cerebras is multilingual
+  // and judges by meaning. Previously non-English auto-passed, which flooded the
+  // feed with general non-English news (Iranian regional/economics/city dailies,
+  // Russian general, NRK/SVT). On a batch's LLM failure we fall back to the keyword
+  // filter, which still leniently keeps non-English (isRelevant returns true for
+  // lang !== 'en'), so transient failures never drop foreign conflict coverage.
   const batches: ArticleInput[][] = []
-  for (let i = 0; i < english.length; i += BATCH_SIZE) {
-    batches.push(english.slice(i, i + BATCH_SIZE))
+  for (let i = 0; i < articles.length; i += BATCH_SIZE) {
+    batches.push(articles.slice(i, i + BATCH_SIZE))
   }
 
   const results = await Promise.allSettled(batches.map(b => classifyBatch(b)))
@@ -81,7 +80,6 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Set<st
         if (isRel) relevant.add(batch[j].guid)
       })
     } else {
-      // LLM failed for this batch — fall back to keyword filter
       console.error('[classify] batch failed, using keyword fallback:', result.reason)
       batch.forEach(a => {
         if (isRelevant(a.title, a.summary ?? '', a.source_lang)) relevant.add(a.guid)
