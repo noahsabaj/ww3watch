@@ -77,7 +77,7 @@
     const content = reader.status === 'loaded' ? reader.content : (article.summary ?? '')
     try {
       const { data, error } = await supabase.functions.invoke('translate', {
-        body: { title, content, lang: article.source_lang },
+        body: { title, content, lang: article.source_lang, url: article.url },
       })
       if (error || !data?.title || !data?.content) throw new Error('Translation failed')
       translation = { status: 'done', title: data.title, content: data.content }

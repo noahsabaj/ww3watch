@@ -1,17 +1,16 @@
 // Supabase Edge Function: article reader/extractor (Deno).
-// Ports src/lib/server/reader.ts. Fetches a user-supplied URL, extracts the
-// readable article with Mozilla Readability, and returns it. Guarded against SSRF.
+// Fetches a known article's URL, extracts the readable article with Mozilla
+// Readability, and returns it. Guarded against SSRF; results are cached in
+// public.article_content (instant repeat opens + survives source takedowns).
+// The returned HTML is sanitized on the CLIENT with DOMPurify before {@html}.
 //
-// The returned HTML is sanitized authoritatively on the CLIENT with DOMPurify
-// (src/lib/sanitize-html.ts) right before {@html} in ArticlePanel — DOMPurify
-// needs a real DOM, which is reliable in the browser but not in Deno.
-//
-// Self-contained (cors + ssrf inlined) so it deploys as a single file.
+// verify_jwt is off (the publishable key is not a JWT), so the abuse control is
+// the articles.url gate: only URLs the pipeline ingested are fetched or cached.
 
 import { Readability } from 'npm:@mozilla/readability@0.6'
 import { parseHTML } from 'npm:linkedom@0.18'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -23,10 +22,26 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 
-// ── SSRF guard ───────────────────────────────────────────────────────────────
-// Refuse anything pointing at private/internal space (cloud metadata at
-// 169.254.169.254, localhost, RFC1918, etc.). We check the literal host and also
-// resolve the hostname and reject if any resolved IP is private.
+// Service client from Supabase's auto-injected env: prefer the new secret-keys
+// dict, fall back to the legacy service-role key.
+function secretKey(): string {
+  const dict = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (dict) {
+    try {
+      const parsed = JSON.parse(dict)
+      if (typeof parsed?.default === 'string') return parsed.default
+    } catch {
+      // fall through
+    }
+  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+}
+const supabase = createClient(Deno.env.get('SUPABASE_URL')!, secretKey(), {
+  auth: { persistSession: false },
+})
+
+const MAX_CACHE_CONTENT_CHARS = 400_000
+
 function ipv4ToInt(ip: string): number | null {
   const parts = ip.split('.')
   if (parts.length !== 4) return null
@@ -51,7 +66,7 @@ function isPrivateIpv4(ip: string): boolean {
     inRange('10.0.0.0', 8) ||
     inRange('100.64.0.0', 10) ||
     inRange('127.0.0.0', 8) ||
-    inRange('169.254.0.0', 16) || // link-local (incl. cloud metadata)
+    inRange('169.254.0.0', 16) ||
     inRange('172.16.0.0', 12) ||
     inRange('192.0.0.0', 24) ||
     inRange('192.168.0.0', 16) ||
@@ -91,30 +106,52 @@ async function assertPublicUrl(raw: string): Promise<URL> {
     }
   } catch (err) {
     if (err instanceof Error && err.message === 'blocked_host') throw err
-    // DNS failure: let fetch attempt and fail naturally rather than false-block.
   }
   return url
 }
 
-// ── Handler ──────────────────────────────────────────────────────────────────
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  // supabase.functions.invoke() sends a POST with a JSON body; also accept a
-  // ?url= query param for easy curl testing.
   let articleUrl: string | null = new URL(req.url).searchParams.get('url')
   if (!articleUrl && req.method === 'POST') {
     try {
       const body = await req.json()
       if (typeof body?.url === 'string') articleUrl = body.url
     } catch {
-      // fall through to missing_url
+      // fall through
     }
   }
   if (!articleUrl) return json({ error: 'missing_url' }, 400)
+
+  // Gate: only URLs the pipeline ingested. Blocks cache-stuffing and limits the
+  // SSRF/proxy surface to our own article set.
+  const { data: known, error: gateError } = await supabase
+    .from('articles')
+    .select('url')
+    .eq('url', articleUrl)
+    .limit(1)
+  if (gateError) console.error('[reader] gate lookup failed:', gateError)
+  if (!known?.length) return json({ error: 'unknown_article' }, 404)
+
+  // Cache hit → instant, and survives source-page takedowns.
+  const { data: cached } = await supabase
+    .from('article_content')
+    .select('title, byline, content, site_name')
+    .eq('url', articleUrl)
+    .maybeSingle()
+  if (cached) {
+    return json({
+      title: cached.title,
+      byline: cached.byline,
+      content: cached.content,
+      siteName: cached.site_name,
+      cached: true,
+    })
+  }
 
   let target: URL
   try {
@@ -139,12 +176,30 @@ Deno.serve(async (req) => {
     const { document } = parseHTML(html)
     const article = new Readability(document as unknown as Document).parse()
     if (!article) return json({ error: 'extraction_failed' }, 422)
-    return json({
+
+    const result = {
       title: article.title ?? '',
       byline: article.byline ?? null,
       content: article.content ?? '',
       siteName: article.siteName ?? null,
-    })
+    }
+
+    // Cache write is best-effort — never fail the response over it.
+    if (result.content && result.content.length <= MAX_CACHE_CONTENT_CHARS) {
+      const { error: cacheError } = await supabase.from('article_content').upsert(
+        {
+          url: articleUrl,
+          title: result.title,
+          byline: result.byline,
+          content: result.content,
+          site_name: result.siteName,
+        },
+        { onConflict: 'url', ignoreDuplicates: true },
+      )
+      if (cacheError) console.error('[reader] cache write failed:', cacheError)
+    }
+
+    return json(result)
   } catch {
     return json({ error: 'extraction_failed' }, 422)
   }

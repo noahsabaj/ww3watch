@@ -1,11 +1,12 @@
 // Supabase Edge Function: in-panel translation to English (Deno).
-// Ports src/routes/api/translate/+server.ts. Calls the OpenAI-compatible LLM
-// (Cerebras) and validates input. Reads LLM config from edge-function secrets.
+// Calls the OpenAI-compatible LLM (Cerebras) and caches results in
+// public.article_translations so identical inputs never re-burn LLM quota.
+// The returned HTML is sanitized on the CLIENT with DOMPurify before rendering.
 //
-// The returned HTML is sanitized on the CLIENT with DOMPurify before rendering
-// (see ArticlePanel + src/lib/sanitize-html.ts).
-//
-// Self-contained (cors inlined) so it deploys as a single file.
+// verify_jwt is off, so the abuse control is the articles.url gate: requests
+// must reference a URL the pipeline ingested.
+
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,28 +19,74 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 
+function secretKey(): string {
+  const dict = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (dict) {
+    try {
+      const parsed = JSON.parse(dict)
+      if (typeof parsed?.default === 'string') return parsed.default
+    } catch {
+      // fall through
+    }
+  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+}
+const supabase = createClient(Deno.env.get('SUPABASE_URL')!, secretKey(), {
+  auth: { persistSession: false },
+})
+
 const LLM_BASE_URL = Deno.env.get('LLM_BASE_URL')!
 const LLM_API_KEY = Deno.env.get('LLM_API_KEY')!
 const LLM_MODEL = Deno.env.get('LLM_MODEL')!
 
 const MAX_CONTENT_CHARS = 12000
 
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
-  let body: { title?: unknown; content?: unknown; lang?: unknown }
+  let body: { title?: unknown; content?: unknown; lang?: unknown; url?: unknown }
   try {
     body = await req.json()
   } catch {
     return json({ error: 'invalid_body' }, 400)
   }
-  const { title, content, lang } = body
-  if (typeof title !== 'string' || typeof content !== 'string' || typeof lang !== 'string') {
+  const { title, content, lang, url } = body
+  if (
+    typeof title !== 'string' ||
+    typeof content !== 'string' ||
+    typeof lang !== 'string' ||
+    typeof url !== 'string'
+  ) {
     return json({ error: 'invalid_body' }, 400)
   }
 
+  // Gate: must reference an article the pipeline ingested.
+  const { data: known, error: gateError } = await supabase
+    .from('articles')
+    .select('url')
+    .eq('url', url)
+    .limit(1)
+  if (gateError) console.error('[translate] gate lookup failed:', gateError)
+  if (!known?.length) return json({ error: 'unknown_article' }, 404)
+
+  // Hash the POST-truncation input (what the LLM actually sees), delimited so
+  // (lang,title,content) boundaries are unambiguous.
   const truncated = content.slice(0, MAX_CONTENT_CHARS)
+  const inputHash = await sha256Hex([lang, title, truncated].join(String.fromCharCode(31)))
+
+  const { data: cached } = await supabase
+    .from('article_translations')
+    .select('title, content')
+    .eq('input_hash', inputHash)
+    .maybeSingle()
+  if (cached) return json({ title: cached.title, content: cached.content, cached: true })
+
   const systemPrompt = `Translate the following article from language code "${lang}" to English.
 Return ONLY a JSON object with two fields: "title" (string) and "content" (string).
 If the content contains HTML tags, preserve all HTML tags exactly as-is — only translate the visible text between tags.
@@ -86,6 +133,13 @@ No markdown, no explanation, no wrapping.`
   if (typeof parsed.title !== 'string' || typeof parsed.content !== 'string') {
     return json({ error: 'translation_failed' }, 502)
   }
+
+  // Cache write is best-effort.
+  const { error: cacheError } = await supabase.from('article_translations').upsert(
+    { input_hash: inputHash, title: parsed.title, content: parsed.content },
+    { onConflict: 'input_hash', ignoreDuplicates: true },
+  )
+  if (cacheError) console.error('[translate] cache write failed:', cacheError)
 
   return json({ title: parsed.title, content: parsed.content })
 })
