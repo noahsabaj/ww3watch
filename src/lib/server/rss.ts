@@ -170,11 +170,13 @@ export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
     return { feed, via: 'proxy', articles }
   } catch (err) {
     const proxyError = err instanceof FeedError ? err : new FeedError('network', String(err))
+    // Report the DIRECT failure kind (it diagnoses why the feed is blocked); the
+    // proxy outcome lives in the detail.
     return {
       feed,
       via: 'proxy',
       articles: [],
-      error: { kind: proxyError.kind, detail: `direct: ${directError.detail} | proxy: ${proxyError.detail}` },
+      error: { kind: directError.kind, detail: `direct: ${directError.detail} | proxy: ${proxyError.detail}` },
     }
   }
 }

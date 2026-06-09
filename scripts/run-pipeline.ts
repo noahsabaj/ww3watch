@@ -17,7 +17,10 @@ import { supabaseAdmin } from '../src/lib/server/supabase'
 
 const UPSERT_BATCH = 200
 const GUID_QUERY_CHUNK = 1000 // existing_guids RPC POSTs the array — no URL-length limit
-const MAX_UNASSIGNED_PER_RUN = 100 // bound the clustering LLM prompt size
+// Cluster batch: keep modest so the LLM reliably maps every article index.
+// Newest-first, so recent articles cluster; old unclustered rows are covered by
+// the client-side Jaccard fallback.
+const MAX_UNASSIGNED_PER_RUN = 50
 // Cap classify volume per run so a backlog can't blow the Action's time budget
 // under the rate limiter. Deferred articles stay "new" and are picked next run.
 const MAX_CLASSIFY_PER_RUN = 300

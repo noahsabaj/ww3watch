@@ -9,14 +9,14 @@ const mockedCallLLM = vi.mocked(callLLM)
 
 beforeEach(() => mockedCallLLM.mockReset())
 
-describe('assignClusters (E#/N# label protocol)', () => {
+describe('assignClusters (index→label object protocol)', () => {
   it('returns an empty map when there are no new articles', async () => {
     const result = await assignClusters([], [])
     expect(result.size).toBe(0)
   })
 
   it('maps E labels to the existing cluster uuid by index', async () => {
-    mockedCallLLM.mockResolvedValue('["E1","E0"]')
+    mockedCallLLM.mockResolvedValue('{"0":"E1","1":"E0"}')
     const result = await assignClusters(
       [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }],
       [{ id: 'cluster-zero', title: 'X' }, { id: 'cluster-one', title: 'Y' }],
@@ -25,43 +25,53 @@ describe('assignClusters (E#/N# label protocol)', () => {
     expect(result.get('b')).toBe('cluster-zero')
   })
 
-  it('shares N labels: first article becomes the representative', async () => {
-    mockedCallLLM.mockResolvedValue('["N0","N1","N1"]')
+  it('shares N labels: lowest-index article becomes the representative', async () => {
+    // Keys deliberately out of order — representative must still be article a (index 0).
+    mockedCallLLM.mockResolvedValue('{"2":"N1","1":"N1","0":"N0"}')
     const result = await assignClusters(
       [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }, { id: 'c', title: 'C' }],
       [],
     )
     expect(result.get('a')).toBe('a')
     expect(result.get('b')).toBe('b')
-    expect(result.get('c')).toBe('b') // same N1 → b's id
+    expect(result.get('c')).toBe('b') // same N1 as b → b's id
   })
 
-  it('works with zero existing clusters (first-run case)', async () => {
-    mockedCallLLM.mockResolvedValue('["N0","N0"]')
+  it('tolerates a miscount: assigns present keys, skips missing ones', async () => {
+    // Model returned only 2 of 3 indices — the old array protocol failed the whole
+    // batch here; now article c just stays unassigned.
+    mockedCallLLM.mockResolvedValue('{"0":"N0","1":"N1"}')
+    const result = await assignClusters(
+      [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }, { id: 'c', title: 'C' }],
+      [],
+    )
+    expect(result.get('a')).toBe('a')
+    expect(result.get('b')).toBe('b')
+    expect(result.has('c')).toBe(false)
+  })
+
+  it('skips out-of-range E labels and garbage values, keeps the rest', async () => {
+    mockedCallLLM.mockResolvedValue('{"0":"E9","1":"N0","2":"abc","3":"N0"}')
+    const result = await assignClusters(
+      [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }, { id: 'c', title: 'C' }, { id: 'd', title: 'D' }],
+      [{ id: 'cluster-zero', title: 'X' }], // only E0 exists
+    )
+    expect(result.has('a')).toBe(false) // E9 out of range
+    expect(result.has('c')).toBe(false) // 'abc' invalid
+    expect(result.get('b')).toBe('b') // N0 rep
+    expect(result.get('d')).toBe('b') // joins N0
+  })
+
+  it('works with zero existing clusters (first-run case) and states (none) in the prompt', async () => {
+    mockedCallLLM.mockResolvedValue('{"0":"N0","1":"N0"}')
     const result = await assignClusters(
       [{ id: 'a', title: 'Same story' }, { id: 'b', title: 'Same story too' }],
       [],
     )
     expect(result.get('a')).toBe('a')
     expect(result.get('b')).toBe('a')
-    // The prompt must instruct N-only labels when no clusters exist.
     const prompt = mockedCallLLM.mock.calls[0][0][1].content
     expect(prompt).toContain('(none)')
-  })
-
-  it('rejects an out-of-range E index (empty-map fallback)', async () => {
-    mockedCallLLM.mockResolvedValue('["E5"]') // only 1 existing cluster
-    const result = await assignClusters(
-      [{ id: 'a', title: 'A' }],
-      [{ id: 'cluster-zero', title: 'X' }],
-    )
-    expect(result.size).toBe(0)
-  })
-
-  it('rejects labels that are not E#/N# — e.g. hallucinated uuids (fallback)', async () => {
-    mockedCallLLM.mockResolvedValue('["abc-def-123"]')
-    const result = await assignClusters([{ id: 'a', title: 'A' }], [])
-    expect(result.size).toBe(0)
   })
 
   it('falls back to an empty map on malformed JSON', async () => {
@@ -70,8 +80,8 @@ describe('assignClusters (E#/N# label protocol)', () => {
     expect(result.size).toBe(0)
   })
 
-  it('falls back to an empty map on a wrong-length array', async () => {
-    mockedCallLLM.mockResolvedValue('["N0","N1"]') // 2 labels for 1 article
+  it('falls back to an empty map when the response is an array, not an object', async () => {
+    mockedCallLLM.mockResolvedValue('["N0"]')
     const result = await assignClusters([{ id: 'a', title: 'A' }], [])
     expect(result.size).toBe(0)
   })
