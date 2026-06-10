@@ -8,7 +8,7 @@
   import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { groupByClusterId } from '$lib/cluster'
-  import { dayKey, dayLabel } from '$lib/utils'
+  import { dayKey, dayLabel, timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import type { Cluster } from '$lib/cluster'
   import type { PageData } from './$types'
@@ -20,6 +20,9 @@
   // Live trending selection: seeded from the load, refreshed via realtime
   // events on the trending table (the pipeline rewrites it each run).
   let trendingIds = $state<string[]>(untrack(() => (data.trendingIds as string[]) ?? []))
+  // Last successful ingestion run — the "updated Xm ago" readout. Anchor only
+  // changes when a run completes; the label itself ticks via clock.now.
+  let lastUpdatedAt = $state<string | null>(untrack(() => (data.lastUpdatedAt as string | null) ?? null))
   let scrollY = $state(0)
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
@@ -35,6 +38,16 @@
   let filterDropdownOpen = $state(false)
   let realtimeStatus = $state('CLOSED')
   let isFiltered = $derived(searchQuery.trim() !== '' || activeRegions.size < ALL_REGIONS.length)
+
+  // Dead-man's switch tiers: pipeline real cadence is 30–120 min, so >3h means
+  // several missed runs; >24h means it's down.
+  const STALE_AMBER_MS = 3 * 60 * 60 * 1000
+  const STALE_RED_MS = 24 * 60 * 60 * 1000
+  let staleness = $derived.by(() => {
+    if (!lastUpdatedAt) return null
+    const age = clock.now - Date.parse(lastUpdatedAt)
+    return age > STALE_RED_MS ? 'red' : age > STALE_AMBER_MS ? 'amber' : 'ok'
+  })
 
   function toggleRegion(region: SourceRegion) {
     const next = new Set(activeRegions)
@@ -110,6 +123,18 @@
     }, 2500)
   }
 
+  // Realtime article/trending events mean a pipeline run just wrote — refresh
+  // the freshness anchor once the burst settles. Quiet runs that change
+  // nothing leave the readout conservatively stale, which is fine.
+  let statusRefreshTimer: ReturnType<typeof setTimeout> | undefined
+  function schedulePipelineStatusRefresh() {
+    clearTimeout(statusRefreshTimer)
+    statusRefreshTimer = setTimeout(async () => {
+      const { data: ts, error } = await supabase.rpc('pipeline_status')
+      if (!error && ts) lastUpdatedAt = ts as string
+    }, 5000)
+  }
+
   function flushQueue() {
     articles = [...newQueue, ...articles].slice(0, MAX_ARTICLES)
     newQueue = []
@@ -159,6 +184,7 @@
         { event: 'INSERT', schema: 'public', table: 'articles' },
         (payload) => {
           const article = payload.new as Article
+          schedulePipelineStatusRefresh()
           // Dedupe against both lists — realtime can replay events on reconnect.
           if (articles.some(a => a.id === article.id) || newQueue.some(a => a.id === article.id)) return
           if (isPaused) {
@@ -187,7 +213,12 @@
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'trending' },
-        scheduleTrendingRefresh,
+        () => {
+          scheduleTrendingRefresh()
+          // Trending rewrites even on zero-new-article runs — the best signal
+          // that an ingestion run just completed.
+          schedulePipelineStatusRefresh()
+        },
       )
       // supabase-js auto-rejoins with backoff after TIMED_OUT/CHANNEL_ERROR and
       // re-fires SUBSCRIBED — the header dot just mirrors the latest status.
@@ -198,6 +229,7 @@
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       clearTimeout(trendingRefreshTimer)
+      clearTimeout(statusRefreshTimer)
       supabase.removeChannel(channel)
     }
   })
@@ -240,6 +272,14 @@
             {clustered.length.toLocaleString()} of {Math.max(allClustered.length, clustered.length).toLocaleString()} stories
           {:else}
             {clustered.length.toLocaleString()} stories
+          {/if}
+          {#if lastUpdatedAt}
+            <span
+              class={staleness === 'red' ? 'text-red-400' : staleness === 'amber' ? 'text-amber-500' : 'text-gray-600'}
+              title="Ingestion last completed {new Date(lastUpdatedAt).toLocaleString()} — runs every ~30–120 min{staleness === 'red' ? '. The pipeline appears to be down.' : staleness === 'amber' ? '. Several runs appear to have been missed.' : ''}"
+            >
+              · updated {timeAgo(lastUpdatedAt, clock.now)}
+            </span>
           {/if}
         </span>
 
