@@ -3,6 +3,7 @@
   import type { Article } from '$lib/types'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
   import { timeAgo, langFlag, isBreaking } from '$lib/utils'
+  import { clock } from '$lib/now.svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
 
   let { cluster, onselect }: { cluster: Cluster; onselect?: (a: Article) => void } = $props()
@@ -15,7 +16,7 @@
     [...new Set(cluster.articles.map(a => a.source_region))].slice(0, 5)
   )
   const repFlag = $derived(langFlag(rep.source_lang))
-  const breaking = $derived(isBreaking(rep.published_at))
+  const breaking = $derived(isBreaking(rep.published_at, clock.now))
 </script>
 
 <article class="border-l-4 {REGION_BORDER[rep.source_region]} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
@@ -36,7 +37,7 @@
         <span class="text-xs text-gray-400 font-medium ml-0.5">+{cluster.sourceCount - 1} more</span>
       </div>
     {/if}
-    <span class="text-xs text-gray-500 ml-auto shrink-0 whitespace-nowrap" title={rep.published_at ?? ''}>{timeAgo(rep.published_at)}</span>
+    <span class="text-xs text-gray-500 ml-auto shrink-0 whitespace-nowrap" title={rep.published_at ?? ''}>{timeAgo(rep.published_at, clock.now)}</span>
   </div>
 
   <!-- Headline -->
@@ -101,7 +102,7 @@
             >
               {article.title}
             </a>
-            <span class="text-xs text-gray-600 shrink-0">{timeAgo(article.published_at)}</span>
+            <span class="text-xs text-gray-600 shrink-0">{timeAgo(article.published_at, clock.now)}</span>
           </div>
         {/each}
       </div>

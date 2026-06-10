@@ -2,6 +2,7 @@
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { timeAgo } from '$lib/utils'
+  import { clock } from '$lib/now.svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
 
   let { stories, onselect }: { stories: Cluster[], onselect: (a: Article) => void } = $props()
@@ -56,7 +57,7 @@
                   {:else}
                     <span class="text-xs text-gray-600 ml-1.5">· 1 source</span>
                   {/if}
-                  <span class="text-xs text-gray-600 ml-1.5">· {timeAgo(rep.published_at)}</span>
+                  <span class="text-xs text-gray-600 ml-1.5">· {timeAgo(rep.published_at, clock.now)}</span>
 
                   {#if isExpanded}
                     <div id="trending-sources-{cluster.id}" class="mt-1.5 space-y-0.5 border-t border-gray-800/40 pt-1.5">
@@ -71,7 +72,7 @@
                           >
                             {article.title}
                           </button>
-                          <span class="text-xs text-gray-600 shrink-0">{timeAgo(article.published_at)}</span>
+                          <span class="text-xs text-gray-600 shrink-0">{timeAgo(article.published_at, clock.now)}</span>
                         </div>
                       {/each}
                     </div>
