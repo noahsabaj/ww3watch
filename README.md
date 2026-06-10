@@ -76,3 +76,13 @@ One-time setup (all free tier):
 > The site deploys to `https://<user>.github.io/ww3watch` (the `BASE_PATH=/ww3watch` in the deploy workflow handles the sub-path). For a custom domain, set `BASE_PATH` to empty and add a `CNAME`.
 
 > Scheduled GitHub Actions are auto-disabled after 60 days of **repo** inactivity — ordinary commits keep them alive.
+
+## License
+
+[AGPL-3.0](LICENSE) — the copyleft that applies to network services: if you run a
+modified WW3Watch as a website, you must offer your users the modified source.
+Chosen deliberately. This project's credibility rests on its pipeline being
+auditable — the LLM routes stories (classification, clustering, trending) but
+never rewrites what journalists wrote — and AGPL keeps every public derivative
+auditable on the same terms. The license covers this code, not the aggregated
+news content, which belongs to its publishers.
