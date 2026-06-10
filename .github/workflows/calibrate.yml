@@ -27,7 +27,7 @@ jobs:
       # sentinel embeddings.ts writes only after a successful model init +
       # smoke embed — a partial download must never poison the immutable key.
       - id: model-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.cache/ww3watch-transformers
           key: me5b-q8-1ec9243
@@ -45,7 +45,7 @@ jobs:
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.model-ok.outputs.ok == 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ~/.cache/ww3watch-transformers
           key: me5b-q8-1ec9243
