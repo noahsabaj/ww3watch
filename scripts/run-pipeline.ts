@@ -5,26 +5,36 @@
 // src/lib/server/*, which now reads config from process.env (see env.ts).
 //
 // Pipeline: fetch all feeds -> de-dup (within run + against DB+rejects) ->
-// classify only NEW articles -> upsert + record rejects -> assign clusters to
-// unclustered -> recompute trending. Every run writes one pipeline_runs row
-// (stats jsonb + error) for dashboard observability.
+// classify only NEW articles -> upsert + record rejects -> embed titles +
+// assign clusters (multilingual embeddings, assign_clusters_by_embedding RPC)
+// -> recompute trending. Every run writes one pipeline_runs row (stats jsonb
+// + error) for dashboard observability.
 
 import { FEEDS } from '../src/lib/feeds'
 import { fetchFeed, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
 import { classifyArticles } from '../src/lib/server/classify'
-import { assignClusters } from '../src/lib/server/cluster-llm'
+import {
+  embedTitles,
+  shouldEmbed,
+  EMBEDDING_MODEL_TAG,
+  EMBED_SIM_THRESHOLD,
+  EMBED_WINDOW_HOURS,
+} from '../src/lib/server/embeddings'
 import { updateTrending } from '../src/lib/server/trending'
 import { supabaseAdmin } from '../src/lib/server/supabase'
 
 const UPSERT_BATCH = 200
 const GUID_QUERY_CHUNK = 1000 // existing_guids RPC POSTs the array — no URL-length limit
-// Cluster batch: keep modest so the LLM reliably maps every article index.
-// Newest-first, so recent articles cluster; old unclustered rows are covered by
-// the client-side Jaccard fallback.
-const MAX_UNASSIGNED_PER_RUN = 50
 // Cap classify volume per run so a backlog can't blow the Action's time budget
 // under the rate limiter. Deferred articles stay "new" and are picked next run.
 const MAX_CLASSIFY_PER_RUN = 300
+// Clustering worklist: everything unassigned from the last day, capped. Covers
+// this run's inserts AND articles from runs whose embed/assign step failed
+// (self-heal — driven purely by cluster_id IS NULL, nothing is ever orphaned).
+const ASSIGN_LOOKBACK_HOURS = 24
+const ASSIGN_CAP = 300
+const ASSIGN_RPC_CHUNK = 100
+const ID_QUERY_CHUNK = 100 // .in() filters travel in the URL — keep chunks small
 
 type RunStats = Record<string, unknown>
 
@@ -56,6 +66,84 @@ async function existingGuids(guids: string[]): Promise<Set<string>> {
     ;(data as Array<{ guid: string }> | null)?.forEach((r) => existing.add(r.guid))
   }
   return existing
+}
+
+// Embeds unassigned recent titles and assigns cluster_ids via the
+// assign_clusters_by_embedding RPC (star linkage against representatives,
+// item-relative ±EMBED_WINDOW_HOURS window). Failure here never fails the run:
+// articles stay cluster_id NULL and the next run picks them up.
+async function embedAndAssignClusters(stats: RunStats): Promise<void> {
+  try {
+    const since = new Date(Date.now() - ASSIGN_LOOKBACK_HOURS * 3600_000).toISOString()
+    const { data: unassigned, error: qError } = await supabaseAdmin
+      .from('articles')
+      .select('id, title, published_at')
+      .is('cluster_id', null)
+      .gte('fetched_at', since)
+      // Chronological ASC so the RPC lets later items join clusters started by
+      // earlier ones in the same call; null published_at last (anchors to now()).
+      .order('published_at', { ascending: true, nullsFirst: false })
+      .limit(ASSIGN_CAP)
+    if (qError) throw new Error(`worklist query failed: ${JSON.stringify(qError)}`)
+    if (!unassigned?.length) {
+      stats.embedded = 0
+      stats.clusters_assigned = 0
+      return
+    }
+
+    const embeddable = unassigned.filter((a) => shouldEmbed(a.title))
+    stats.embed_skipped = unassigned.length - embeddable.length
+
+    // Articles embedded by a previous run whose assignment failed: reuse the
+    // stored vector instead of re-embedding.
+    const stored = new Map<string, number[]>()
+    for (let i = 0; i < embeddable.length; i += ID_QUERY_CHUNK) {
+      const ids = embeddable.slice(i, i + ID_QUERY_CHUNK).map((a) => a.id)
+      const { data, error } = await supabaseAdmin
+        .from('article_embeddings')
+        .select('article_id, embedding')
+        .in('article_id', ids)
+      if (error) throw new Error(`stored-embedding fetch failed: ${JSON.stringify(error)}`)
+      for (const r of data ?? []) {
+        stored.set(r.article_id, typeof r.embedding === 'string' ? JSON.parse(r.embedding) : r.embedding)
+      }
+    }
+
+    const toEmbed = embeddable.filter((a) => !stored.has(a.id))
+    const fresh = await embedTitles(toEmbed.map((a) => a.title))
+    const vecById = new Map<string, number[]>(stored)
+    toEmbed.forEach((a, i) => vecById.set(a.id, fresh[i]))
+    stats.embedded = fresh.length
+
+    const items = embeddable
+      .filter((a) => vecById.has(a.id))
+      .map((a) => ({ id: a.id, published_at: a.published_at, embedding: vecById.get(a.id)! }))
+
+    let assigned = 0
+    let newClusters = 0
+    for (let i = 0; i < items.length; i += ASSIGN_RPC_CHUNK) {
+      const { data, error } = await supabaseAdmin.rpc('assign_clusters_by_embedding', {
+        p_items: items.slice(i, i + ASSIGN_RPC_CHUNK),
+        p_model: EMBEDDING_MODEL_TAG,
+        p_threshold: EMBED_SIM_THRESHOLD,
+        p_window_hours: EMBED_WINDOW_HOURS,
+      })
+      if (error) throw new Error(`assign RPC failed: ${JSON.stringify(error)}`)
+      const rows = (data ?? []) as Array<{ r_is_new: boolean }>
+      assigned += rows.length
+      newClusters += rows.filter((r) => r.r_is_new).length
+    }
+    stats.clusters_assigned = assigned
+    stats.clusters_new = newClusters
+    console.log(
+      `[pipeline] clustering: embedded ${fresh.length} (reused ${stored.size}, skipped ${stats.embed_skipped}), ` +
+        `assigned ${assigned} -> ${newClusters} new clusters (threshold ${EMBED_SIM_THRESHOLD})`,
+    )
+  } catch (err) {
+    // Same degradation contract as the old LLM clusterer's empty-map fallback.
+    console.error('[pipeline] clustering FAILED (articles stay unassigned; next run self-heals):', err)
+    stats.cluster_error = String(err).slice(0, 300)
+  }
 }
 
 async function recordRun(startedAt: Date, stats: RunStats, error: unknown): Promise<void> {
@@ -100,7 +188,10 @@ async function run(stats: RunStats): Promise<void> {
   Object.assign(stats, { items: candidates.length, unique: uniqueByGuid.length, new: fresh.length })
 
   if (fresh.length === 0) {
-    console.log('[pipeline] no new articles; refreshing trending only')
+    // Still run clustering: a previous run's embed/assign failure leaves
+    // backlog that must heal even on quiet runs.
+    console.log('[pipeline] no new articles; clustering self-heal + trending only')
+    await embedAndAssignClusters(stats)
     await updateTrending()
     console.log(`[pipeline] done in ${Date.now() - startedAt}ms`)
     return
@@ -148,50 +239,9 @@ async function run(stats: RunStats): Promise<void> {
     }
   }
 
-  // 5. Assign cluster_ids to still-unclustered articles. Driven purely by
-  //    cluster_id IS NULL, so a missed/slow run never orphans an article.
-  const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
-  const [unassignedResult, recentResult] = await Promise.all([
-    supabaseAdmin
-      .from('articles')
-      .select('id, title')
-      .is('cluster_id', null)
-      .order('fetched_at', { ascending: false })
-      .limit(MAX_UNASSIGNED_PER_RUN),
-    supabaseAdmin
-      .from('articles')
-      .select('id, title, cluster_id')
-      .not('cluster_id', 'is', null)
-      .gte('published_at', eightHoursAgo)
-      .order('published_at', { ascending: false })
-      .limit(200),
-  ])
-
-  const unassigned = unassignedResult.data ?? []
-  const existingClusters = (recentResult.data ?? [])
-    .filter((a) => a.id === a.cluster_id)
-    .slice(0, 50)
-    .map((a) => ({ id: a.id, title: a.title }))
-
-  if (unassigned.length > 0) {
-    const assignments = await assignClusters(unassigned, existingClusters)
-    stats.clusters_assigned = assignments.size
-    if (assignments.size === 0) {
-      console.error(`[pipeline] cluster assignment FAILED (0 of ${unassigned.length} assigned)`)
-    } else {
-      const grouped = new Map<string, string[]>()
-      for (const [articleId, clusterId] of assignments) {
-        const ids = grouped.get(clusterId) ?? []
-        ids.push(articleId)
-        grouped.set(clusterId, ids)
-      }
-      for (const [clusterId, articleIds] of grouped) {
-        const { error } = await supabaseAdmin.from('articles').update({ cluster_id: clusterId }).in('id', articleIds)
-        if (error) console.error('[pipeline] cluster update error:', error)
-      }
-      console.log(`[pipeline] assigned ${assignments.size}/${unassigned.length} articles to ${grouped.size} clusters`)
-    }
-  }
+  // 5. Embed titles + assign cluster_ids. Driven purely by cluster_id IS NULL,
+  //    so a missed/slow/failed run never orphans an article.
+  await embedAndAssignClusters(stats)
 
   // 6. Recompute trending (keeps previous selection on LLM failure).
   await updateTrending()

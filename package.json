@@ -34,6 +34,7 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@huggingface/transformers": "^4.2.0",
 		"@supabase/supabase-js": "^2.98.0",
 		"rss-parser": "^3.13.0"
 	}
