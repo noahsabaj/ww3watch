@@ -23,6 +23,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+
+      # Embedding model cache. Restore/save are split on purpose: the save step
+      # is gated on the sentinel embeddings.ts writes only after a successful
+      # init + smoke embed — a partial download must never poison the immutable
+      # key (that would mean re-downloading from HF ~96×/day, or worse, a
+      # truncated ONNX failing clustering on every run).
+      - id: model-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ww3watch-transformers
+          key: me5b-q8-1ec9243
+
       - run: npm run pipeline
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -36,3 +48,19 @@ jobs:
           # Optional: route WAF-blocked feeds through the Cloudflare proxy.
           FEED_PROXY_URL: ${{ secrets.FEED_PROXY_URL }}
           FEED_PROXY_SECRET: ${{ secrets.FEED_PROXY_SECRET }}
+          # Optional: authenticated HF downloads at model-cache miss (shared
+          # runner IPs risk anonymous 429s), and an emergency threshold knob.
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          EMBED_SIM_THRESHOLD: ${{ vars.EMBED_SIM_THRESHOLD }}
+
+      - id: model-ok
+        if: steps.model-cache.outputs.cache-hit != 'true'
+        run: |
+          if ls ~/.cache/ww3watch-transformers/.ok-* >/dev/null 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.model-ok.outputs.ok == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ww3watch-transformers
+          key: me5b-q8-1ec9243

@@ -1,0 +1,51 @@
+name: Calibrate embeddings
+
+# Manual one-shot: backfills article_embeddings + prints the threshold
+# calibration report (scripts/calibrate-embeddings.ts) into the run log.
+# Shares the pipeline's concurrency group so embedding writes never race an
+# ingestion run.
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: ww3watch-pipeline
+  cancel-in-progress: false
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Restore/save are split on purpose: the save step is gated on the
+      # sentinel embeddings.ts writes only after a successful model init +
+      # smoke embed — a partial download must never poison the immutable key.
+      - id: model-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ww3watch-transformers
+          key: me5b-q8-1ec9243
+
+      - run: node --import tsx scripts/calibrate-embeddings.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+      - id: model-ok
+        if: steps.model-cache.outputs.cache-hit != 'true'
+        run: |
+          if ls ~/.cache/ww3watch-transformers/.ok-* >/dev/null 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.model-ok.outputs.ok == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ww3watch-transformers
+          key: me5b-q8-1ec9243
