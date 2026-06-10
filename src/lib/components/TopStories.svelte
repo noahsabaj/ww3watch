@@ -56,6 +56,7 @@
                   {:else}
                     <span class="text-xs text-gray-600 ml-1.5">· 1 source</span>
                   {/if}
+                  <span class="text-xs text-gray-600 ml-1.5">· {timeAgo(rep.published_at)}</span>
 
                   {#if isExpanded}
                     <div id="trending-sources-{cluster.id}" class="mt-1.5 space-y-0.5 border-t border-gray-800/40 pt-1.5">

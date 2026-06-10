@@ -1,7 +1,9 @@
 // Supabase Edge Function: in-panel translation to English (Deno).
 // Calls the OpenAI-compatible LLM (Cerebras) and caches results in
 // public.article_translations so identical inputs never re-burn LLM quota.
-// The returned HTML is sanitized on the CLIENT with DOMPurify before rendering.
+// Current clients send plain text and render the result as text; older cached
+// PWA clients may still send HTML, which they sanitize client-side with
+// DOMPurify before rendering.
 //
 // verify_jwt is off, so the abuse control is the articles.url gate: requests
 // must reference a URL the pipeline ingested.
@@ -39,7 +41,10 @@ const LLM_BASE_URL = Deno.env.get('LLM_BASE_URL')!
 const LLM_API_KEY = Deno.env.get('LLM_API_KEY')!
 const LLM_MODEL = Deno.env.get('LLM_MODEL')!
 
-const MAX_CONTENT_CHARS = 12000
+// Plain-text regime (the client sends extracted text, not HTML). 8000 chars
+// keeps worst-case output (CJK input → English) under max_tokens — at 12000 a
+// Chinese article could exceed the cap and fail deterministically on retry.
+const MAX_CONTENT_CHARS = 8000
 
 async function sha256Hex(input: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
@@ -87,20 +92,23 @@ Deno.serve(async (req) => {
     .maybeSingle()
   if (cached) return json({ title: cached.title, content: cached.content, cached: true })
 
+  // The conditional HTML clause stays for deploy skew: PWA autoUpdate means old
+  // cached clients keep sending HTML for a session+ after this ships.
   const systemPrompt = `Translate the following article from language code "${lang}" to English.
 Return ONLY a JSON object with two fields: "title" (string) and "content" (string).
 If the content contains HTML tags, preserve all HTML tags exactly as-is — only translate the visible text between tags.
+Otherwise the content is plain-text paragraphs separated by blank lines — keep the same paragraph breaks.
 No markdown, no explanation, no wrapping.`
 
-  let raw: string
-  try {
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+  const callLLM = (jsonMode: boolean) =>
+    fetch(`${LLM_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LLM_API_KEY}` },
       body: JSON.stringify({
         model: LLM_MODEL,
         temperature: 0,
-        max_tokens: 6000,
+        max_tokens: 8000,
+        ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: JSON.stringify({ title, content: truncated }) },
@@ -108,11 +116,24 @@ No markdown, no explanation, no wrapping.`
       }),
       signal: AbortSignal.timeout(30000),
     })
+
+  let raw: string
+  try {
+    let res = await callLLM(true)
+    // Some models reject response_format — degrade once to free-form JSON.
+    if (res.status === 400) {
+      console.error('[translate] response_format rejected (400), retrying without')
+      res = await callLLM(false)
+    }
     if (!res.ok) {
       console.error('[translate] LLM status', res.status)
       return json({ error: 'translation_failed' }, 502)
     }
     const data = await res.json()
+    if (data.choices?.[0]?.finish_reason === 'length') {
+      console.error('[translate] output truncated at max_tokens (content chars:', truncated.length, ')')
+      return json({ error: 'translation_failed' }, 502)
+    }
     raw = (data.choices?.[0]?.message?.content ?? '')
       .trim()
       .replace(/^```[a-z]*\n?/, '')
