@@ -21,7 +21,30 @@
 
   function selectAll() { activeRegions = new Set(ALL_REGIONS) }
   function clearAll() { activeRegions = new Set() }
+
+  // Focus the sheet itself on open (NOT the search input — that pops the mobile
+  // keyboard over a sheet most users open for the region chips); restore after.
+  let sheetEl = $state<HTMLElement | null>(null)
+  let previouslyFocused: Element | null = null
+  let wasOpen = false
+  $effect(() => {
+    if (open && !wasOpen) {
+      previouslyFocused = document.activeElement
+      sheetEl?.focus()
+    } else if (!open && wasOpen) {
+      const el = previouslyFocused as HTMLElement | null
+      if (el?.isConnected && typeof el.focus === 'function') el.focus()
+      previouslyFocused = null
+    }
+    wasOpen = open
+  })
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && open) open = false
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if open}
   <!-- Backdrop -->
@@ -33,6 +56,11 @@
 
   <!-- Sheet -->
   <div
+    bind:this={sheetEl}
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search and region filters"
+    tabindex="-1"
     class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 md:hidden"
     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
   >

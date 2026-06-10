@@ -91,7 +91,12 @@
   function flushQueue() {
     articles = [...newQueue, ...articles].slice(0, MAX_ARTICLES)
     newQueue = []
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }
+
+  function handlePageKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && filterDropdownOpen) filterDropdownOpen = false
   }
 
   async function handleInstall() {
@@ -166,7 +171,7 @@
   })
 </script>
 
-<svelte:window bind:scrollY />
+<svelte:window bind:scrollY onkeydown={handlePageKeydown} />
 
 <div class="min-h-screen bg-[#0a0a0b]">
   <!-- Header — padding-top accounts for iOS notch via viewport-fit=cover -->
@@ -197,6 +202,9 @@
           <button
             onclick={() => filterDropdownOpen = !filterDropdownOpen}
             aria-label="Filter by region"
+            aria-haspopup="true"
+            aria-expanded={filterDropdownOpen}
+            aria-controls="region-filter-dropdown"
             class="flex items-center justify-center w-7 h-7 rounded transition-colors {filterDropdownOpen || activeRegions.size < ALL_REGIONS.length ? 'text-blue-400' : 'text-gray-600 hover:text-gray-300'}"
           >
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -211,7 +219,7 @@
 
           {#if filterDropdownOpen}
             <div class="fixed inset-0 z-40" onclick={() => filterDropdownOpen = false} role="presentation"></div>
-            <div class="absolute right-0 top-full mt-2 z-50 bg-[#111113] border border-gray-700 rounded-lg p-3 w-80 shadow-xl">
+            <div id="region-filter-dropdown" class="absolute right-0 top-full mt-2 z-50 bg-[#111113] border border-gray-700 rounded-lg p-3 w-80 shadow-xl">
               <div class="flex items-center justify-between mb-2.5">
                 <span class="text-[10px] text-gray-600 uppercase tracking-widest">Regions</span>
                 <div class="flex gap-1">

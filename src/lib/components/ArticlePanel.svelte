@@ -65,8 +65,50 @@
     return () => { document.body.style.overflow = '' }
   })
 
+  // ── Dialog focus management ────────────────────────────────────────────────
+  let panelEl = $state<HTMLElement | null>(null)
+  let closeBtn = $state<HTMLButtonElement | null>(null)
+  let previouslyFocused: Element | null = null
+  // Plain closure var (not $state): the in-panel source list swaps `article`
+  // without closing, so focus logic must act only on open/close EDGES.
+  let wasOpen = false
+
+  $effect(() => {
+    const open = !!article
+    if (open && !wasOpen) {
+      previouslyFocused = document.activeElement
+      closeBtn?.focus()
+    } else if (!open && wasOpen) {
+      copied = false
+      clearTimeout(copiedTimer)
+      const el = previouslyFocused as HTMLElement | null
+      // Realtime churn can unmount the originating button — only restore if alive.
+      if (el?.isConnected && typeof el.focus === 'function') el.focus()
+      previouslyFocused = null
+    }
+    wasOpen = open
+  })
+
+  function trapFocus(e: KeyboardEvent) {
+    if (e.key !== 'Tab' || !panelEl) return
+    const focusables = panelEl.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    )
+    if (focusables.length === 0) return
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+    const active = document.activeElement
+    if (e.shiftKey && active === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && (active === last || !panelEl.contains(active))) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') onclose()
+    if (e.key === 'Escape' && article) onclose()
   }
 
   async function translate() {
@@ -87,13 +129,26 @@
     }
   }
 
+  let copied = $state(false)
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined
+
   async function share() {
     if (!article) return
     const shareUrl = `${window.location.origin}${base}/?article=${article.id}`
-    if (navigator.share) {
-      await navigator.share({ title: article.title, url: shareUrl })
-    } else {
-      await navigator.clipboard.writeText(shareUrl)
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: article.title, url: shareUrl })
+      } else {
+        await navigator.clipboard.writeText(shareUrl)
+        copied = true
+        clearTimeout(copiedTimer)
+        copiedTimer = setTimeout(() => (copied = false), 2000)
+      }
+    } catch (err) {
+      // Cancelling the share sheet rejects with AbortError — that's normal.
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        console.error('[share] failed:', err)
+      }
     }
   }
 </script>
@@ -108,10 +163,16 @@
     role="presentation"
   ></div>
 
-  <!-- Panel -->
-  <aside
-    class="fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-[#0a0a0b] border-l border-gray-800 z-50 flex flex-col"
-    style="animation: slideIn 200ms ease-out; padding-top: env(safe-area-inset-top, 0px);"
+  <!-- Panel (div, not aside: a modal dialog isn't complementary content) -->
+  <div
+    bind:this={panelEl}
+    role="dialog"
+    aria-modal="true"
+    aria-label="Article reader"
+    tabindex="-1"
+    onkeydown={trapFocus}
+    class="panel-slide fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-[#0a0a0b] border-l border-gray-800 z-50 flex flex-col"
+    style="padding-top: env(safe-area-inset-top, 0px);"
   >
     <!-- Top bar -->
     <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
@@ -128,16 +189,23 @@
       </a>
       <button
         onclick={share}
-        aria-label="Share article"
-        class="md:hidden text-gray-500 hover:text-gray-200 transition-colors shrink-0 ml-1"
+        aria-label={copied ? 'Link copied' : 'Share article'}
+        class="md:hidden shrink-0 ml-1 transition-colors {copied ? 'text-green-400' : 'text-gray-500 hover:text-gray-200'}"
       >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-          <polyline points="16 6 12 2 8 6"/>
-          <line x1="12" y1="2" x2="12" y2="15"/>
-        </svg>
+        {#if copied}
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        {:else}
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+        {/if}
       </button>
       <button
+        bind:this={closeBtn}
         onclick={onclose}
         class="text-gray-500 hover:text-gray-200 transition-colors text-lg leading-none shrink-0 ml-1"
         aria-label="Close reader"
@@ -170,7 +238,7 @@
         </div>
 
       {:else if reader.status === 'loaded'}
-        <h1 class="text-xl font-bold text-white leading-snug mb-2">
+        <h1 dir="auto" class="text-xl font-bold text-white leading-snug mb-2">
           {showTranslated && translation.status === 'done' ? translation.title : reader.title}
         </h1>
         {#if reader.byline}
@@ -184,13 +252,13 @@
             {translation.status === 'loading' ? 'Translating…' : showTranslated ? 'Show original' : 'Translate to English'}
           </button>
         {/if}
-        <div class="prose-reader">
+        <div class="prose-reader" dir="auto">
           <!-- cleanHtml = DOMPurify; sanitizes article + translation HTML before render -->
           {@html cleanHtml(showTranslated && translation.status === 'done' ? translation.content : reader.content)}
         </div>
 
       {:else if reader.status === 'failed'}
-        <h1 class="text-xl font-bold text-white leading-snug mb-3">
+        <h1 dir="auto" class="text-xl font-bold text-white leading-snug mb-3">
           {showTranslated && translation.status === 'done' ? translation.title : article.title}
         </h1>
         {#if article.source_lang !== 'en'}
@@ -202,7 +270,7 @@
           </button>
         {/if}
         {#if article.summary}
-          <p class="text-gray-300 leading-relaxed mb-6">
+          <p dir="auto" class="text-gray-300 leading-relaxed mb-6">
             {showTranslated && translation.status === 'done' ? translation.content : article.summary}
           </p>
         {/if}
@@ -229,7 +297,8 @@
                 {:else}
                   <button
                     onclick={() => onselect?.(other)}
-                    class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-left"
+                    dir="auto"
+                    class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-start"
                   >
                     {other.title}
                   </button>
@@ -242,7 +311,7 @@
       {/if}
 
     </div>
-  </aside>
+  </div>
 {/if}
 
 <style>
@@ -259,7 +328,6 @@
       #1f2937 75%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
   }
 
   @keyframes shimmer {
@@ -267,7 +335,16 @@
     100% { background-position: -200% 0; }
   }
 
-  :global(.prose-reader p)      { color: #d1d5db; line-height: 1.75; margin-bottom: 1rem; font-size: 0.9375rem; }
+  /* Animations only for users who haven't asked for reduced motion. The slide
+     lives in a class (not an inline style) so this media block can gate it. */
+  @media (prefers-reduced-motion: no-preference) {
+    .panel-slide { animation: slideIn 200ms ease-out; }
+    .shimmer { animation: shimmer 1.4s infinite; }
+  }
+
+  /* unicode-bidi: plaintext = per-paragraph first-strong direction, so mixed
+     Persian/English article bodies (injected via {@html}) each align correctly. */
+  :global(.prose-reader p)      { color: #d1d5db; line-height: 1.75; margin-bottom: 1rem; font-size: 0.9375rem; unicode-bidi: plaintext; }
   :global(.prose-reader h1),
   :global(.prose-reader h2),
   :global(.prose-reader h3)     { color: white; font-weight: 600; margin: 1.5rem 0 0.5rem; }

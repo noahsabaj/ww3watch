@@ -21,13 +21,15 @@
     <div class="max-w-3xl mx-auto">
       <button
         onclick={() => open = !open}
+        aria-expanded={open}
+        aria-controls="trending-list"
         class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-gray-600 hover:text-gray-400 transition-colors pt-3 pb-2 w-full text-left"
       >
         <span class="inline-block transition-transform {open ? '' : '-rotate-90'}">▾</span>
         Trending Now
       </button>
       {#if open}
-        <ol class="pb-2">
+        <ol id="trending-list" class="pb-2">
           {#each stories as cluster, i (cluster.id)}
             {@const rep = cluster.representative}
             {@const isExpanded = expandedIds.has(cluster.id)}
@@ -37,13 +39,16 @@
                 <div class="flex-1 min-w-0">
                   <button
                     onclick={() => onselect(rep)}
-                    class="text-sm text-gray-200 hover:text-white transition-colors leading-snug text-left"
+                    dir="auto"
+                    class="text-sm text-gray-200 hover:text-white transition-colors leading-snug text-start"
                   >
                     {rep.title}
                   </button>
                   {#if cluster.sourceCount > 1}
                     <button
                       onclick={() => toggleExpanded(cluster.id)}
+                      aria-expanded={isExpanded}
+                      aria-controls="trending-sources-{cluster.id}"
                       class="text-xs text-gray-600 hover:text-gray-400 transition-colors ml-1.5"
                     >
                       · {cluster.sourceCount} sources
@@ -53,14 +58,15 @@
                   {/if}
 
                   {#if isExpanded}
-                    <div class="mt-1.5 space-y-0.5 border-t border-gray-800/40 pt-1.5">
+                    <div id="trending-sources-{cluster.id}" class="mt-1.5 space-y-0.5 border-t border-gray-800/40 pt-1.5">
                       {#each cluster.articles as article (article.id)}
                         <div class="flex items-center gap-2 py-0.5">
                           <RegionBadge region={article.source_region} size="sm" />
                           <span class="text-xs text-gray-500 shrink-0">{article.source_name}</span>
                           <button
                             onclick={() => onselect(article)}
-                            class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-left"
+                            dir="auto"
+                            class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-start"
                           >
                             {article.title}
                           </button>
