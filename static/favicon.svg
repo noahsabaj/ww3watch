@@ -1,15 +1,40 @@
-<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Dark background -->
-  <rect width="32" height="32" fill="#0a0a0b" rx="4"/>
-  <!-- Radar rings -->
-  <circle cx="16" cy="16" r="12"   stroke="#cbd5e1" stroke-width="1.5"/>
-  <circle cx="16" cy="16" r="7.5"  stroke="#cbd5e1" stroke-width="1"   opacity="0.5"/>
-  <circle cx="16" cy="16" r="3"    stroke="#cbd5e1" stroke-width="1"   opacity="0.3"/>
-  <!-- Faint cardinal axes -->
-  <line x1="4"  y1="16" x2="28" y2="16" stroke="#cbd5e1" stroke-width="0.5" opacity="0.15"/>
-  <line x1="16" y1="4"  x2="16" y2="28" stroke="#cbd5e1" stroke-width="0.5" opacity="0.15"/>
-  <!-- Sweep line (upper-right, 45°) -->
-  <line x1="16" y1="16" x2="24.5" y2="7.5" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
-  <!-- Red blip — detected on middle ring, same bearing as sweep -->
-  <circle cx="21" cy="11" r="3" fill="#ef4444"/>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- WW3Watch radar mark. The sweep watches, the red contact is the event:
+       observation, not targeting. Blue matches the app's interactive accent;
+       red matches BREAKING. Strokes sized to stay legible at 16px. -->
+  <defs>
+    <!-- Angular fade of the swept sector, approximated linearly across the
+         90° top wedge: brightest at the leading beam (right), gone at the
+         trailing edge (left). -->
+    <linearGradient id="sweep" x1="49" y1="15" x2="15" y2="15" gradientUnits="userSpaceOnUse">
+      <stop offset="0"    stop-color="#3b82f6" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#3b82f6" stop-opacity="0.16"/>
+      <stop offset="1"    stop-color="#3b82f6" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="blip-glow">
+      <stop offset="0" stop-color="#ef4444" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ef4444" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="#0a0a0b"/>
+  <!-- Tile edge so the mark doesn't dissolve into dark browser chrome -->
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#3f3f46" stroke-width="1.5"/>
+
+  <!-- Range rings -->
+  <circle cx="32" cy="32" r="24"   fill="none" stroke="#52525b" stroke-width="2.5"/>
+  <circle cx="32" cy="32" r="14.5" fill="none" stroke="#52525b" stroke-width="1.5" opacity="0.45"/>
+
+  <!-- Swept sector trailing the beam (90°, over the top) -->
+  <path d="M32 32 L48.97 15.03 A24 24 0 0 0 15.03 15.03 Z" fill="url(#sweep)"/>
+  <!-- Leading beam -->
+  <line x1="32" y1="32" x2="48.97" y2="15.03" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Radar origin -->
+  <circle cx="32" cy="32" r="2.5" fill="#a1a1aa"/>
+
+  <!-- Contact, freshly painted just behind the beam: glow, pulse ring, core -->
+  <circle cx="38" cy="17" r="10"  fill="url(#blip-glow)"/>
+  <circle cx="38" cy="17" r="6.5" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0.45"/>
+  <circle cx="38" cy="17" r="3.5" fill="#ef4444"/>
 </svg>
