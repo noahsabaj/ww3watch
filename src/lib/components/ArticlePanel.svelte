@@ -26,9 +26,23 @@
     | { status: 'idle' }
     | { status: 'loading' }
     | { status: 'done'; title: string; content: string }
+    | { status: 'failed' }
 
   let translation = $state<TranslateState>({ status: 'idle' })
   let showTranslated = $state(false)
+
+  // Junk extractions (bot-wall pages) come back with an empty title — fall back
+  // to the RSS title for both the heading and the translate payload.
+  const displayTitle = $derived(
+    reader.status === 'loaded' && reader.title.trim() ? reader.title : article?.title ?? ''
+  )
+
+  const translateLabel = $derived(
+    translation.status === 'loading' ? 'Translating…'
+    : translation.status === 'failed' ? 'Translation failed — tap to retry'
+    : showTranslated ? 'Show original'
+    : 'Translate to English'
+  )
 
   $effect(() => {
     const current = article
@@ -49,7 +63,13 @@
         if (error || !data || data.error) {
           reader = { status: 'failed' }
         } else {
-          reader = { status: 'loaded', title: data.title, byline: data.byline, content: data.content }
+          // Bot-wall/redirect pages "extract" successfully as near-empty junk —
+          // the failed state (RSS title + summary + original link) reads better.
+          const text = new DOMParser().parseFromString(data.content ?? '', 'text/html')
+            .body.textContent ?? ''
+          reader = text.trim().length < 200
+            ? { status: 'failed' }
+            : { status: 'loaded', title: data.title, byline: data.byline, content: data.content }
         }
       })
       .catch(() => {
@@ -111,12 +131,30 @@
     if (e.key === 'Escape' && article) onclose()
   }
 
+  // Plain text for the translate payload — HTML-heavy input made the LLM emit
+  // broken JSON (escaping every attribute quote) and 502 on real articles.
+  function htmlToText(html: string): string {
+    const body = new DOMParser().parseFromString(html, 'text/html').body
+    const blocks = [...body.querySelectorAll('p, h1, h2, h3, li, blockquote')]
+      // skip nested matches (blockquote > p would double-count its text)
+      .filter(el => !el.parentElement?.closest('p, h1, h2, h3, li, blockquote'))
+      .map(el => el.textContent?.trim() ?? '')
+      .filter(Boolean)
+    const joined = blocks.join('\n\n')
+    const full = body.textContent?.trim() ?? ''
+    // div-only article markup loses most text via the block query — fall back.
+    return joined.length >= full.length * 0.6 ? joined : full
+  }
+
   async function translate() {
     if (!article || translation.status === 'loading') return
     if (translation.status === 'done') { showTranslated = !showTranslated; return }
     translation = { status: 'loading' }
-    const title = reader.status === 'loaded' ? reader.title : article.title
-    const content = reader.status === 'loaded' ? reader.content : (article.summary ?? '')
+    const title = displayTitle
+    // Slice matches the server's MAX_CONTENT_CHARS — no point shipping more.
+    const content = reader.status === 'loaded'
+      ? htmlToText(reader.content).slice(0, 8000)
+      : (article.summary ?? '')
     try {
       const { data, error } = await supabase.functions.invoke('translate', {
         body: { title, content, lang: article.source_lang, url: article.url },
@@ -125,7 +163,7 @@
       translation = { status: 'done', title: data.title, content: data.content }
       showTranslated = true
     } catch {
-      translation = { status: 'idle' }
+      translation = { status: 'failed' }
     }
   }
 
@@ -239,7 +277,7 @@
 
       {:else if reader.status === 'loaded'}
         <h1 dir="auto" class="text-xl font-bold text-white leading-snug mb-2">
-          {showTranslated && translation.status === 'done' ? translation.title : reader.title}
+          {showTranslated && translation.status === 'done' ? translation.title : displayTitle}
         </h1>
         {#if reader.byline}
           <p class="text-xs text-gray-500 mb-3">{reader.byline}</p>
@@ -247,14 +285,21 @@
         {#if article.source_lang !== 'en'}
           <button
             onclick={translate}
-            class="text-xs text-blue-400 hover:text-blue-300 transition-colors mb-4 block"
+            class="text-xs transition-colors mb-4 block {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
           >
-            {translation.status === 'loading' ? 'Translating…' : showTranslated ? 'Show original' : 'Translate to English'}
+            {translateLabel}
           </button>
         {/if}
         <div class="prose-reader" dir="auto">
-          <!-- cleanHtml = DOMPurify; sanitizes article + translation HTML before render -->
-          {@html cleanHtml(showTranslated && translation.status === 'done' ? translation.content : reader.content)}
+          {#if showTranslated && translation.status === 'done'}
+            <!-- Translations are plain-text paragraphs — text interpolation, no sanitize needed -->
+            {#each translation.content.split(/\n{2,}/) as para}
+              <p>{para}</p>
+            {/each}
+          {:else}
+            <!-- cleanHtml = DOMPurify; also absolutizes relative URLs against the article's origin -->
+            {@html cleanHtml(reader.content, article.url)}
+          {/if}
         </div>
 
       {:else if reader.status === 'failed'}
@@ -264,9 +309,9 @@
         {#if article.source_lang !== 'en'}
           <button
             onclick={translate}
-            class="text-xs text-blue-400 hover:text-blue-300 transition-colors mb-3 block"
+            class="text-xs transition-colors mb-3 block {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
           >
-            {translation.status === 'loading' ? 'Translating…' : showTranslated ? 'Show original' : 'Translate to English'}
+            {translateLabel}
           </button>
         {/if}
         {#if article.summary}

@@ -89,6 +89,15 @@
               rel="noopener noreferrer"
               dir="auto"
               class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0"
+              onclick={(e) => {
+                // Same contract as the headline: plain left-click opens the
+                // reader (matching TopStories/panel source rows), modified
+                // clicks fall through to the href.
+                if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                  e.preventDefault()
+                  onselect(article)
+                }
+              }}
             >
               {article.title}
             </a>

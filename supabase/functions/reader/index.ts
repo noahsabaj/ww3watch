@@ -184,8 +184,11 @@ Deno.serve(async (req) => {
       siteName: article.siteName ?? null,
     }
 
-    // Cache write is best-effort — never fail the response over it.
-    if (result.content && result.content.length <= MAX_CACHE_CONTENT_CHARS) {
+    // Cache write is best-effort — never fail the response over it. Skip
+    // near-empty extractions (bot-wall/redirect pages) so junk is never
+    // permanent; the client decides how to display the uncached response.
+    const textLen = (article.textContent ?? '').trim().length
+    if (result.content && result.content.length <= MAX_CACHE_CONTENT_CHARS && textLen >= 200) {
       const { error: cacheError } = await supabase.from('article_content').upsert(
         {
           url: articleUrl,

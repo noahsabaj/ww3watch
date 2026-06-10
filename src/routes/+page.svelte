@@ -8,6 +8,7 @@
   import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { groupByClusterId } from '$lib/cluster'
+  import { dayKey, dayLabel } from '$lib/utils'
   import type { Cluster } from '$lib/cluster'
   import type { PageData } from './$types'
 
@@ -28,6 +29,8 @@
   )
   let filterSheetOpen = $state(false)
   let filterDropdownOpen = $state(false)
+  let realtimeStatus = $state('CLOSED')
+  let isFiltered = $derived(searchQuery.trim() !== '' || activeRegions.size < ALL_REGIONS.length)
 
   function toggleRegion(region: SourceRegion) {
     const next = new Set(activeRegions)
@@ -162,7 +165,11 @@
           }
         }
       )
-      .subscribe()
+      // supabase-js auto-rejoins with backoff after TIMED_OUT/CHANNEL_ERROR and
+      // re-fires SUBSCRIBED — the header dot just mirrors the latest status.
+      .subscribe((status) => {
+        realtimeStatus = status
+      })
 
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
@@ -174,9 +181,12 @@
 <svelte:window bind:scrollY onkeydown={handlePageKeydown} />
 
 <div class="min-h-screen bg-[#0a0a0b]">
-  <!-- Header — padding-top accounts for iOS notch via viewport-fit=cover -->
+  <!-- Header — padding-top accounts for iOS notch via viewport-fit=cover.
+       Sticky so search/filter stay reachable on a very long feed. Solid bg on
+       purpose: backdrop-blur would create a containing block and shrink the
+       filter dropdown's fixed click-away backdrop to the header box. -->
   <header
-    class="border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]"
+    class="sticky top-0 z-30 border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]"
     style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px))"
   >
     <div class="max-w-3xl mx-auto flex items-center gap-3">
@@ -195,7 +205,18 @@
 
       <!-- Right actions -->
       <div class="flex items-center gap-2 ml-auto md:ml-0 shrink-0">
-        <span class="text-xs text-gray-500">{clustered.length.toLocaleString()} stories</span>
+        <span
+          class="flex items-center gap-1.5 text-xs text-gray-500"
+          title={realtimeStatus === 'SUBSCRIBED' ? 'Live updates connected' : 'Live updates reconnecting'}
+          aria-label={realtimeStatus === 'SUBSCRIBED' ? 'Live updates connected' : 'Live updates reconnecting'}
+        >
+          <span class="w-1.5 h-1.5 rounded-full {realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 motion-safe:animate-pulse' : 'bg-gray-600'}"></span>
+          {#if isFiltered}
+            {clustered.length.toLocaleString()} of {Math.max(allClustered.length, clustered.length).toLocaleString()} stories
+          {:else}
+            {clustered.length.toLocaleString()} stories
+          {/if}
+        </span>
 
         <!-- Region filter button + dropdown (desktop only) -->
         <div class="relative hidden md:block">
@@ -281,7 +302,8 @@
 
   <!-- New articles banner -->
   {#if newQueue.length > 0 && isPaused}
-    <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(3.5rem + env(safe-area-inset-top, 0px))">
+    <!-- 4rem clears the sticky header (~59px on md+ where the search input sets row height) -->
+    <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(4rem + env(safe-area-inset-top, 0px))">
       <button
         onclick={flushQueue}
         class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-full shadow-lg transition-colors"
@@ -313,7 +335,14 @@
         {/if}
       </div>
     {:else}
-      {#each clustered as cluster (cluster.id)}
+      {#each clustered as cluster, i (cluster.id)}
+        <!-- Day separator at each calendar-day boundary — safe because
+             groupByClusterId sorts by representative published_at DESC. -->
+        {#if i === 0 || dayKey(cluster.representative.published_at) !== dayKey(clustered[i - 1].representative.published_at)}
+          <div class="px-4 py-1.5 text-[10px] uppercase tracking-widest text-gray-600">
+            {dayLabel(cluster.representative.published_at)}
+          </div>
+        {/if}
         <ClusterCard {cluster} onselect={(a) => selectedArticle = a} />
       {/each}
     {/if}
