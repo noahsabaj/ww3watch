@@ -18,13 +18,25 @@
 // parallel implementation (different prefix/pooling/dtype/revision) would
 // calibrate a threshold the pipeline never reproduces.
 
-import { supabaseAdmin } from '../src/lib/server/supabase'
+import { createClient } from '@supabase/supabase-js'
 import {
   embedTitles,
   shouldEmbed,
   EMBEDDING_MODEL_TAG,
   EMBED_WINDOW_HOURS,
 } from '../src/lib/server/embeddings'
+
+// With the secret key: full backfill (writes) + calibration. With only the
+// publishable key: read-only calibration — articles are anon-readable and the
+// model runs locally, so no privileged access is needed to pick a threshold.
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL
+const SECRET_KEY = process.env.SUPABASE_SECRET_KEY
+const KEY = SECRET_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY
+if (!SUPABASE_URL || !KEY) {
+  throw new Error('need SUPABASE_URL + (SUPABASE_SECRET_KEY or PUBLIC_SUPABASE_ANON_KEY)')
+}
+const canWrite = Boolean(SECRET_KEY)
+const supabase = createClient(SUPABASE_URL, KEY, { auth: { persistSession: false } })
 
 const PAGE = 1000
 const EMBED_CHUNK = 256
@@ -62,12 +74,12 @@ async function backfill(): Promise<void> {
   const have = new Set(
     (
       await pageAll<{ article_id: string }>((f, t) =>
-        supabaseAdmin.from('article_embeddings').select('article_id').range(f, t),
+        supabase.from('article_embeddings').select('article_id').range(f, t),
       )
     ).map((r) => r.article_id),
   )
   const articles = await pageAll<{ id: string; title: string }>((f, t) =>
-    supabaseAdmin.from('articles').select('id, title').order('id').range(f, t),
+    supabase.from('articles').select('id, title').order('id').range(f, t),
   )
   const missing = articles.filter((a) => !have.has(a.id))
   const embeddable = missing.filter((a) => shouldEmbed(a.title))
@@ -82,7 +94,7 @@ async function backfill(): Promise<void> {
     const vecs = await embedTitles(chunk.map((a) => a.title))
     const rows = chunk.map((a, j) => ({ article_id: a.id, embedding: vecs[j], model: EMBEDDING_MODEL_TAG }))
     for (let k = 0; k < rows.length; k += UPSERT_CHUNK) {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('article_embeddings')
         .upsert(rows.slice(k, k + UPSERT_CHUNK), { onConflict: 'article_id' })
       if (error) throw new Error(`embedding upsert failed: ${JSON.stringify(error)}`)
@@ -97,7 +109,7 @@ async function calibrate(): Promise<void> {
   console.log(`\n=== PHASE 2: calibration (window ±${EMBED_WINDOW_HOURS}h, production decision shape) ===`)
 
   const clustered = await pageAll<Row>((f, t) =>
-    supabaseAdmin
+    supabase
       .from('articles')
       .select('id, title, cluster_id, source_lang, published_at')
       .not('cluster_id', 'is', null)
@@ -106,18 +118,26 @@ async function calibrate(): Promise<void> {
   )
 
   const vecs = new Map<string, number[]>()
-  const ids = clustered.map((a) => a.id)
-  for (let i = 0; i < ids.length; i += 200) {
-    const { data, error } = await supabaseAdmin
-      .from('article_embeddings')
-      .select('article_id, embedding')
-      .in('article_id', ids.slice(i, i + 200))
-    if (error) throw new Error(`embedding fetch failed: ${JSON.stringify(error)}`)
-    for (const r of data ?? []) {
-      const v = typeof r.embedding === 'string' ? (JSON.parse(r.embedding) as number[]) : (r.embedding as number[])
-      vecs.set(r.article_id, v)
+  if (canWrite) {
+    // Use the stored (production-vintage) vectors when available.
+    const ids = clustered.map((a) => a.id)
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data, error } = await supabase
+        .from('article_embeddings')
+        .select('article_id, embedding')
+        .in('article_id', ids.slice(i, i + 200))
+      if (error) throw new Error(`embedding fetch failed: ${JSON.stringify(error)}`)
+      for (const r of data ?? []) {
+        const v = typeof r.embedding === 'string' ? (JSON.parse(r.embedding) as number[]) : (r.embedding as number[])
+        vecs.set(r.article_id, v)
+      }
     }
   }
+  // Embed whatever isn't stored (read-only mode: everything) — same module,
+  // same artifact, so locally-computed vectors are calibration-equivalent.
+  const missing = clustered.filter((a) => !vecs.has(a.id) && shouldEmbed(a.title))
+  const freshVecs = await embedTitles(missing.map((a) => a.title))
+  missing.forEach((a, i) => vecs.set(a.id, freshVecs[i]))
 
   const clusters = new Map<string, Row[]>()
   for (const a of clustered) {
@@ -221,7 +241,11 @@ async function calibrate(): Promise<void> {
 }
 
 async function main() {
-  await backfill()
+  if (canWrite) {
+    await backfill()
+  } else {
+    console.log('[calibrate] read-only mode (publishable key): skipping backfill, embedding ground truth locally')
+  }
   await calibrate()
 }
 

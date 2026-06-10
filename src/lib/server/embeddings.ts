@@ -12,18 +12,23 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
-export const EMBEDDING_MODEL = 'Xenova/multilingual-e5-small'
-export const EMBEDDING_REVISION = '761b726dd34fb83930e26aab4e9ac3899aa1fa78'
+export const EMBEDDING_MODEL = 'Xenova/multilingual-e5-base'
+export const EMBEDDING_REVISION = '1ec9243030a27d1a115d5c340572074c125b58b2'
 export const EMBEDDING_DTYPE = 'q8'
-export const EMBEDDING_DIM = 384
-export const EMBEDDING_MODEL_TAG = `me5s-${EMBEDDING_DTYPE}@${EMBEDDING_REVISION.slice(0, 7)}`
+export const EMBEDDING_DIM = 768
+export const EMBEDDING_MODEL_TAG = `me5b-${EMBEDDING_DTYPE}@${EMBEDDING_REVISION.slice(0, 7)}`
 
-// Calibrated against LLM-assigned clusters as ground truth (precision-floor
-// rule; see calibrate-embeddings.ts output). Env override is an emergency
+// Calibrated 2026-06-11 against the LLM-assigned clusters (e5-base run of
+// scripts/calibrate-embeddings.ts): at 0.83, recall vs (noisy) LLM labels is
+// ~39% with raw false-merge 3.4% — but the audited boundary band showed the
+// "false merges" above ~0.82 are overwhelmingly same-story pairs the LLM
+// failed to merge (en↔no Beirut strike, ar↔en Apache strikes, fa↔en oil
+// jump), i.e. the improvement this project exists for. Genuine same-topic/
+// different-event confusion lives below ~0.82. Env override is an emergency
 // knob, passed through pipeline.yml.
 // `||` not `??`: workflows pass unset secrets/vars as EMPTY strings, and
 // Number('') === 0 would merge everything into one cluster.
-export const EMBED_SIM_THRESHOLD = Number(process.env.EMBED_SIM_THRESHOLD || '0.87')
+export const EMBED_SIM_THRESHOLD = Number(process.env.EMBED_SIM_THRESHOLD || '0.83')
 export const EMBED_WINDOW_HOURS = 8
 
 // Survives npm ci (the library default is inside node_modules) and is the
