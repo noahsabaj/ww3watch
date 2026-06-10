@@ -2,6 +2,7 @@
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
   import { timeAgo } from '$lib/utils'
+  import { clock } from '$lib/now.svelte'
   import { supabase } from '$lib/supabase'
   import { cleanHtml } from '$lib/sanitize-html'
   import { base } from '$app/paths'
@@ -216,7 +217,7 @@
     <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
       <RegionBadge region={article.source_region} />
       <span class="text-sm font-medium text-gray-300 truncate min-w-0">{article.source_name}</span>
-      <span class="text-xs text-gray-500 shrink-0 whitespace-nowrap">{timeAgo(article.published_at)}</span>
+      <span class="text-xs text-gray-500 shrink-0 whitespace-nowrap">{timeAgo(article.published_at, clock.now)}</span>
       <a
         href={article.url}
         target="_blank"
@@ -348,7 +349,7 @@
                     {other.title}
                   </button>
                 {/if}
-                <span class="text-xs text-gray-600 shrink-0">{timeAgo(other.published_at)}</span>
+                <span class="text-xs text-gray-600 shrink-0">{timeAgo(other.published_at, clock.now)}</span>
               </div>
             {/each}
           </div>

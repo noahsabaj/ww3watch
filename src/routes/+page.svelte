@@ -9,6 +9,7 @@
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { groupByClusterId } from '$lib/cluster'
   import { dayKey, dayLabel } from '$lib/utils'
+  import { clock } from '$lib/now.svelte'
   import type { Cluster } from '$lib/cluster'
   import type { PageData } from './$types'
 
@@ -16,6 +17,9 @@
 
   let articles = $state<Article[]>(untrack(() => (data.articles as Article[]) ?? []))
   let newQueue = $state<Article[]>([])
+  // Live trending selection: seeded from the load, refreshed via realtime
+  // events on the trending table (the pipeline rewrites it each run).
+  let trendingIds = $state<string[]>(untrack(() => (data.trendingIds as string[]) ?? []))
   let scrollY = $state(0)
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
@@ -65,7 +69,6 @@
   )
   let clustered = $derived(groupByClusterId(filtered))
   let topStories = $derived.by(() => {
-    const trendingIds = (data.trendingIds ?? []) as string[]
     if (trendingIds.length > 0) {
       // Resolve each curated article to whatever cluster CONTAINS it (not by
       // representative id — the server picks representatives differently, which
@@ -90,6 +93,22 @@
       .sort((a, b) => b.sourceCount - a.sourceCount)
       .slice(0, 3)
   })
+
+  // The pipeline rewrites trending as a burst (≤3 DELETEs + 3 INSERTs) —
+  // debounce to one refetch, and never interpret event payloads (DELETE
+  // delivery semantics under RLS differ; any event is just a refetch signal).
+  let trendingRefreshTimer: ReturnType<typeof setTimeout> | undefined
+  function scheduleTrendingRefresh() {
+    clearTimeout(trendingRefreshTimer)
+    trendingRefreshTimer = setTimeout(async () => {
+      const { data: rows, error } = await supabase
+        .from('trending')
+        .select('article_id, rank')
+        .order('rank', { ascending: true })
+      // On error keep the previous selection.
+      if (!error && rows) trendingIds = rows.map((t) => t.article_id)
+    }, 2500)
+  }
 
   function flushQueue() {
     articles = [...newQueue, ...articles].slice(0, MAX_ARTICLES)
@@ -165,6 +184,11 @@
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trending' },
+        scheduleTrendingRefresh,
+      )
       // supabase-js auto-rejoins with backoff after TIMED_OUT/CHANNEL_ERROR and
       // re-fires SUBSCRIBED — the header dot just mirrors the latest status.
       .subscribe((status) => {
@@ -173,6 +197,7 @@
 
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      clearTimeout(trendingRefreshTimer)
       supabase.removeChannel(channel)
     }
   })
@@ -338,9 +363,9 @@
       {#each clustered as cluster, i (cluster.id)}
         <!-- Day separator at each calendar-day boundary — safe because
              groupByClusterId sorts by representative published_at DESC. -->
-        {#if i === 0 || dayKey(cluster.representative.published_at) !== dayKey(clustered[i - 1].representative.published_at)}
+        {#if i === 0 || dayKey(cluster.representative.published_at, clock.now) !== dayKey(clustered[i - 1].representative.published_at, clock.now)}
           <div class="px-4 py-1.5 text-[10px] uppercase tracking-widest text-gray-600">
-            {dayLabel(cluster.representative.published_at)}
+            {dayLabel(cluster.representative.published_at, clock.now)}
           </div>
         {/if}
         <ClusterCard {cluster} onselect={(a) => selectedArticle = a} />
