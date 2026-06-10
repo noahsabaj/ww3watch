@@ -13,8 +13,8 @@ alter table public.classified_rejects enable row level security;
 -- Single-RPC dedup: which of these guids already exist (as kept articles OR
 -- recorded rejects)? Replaces the chunked .in('guid', ...) GET loop (URL-length
 -- limits + transient-timeout multiplication). SECURITY INVOKER (default) + the
--- RLS-without-policies above means an anon caller sees zero reject rows; EXECUTE
--- is revoked from anon/authenticated regardless. search_path pinned per advisor.
+-- RLS-without-policies above means an anon caller sees zero reject rows.
+-- search_path pinned per advisor.
 create or replace function public.existing_guids(check_guids text[])
 returns table (guid text)
 language sql
@@ -26,4 +26,11 @@ as $$
   select r.guid from public.classified_rejects r where r.guid = any(check_guids)
 $$;
 
+-- HISTORICAL NOTE: this revoke was incomplete. This database's per-schema
+-- default privileges ADD to PostgreSQL's built-in PUBLIC execute grant on new
+-- functions, and revoking from anon/authenticated does NOT remove the PUBLIC
+-- entry they inherit through — the function stayed anon-callable until
+-- 20260611_article_embeddings.sql added `revoke ... from public`. New
+-- functions must always revoke `from public, anon, authenticated` (cf.
+-- 20260609_revoke_rls_auto_enable_execute.sql, which got it right).
 revoke execute on function public.existing_guids(text[]) from anon, authenticated;
