@@ -44,21 +44,31 @@
     href={rep.url}
     target="_blank"
     rel="noopener noreferrer"
+    dir="auto"
     class="block text-white font-semibold leading-snug hover:text-blue-400 transition-colors mb-1 cursor-pointer"
-    onclick={(e) => { if (onselect) { e.preventDefault(); onselect(rep) } }}
+    onclick={(e) => {
+      // Plain left-click opens the reader; modified clicks (ctrl/cmd/shift/alt)
+      // fall through to the href so open-in-new-tab keeps working.
+      if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault()
+        onselect(rep)
+      }
+    }}
   >
     {rep.title}
   </a>
 
   <!-- Summary -->
   {#if rep.summary}
-    <p class="text-sm text-gray-400 line-clamp-2 {isSingle ? '' : 'mb-2'}">{rep.summary}</p>
+    <p dir="auto" class="text-sm text-gray-400 line-clamp-2 {isSingle ? '' : 'mb-2'}">{rep.summary}</p>
   {/if}
 
   <!-- Expand toggle -->
   {#if !isSingle}
     <button
       onclick={() => expanded = !expanded}
+      aria-expanded={expanded}
+      aria-controls="cluster-sources-{cluster.id}"
       class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors mt-1"
     >
       <span class="inline-block transition-transform {expanded ? 'rotate-180' : ''}">▾</span>
@@ -66,7 +76,7 @@
     </button>
 
     {#if expanded}
-      <div class="mt-2 space-y-1 border-t border-gray-800 pt-2">
+      <div id="cluster-sources-{cluster.id}" class="mt-2 space-y-1 border-t border-gray-800 pt-2">
         {#each others as article (article.id)}
           <div class="flex items-center gap-2 py-0.5">
             <RegionBadge region={article.source_region} size="sm" />
@@ -77,6 +87,7 @@
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
+              dir="auto"
               class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0"
             >
               {article.title}

@@ -29,9 +29,7 @@ function tokenize(title: string): Set<string> {
   )
 }
 
-function similarity(a: string, b: string): number {
-  const setA = tokenize(a)
-  const setB = tokenize(b)
+function similarity(setA: Set<string>, setB: Set<string>): number {
   if (setA.size === 0 || setB.size === 0) return 0
   let intersection = 0
   for (const word of setA) {
@@ -77,6 +75,18 @@ export function groupByClusterId(articles: Article[]): Cluster[] {
 export function clusterArticles(articles: Article[]): Cluster[] {
   const clusters: Cluster[] = []
 
+  // Tokenize each title once per invocation — similarity() runs O(n^2) pairwise
+  // and re-tokenizing the same representative hundreds of times dominated cost.
+  const tokens = new Map<string, Set<string>>()
+  const tokensFor = (title: string): Set<string> => {
+    let set = tokens.get(title)
+    if (!set) {
+      set = tokenize(title)
+      tokens.set(title, set)
+    }
+    return set
+  }
+
   for (const article of articles) {
     const articleTime = article.published_at
       ? new Date(article.published_at).getTime()
@@ -91,7 +101,7 @@ export function clusterArticles(articles: Article[]): Cluster[] {
 
       if (Math.abs(articleTime - repTime) > CLUSTER_WINDOW_MS) continue
 
-      if (similarity(article.title, cluster.representative.title) >= CLUSTER_THRESHOLD) {
+      if (similarity(tokensFor(article.title), tokensFor(cluster.representative.title)) >= CLUSTER_THRESHOLD) {
         cluster.articles.push(article)
         // distinct outlets, matching the DB-cluster path above (groupByClusterId)
         cluster.sourceCount = new Set(cluster.articles.map(a => a.source_name)).size
