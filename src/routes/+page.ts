@@ -7,7 +7,7 @@ import { supabase } from '$lib/supabase'
 import type { PageLoad } from './$types'
 
 export const load: PageLoad = async () => {
-  const [articlesResult, trendingResult] = await Promise.all([
+  const [articlesResult, trendingResult, statusResult] = await Promise.all([
     supabase
       .from('articles')
       .select('*')
@@ -15,6 +15,9 @@ export const load: PageLoad = async () => {
       .order('fetched_at', { ascending: false })
       .limit(500),
     supabase.from('trending').select('article_id, rank').order('rank', { ascending: true }),
+    // Last successful ingestion-run timestamp (scalar) — the header's
+    // "updated Xm ago" readout and dead-man's switch.
+    supabase.rpc('pipeline_status'),
   ])
 
   if (articlesResult.error) {
@@ -25,6 +28,7 @@ export const load: PageLoad = async () => {
   return {
     articles: articlesResult.data ?? [],
     trendingIds,
+    lastUpdatedAt: (statusResult.data as string | null) ?? null,
     loadError: !!articlesResult.error,
   }
 }
