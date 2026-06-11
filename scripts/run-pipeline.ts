@@ -136,17 +136,18 @@ async function existingGuids(guids: string[]): Promise<Set<string>> {
   return existing
 }
 
-// Embeds unassigned recent titles and assigns cluster_ids via the
-// assign_clusters_by_embedding RPC (star linkage against representatives,
-// item-relative ±EMBED_WINDOW_HOURS window). Failure here never fails the run:
-// articles stay cluster_id NULL and the next run picks them up.
+// Embeds unassigned recent titles and assigns stories via the
+// assign_story_by_embedding RPC (star linkage against story representatives,
+// item-relative ±EMBED_WINDOW_HOURS window; also mirrors the legacy
+// cluster_id for N-1 PWA clients). Failure here never fails the run:
+// articles stay story_id NULL and the next run picks them up.
 async function embedAndAssignClusters(stats: RunStats): Promise<void> {
   try {
     const since = new Date(Date.now() - ASSIGN_LOOKBACK_HOURS * 3600_000).toISOString()
     const { data: unassigned, error: qError } = await supabaseAdmin
       .from('articles')
       .select('id, title, published_at')
-      .is('cluster_id', null)
+      .is('story_id', null)
       .gte('fetched_at', since)
       // Chronological ASC so the RPC lets later items join clusters started by
       // earlier ones in the same call; null published_at last (anchors to now()).
@@ -190,7 +191,7 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
     let assigned = 0
     let newClusters = 0
     for (let i = 0; i < items.length; i += ASSIGN_RPC_CHUNK) {
-      const { data, error } = await supabaseAdmin.rpc('assign_clusters_by_embedding', {
+      const { data, error } = await supabaseAdmin.rpc('assign_story_by_embedding', {
         p_items: items.slice(i, i + ASSIGN_RPC_CHUNK),
         p_model: EMBEDDING_MODEL_TAG,
         p_threshold: EMBED_SIM_THRESHOLD,
@@ -309,7 +310,7 @@ async function run(stats: RunStats): Promise<void> {
     }
   }
 
-  // 5. Embed titles + assign cluster_ids. Driven purely by cluster_id IS NULL,
+  // 5. Embed titles + assign stories. Driven purely by story_id IS NULL,
   //    so a missed/slow/failed run never orphans an article.
   await embedAndAssignClusters(stats)
 

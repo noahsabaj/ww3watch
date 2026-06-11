@@ -14,7 +14,7 @@ export const load: PageLoad = async () => {
       .order('published_at', { ascending: false, nullsFirst: false })
       .order('fetched_at', { ascending: false })
       .limit(500),
-    supabase.from('trending').select('article_id, rank').order('rank', { ascending: true }),
+    supabase.from('trending').select('article_id, rank, story_id').order('rank', { ascending: true }),
     // Last successful ingestion-run timestamp (scalar) — the header's
     // "updated Xm ago" readout and dead-man's switch.
     supabase.rpc('pipeline_status'),
@@ -24,10 +24,12 @@ export const load: PageLoad = async () => {
     console.error('[load] Supabase error:', articlesResult.error)
   }
 
-  const trendingIds: string[] = (trendingResult.data ?? []).map((t) => t.article_id)
+  const trending: { article_id: string; story_id: string | null }[] = (trendingResult.data ?? []).map(
+    (t) => ({ article_id: t.article_id, story_id: t.story_id ?? null }),
+  )
   return {
     articles: articlesResult.data ?? [],
-    trendingIds,
+    trending,
     lastUpdatedAt: (statusResult.data as string | null) ?? null,
     loadError: !!articlesResult.error,
   }

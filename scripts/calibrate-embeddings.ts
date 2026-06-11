@@ -43,7 +43,7 @@ const EMBED_CHUNK = 256
 const UPSERT_CHUNK = 100
 const WINDOW_MS = EMBED_WINDOW_HOURS * 60 * 60 * 1000
 
-type Row = { id: string; title: string; cluster_id: string | null; source_lang: string; published_at: string | null }
+type Row = { id: string; title: string; story_id: string | null; source_lang: string; published_at: string | null }
 
 function dot(a: number[], b: number[]): number {
   let s = 0
@@ -111,8 +111,8 @@ async function calibrate(): Promise<void> {
   const clustered = await pageAll<Row>((f, t) =>
     supabase
       .from('articles')
-      .select('id, title, cluster_id, source_lang, published_at')
-      .not('cluster_id', 'is', null)
+      .select('id, title, story_id, source_lang, published_at')
+      .not('story_id', 'is', null)
       .order('id')
       .range(f, t),
   )
@@ -141,22 +141,46 @@ async function calibrate(): Promise<void> {
 
   const clusters = new Map<string, Row[]>()
   for (const a of clustered) {
-    const g = clusters.get(a.cluster_id!) ?? []
+    const g = clusters.get(a.story_id!) ?? []
     g.push(a)
-    clusters.set(a.cluster_id!, g)
+    clusters.set(a.story_id!, g)
   }
-  // Representatives: id-as-text === cluster_id (the star-linkage convention).
-  const reps = clustered.filter((a) => a.id === a.cluster_id && vecs.has(a.id) && a.published_at)
+  // Representatives (star-linkage centers). With the secret key, read the
+  // true rep_article_id from stories; in read-only mode approximate the rep
+  // as the earliest-published member — which is exactly how the assignment
+  // RPC creates reps (items arrive chronologically ASC).
+  const repIdByStory = new Map<string, string>()
+  if (canWrite) {
+    const storyRows = await pageAll<{ id: string; rep_article_id: string | null }>((f, t) =>
+      supabase.from('stories').select('id, rep_article_id').range(f, t),
+    )
+    for (const st of storyRows) if (st.rep_article_id) repIdByStory.set(st.id, st.rep_article_id)
+  } else {
+    console.log('[calibrate] read-only mode: approximating reps as earliest-published members')
+    for (const [sidKey, g] of clusters) {
+      const earliest = g.reduce((best, a) =>
+        (a.published_at ?? '9999') < (best.published_at ?? '9999') ? a : best, g[0])
+      repIdByStory.set(sidKey, earliest.id)
+    }
+  }
+  const byId = new Map(clustered.map((a) => [a.id, a]))
+  const reps = [...repIdByStory.entries()]
+    .map(([sid, repId]) => {
+      const rep = byId.get(repId)
+      return rep && vecs.has(rep.id) && rep.published_at ? { ...rep, story_id: sid } : null
+    })
+    .filter((r): r is Row => r !== null)
   const multi = [...clusters.values()].filter((g) => g.length >= 2)
-  console.log(`clustered articles ${clustered.length} | clusters ${clusters.size} (multi-member ${multi.length}) | usable reps ${reps.length}`)
+  console.log(`clustered articles ${clustered.length} | stories ${clusters.size} (multi-member ${multi.length}) | usable reps ${reps.length}`)
 
   type Pair = { sim: number; langA: string; langB: string; titleA: string; titleB: string; same: boolean }
   const positives: Pair[] = []
   const negatives: Pair[] = []
 
+  const isRep = new Set([...repIdByStory.values()])
   for (const a of clustered) {
     const va = vecs.get(a.id)
-    if (!va || !a.published_at || a.id === a.cluster_id) continue
+    if (!va || !a.published_at || isRep.has(a.id)) continue
     const ts = new Date(a.published_at).getTime()
     for (const rep of reps) {
       if (rep.id === a.id) continue
@@ -168,7 +192,7 @@ async function calibrate(): Promise<void> {
         langB: rep.source_lang,
         titleA: a.title,
         titleB: rep.title,
-        same: rep.cluster_id === a.cluster_id,
+        same: rep.story_id === a.story_id,
       }
       if (pair.same) positives.push(pair)
       else negatives.push(pair)
@@ -196,16 +220,16 @@ async function calibrate(): Promise<void> {
   const perLang = new Map<string, { total: number; correct: number; sims: number[] }>()
   for (const a of clustered) {
     const va = vecs.get(a.id)
-    if (!va || !a.published_at || a.id === a.cluster_id) continue
+    if (!va || !a.published_at || isRep.has(a.id)) continue
     const ts = new Date(a.published_at).getTime()
     const cands = reps.filter((r) => r.id !== a.id && Math.abs(new Date(r.published_at!).getTime() - ts) <= WINDOW_MS)
-    if (!cands.some((r) => r.cluster_id === a.cluster_id)) continue // own rep outside window
+    if (!cands.some((r) => r.story_id === a.story_id)) continue // own rep outside window
     const ranked = cands.map((r) => ({ r, sim: dot(va, vecs.get(r.id)!) })).sort((x, y) => y.sim - x.sim)
     simTotal++
-    const correct = ranked[0].r.cluster_id === a.cluster_id
+    const correct = ranked[0].r.story_id === a.story_id
     if (correct) simCorrect++
     if (ranked.length > 1) margins.push(ranked[0].sim - ranked[1].sim)
-    const own = reps.find((r) => r.cluster_id === a.cluster_id)!
+    const own = reps.find((r) => r.story_id === a.story_id)!
     const key = [a.source_lang, own.source_lang].sort().join('-')
     const bucket = perLang.get(key) ?? { total: 0, correct: 0, sims: [] }
     bucket.total++

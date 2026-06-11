@@ -1,124 +1,50 @@
 import type { Article } from './types'
 
 export interface Cluster {
+  /** Grouping key: the story uuid, or the article's own id for singletons. */
   id: string
+  /** The real stories.id when the group came from the DB; null for unassigned singletons. */
+  storyId: string | null
   representative: Article
   articles: Article[]
   sourceCount: number
 }
 
-const STOPWORDS = new Set([
-  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'of',
-  'for', 'with', 'by', 'has', 'had', 'have', 'be', 'been', 'as', 'its', 'it',
-  'this', 'that', 'these', 'those', 'says', 'said', 'say', 'after', 'amid',
-  'into', 'from', 'over', 'under', 'about', 'and', 'but', 'or', 'not', 'new',
-  'his', 'her', 'their', 'our', 'who', 'what', 'how', 'when', 'where', 'why',
-])
-
-// True-Jaccard threshold. Genuine same-story headlines score ~0.5-0.85; the
-// over-merge false positives (a short headline whose tokens are a subset of a
-// longer unrelated one) score ~0.2 and are now rejected.
-const CLUSTER_THRESHOLD = 0.35
-const CLUSTER_WINDOW_MS = 8 * 60 * 60 * 1000
-
-function tokenize(title: string): Set<string> {
-  return new Set(
-    title.toLowerCase()
-      .split(/\W+/)
-      .filter(w => w.length >= 3 && !STOPWORDS.has(w))
-  )
+function ts(a: Article): number {
+  return a.published_at ? new Date(a.published_at).getTime() : 0
 }
 
-function similarity(setA: Set<string>, setB: Set<string>): number {
-  if (setA.size === 0 || setB.size === 0) return 0
-  let intersection = 0
-  for (const word of setA) {
-    if (setB.has(word)) intersection++
-  }
-  // True Jaccard: intersection / union. (Was intersection / min(sizes) — the
-  // overlap coefficient — which scored a short title fully contained in a longer
-  // unrelated one as 1.0 and over-merged.)
-  return intersection / (setA.size + setB.size - intersection)
-}
-
-export function groupByClusterId(articles: Article[]): Cluster[] {
-  // Articles with LLM-assigned cluster_id: group by that ID (O(n))
-  const assigned = articles.filter(a => a.cluster_id !== null)
-  const unassigned = articles.filter(a => a.cluster_id === null)
-
-  const map = new Map<string, Article[]>()
-  for (const a of assigned) {
-    const key = a.cluster_id!
-    const group = map.get(key) ?? []
-    group.push(a)
-    map.set(key, group)
-  }
-  const dbClusters: Cluster[] = [...map.values()].map(group => ({
-    id: group[0].cluster_id!,
-    representative: group[0],
-    articles: group,
-    sourceCount: new Set(group.map(a => a.source_name)).size,
-  }))
-
-  // Articles without cluster_id: fall back to Jaccard (covers existing DB articles)
-  const jaccardClusters = clusterArticles(unassigned)
-
-  // Merge and sort by representative published_at DESC so Jaccard clusters
-  // (articles not yet LLM-processed) don't get buried below all DB clusters.
-  return [...dbClusters, ...jaccardClusters].sort((a, b) => {
-    const aTime = a.representative.published_at ? new Date(a.representative.published_at).getTime() : 0
-    const bTime = b.representative.published_at ? new Date(b.representative.published_at).getTime() : 0
-    return bTime - aTime
-  })
-}
-
-export function clusterArticles(articles: Article[]): Cluster[] {
-  const clusters: Cluster[] = []
-
-  // Tokenize each title once per invocation — similarity() runs O(n^2) pairwise
-  // and re-tokenizing the same representative hundreds of times dominated cost.
-  const tokens = new Map<string, Set<string>>()
-  const tokensFor = (title: string): Set<string> => {
-    let set = tokens.get(title)
-    if (!set) {
-      set = tokenize(title)
-      tokens.set(title, set)
-    }
-    return set
+// Groups articles by their pipeline-assigned story_id (multilingual embedding
+// clustering, assign_story_by_embedding). Articles without one — junk-titled
+// or not-yet-assigned rows — render as singletons by design; there is no
+// client-side fallback clustering anymore.
+//
+// `?? a.id` also tolerates story_id === undefined: the service worker can
+// serve cached pre-stories REST rows for a session after a deploy.
+//
+// Representative = newest member by published_at (display choice — matches
+// the feed's day-separator assumption), kept at articles[0] (consumers render
+// articles.slice(1) as "the others"). Output sorted by representative
+// published_at DESC, nulls last.
+export function groupByStoryId(articles: Article[]): Cluster[] {
+  const groups = new Map<string, Article[]>()
+  for (const a of articles) {
+    const key = a.story_id ?? a.id
+    const g = groups.get(key)
+    if (g) g.push(a)
+    else groups.set(key, [a])
   }
 
-  for (const article of articles) {
-    const articleTime = article.published_at
-      ? new Date(article.published_at).getTime()
-      : 0
-
-    let matched = false
-
-    for (const cluster of clusters) {
-      const repTime = cluster.representative.published_at
-        ? new Date(cluster.representative.published_at).getTime()
-        : 0
-
-      if (Math.abs(articleTime - repTime) > CLUSTER_WINDOW_MS) continue
-
-      if (similarity(tokensFor(article.title), tokensFor(cluster.representative.title)) >= CLUSTER_THRESHOLD) {
-        cluster.articles.push(article)
-        // distinct outlets, matching the DB-cluster path above (groupByClusterId)
-        cluster.sourceCount = new Set(cluster.articles.map(a => a.source_name)).size
-        matched = true
-        break
+  return [...groups.entries()]
+    .map(([key, group]) => {
+      const representative = group.reduce((best, a) => (ts(a) > ts(best) ? a : best), group[0])
+      return {
+        id: key,
+        storyId: group[0].story_id ?? null,
+        representative,
+        articles: [representative, ...group.filter((a) => a !== representative)],
+        sourceCount: new Set(group.map((a) => a.source_name)).size,
       }
-    }
-
-    if (!matched) {
-      clusters.push({
-        id: article.id,
-        representative: article,
-        articles: [article],
-        sourceCount: 1,
-      })
-    }
-  }
-
-  return clusters
+    })
+    .sort((a, b) => ts(b.representative) - ts(a.representative))
 }
