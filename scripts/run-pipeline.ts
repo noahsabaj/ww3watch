@@ -171,7 +171,9 @@ async function classifyShadowStats(
     const acc = sims.filter((x) => x.accepted).map((x) => x.sim).sort((m, n) => m - n)
     const rej = sims.filter((x) => !x.accepted).map((x) => x.sim).sort((m, n) => m - n)
     const agreement: Record<string, number> = {}
-    for (const t of [0.74, 0.76, 0.78, 0.8, 0.82]) {
+    // First live reading: accepted_p50 0.875 vs rejected_p50 0.849 — the
+    // decision zone sits in 0.84-0.88, not the originally guessed 0.74-0.82.
+    for (const t of [0.84, 0.85, 0.86, 0.87, 0.88]) {
       agreement[String(t)] = +(sims.filter((x) => x.sim >= t === x.accepted).length / sims.length).toFixed(3)
     }
     return {
