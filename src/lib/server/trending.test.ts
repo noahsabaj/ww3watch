@@ -56,6 +56,7 @@ function article(id: string, title: string, source: string, storyId: string | nu
     source_lang: 'en',
     feed_url: 'https://example.com/rss',
     source_id: null,
+    body_hash: null,
     story_id: storyId,
     cluster_id: null,
   }

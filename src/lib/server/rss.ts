@@ -1,4 +1,5 @@
 import Parser from 'rss-parser'
+import { bodyHash } from './wire'
 import type { Feed, SourceRegion } from '../types'
 
 type ArticleInsert = {
@@ -12,6 +13,7 @@ type ArticleInsert = {
   source_lang: string
   feed_url: string
   source_id: string | null
+  body_hash: string | null
 }
 
 export type FeedErrorKind = 'http' | 'timeout' | 'parse' | 'network'
@@ -122,6 +124,7 @@ function parseArticles(feed: Feed, xml: string): Promise<ArticleInsert[]> {
         source_lang: feed.lang,
         feed_url: feed.url,
         source_id: feed.id ?? null,
+        body_hash: bodyHash(item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null),
       }))
       .filter((a) => a.guid !== ''),
   )

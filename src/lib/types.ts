@@ -36,6 +36,7 @@ export interface Article {
   source_lang: string
   feed_url: string
   source_id: string | null
+  body_hash: string | null
   story_id: string | null
   // Legacy mirror of the story's rep-id-as-text, kept for N-1 PWA clients
   // until the cleanup migration drops it.
