@@ -10,8 +10,8 @@
 // -> recompute trending. Every run writes one pipeline_runs row (stats jsonb
 // + error) for dashboard observability.
 
-import { FEEDS } from '../src/lib/feeds'
 import { fetchFeed, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
+import type { Feed } from '../src/lib/types'
 import { classifyArticles } from '../src/lib/server/classify'
 import {
   embedTitles,
@@ -37,6 +37,72 @@ const ASSIGN_RPC_CHUNK = 100
 const ID_QUERY_CHUNK = 100 // .in() filters travel in the URL — keep chunks small
 
 type RunStats = Record<string, unknown>
+
+// A sources-table row: the fetchable Feed shape plus health bookkeeping.
+type SourceRow = Feed & {
+  id: string
+  enabled: boolean
+  consecutive_failures: number
+}
+
+// The roster lives in the DB (sources table). A failed/empty roster query must
+// FAIL the run loudly — a silent zero-feed "success" would record error=null
+// and reset the freshness dead-man's switch.
+async function loadSources(): Promise<SourceRow[]> {
+  const { data, error } = await supabaseAdmin
+    .from('sources')
+    .select('*')
+    .eq('enabled', true)
+    // Deterministic order ⇒ deterministic guid-dedupe attribution for items
+    // cross-posted to multiple feeds.
+    .order('name')
+  if (error) throw new Error(`sources roster query failed: ${JSON.stringify(error)}`)
+  if (!data?.length) throw new Error('sources roster is empty — refusing to run')
+  return data as SourceRow[]
+}
+
+// Write per-source health back after the fetch pass. Two homogeneous upserts
+// (PostgREST requires uniform payload keys): successes reset the failure
+// counter; failures increment it and record the kind/detail. Best-effort —
+// health bookkeeping must never fail the run.
+async function updateSourceHealth(results: FeedFetchResult[]): Promise<void> {
+  const now = new Date().toISOString()
+  const base = (s: SourceRow) => ({
+    id: s.id,
+    url: s.url,
+    name: s.name,
+    region: s.region,
+    lang: s.lang,
+    enabled: s.enabled,
+    updated_at: now,
+  })
+  const ok = results
+    .filter((r) => !r.error)
+    .map((r) => ({
+      ...base(r.feed as SourceRow),
+      last_ok_at: now,
+      last_via: r.via,
+      consecutive_failures: 0,
+      last_error_kind: null,
+      last_error: null,
+    }))
+  const failed = results
+    .filter((r) => r.error)
+    .map((r) => ({
+      ...base(r.feed as SourceRow),
+      consecutive_failures: ((r.feed as SourceRow).consecutive_failures ?? 0) + 1,
+      last_error_kind: r.error!.kind,
+      last_error: r.error!.detail.slice(0, 300),
+    }))
+  for (const rows of [ok, failed]) {
+    for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
+      const { error } = await supabaseAdmin
+        .from('sources')
+        .upsert(rows.slice(i, i + UPSERT_BATCH), { onConflict: 'id' })
+      if (error) console.error('[pipeline] source health write failed:', error)
+    }
+  }
+}
 
 function logFeedSummary(results: FeedFetchResult[]) {
   const ok = results.filter((r) => !r.error)
@@ -165,15 +231,17 @@ async function recordRun(startedAt: Date, stats: RunStats, error: unknown): Prom
 async function run(stats: RunStats): Promise<void> {
   const startedAt = Date.now()
 
-  // 1. Fetch every feed in parallel; failures are recorded (and proxy-retried),
-  //    never silently dropped.
-  const settled = await Promise.allSettled(FEEDS.map((feed) => fetchFeed(feed)))
+  // 1. Load the roster from the DB, then fetch every feed in parallel;
+  //    failures are recorded (and proxy-retried), never silently dropped.
+  const sources = await loadSources()
+  const settled = await Promise.allSettled(sources.map((feed) => fetchFeed(feed)))
   const results: FeedFetchResult[] = settled.map((s, i) =>
     s.status === 'fulfilled'
       ? s.value
-      : { feed: FEEDS[i], via: 'direct', articles: [], error: { kind: 'network', detail: String(s.reason) } },
+      : { feed: sources[i], via: 'direct', articles: [], error: { kind: 'network', detail: String(s.reason) } },
   )
   Object.assign(stats, logFeedSummary(results))
+  await updateSourceHealth(results)
 
   const candidates = results.flatMap((r) => r.articles).filter((a) => a.guid !== '')
 

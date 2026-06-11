@@ -35,10 +35,16 @@ export interface Article {
   source_region: SourceRegion
   source_lang: string
   feed_url: string
+  source_id: string | null
   cluster_id: string | null
 }
 
+// The fetchable shape of a roster entry. The roster itself lives in the
+// `sources` table (seeded by 20260611_sources.sql; health written back by the
+// pipeline every run) — `id` is present on DB rows and stamps articles'
+// provenance FK; test fixtures may omit it.
 export interface Feed {
+  id?: string
   name: string
   url: string
   region: SourceRegion

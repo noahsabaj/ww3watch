@@ -18,7 +18,8 @@ function makeArticle(
     fetched_at: new Date().toISOString(),
     source_name,
     source_region: 'US/Western',
-    cluster_id: null,
+    source_id: null,
+  cluster_id: null,
     source_lang: 'en',
     feed_url: 'https://example.com/rss',
   }
