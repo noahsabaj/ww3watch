@@ -1,44 +1,53 @@
 # WW3Watch
 
-A real-time global news aggregator focused on geopolitical conflict and world events. Aggregates articles from 200+ sources across every major region, clusters related stories using LLM-assisted grouping, and surfaces trending stories as they break.
+A real-time global news aggregator focused on geopolitical conflict and world events. 200 sources across every major region and perspective; related stories grouped across languages by multilingual embeddings; trending surfaced as it breaks. Headlines appear exactly as their newsrooms wrote them.
 
-**Live at [noahsabaj.github.io/ww3watch](https://noahsabaj.github.io/ww3watch/)**
+**Live at [noahsabaj.github.io/ww3watch](https://noahsabaj.github.io/ww3watch/)** · [How it works](https://noahsabaj.github.io/ww3watch/about)
+
+> **The rule the system is built on:** machine intelligence routes stories — relevance, grouping, trending — but never rewrites them. The only model-touched content is opt-in translation, one click from the original. See [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 
 ## Features
 
-- **Real-time feed** — new articles appear live via Supabase Realtime without a page refresh
-- **Story clustering** — related articles from multiple sources are grouped together automatically
-- **Trending Now** — LLM-ranked top stories updated continuously
-- **In-app reader** — read articles without leaving the site; falls back to summary if extraction fails
-- **Multi-source view** — see every outlet covering a story and switch between versions in the reader
-- **Region filtering** — filter by US/Western, European, Arab/Gulf, Chinese, Russian, South Asian, and more
-- **PWA** — installable on mobile, works as a home screen app
+- **Real-time feed** — new articles, story regroupings, and trending changes push live via Supabase Realtime
+- **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event; deterministic, quota-free
+- **Trending Now** — LLM-picked top stories, updating live
+- **Wire detection** — near-identical copies inside a story are marked, so "12 sources" doesn't overstate independent confirmation
+- **In-app reader + translation** — cached extraction (survives link rot), on-demand translation with the original one click away
+- **Source roster with live health** — every feed and its fetch health, public on [/about](https://noahsabaj.github.io/ww3watch/about)
+- **Freshness dead-man's switch** — the header shows when ingestion last succeeded; it goes amber/red if the pipeline stalls
+- **Region filtering, RTL, PWA** — 16 region/perspective buckets; first-class Persian/Arabic/Hebrew rendering; installable
 
 ## Stack
 
 All free-tier, no provider that pauses idle hobby projects:
 
 - [SvelteKit](https://kit.svelte.dev/) + Svelte 5 runes — static SPA (`adapter-static`)
-- [GitHub Pages](https://pages.github.com/) — hosting · [GitHub Actions](https://docs.github.com/actions) — scheduled ingestion pipeline
-- [Supabase](https://supabase.com/) — Postgres + Realtime + two Deno Edge Functions (`reader`, `translate`)
-- [Cerebras](https://cloud.cerebras.ai/) — OpenAI-compatible LLM (classification, clustering, trending, translation)
+- [GitHub Pages](https://pages.github.com/) — hosting · [GitHub Actions](https://docs.github.com/actions) — scheduled ingestion (also runs as a container, see `Dockerfile`)
+- [Supabase](https://supabase.com/) — Postgres (+pgvector, pg_cron retention) + Realtime + two Deno Edge Functions (`reader`, `translate`)
+- [Transformers.js](https://huggingface.co/docs/transformers.js) — multilingual-e5-base embeddings, locally on the runner (story grouping)
+- [Groq](https://groq.com/) — relevance classification + trending picks · [Cerebras](https://cloud.cerebras.ai/) — on-demand translation
 - [Tailwind CSS v4](https://tailwindcss.com/)
 
 ## Architecture
 
 ```
-GitHub Actions (cron, every 15 min)        Browser (static SPA on GitHub Pages)
-  scripts/run-pipeline.ts                     +page.ts  ── anon read ──►  Supabase
-    fetch 200+ RSS feeds                       realtime sub ◄── INSERTs ── Postgres
-    de-dup vs DB (only new GUIDs)              ArticlePanel ──► Edge Functions
-    classify + cluster (LLM)                                     reader   (extract)
-    upsert ─────────────────►  Supabase Postgres                translate (LLM)
-    recompute trending
+GitHub Actions (cron, every 15 min)         Browser (static SPA on GitHub Pages)
+  scripts/run-pipeline.ts                      +page.ts ── anon read ──► Supabase
+    roster ◄── sources table (health ──►)       realtime ◄── INSERT/UPDATE events
+    fetch feeds (direct → CF proxy)             ArticlePanel ──► Edge Functions
+    de-dup vs DB ∪ rejects                        reader (extract, cached)
+    classify (LLM) + shadow pre-filter            translate (LLM, cached)
+    upsert articles (+body_hash wire marks)
+    embed titles (local e5-base)
+    assign stories (pgvector RPC) ──► stories
+    recompute trending (LLM picks)
+  pg_cron (daily): retention prune
 ```
 
-- **Ingestion** is a Node script run by GitHub Actions ([.github/workflows/pipeline.yml](.github/workflows/pipeline.yml)). It reuses `src/lib/server/*` and writes to Supabase. RSS/Readability libs need Node, which the Actions runner provides.
-- **Frontend** is a static SPA. The initial load ([src/routes/+page.ts](src/routes/+page.ts)) reads with the anon key; [Realtime](src/routes/+page.svelte) keeps it live.
-- **`reader` / `translate`** run as Supabase Edge Functions ([supabase/functions](supabase/functions)) — they need a server (SSRF-guarded fetch, the LLM key). Returned HTML is sanitized on the client with DOMPurify before `{@html}`.
+- **Ingestion** is a Node script run by GitHub Actions ([.github/workflows/pipeline.yml](.github/workflows/pipeline.yml)) — or anywhere, via the `Dockerfile`. The feed roster lives in the `sources` table (health written back every run); curation is SQL, not commits.
+- **Story grouping** is deterministic: titles embed through a pinned multilingual model on the runner, and a pgvector RPC assigns each article to the nearest story representative within a time window. No LLM in the loop.
+- **Frontend** is a static SPA. The initial load ([src/routes/+page.ts](src/routes/+page.ts)) reads with the anon key; [Realtime](src/routes/+page.svelte) keeps articles, story regroupings, trending, and the freshness readout live.
+- **`reader` / `translate`** run as Supabase Edge Functions ([supabase/functions](supabase/functions)) — they need a server (SSRF-guarded fetch, the LLM key). Content is cached raw and sanitized on the client with DOMPurify at `{@html}`, so sanitizer upgrades apply retroactively.
 
 ## Development
 
