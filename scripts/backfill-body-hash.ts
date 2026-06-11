@@ -18,7 +18,7 @@ const PAGE = 1000
 async function main() {
   let updated = 0
   let skipped = 0
-  let lastId = ''
+  let lastId = '00000000-0000-0000-0000-000000000000' // nil uuid: '' fails the uuid cast
   // Keyset pagination: unhashable rows keep body_hash null forever, so an
   // offset/page-0 strategy would starve on them. Walk ids once.
   for (;;) {
