@@ -45,6 +45,44 @@ const LLM_MODEL = Deno.env.get('LLM_MODEL')!
 // keeps worst-case output (CJK input → English) under max_tokens — at 12000 a
 // Chinese article could exceed the cap and fail deterministically on retry.
 const MAX_CONTENT_CHARS = 8000
+// Each uncached call burns LLM quota; 20/h is far beyond human reading pace.
+const RATE_LIMIT_PER_HOUR = 20
+
+// Per-IP hourly rate limit. Fail-OPEN on limiter errors: a bookkeeping hiccup
+// must never take the feature down; the limit exists to stop scripted abuse.
+function clientIp(req: Request): string {
+  const xff = req.headers.get('x-forwarded-for')
+  return xff?.split(',')[0]?.trim() || 'unknown'
+}
+
+function secondsToNextHour(): number {
+  const now = new Date()
+  return Math.max(1, Math.ceil((3600_000 - (now.getTime() % 3600_000)) / 1000))
+}
+
+async function rateLimited(req: Request, fn: string, limit: number): Promise<Response | null> {
+  try {
+    const { data: allowed, error } = await supabase.rpc('check_rate_limit', {
+      p_ip: clientIp(req),
+      p_fn: fn,
+      p_limit: limit,
+    })
+    if (error) {
+      console.error(`[${fn}] rate-limit check failed (failing open):`, error)
+      return null
+    }
+    if (allowed === false) {
+      return new Response(JSON.stringify({ error: 'rate_limited' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(secondsToNextHour()) },
+      })
+    }
+  } catch (err) {
+    console.error(`[${fn}] rate-limit check failed (failing open):`, err)
+  }
+  return null
+}
+
 
 async function sha256Hex(input: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
@@ -70,6 +108,9 @@ Deno.serve(async (req) => {
   ) {
     return json({ error: 'invalid_body' }, 400)
   }
+
+  const limited = await rateLimited(req, 'translate', RATE_LIMIT_PER_HOUR)
+  if (limited) return limited
 
   // Gate: must reference an article the pipeline ingested.
   const { data: known, error: gateError } = await supabase

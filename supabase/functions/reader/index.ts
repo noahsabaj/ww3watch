@@ -41,6 +41,44 @@ const supabase = createClient(Deno.env.get('SUPABASE_URL')!, secretKey(), {
 })
 
 const MAX_CACHE_CONTENT_CHARS = 400_000
+// Generous human-proof ceiling; cache hits count too (they're still requests).
+const RATE_LIMIT_PER_HOUR = 120
+
+// Per-IP hourly rate limit. Fail-OPEN on limiter errors: a bookkeeping hiccup
+// must never take the feature down; the limit exists to stop scripted abuse.
+function clientIp(req: Request): string {
+  const xff = req.headers.get('x-forwarded-for')
+  return xff?.split(',')[0]?.trim() || 'unknown'
+}
+
+function secondsToNextHour(): number {
+  const now = new Date()
+  return Math.max(1, Math.ceil((3600_000 - (now.getTime() % 3600_000)) / 1000))
+}
+
+async function rateLimited(req: Request, fn: string, limit: number): Promise<Response | null> {
+  try {
+    const { data: allowed, error } = await supabase.rpc('check_rate_limit', {
+      p_ip: clientIp(req),
+      p_fn: fn,
+      p_limit: limit,
+    })
+    if (error) {
+      console.error(`[${fn}] rate-limit check failed (failing open):`, error)
+      return null
+    }
+    if (allowed === false) {
+      return new Response(JSON.stringify({ error: 'rate_limited' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(secondsToNextHour()) },
+      })
+    }
+  } catch (err) {
+    console.error(`[${fn}] rate-limit check failed (failing open):`, err)
+  }
+  return null
+}
+
 
 function ipv4ToInt(ip: string): number | null {
   const parts = ip.split('.')
@@ -126,6 +164,9 @@ Deno.serve(async (req) => {
     }
   }
   if (!articleUrl) return json({ error: 'missing_url' }, 400)
+
+  const limited = await rateLimited(req, 'reader', RATE_LIMIT_PER_HOUR)
+  if (limited) return limited
 
   // Gate: only URLs the pipeline ingested. Blocks cache-stuffing and limits the
   // SSRF/proxy surface to our own article set.
