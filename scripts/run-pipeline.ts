@@ -136,6 +136,58 @@ async function existingGuids(guids: string[]): Promise<Set<string>> {
   return existing
 }
 
+function dot(a: number[], b: number[]): number {
+  let sum = 0
+  for (let i = 0; i < a.length; i++) sum += a[i] * b[i]
+  return sum
+}
+
+function percentile(sorted: number[], p: number): number | null {
+  if (sorted.length === 0) return null
+  return +sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))].toFixed(4)
+}
+
+// SHADOW MODE ONLY: measures how an embedding-similarity relevance pre-filter
+// WOULD have agreed with the LLM, logged to pipeline_runs.stats.cls_prefilter.
+// Zero behavior change — enabling a threshold is a later, data-backed change.
+async function classifyShadowStats(
+  toClassify: Array<{ guid: string; title: string }>,
+  relevant: Set<string>,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const { data: raw, error } = await supabaseAdmin.rpc('relevant_centroid', { p_days: 14 })
+    if (error || !raw) return null
+    const centroid = (typeof raw === 'string' ? JSON.parse(raw) : raw) as number[]
+    // avg() of unit vectors is not unit-length — normalize for cosine.
+    const norm = Math.sqrt(centroid.reduce((acc, x) => acc + x * x, 0))
+    if (!norm) return null
+    const unit = centroid.map((x) => x / norm)
+
+    const embeddable = toClassify.filter((a) => shouldEmbed(a.title))
+    if (embeddable.length === 0) return null
+    const vecs = await embedTitles(embeddable.map((a) => a.title))
+    const sims = embeddable.map((a, i) => ({ accepted: relevant.has(a.guid), sim: dot(vecs[i], unit) }))
+
+    const acc = sims.filter((x) => x.accepted).map((x) => x.sim).sort((m, n) => m - n)
+    const rej = sims.filter((x) => !x.accepted).map((x) => x.sim).sort((m, n) => m - n)
+    const agreement: Record<string, number> = {}
+    for (const t of [0.74, 0.76, 0.78, 0.8, 0.82]) {
+      agreement[String(t)] = +(sims.filter((x) => x.sim >= t === x.accepted).length / sims.length).toFixed(3)
+    }
+    return {
+      n: sims.length,
+      accepted_p10: percentile(acc, 10),
+      accepted_p50: percentile(acc, 50),
+      rejected_p50: percentile(rej, 50),
+      rejected_p90: percentile(rej, 90),
+      agreement,
+    }
+  } catch (err) {
+    console.error('[pipeline] classify shadow stats failed (non-fatal):', err)
+    return null
+  }
+}
+
 // Embeds unassigned recent titles and assigns stories via the
 // assign_story_by_embedding RPC (star linkage against story representatives,
 // item-relative ±EMBED_WINDOW_HOURS window; also mirrors the legacy
@@ -284,6 +336,8 @@ async function run(stats: RunStats): Promise<void> {
     relevant: articles.length,
     rejected: rejected.size,
   })
+  const shadow = await classifyShadowStats(toClassify, relevant)
+  if (shadow) stats.cls_prefilter = shadow
 
   // 4. Upsert relevant articles + record rejects so they're never re-classified.
   let inserted = 0
@@ -300,7 +354,8 @@ async function run(stats: RunStats): Promise<void> {
   stats.inserted = inserted
 
   if (rejected.size > 0) {
-    const rejectRows = [...rejected].map((guid) => ({ guid }))
+    const titleByGuid = new Map(toClassify.map((a) => [a.guid, a.title]))
+    const rejectRows = [...rejected].map((guid) => ({ guid, title: titleByGuid.get(guid) ?? null }))
     for (let i = 0; i < rejectRows.length; i += UPSERT_BATCH) {
       const batch = rejectRows.slice(i, i + UPSERT_BATCH)
       const { error } = await supabaseAdmin
