@@ -18,6 +18,7 @@ function article(overrides: Partial<Article> = {}): Article {
     source_lang: 'en',
     feed_url: 'https://example.com/feed',
     source_id: null,
+    body_hash: null,
     story_id: null,
     cluster_id: null,
     ...overrides,

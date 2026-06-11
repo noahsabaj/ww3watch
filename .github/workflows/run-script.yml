@@ -1,0 +1,36 @@
+name: Run script
+
+# Generic one-off runner for repo scripts that need production secrets
+# (backfills, data fixes). Maintainer-only by nature of workflow_dispatch.
+#   gh workflow run run-script.yml -f script=scripts/backfill-body-hash.ts
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Path to the script (e.g. scripts/backfill-body-hash.ts)'
+        required: true
+        type: string
+
+concurrency:
+  group: ww3watch-pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx "${{ inputs.script }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}

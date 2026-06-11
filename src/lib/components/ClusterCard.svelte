@@ -17,6 +17,27 @@
   )
   const repFlag = $derived(langFlag(rep.source_lang))
   const breaking = $derived(isBreaking(rep.published_at, clock.now))
+
+  // Wire-syndication marks: members sharing a body_hash are reprints of the
+  // same agency copy. Badge every copy EXCEPT the earliest-published one (the
+  // origin), so "N sources" reads honestly in the expanded list.
+  const wireIds = $derived.by(() => {
+    const byHash = new Map<string, Article[]>()
+    for (const a of cluster.articles) {
+      if (!a.body_hash) continue
+      const g = byHash.get(a.body_hash)
+      if (g) g.push(a)
+      else byHash.set(a.body_hash, [a])
+    }
+    const ids = new Set<string>()
+    for (const group of byHash.values()) {
+      if (group.length < 2) continue
+      const sorted = [...group].sort((x, y) =>
+        (x.published_at ?? '9999').localeCompare(y.published_at ?? '9999'))
+      for (const copy of sorted.slice(1)) ids.add(copy.id)
+    }
+    return ids
+  })
 </script>
 
 <article class="border-l-4 {REGION_BORDER[rep.source_region]} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
@@ -84,6 +105,9 @@
             <span class="text-xs text-gray-400 shrink-0">
               {langFlag(article.source_lang)}{article.source_name}
             </span>
+            {#if wireIds.has(article.id)}
+              <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
+            {/if}
             <a
               href={article.url}
               target="_blank"
