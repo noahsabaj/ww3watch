@@ -42,7 +42,7 @@ import { updateTrending } from './trending'
 
 const mockedCallLLM = vi.mocked(callLLM)
 
-function article(id: string, title: string, source: string, clusterId: string | null) {
+function article(id: string, title: string, source: string, storyId: string | null) {
   return {
     id,
     guid: id,
@@ -55,7 +55,9 @@ function article(id: string, title: string, source: string, clusterId: string | 
     source_region: 'US/Western',
     source_lang: 'en',
     feed_url: 'https://example.com/rss',
-    cluster_id: clusterId,
+    source_id: null,
+    story_id: storyId,
+    cluster_id: null,
   }
 }
 
@@ -71,25 +73,33 @@ beforeEach(() => {
 describe('updateTrending', () => {
   // 4 clusters: one LLM-assigned cluster (2 articles, 2 distinct sources) + 3 singles.
   const recent = [
-    article('a1', 'Strike on Haifa port reported', 'Reuters', 'a1'),
-    article('a2', 'Haifa port hit in strike', 'AP', 'a1'),
+    article('a1', 'Strike on Haifa port reported', 'Reuters', 's-haifa'),
+    article('a2', 'Haifa port hit in strike', 'AP', 's-haifa'),
     article('b', 'Coup attempt in Sahel state', 'BBC', null),
     article('c', 'Carrier group moves to gulf', 'CNN', null),
     article('d', 'Ceasefire talks stall again', 'DW', null),
   ]
 
-  it('groups by cluster_id (distinct sources) and inserts ranked unique picks', async () => {
+  it('groups by story_id (distinct sources) and inserts ranked unique picks', async () => {
     state.articlesResult = { data: recent, error: null }
     mockedCallLLM.mockResolvedValue('[0,1,2]')
     await updateTrending()
 
-    // groupByClusterId: the a1 cluster (2 sources) sorts first, so the prompt
+    // groupByStoryId: the s-haifa story (2 sources) sorts first, so the prompt
     // shows it as "2 sources" — proving distinct-source counting via the shared path.
     const prompt = mockedCallLLM.mock.calls[0][0][1].content
     expect(prompt).toContain('[2 sources')
     expect(state.deleteCalled).toBe(true)
     expect(state.insertedRows).toHaveLength(3)
-    expect((state.insertedRows![0] as { rank: number }).rank).toBe(0)
+    const first = state.insertedRows![0] as { rank: number; article_id: string; story_id: string | null }
+    expect(first.rank).toBe(0)
+    // story_id rides along for new clients; article_id stays the newest-member
+    // id for N-1 clients (membership resolution).
+    expect(first.story_id).toBe('s-haifa')
+    expect(['a1', 'a2']).toContain(first.article_id)
+    // singletons carry a null story_id
+    const singles = (state.insertedRows as Array<{ story_id: string | null }>).slice(1)
+    expect(singles.every((r) => r.story_id === null)).toBe(true)
   })
 
   it('rejects duplicate indices and keeps the previous selection (no delete)', async () => {

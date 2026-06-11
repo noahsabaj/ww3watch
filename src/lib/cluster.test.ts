@@ -1,122 +1,84 @@
 import { describe, it, expect } from 'vitest'
-import { clusterArticles } from './cluster'
+import { groupByStoryId } from './cluster'
 import type { Article } from './types'
 
-function makeArticle(
-  id: string,
-  title: string,
-  published_at?: string | null,
-  source_name = 'Test Source',
-): Article {
+let seq = 0
+function article(overrides: Partial<Article> = {}): Article {
+  seq++
   return {
-    id,
-    guid: id,
-    title,
-    url: `https://example.com/${id}`,
+    id: `a-${seq}`,
+    guid: `guid-${seq}`,
+    title: `Article ${seq}`,
+    url: `https://example.com/${seq}`,
     summary: null,
-    published_at: published_at !== undefined ? published_at : new Date().toISOString(),
-    fetched_at: new Date().toISOString(),
-    source_name,
+    published_at: '2026-06-10T12:00:00Z',
+    fetched_at: '2026-06-10T12:01:00Z',
+    source_name: `Source ${seq}`,
     source_region: 'US/Western',
-    source_id: null,
-  cluster_id: null,
     source_lang: 'en',
-    feed_url: 'https://example.com/rss',
+    feed_url: 'https://example.com/feed',
+    source_id: null,
+    story_id: null,
+    cluster_id: null,
+    ...overrides,
   }
 }
 
-describe('clusterArticles', () => {
-  it('wraps a single article in a single cluster', () => {
-    const articles = [makeArticle('1', 'Iran launches missile strike on Israel')]
-    const clusters = clusterArticles(articles)
-    expect(clusters).toHaveLength(1)
-    expect(clusters[0].sourceCount).toBe(1)
-    expect(clusters[0].representative.id).toBe('1')
-  })
-
-  it('clusters two articles with similar titles (distinct sources)', () => {
-    const now = new Date().toISOString()
-    const articles = [
-      makeArticle('1', 'Iran launches missile strike on Israel', now, 'Reuters'),
-      makeArticle('2', 'Iran launches missile strike targeting Israel', now, 'AP'),
-    ]
-    const clusters = clusterArticles(articles)
-    expect(clusters).toHaveLength(1)
-    expect(clusters[0].sourceCount).toBe(2)
-  })
-
-  it('does not cluster articles with unrelated titles', () => {
-    const now = new Date().toISOString()
-    const articles = [
-      makeArticle('1', 'Iran launches missile strike on Israel', now),
-      makeArticle('2', 'Lebanon arrests foreign nationals collaboration', now),
-    ]
-    const clusters = clusterArticles(articles)
+describe('groupByStoryId', () => {
+  it('groups members of the same story together', () => {
+    const a = article({ story_id: 's-1' })
+    const b = article({ story_id: 's-1' })
+    const c = article({ story_id: 's-2' })
+    const clusters = groupByStoryId([a, b, c])
     expect(clusters).toHaveLength(2)
+    const s1 = clusters.find((cl) => cl.id === 's-1')!
+    expect(s1.articles).toHaveLength(2)
+    expect(s1.storyId).toBe('s-1')
   })
 
-  it('does not over-merge a short headline contained in an unrelated longer one', () => {
-    // Regression: the old overlap coefficient scored "Russia Ukraine" vs the
-    // longer headline at 1.0 (both tokens are a subset) and merged them. True
-    // Jaccard scores 2/8 = 0.25 < threshold, so they stay separate.
-    const now = new Date().toISOString()
-    const articles = [
-      makeArticle('1', 'Russia Ukraine', now),
-      makeArticle('2', 'Russia and Ukraine sign grain export logistics framework agreement', now),
-    ]
-    const clusters = clusterArticles(articles)
-    expect(clusters).toHaveLength(2)
+  it('renders unassigned articles (null OR undefined story_id) as singletons', () => {
+    const assigned = article({ story_id: 's-1' })
+    const nullArticle = article({ story_id: null })
+    // SW-cached pre-stories rows lack the column entirely.
+    const undefinedArticle = article()
+    delete (undefinedArticle as Partial<Article>).story_id
+    const clusters = groupByStoryId([assigned, nullArticle, undefinedArticle])
+    expect(clusters).toHaveLength(3)
+    const singleton = clusters.find((cl) => cl.id === nullArticle.id)!
+    expect(singleton.storyId).toBeNull()
+    expect(singleton.articles).toEqual([nullArticle])
   })
 
-  it('does not cluster articles outside the 8-hour window', () => {
-    const now = Date.now()
-    const articles = [
-      makeArticle('1', 'Iran launches missile strike on Israel', new Date(now).toISOString()),
-      makeArticle('2', 'Iran launches missile strike on Israel', new Date(now - 9 * 60 * 60 * 1000).toISOString()),
-    ]
-    const clusters = clusterArticles(articles)
-    expect(clusters).toHaveLength(2)
+  it('picks the newest member as representative and keeps it at articles[0]', () => {
+    const older = article({ story_id: 's-1', published_at: '2026-06-10T08:00:00Z' })
+    const newest = article({ story_id: 's-1', published_at: '2026-06-10T14:00:00Z' })
+    const middle = article({ story_id: 's-1', published_at: '2026-06-10T11:00:00Z' })
+    const [cluster] = groupByStoryId([older, newest, middle])
+    expect(cluster.representative).toBe(newest)
+    expect(cluster.articles[0]).toBe(newest)
+    expect(cluster.articles).toHaveLength(3)
   })
 
-  it('uses the first article as the cluster representative', () => {
-    const now = new Date().toISOString()
-    const articles = [
-      makeArticle('1', 'Iran launches missile strike on Israel', now),
-      makeArticle('2', 'Iran launches missiles strike on Israel', now),
-    ]
-    const clusters = clusterArticles(articles)
-    expect(clusters[0].representative.id).toBe('1')
+  it('treats null published_at as oldest when picking the representative', () => {
+    const dated = article({ story_id: 's-1', published_at: '2026-06-10T08:00:00Z' })
+    const undated = article({ story_id: 's-1', published_at: null })
+    const [cluster] = groupByStoryId([undated, dated])
+    expect(cluster.representative).toBe(dated)
   })
 
-  it('counts distinct outlets, not article count, in sourceCount', () => {
-    // Two articles from the SAME outlet covering the same story → 1 source.
-    const now = new Date().toISOString()
-    const articles = [
-      makeArticle('1', 'Iran launches missile strike on Israel', now, 'Reuters'),
-      makeArticle('2', 'Iran launches missile strike targeting Israel', now, 'Reuters'),
-    ]
-    const clusters = clusterArticles(articles)
-    expect(clusters).toHaveLength(1)
-    expect(clusters[0].sourceCount).toBe(1)
+  it('counts distinct outlets, not articles', () => {
+    const a = article({ story_id: 's-1', source_name: 'Reuters' })
+    const b = article({ story_id: 's-1', source_name: 'Reuters' })
+    const c = article({ story_id: 's-1', source_name: 'TASS' })
+    const [cluster] = groupByStoryId([a, b, c])
+    expect(cluster.sourceCount).toBe(2)
   })
 
-  it('handles articles with null published_at without throwing', () => {
-    const articles = [
-      makeArticle('1', 'Iran strikes Israel', null),
-      makeArticle('2', 'Iran strikes Israel again', null),
-    ]
-    expect(() => clusterArticles(articles)).not.toThrow()
-  })
-
-  it('clusters three articles about the same event (distinct sources)', () => {
-    const now = new Date().toISOString()
-    const articles = [
-      makeArticle('1', 'Israel bombs Iranian nuclear facility Natanz', now, 'Reuters'),
-      makeArticle('2', 'Israel bombs nuclear facility Natanz Iran', now, 'AP'),
-      makeArticle('3', 'Israeli strike bombs nuclear facility Natanz', now, 'BBC'),
-    ]
-    const clusters = clusterArticles(articles)
-    expect(clusters).toHaveLength(1)
-    expect(clusters[0].sourceCount).toBe(3)
+  it('sorts clusters by representative published_at DESC with nulls last', () => {
+    const newest = article({ story_id: 's-new', published_at: '2026-06-10T15:00:00Z' })
+    const oldest = article({ story_id: 's-old', published_at: '2026-06-10T01:00:00Z' })
+    const undated = article({ story_id: 's-undated', published_at: null })
+    const clusters = groupByStoryId([oldest, undated, newest])
+    expect(clusters.map((c) => c.id)).toEqual(['s-new', 's-old', 's-undated'])
   })
 })

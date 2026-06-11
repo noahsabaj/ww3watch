@@ -1,5 +1,5 @@
 import { callLLM } from './llm'
-import { groupByClusterId } from '../cluster'
+import { groupByStoryId } from '../cluster'
 import { supabaseAdmin } from './supabase'
 
 const TRENDING_WINDOW_HOURS = 4
@@ -31,10 +31,10 @@ export async function updateTrending(): Promise<void> {
     return
   }
 
-  // Same grouping the client renders (LLM-assigned cluster_ids + Jaccard for
-  // stragglers), so candidate sourceCounts match what users see.
+  // Same grouping the client renders (pipeline-assigned story_ids; unassigned
+  // articles are singletons), so candidate sourceCounts match what users see.
   const now = Date.now()
-  const clusters = groupByClusterId(recent)
+  const clusters = groupByStoryId(recent)
     .sort((a, b) => b.sourceCount - a.sourceCount)
     .slice(0, CANDIDATE_LIMIT)
 
@@ -75,7 +75,11 @@ export async function updateTrending(): Promise<void> {
   }
 
   const rows = indices.map((clusterIdx, rank) => ({
+    // article_id stays the newest member's id — bit-identical to the
+    // pre-stories value, which N-1 clients resolve by membership. New clients
+    // resolve by story_id directly (null for unassigned singletons).
     article_id: clusters[clusterIdx].representative.id,
+    story_id: clusters[clusterIdx].storyId,
     rank,
     selected_at: new Date().toISOString(),
   }))

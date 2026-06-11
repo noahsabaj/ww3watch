@@ -7,7 +7,7 @@
   import TopStories from '$lib/components/TopStories.svelte'
   import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
-  import { groupByClusterId } from '$lib/cluster'
+  import { groupByStoryId } from '$lib/cluster'
   import { dayKey, dayLabel, timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import type { Cluster } from '$lib/cluster'
@@ -19,7 +19,8 @@
   let newQueue = $state<Article[]>([])
   // Live trending selection: seeded from the load, refreshed via realtime
   // events on the trending table (the pipeline rewrites it each run).
-  let trendingIds = $state<string[]>(untrack(() => (data.trendingIds as string[]) ?? []))
+  type TrendingRef = { article_id: string; story_id: string | null }
+  let trending = $state<TrendingRef[]>(untrack(() => (data.trending as TrendingRef[]) ?? []))
   // Last successful ingestion run — the "updated Xm ago" readout. Anchor only
   // changes when a run completes; the label itself ticks via clock.now.
   let lastUpdatedAt = $state<string | null>(untrack(() => (data.lastUpdatedAt as string | null) ?? null))
@@ -28,7 +29,7 @@
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
   let selectedArticle = $state<Article | null>(null)
   // allClustered uses the full (unfiltered) article list — see note below.
-  let allClustered = $derived(groupByClusterId(articles))
+  let allClustered = $derived(groupByStoryId(articles))
   let selectedCluster = $derived(
     selectedArticle
       ? allClustered.find(c => c.articles.some(a => a.id === selectedArticle!.id)) ?? null
@@ -80,16 +81,18 @@
       return matchesRegion && matchesSearch
     })
   )
-  let clustered = $derived(groupByClusterId(filtered))
+  let clustered = $derived(groupByStoryId(filtered))
   let topStories = $derived.by(() => {
-    if (trendingIds.length > 0) {
-      // Resolve each curated article to whatever cluster CONTAINS it (not by
-      // representative id — the server picks representatives differently, which
-      // silently dropped stories). Dedupe in case two land in the same cluster.
+    if (trending.length > 0) {
+      // Resolve by story_id when the row has one; fall back to membership
+      // lookup for legacy rows written before stories existed. Dedupe in case
+      // two picks land in the same cluster.
       const seen = new Set<string>()
       const result: Cluster[] = []
-      for (const id of trendingIds) {
-        const c = allClustered.find(cl => cl.articles.some(a => a.id === id))
+      for (const t of trending) {
+        const c =
+          (t.story_id ? allClustered.find(cl => cl.storyId === t.story_id) : undefined) ??
+          allClustered.find(cl => cl.articles.some(a => a.id === t.article_id))
         if (c && !seen.has(c.id)) {
           seen.add(c.id)
           result.push(c)
@@ -116,10 +119,10 @@
     trendingRefreshTimer = setTimeout(async () => {
       const { data: rows, error } = await supabase
         .from('trending')
-        .select('article_id, rank')
+        .select('article_id, rank, story_id')
         .order('rank', { ascending: true })
       // On error keep the previous selection.
-      if (!error && rows) trendingIds = rows.map((t) => t.article_id)
+      if (!error && rows) trending = rows.map((t) => ({ article_id: t.article_id, story_id: t.story_id ?? null }))
     }, 2500)
   }
 
