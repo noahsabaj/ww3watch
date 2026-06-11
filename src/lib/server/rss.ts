@@ -11,6 +11,7 @@ type ArticleInsert = {
   source_region: SourceRegion
   source_lang: string
   feed_url: string
+  source_id: string | null
 }
 
 export type FeedErrorKind = 'http' | 'timeout' | 'parse' | 'network'
@@ -120,6 +121,7 @@ function parseArticles(feed: Feed, xml: string): Promise<ArticleInsert[]> {
         source_region: feed.region as SourceRegion,
         source_lang: feed.lang,
         feed_url: feed.url,
+        source_id: feed.id ?? null,
       }))
       .filter((a) => a.guid !== ''),
   )
