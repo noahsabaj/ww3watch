@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte'
+  import { onMount, untrack, tick } from 'svelte'
   import { supabase } from '$lib/supabase'
   import type { Article, SourceRegion } from '$lib/types'
   import { ALL_REGIONS } from '$lib/types'
@@ -41,6 +41,18 @@
   let realtimeStatus = $state('CLOSED')
   let isFiltered = $derived(searchQuery.trim() !== '' || activeRegions.size < ALL_REGIONS.length)
 
+  // Index of the first cluster older than the last visit. The feed is DESC, so
+  // this is the boundary between "new since you were here" (above) and "seen
+  // before" (below). -1 = no marker (first visit, or nothing new, or all new).
+  let lastVisitDividerIndex = $derived.by(() => {
+    if (lastVisitAt === null) return -1
+    const t = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : 0)
+    for (let i = 1; i < clustered.length; i++) {
+      if (t(clustered[i - 1]) > lastVisitAt && t(clustered[i]) <= lastVisitAt) return i
+    }
+    return -1
+  })
+
   // Dead-man's switch tiers: pipeline real cadence is 30–120 min, so >3h means
   // several missed runs; >24h means it's down.
   const STALE_AMBER_MS = 3 * 60 * 60 * 1000
@@ -60,6 +72,51 @@
   const TOP_STORIES_WINDOW_MS = 60 * 60 * 1000
   // Cap in-memory list growth on long-lived tabs (realtime keeps prepending).
   const MAX_ARTICLES = 800
+  // Hard ceiling once the user has paged back (articleCap grows with each "Load
+  // older" so a realtime prepend can't slice off loaded rows — but it must stop
+  // growing somewhere, or a paged-back long-lived tab loses the MAX_ARTICLES
+  // protection entirely). Beyond this, the next realtime flush trims the oldest.
+  const MAX_LOADED = 2400
+
+  // Server column list — MUST match +page.ts so realtime/pagination rows are
+  // shape-identical to the initial load.
+  const FEED_COLUMNS = 'id,title,url,summary,published_at,fetched_at,source_name,source_region,source_lang,source_affiliation,story_id,body_hash'
+  const INITIAL_LIMIT = 500 // keep in sync with +page.ts .limit()
+  const PAGE_SIZE = 100
+
+  // Pagination ("Load older"): numeric offset against the same DESC ordering.
+  // serverOffset counts rows pulled from the server (independent of realtime
+  // prepends); articleCap lets the realtime slice-cap grow as the user pages back,
+  // so a live insert never discards manually-loaded older stories.
+  // Note: realtime INSERTs land at the TOP of the DESC window, so rows added
+  // server-side after load shift everything to a higher absolute offset and the
+  // next range() re-reads a few already-held rows. Those are deduped client-side
+  // (the `known` Set) — correct, just a little redundant egress on a tab left open
+  // across pipeline runs. Offset is chosen over a keyset cursor precisely because
+  // it never SKIPS a row (the dedup makes overlap harmless) and handles the
+  // null-published tail without a separate query.
+  let serverOffset = $state(untrack(() => ((data.articles as Article[]) ?? []).length))
+  let hasMore = $state(untrack(() => ((data.articles as Article[]) ?? []).length >= INITIAL_LIMIT))
+  let loadingMore = $state(false)
+  let articleCap = $state(MAX_ARTICLES)
+  // Pre-existing polite live region (announced to screen readers). Focus for the
+  // "Load older" button (re-rendering the feed blurs it) and the end marker it's
+  // replaced by on the final page is restored by id, after the DOM settles.
+  let liveMessage = $state('')
+
+  // Toast for deep-link recovery + pagination errors.
+  let toast = $state<string | null>(null)
+  let toastTimer: ReturnType<typeof setTimeout> | undefined
+  function showToast(msg: string) {
+    toast = msg
+    liveMessage = msg // announce via the persistent live region (the visual pill is sighted-only)
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => (toast = null), 4500)
+  }
+
+  // "New since your last visit" marker, frozen at mount so realtime prepends
+  // don't move the line. localStorage is rewritten to now on each visit.
+  let lastVisitAt = $state<number | null>(null)
 
   let isPaused = $derived(scrollY > 300)
 
@@ -152,7 +209,7 @@
       if (fresh.length > 0) {
         // isPaused (scrollY>300) read at flush time, so a mid-burst scroll wins.
         if (isPaused) newQueue = [...fresh, ...newQueue]
-        else articles = [...fresh, ...articles].slice(0, MAX_ARTICLES)
+        else articles = [...fresh, ...articles].slice(0, articleCap)
       }
     }
     if (pendingUpdates.size > 0) {
@@ -165,10 +222,96 @@
   }
 
   function flushQueue() {
-    articles = [...newQueue, ...articles].slice(0, MAX_ARTICLES)
+    articles = [...newQueue, ...articles].slice(0, articleCap)
     newQueue = []
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }
+
+  function clearFilters() {
+    searchQuery = ''
+    activeRegions = new Set(ALL_REGIONS)
+  }
+
+  // "Load older": pull the next page from the server (offset against the same
+  // DESC order), append the rows not already held. Appending older rows keeps
+  // the list DESC; groupByStoryId re-sorts regardless. articleCap grows so a
+  // realtime prepend won't slice off what we just loaded.
+  async function loadOlder() {
+    if (loadingMore || !hasMore) return
+    // The large list re-render below blurs the focused control; if the user
+    // drove this from the keyboard, restore focus afterward (mouse users are
+    // left alone — :focus-visible keeps the ring keyboard-only anyway).
+    const hadFocus = document.activeElement?.id === 'feed-load-older'
+    loadingMore = true
+    const { data: rows, error } = await supabase
+      .from('articles')
+      .select(FEED_COLUMNS)
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('fetched_at', { ascending: false })
+      .range(serverOffset, serverOffset + PAGE_SIZE - 1)
+    loadingMore = false
+    if (error) {
+      showToast("Couldn't load older stories.")
+      return
+    }
+    serverOffset += PAGE_SIZE
+    const incoming = (rows ?? []) as Article[]
+    if (incoming.length < PAGE_SIZE) hasMore = false
+    const known = new Set(articles.map((a) => a.id))
+    const fresh = incoming.filter((a) => !known.has(a.id))
+    if (fresh.length > 0) {
+      // Grow the realtime slice-cap to fit, but never past MAX_LOADED — beyond
+      // that the next realtime flush trims the oldest, keeping memory bounded.
+      articleCap = Math.min(articleCap + fresh.length, MAX_LOADED)
+      articles = [...articles, ...fresh]
+    }
+    // Announce the result to screen readers; the button fires no visible state
+    // on success on its own.
+    const noun = fresh.length === 1 ? 'story' : 'stories'
+    liveMessage = fresh.length > 0 ? `Loaded ${fresh.length} older ${noun}.` : 'No new older stories.'
+    if (!hasMore) liveMessage += " You've reached the oldest stories."
+    // Restore focus to the button (or the end marker, once the button unmounts
+    // on the final page) so a keyboard user isn't dropped to <body>. tick() flushes
+    // the append render; rAF then runs after the browser settles that layout, so
+    // focus lands on the live element rather than a torn-down one.
+    if (hadFocus) {
+      await tick()
+      requestAnimationFrame(() => {
+        document.getElementById(hasMore ? 'feed-load-older' : 'feed-end')?.focus()
+      })
+    }
+  }
+
+  // Deep-link recovery: open ?article=/?story= even when the target scrolled
+  // past the initial window — fetch the missing row(s) on demand.
+  async function recoverDeepLink(articleId: string | null, storyId: string | null) {
+    if (articleId) {
+      const local = articles.find((a) => a.id === articleId)
+      if (local) { selectedArticle = local; return }
+      const { data: row, error } = await supabase
+        .from('articles').select(FEED_COLUMNS).eq('id', articleId).maybeSingle()
+      if (error || !row) { showToast('That article is no longer in the feed.'); return }
+      const a = row as Article
+      if (!articles.some((x) => x.id === a.id)) articles = [a, ...articles]
+      selectedArticle = a
+      return
+    }
+    if (storyId) {
+      const local = allClustered.find((c) => c.storyId === storyId)
+      if (local) { selectedArticle = local.representative; return }
+      const { data: rows, error } = await supabase
+        .from('articles').select(FEED_COLUMNS).eq('story_id', storyId)
+        .order('published_at', { ascending: false, nullsFirst: false }).limit(100)
+      const list = (rows ?? []) as Article[]
+      if (error || list.length === 0) { showToast('That story is no longer in the feed.'); return }
+      const known = new Set(articles.map((a) => a.id))
+      const fresh = list.filter((a) => !known.has(a.id))
+      if (fresh.length > 0) articles = [...articles, ...fresh]
+      // Newest member is the representative (matches groupByStoryId).
+      selectedArticle = list.reduce((best, a) =>
+        ((a.published_at ?? '') > (best.published_at ?? '') ? a : best), list[0])
+    }
   }
 
   async function handleInstall() {
@@ -187,12 +330,18 @@
       installDismissed = true
     }
 
-    // Deep link: ?article=<id> opens that article in the reader
+    // "New since your last visit" marker: read the previous visit, then stamp now.
+    const prevVisit = Number(localStorage.getItem('ww3-last-visit'))
+    lastVisitAt = Number.isFinite(prevVisit) && prevVisit > 0 ? prevVisit : null
+    localStorage.setItem('ww3-last-visit', String(Date.now()))
+
+    // Deep link: ?article=<id> opens that article; ?story=<id> opens that story.
+    // Both recover targets that scrolled past the initial window.
     const params = new URLSearchParams(window.location.search)
     const articleId = params.get('article')
-    if (articleId) {
-      const target = articles.find(a => a.id === articleId)
-      if (target) selectedArticle = target
+    const storyId = params.get('story')
+    if (articleId || storyId) {
+      recoverDeepLink(articleId, storyId)
       history.replaceState({}, '', window.location.pathname)
     }
 
@@ -256,6 +405,7 @@
       clearTimeout(trendingRefreshTimer)
       clearTimeout(statusRefreshTimer)
       clearTimeout(realtimeFlushTimer)
+      clearTimeout(toastTimer)
       supabase.removeChannel(channel)
       supabase.removeChannel(updatesChannel)
     }
@@ -331,7 +481,13 @@
         {:else if articles.length === 0}
           No stories yet — new ones appear here live.
         {:else}
-          No articles match your filters.
+          <p class="mb-3">No stories match your filters.</p>
+          <button
+            onclick={clearFilters}
+            class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+          >
+            Clear filters
+          </button>
         {/if}
       </div>
     {:else}
@@ -343,8 +499,35 @@
             {dayLabel(cluster.representative.published_at, clock.now)}
           </div>
         {/if}
+        <!-- "New since your last visit" boundary: everything above is new. The
+             visible text carries the meaning; the ↑ is decorative (hidden from SR). -->
+        {#if i === lastVisitDividerIndex}
+          <div class="flex items-center gap-3 px-4 py-3" role="separator">
+            <div class="flex-1 h-px bg-gradient-to-r from-transparent to-blue-800/50"></div>
+            <span class="text-[10px] uppercase tracking-widest text-blue-400/70 whitespace-nowrap">New since your last visit <span aria-hidden="true">↑</span></span>
+            <div class="flex-1 h-px bg-gradient-to-l from-transparent to-blue-800/50"></div>
+          </div>
+        {/if}
         <ClusterCard {cluster} onselect={(a) => selectedArticle = a} />
       {/each}
+      {#if hasMore}
+        <div class="py-6 text-center">
+          <button
+            id="feed-load-older"
+            onclick={loadOlder}
+            aria-disabled={loadingMore}
+            class="text-sm text-gray-400 hover:text-gray-200 border border-gray-800 hover:border-gray-600 rounded-full px-5 py-2 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-wait aria-disabled:hover:text-gray-400"
+          >
+            {loadingMore ? 'Loading…' : 'Load older stories'}
+          </button>
+        </div>
+      {:else}
+        <!-- Focus anchor: when the button above unmounts on the last page,
+             loadOlder() moves focus here so keyboard users aren't dropped to body. -->
+        <p id="feed-end" tabindex="-1" class="py-6 text-center text-xs text-gray-600 outline-none">
+          You've reached the oldest stories.
+        </p>
+      {/if}
     {/if}
   </main>
 
@@ -353,17 +536,39 @@
     class="fixed right-4 z-30 md:hidden w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
     style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px))"
     onclick={() => filterSheetOpen = true}
-    aria-label="Open filters"
+    aria-label={isFiltered ? 'Open filters (active)' : 'Open filters'}
   >
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <line x1="4" y1="6" x2="20" y2="6"/>
       <line x1="4" y1="12" x2="16" y2="12"/>
       <line x1="4" y1="18" x2="12" y2="18"/>
     </svg>
+    {#if isFiltered}
+      <span class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#0a0a0b]" aria-hidden="true"></span>
+    {/if}
   </button>
 
   <!-- Mobile filter sheet -->
   <FilterSheet bind:open={filterSheetOpen} bind:activeRegions bind:searchQuery />
 
   <ArticlePanel article={selectedArticle} cluster={selectedCluster} onclose={() => selectedArticle = null} onselect={(a) => selectedArticle = a} />
+
+  <!-- Persistent polite live region: mounted up-front (empty) so screen readers
+       reliably announce when its text later changes — pagination results and
+       deep-link recovery misses both flow through liveMessage. A region created
+       in the same tick as its text is commonly missed by AT, so it stays mounted. -->
+  <div class="sr-only" role="status" aria-live="polite">{liveMessage}</div>
+
+  <!-- Transient toast — sighted-only mirror of recovery/pagination errors.
+       Announcement is handled by the persistent live region above, so this
+       carries no role to avoid a double announcement. -->
+  {#if toast}
+    <div
+      class="fixed left-1/2 -translate-x-1/2 z-40 bg-gray-900 border border-gray-700 text-gray-200 text-sm px-4 py-2 rounded-full shadow-lg"
+      style="bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px))"
+      aria-hidden="true"
+    >
+      {toast}
+    </div>
+  {/if}
 </div>

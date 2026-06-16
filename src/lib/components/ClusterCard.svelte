@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Cluster } from '$lib/cluster'
-  import { wireDuplicateIds } from '$lib/cluster'
+  import { wireDuplicateIds, storyTimeline } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
-  import { timeAgo, langTag, isBreaking } from '$lib/utils'
+  import { timeAgo, langTag, isBreaking, offsetLabel } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
@@ -12,7 +12,6 @@
   let expanded = $state(false)
 
   const rep = $derived(cluster.representative)
-  const others = $derived(cluster.articles.slice(1))
   const isSingle = $derived(cluster.sourceCount === 1)
   const regionDots = $derived(
     [...new Set(cluster.articles.map(a => a.source_region))].slice(0, 5)
@@ -23,6 +22,9 @@
   // agency copy. Badge every copy EXCEPT the earliest-published origin (shared
   // with trending's independent-source count so the two never drift).
   const wireIds = $derived(wireDuplicateIds(cluster.articles))
+
+  // Chronological "who reported first" view for the expanded section.
+  const timeline = $derived(storyTimeline(cluster.articles))
 
   // BREAKING is reserved for genuinely corroborated breakers, not "a feed emitted
   // XML < 30 min ago" (which on ~900 articles/day would paint the whole feed red).
@@ -105,39 +107,48 @@
     </button>
 
     {#if expanded}
-      <div id="cluster-sources-{cluster.id}" class="mt-2 space-y-1 border-t border-gray-800 pt-2">
-        {#each others as article (article.id)}
-          <div class="flex items-center gap-2 py-0.5">
-            <RegionBadge region={article.source_region} size="sm" />
-            <span class="flex items-center gap-1 text-xs text-gray-400 shrink-0">
-              {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(article.source_lang)}</span>{/if}
-              {article.source_name}
-            </span>
-            <AffiliationBadge affiliation={article.source_affiliation} />
-            {#if wireIds.has(article.id)}
-              <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
-            {/if}
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              dir="auto"
-              class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0"
-              onclick={(e) => {
-                // Same contract as the headline: plain left-click opens the
-                // reader (matching TopStories/panel source rows), modified
-                // clicks fall through to the href.
-                if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-                  e.preventDefault()
-                  onselect(article)
-                }
-              }}
-            >
-              {article.title}
-            </a>
-            <span class="text-xs text-gray-600 shrink-0">{timeAgo(article.published_at, clock.now)}</span>
-          </div>
-        {/each}
+      <div id="cluster-sources-{cluster.id}" class="mt-2 border-t border-gray-800 pt-2">
+        {#if timeline.firstAt}
+          <p class="text-[10px] text-gray-600 mb-2">
+            First reported {timeAgo(new Date(timeline.firstAt).toISOString(), clock.now)} · {cluster.sourceCount} sources across {timeline.regionCount}
+            {timeline.regionCount === 1 ? 'region' : 'regions'}
+          </p>
+        {/if}
+        <!-- Chronological timeline: oldest first, the original report tagged. -->
+        <div class="space-y-1">
+          {#each timeline.ordered as entry (entry.article.id)}
+            <div class="flex items-center gap-2 py-0.5">
+              <span class="text-[9px] font-mono shrink-0 w-12 text-right {entry.isFirst ? 'text-amber-400 font-bold' : 'text-gray-600'}">
+                {entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : ''}
+              </span>
+              <RegionBadge region={entry.article.source_region} size="sm" />
+              <span class="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+                {#if langTag(entry.article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(entry.article.source_lang)}</span>{/if}
+                {entry.article.source_name}
+              </span>
+              <AffiliationBadge affiliation={entry.article.source_affiliation} />
+              {#if entry.isWire}
+                <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
+              {/if}
+              <a
+                href={entry.article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                dir="auto"
+                class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0"
+                onclick={(e) => {
+                  // Plain left-click opens the reader; modified clicks fall through.
+                  if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                    e.preventDefault()
+                    onselect(entry.article)
+                  }
+                }}
+              >
+                {entry.article.title}
+              </a>
+            </div>
+          {/each}
+        </div>
       </div>
     {/if}
   {/if}

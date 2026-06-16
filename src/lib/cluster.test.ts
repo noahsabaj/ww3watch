@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupByStoryId } from './cluster'
+import { groupByStoryId, storyTimeline } from './cluster'
 import type { Article } from './types'
 
 let seq = 0
@@ -82,5 +82,57 @@ describe('groupByStoryId', () => {
     const undated = article({ story_id: 's-undated', published_at: null })
     const clusters = groupByStoryId([oldest, undated, newest])
     expect(clusters.map((c) => c.id)).toEqual(['s-new', 's-old', 's-undated'])
+  })
+})
+
+describe('storyTimeline', () => {
+  it('orders members oldest → newest with undated last', () => {
+    const undated = article({ published_at: null })
+    const newest = article({ published_at: '2026-06-10T14:00:00Z' })
+    const oldest = article({ published_at: '2026-06-10T08:00:00Z' })
+    const { ordered } = storyTimeline([undated, newest, oldest])
+    expect(ordered.map((e) => e.article)).toEqual([oldest, newest, undated])
+  })
+
+  it('tags the earliest member as FIRST and computes offsets from it', () => {
+    const first = article({ published_at: '2026-06-10T08:00:00Z' })
+    const later = article({ published_at: '2026-06-10T08:30:00Z' })
+    const tl = storyTimeline([later, first])
+    expect(tl.firstAt).toBe(Date.parse('2026-06-10T08:00:00Z'))
+    expect(tl.ordered[0].isFirst).toBe(true)
+    expect(tl.ordered[0].offsetMs).toBe(0)
+    expect(tl.ordered[1].isFirst).toBe(false)
+    expect(tl.ordered[1].offsetMs).toBe(30 * 60 * 1000)
+  })
+
+  it('skips a wire reprint when choosing FIRST and flags later copies as wire', () => {
+    // Earliest-published copy is a syndicated wire reprint (shares body_hash);
+    // the original report is the next-earliest distinct-body member.
+    const wireOrigin = article({ published_at: '2026-06-10T08:00:00Z', body_hash: 'h1', source_name: 'WireA' })
+    const wireCopy = article({ published_at: '2026-06-10T09:00:00Z', body_hash: 'h1', source_name: 'WireB' })
+    const original = article({ published_at: '2026-06-10T08:30:00Z', body_hash: 'h2', source_name: 'Original' })
+    const tl = storyTimeline([wireCopy, wireOrigin, original])
+    // wireOrigin is the earliest in its hash group, so it's the origin (NOT
+    // badged) and remains eligible to be FIRST; only the later wireCopy is badged.
+    const byId = Object.fromEntries(tl.ordered.map((e) => [e.article.id, e]))
+    expect(byId[wireCopy.id].isWire).toBe(true)
+    expect(byId[wireOrigin.id].isWire).toBe(false)
+    expect(tl.ordered.find((e) => e.isFirst)!.article).toBe(wireOrigin)
+  })
+
+  it('counts distinct sources and regions', () => {
+    const a = article({ story_id: 's', source_name: 'Reuters', source_region: 'US/Western' })
+    const b = article({ story_id: 's', source_name: 'Reuters', source_region: 'US/Western' })
+    const c = article({ story_id: 's', source_name: 'TASS', source_region: 'Russian' })
+    const tl = storyTimeline([a, b, c])
+    expect(tl.sourceCount).toBe(2)
+    expect(tl.regionCount).toBe(2)
+  })
+
+  it('returns null firstAt/offsets when no member has a date', () => {
+    const tl = storyTimeline([article({ published_at: null }), article({ published_at: null })])
+    expect(tl.firstAt).toBeNull()
+    expect(tl.ordered.every((e) => e.offsetMs === null)).toBe(true)
+    expect(tl.ordered.some((e) => e.isFirst)).toBe(false)
   })
 })
