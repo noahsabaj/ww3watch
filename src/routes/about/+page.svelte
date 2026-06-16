@@ -67,8 +67,8 @@
         <span class="text-white font-semibold">Machine intelligence routes stories; it never rewrites them.</span>
         Language models and embedding models decide <em>where</em> things go — whether an article is
         conflict-relevant, which story it belongs to, what is trending. They never touch what a
-        journalist wrote. The single exception, translation, is opt-in, clearly labeled, and one
-        click away from the original.
+        journalist wrote. The single exception, translation — into whatever language you read in,
+        set once — is opt-in, clearly labeled, and one click away from the original.
       </p>
       <ul class="text-gray-400 leading-relaxed space-y-2 list-disc pl-5">
         <li><span class="text-gray-300">Relevance</span> — a language model filters each new article for conflict/geopolitics relevance.</li>

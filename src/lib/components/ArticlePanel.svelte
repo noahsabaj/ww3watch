@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
-  import { timeAgo, langTag } from '$lib/utils'
+  import { timeAgo, langTag, LANG_NAMES, TARGET_LANGS, isRtlLang } from '$lib/utils'
+  import { prefs, setReadingLang } from '$lib/prefs.svelte'
   import { clock } from '$lib/now.svelte'
   import { supabase } from '$lib/supabase'
   import { cleanHtml } from '$lib/sanitize-html'
@@ -27,7 +28,9 @@
   type TranslateState =
     | { status: 'idle' }
     | { status: 'loading' }
-    | { status: 'done'; title: string; content: string }
+    // isHtml: content is reassembled article HTML (images/structure preserved,
+    // rendered via cleanHtml); otherwise plain-text paragraphs.
+    | { status: 'done'; title: string; content: string; isHtml: boolean }
     | { status: 'failed' }
 
   let translation = $state<TranslateState>({ status: 'idle' })
@@ -43,8 +46,21 @@
     translation.status === 'loading' ? 'Translating…'
     : translation.status === 'failed' ? 'Translation failed — tap to retry'
     : showTranslated ? 'Show original'
-    : 'Translate to English'
+    : 'Translate'
   )
+  // Translated output renders RTL when the reading language is RTL (the source
+  // body keeps dir="auto").
+  const translatedDir = $derived(isRtlLang(prefs.readingLang) ? 'rtl' : 'ltr')
+
+  function changeReadingLang(code: string) {
+    if (code === prefs.readingLang) return
+    const wasShowing = showTranslated && translation.status === 'done'
+    setReadingLang(code)
+    translation = { status: 'idle' }
+    showTranslated = false
+    // Re-translate to the newly chosen language if one was already on screen.
+    if (wasShowing && article && article.source_lang !== code) translate()
+  }
 
   // When the cached extraction is more than a few hours old, label its vintage —
   // conflict reporting is corrected/retracted often, so a silent old snapshot is
@@ -162,16 +178,58 @@
     if (translation.status === 'done') { showTranslated = !showTranslated; return }
     translation = { status: 'loading' }
     const title = displayTitle
-    // Slice matches the server's MAX_CONTENT_CHARS — no point shipping more.
-    const content = reader.status === 'loaded'
-      ? htmlToText(reader.content).slice(0, 8000)
-      : (article.summary ?? '')
+    const target = prefs.readingLang
     try {
+      // Preferred path: translate the article's text blocks and re-insert the
+      // translations into the ORIGINAL DOM, so images/figures/layout survive
+      // (the LLM only sees plain text). Falls back to flattened plain text when
+      // there are no clean text blocks (div-only markup) or the reader failed.
+      if (reader.status === 'loaded') {
+        const doc = new DOMParser().parseFromString(reader.content, 'text/html')
+        // Translate at the TEXT-NODE level, not whole blocks: a pure paragraph is
+        // a single text node (translated whole, no fragmentation), while a
+        // paragraph with an inline <a>/<strong>/<img> yields several text nodes —
+        // so we only ever swap text and never destroy inline elements, images, or
+        // structure. We capture each node's surrounding whitespace and re-wrap so
+        // words don't glue to adjacent inline elements.
+        const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT)
+        const nodes: Text[] = []
+        const segments: string[] = []
+        const wraps: Array<[string, string]> = []
+        for (let node = walker.nextNode(); node && segments.length < 100; node = walker.nextNode()) {
+          const raw = node.nodeValue ?? ''
+          const trimmed = raw.trim()
+          if (!trimmed) continue
+          const tag = node.parentElement?.tagName
+          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE' || tag === 'PRE') continue
+          nodes.push(node as Text)
+          segments.push(trimmed)
+          wraps.push([raw.slice(0, raw.length - raw.trimStart().length), raw.slice(raw.trimEnd().length)])
+        }
+        if (segments.length > 0) {
+          const { data, error } = await supabase.functions.invoke('translate', {
+            body: { title, segments, lang: article.source_lang, url: article.url, target },
+          })
+          if (error || !data?.title || !Array.isArray(data?.segments)) throw new Error('Translation failed')
+          // 1:1 by index; a missing translation leaves the original text in place.
+          nodes.forEach((node, i) => {
+            const t = data.segments[i]
+            if (typeof t === 'string' && t.trim()) node.nodeValue = wraps[i][0] + t + wraps[i][1]
+          })
+          translation = { status: 'done', title: data.title, content: doc.body.innerHTML, isHtml: true }
+          showTranslated = true
+          return
+        }
+      }
+      // Plain-text fallback (failed reader or div-only markup).
+      const plain = reader.status === 'loaded'
+        ? htmlToText(reader.content).slice(0, 8000)
+        : (article.summary ?? '')
       const { data, error } = await supabase.functions.invoke('translate', {
-        body: { title, content, lang: article.source_lang, url: article.url },
+        body: { title, content: plain, lang: article.source_lang, url: article.url, target },
       })
-      if (error || !data?.title || !data?.content) throw new Error('Translation failed')
-      translation = { status: 'done', title: data.title, content: data.content }
+      if (error || !data?.title || typeof data?.content !== 'string') throw new Error('Translation failed')
+      translation = { status: 'done', title: data.title, content: data.content, isHtml: false }
       showTranslated = true
     } catch {
       translation = { status: 'failed' }
@@ -205,6 +263,31 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if article}
+  <!-- Translate action + reading-language picker (set once, remembered). Hidden
+       when the article is already in the reading language. Rendered in both the
+       loaded and failed reader states. -->
+  {#snippet translateControls()}
+    {#if article && article.source_lang !== prefs.readingLang}
+      <div class="flex items-center gap-2 mb-4 flex-wrap text-xs">
+        <button
+          onclick={translate}
+          class="transition-colors {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
+        >{translateLabel}</button>
+        <span class="text-gray-600" aria-hidden="true">→</span>
+        <select
+          value={prefs.readingLang}
+          onchange={(e) => changeReadingLang(e.currentTarget.value)}
+          aria-label="Reading language"
+          class="bg-[#1a1a1d] border border-gray-700 rounded text-gray-300 py-0.5 px-1.5 focus:outline-none focus:border-blue-500"
+        >
+          {#each TARGET_LANGS as code}
+            <option value={code}>{LANG_NAMES[code]}</option>
+          {/each}
+        </select>
+      </div>
+    {/if}
+  {/snippet}
+
   <!-- Backdrop -->
   <div
     class="fixed inset-0 bg-black/50 z-40"
@@ -300,20 +383,19 @@
         {#if snapshotAgeLabel}
           <p class="text-xs text-gray-600 mb-3" title="Articles are often corrected or updated after first publication; this is when the reader cached this copy.">{snapshotAgeLabel}</p>
         {/if}
-        {#if article.source_lang !== 'en'}
-          <button
-            onclick={translate}
-            class="text-xs transition-colors mb-4 block {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
-          >
-            {translateLabel}
-          </button>
-        {/if}
-        <div class="prose-reader" dir="auto">
+        {@render translateControls()}
+        <div class="prose-reader" dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'}>
           {#if showTranslated && translation.status === 'done'}
-            <!-- Translations are plain-text paragraphs — text interpolation, no sanitize needed -->
-            {#each translation.content.split(/\n{2,}/) as para}
-              <p>{para}</p>
-            {/each}
+            {#if translation.isHtml}
+              <!-- Reassembled article HTML: original images/figures/layout, translated text.
+                   cleanHtml = DOMPurify + URL absolutization, same as the original render. -->
+              {@html cleanHtml(translation.content, article.url)}
+            {:else}
+              <!-- Plain-text fallback (div-only markup / failed reader) -->
+              {#each translation.content.split(/\n{2,}/) as para}
+                <p>{para}</p>
+              {/each}
+            {/if}
           {:else}
             <!-- cleanHtml = DOMPurify; also absolutizes relative URLs against the article's origin -->
             {@html cleanHtml(reader.content, article.url)}
@@ -324,16 +406,9 @@
         <h1 dir="auto" class="text-xl font-bold text-white leading-snug mb-3">
           {showTranslated && translation.status === 'done' ? translation.title : article.title}
         </h1>
-        {#if article.source_lang !== 'en'}
-          <button
-            onclick={translate}
-            class="text-xs transition-colors mb-3 block {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
-          >
-            {translateLabel}
-          </button>
-        {/if}
+        {@render translateControls()}
         {#if article.summary}
-          <p dir="auto" class="text-gray-300 leading-relaxed mb-6">
+          <p dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'} class="text-gray-300 leading-relaxed mb-6">
             {showTranslated && translation.status === 'done' ? translation.content : article.summary}
           </p>
         {/if}

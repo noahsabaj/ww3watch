@@ -6,6 +6,15 @@ export const LANG_NAMES: Record<string, string> = {
   no: 'Norwegian', sv: 'Swedish', uk: 'Ukrainian', hi: 'Hindi', es: 'Spanish', pt: 'Portuguese',
 }
 
+// Curated, ordered set of reading-target languages offered in the reader's
+// language picker (the server accepts any LANG_NAMES key; this is just the UI
+// subset — source-only locales like 'no'/'sv' aren't offered as reading targets).
+export const TARGET_LANGS = ['en', 'es', 'fr', 'de', 'ru', 'ar', 'fa', 'he', 'zh', 'tr', 'uk', 'hi', 'pt', 'ur']
+
+export function isRtlLang(lang: string): boolean {
+  return lang === 'ar' || lang === 'fa' || lang === 'he' || lang === 'ur'
+}
+
 // Short uppercase language code shown as a provenance tag next to a source name.
 // Replaces the old nation-flag emoji, which misattributed language to a single
 // state (Arabic→🇸🇦, Persian→🇮🇷, exile Russians→🇷🇺) and made screen readers
