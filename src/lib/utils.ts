@@ -71,6 +71,16 @@ export function dayLabel(dateStr: string | null, nowMs: number = Date.now()): st
   })
 }
 
+// Relative offset of a story member from the first report (e.g. "+23m", "+2h").
+export function offsetLabel(ms: number): string {
+  const m = Math.round(ms / 60000)
+  if (m < 1) return '+0m'
+  if (m < 60) return `+${m}m`
+  const h = Math.round(m / 60)
+  if (h < 24) return `+${h}h`
+  return `+${Math.round(h / 24)}d`
+}
+
 export function timeAgo(dateStr: string | null, nowMs: number = Date.now()): string {
   if (!dateStr) return 'unknown time'
   const diff = nowMs - new Date(dateStr).getTime()

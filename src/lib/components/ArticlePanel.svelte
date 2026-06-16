@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
-  import { timeAgo, langTag, LANG_NAMES, TARGET_LANGS, isRtlLang } from '$lib/utils'
+  import { storyTimeline } from '$lib/cluster'
+  import { timeAgo, langTag, offsetLabel, LANG_NAMES, TARGET_LANGS, isRtlLang } from '$lib/utils'
   import { prefs, setReadingLang } from '$lib/prefs.svelte'
   import { clock } from '$lib/now.svelte'
   import { supabase } from '$lib/supabase'
@@ -70,6 +71,9 @@
     if (clock.now - new Date(reader.fetchedAt).getTime() < 3 * 3600_000) return null
     return `Snapshot from ${timeAgo(reader.fetchedAt, clock.now)}`
   })
+
+  // Chronological "who reported first" timeline for the in-panel source list.
+  const clusterTimeline = $derived(cluster && cluster.sourceCount > 1 ? storyTimeline(cluster.articles) : null)
 
   $effect(() => {
     const current = article
@@ -241,7 +245,13 @@
 
   async function share() {
     if (!article) return
-    const shareUrl = `${window.location.origin}${base}/?article=${article.id}`
+    // Story-first: a multi-source story gets a durable ?story= link (the recipient
+    // lands on the full cluster, and a story_id outlives any single pruned member).
+    // Singletons share the article directly.
+    const shareUrl =
+      cluster?.storyId && cluster.sourceCount > 1
+        ? `${window.location.origin}${base}/?story=${cluster.storyId}`
+        : `${window.location.origin}${base}/?article=${article.id}`
     try {
       if (navigator.share) {
         await navigator.share({ title: article.title, url: shareUrl })
@@ -422,30 +432,38 @@
         </a>
       {/if}
 
-      {#if cluster && cluster.sourceCount > 1 && reader.status !== 'loading'}
+      {#if clusterTimeline && reader.status !== 'loading'}
         <div class="mt-8 pt-5 border-t border-gray-800">
-          <p class="text-[10px] uppercase tracking-widest text-gray-600 mb-3">{cluster.sourceCount} sources covered this</p>
+          <p class="text-[10px] uppercase tracking-widest text-gray-600 mb-3">
+            {clusterTimeline.sourceCount} sources{#if clusterTimeline.firstAt} · first reported {timeAgo(new Date(clusterTimeline.firstAt).toISOString(), clock.now)}{/if}
+          </p>
+          <!-- Chronological: oldest first, the original report tagged. -->
           <div class="space-y-2">
-            {#each cluster.articles as other (other.id)}
+            {#each clusterTimeline.ordered as entry (entry.article.id)}
               <div class="flex items-center gap-2 py-0.5">
-                <RegionBadge region={other.source_region} size="sm" />
-                <span class="flex items-center gap-1 text-xs text-gray-500 shrink-0">
-                  {#if langTag(other.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(other.source_lang)}</span>{/if}
-                  {other.source_name}
+                <span class="text-[9px] font-mono shrink-0 w-12 text-right {entry.isFirst ? 'text-amber-400 font-bold' : 'text-gray-600'}">
+                  {entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : ''}
                 </span>
-                <AffiliationBadge affiliation={other.source_affiliation} />
-                {#if other.id === article.id}
+                <RegionBadge region={entry.article.source_region} size="sm" />
+                <span class="flex items-center gap-1 text-xs text-gray-500 shrink-0">
+                  {#if langTag(entry.article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(entry.article.source_lang)}</span>{/if}
+                  {entry.article.source_name}
+                </span>
+                <AffiliationBadge affiliation={entry.article.source_affiliation} />
+                {#if entry.isWire}
+                  <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
+                {/if}
+                {#if entry.article.id === article.id}
                   <span class="text-xs text-blue-400 line-clamp-1 flex-1 min-w-0">← reading now</span>
                 {:else}
                   <button
-                    onclick={() => onselect?.(other)}
+                    onclick={() => onselect?.(entry.article)}
                     dir="auto"
                     class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-start"
                   >
-                    {other.title}
+                    {entry.article.title}
                   </button>
                 {/if}
-                <span class="text-xs text-gray-600 shrink-0">{timeAgo(other.published_at, clock.now)}</span>
               </div>
             {/each}
           </div>

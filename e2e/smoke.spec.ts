@@ -16,8 +16,16 @@ test('feed renders a substantial story list from the live backend', async ({ pag
 test('search filters and clears', async ({ page }) => {
   const search = page.locator('header input[type="text"]')
   await search.fill('zzz-no-such-headline-zzz')
-  await expect(page.getByText('No articles match your filters.')).toBeVisible()
+  await expect(page.getByText('No stories match your filters.')).toBeVisible()
   await search.fill('')
+  await expect(page.locator('article').first()).toBeVisible()
+})
+
+test('the empty-state "Clear filters" button restores the feed', async ({ page }) => {
+  const search = page.locator('header input[type="text"]')
+  await search.fill('zzz-no-such-headline-zzz')
+  await page.getByRole('button', { name: 'Clear filters' }).click()
+  await expect(search).toHaveValue('')
   await expect(page.locator('article').first()).toBeVisible()
 })
 
@@ -26,7 +34,7 @@ test('region filter: None empties the feed, All restores it', async ({ page }) =
   const dropdown = page.locator('#region-filter-dropdown')
   await expect(dropdown).toBeVisible()
   await dropdown.getByRole('button', { name: 'None', exact: true }).click()
-  await expect(page.getByText('No articles match your filters.')).toBeVisible()
+  await expect(page.getByText('No stories match your filters.')).toBeVisible()
   await dropdown.getByRole('button', { name: 'All', exact: true }).click()
   await expect(page.locator('article').first()).toBeVisible()
   await page.keyboard.press('Escape')

@@ -37,6 +37,63 @@ export function wireDuplicateIds(articles: Article[]): Set<string> {
   return ids
 }
 
+export interface TimelineEntry {
+  article: Article
+  /** ms after the story's first report; null if this member has no published_at */
+  offsetMs: number | null
+  /** the earliest-published NON-wire member — the original report */
+  isFirst: boolean
+  isWire: boolean
+}
+
+export interface StoryTimeline {
+  ordered: TimelineEntry[] // oldest → newest, undated last
+  firstAt: number | null
+  lastAt: number | null
+  sourceCount: number
+  regionCount: number
+}
+
+// Chronological view of a story's members: who reported first (and who merely
+// reprinted the wire), how the coverage unfolded. Reporting order is itself
+// signal — pure ordering of data the client already holds, no model prose.
+export function storyTimeline(articles: Article[]): StoryTimeline {
+  const wire = wireDuplicateIds(articles)
+  const dated = articles.map(ts).filter((t) => t > 0)
+  const firstAt = dated.length ? Math.min(...dated) : null
+  const lastAt = dated.length ? Math.max(...dated) : null
+
+  // FIRST REPORT = earliest-published non-wire member (a syndicated reprint that
+  // shares a body_hash is not the original report).
+  let firstId: string | null = null
+  let firstTime = Infinity
+  for (const a of articles) {
+    const t = ts(a)
+    if (t === 0 || wire.has(a.id)) continue
+    if (t < firstTime) { firstTime = t; firstId = a.id }
+  }
+
+  const ordered = [...articles]
+    .sort((a, b) => (ts(a) || Infinity) - (ts(b) || Infinity))
+    .map((a) => {
+      const t = ts(a)
+      return {
+        article: a,
+        offsetMs: t > 0 && firstAt !== null ? t - firstAt : null,
+        isFirst: a.id === firstId,
+        isWire: wire.has(a.id),
+      }
+    })
+
+  return {
+    ordered,
+    firstAt,
+    lastAt,
+    sourceCount: new Set(articles.map((a) => a.source_name)).size,
+    regionCount: new Set(articles.map((a) => a.source_region)).size,
+  }
+}
+
 // Groups articles by their pipeline-assigned story_id (multilingual embedding
 // clustering, assign_story_by_embedding). Articles without one — junk-titled
 // or not-yet-assigned rows — render as singletons by design; there is no

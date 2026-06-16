@@ -1,5 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { dayKey, dayLabel, timeAgo, isBreaking } from './utils'
+import { dayKey, dayLabel, timeAgo, isBreaking, offsetLabel } from './utils'
+
+describe('offsetLabel', () => {
+  it('formats sub-minute offsets as +0m', () => {
+    expect(offsetLabel(0)).toBe('+0m')
+    expect(offsetLabel(20_000)).toBe('+0m') // rounds to 0 min
+  })
+  it('formats minutes, hours, and days', () => {
+    expect(offsetLabel(23 * 60_000)).toBe('+23m')
+    expect(offsetLabel(2 * 3600_000)).toBe('+2h')
+    expect(offsetLabel(3 * 86_400_000)).toBe('+3d')
+  })
+})
 
 // The explicit nowMs param lets components anchor labels to the shared
 // reactive clock ($lib/now.svelte.ts) so they re-render as time passes.
