@@ -3,6 +3,11 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # The weekly sources-roster backup commits data/sources-backup.json; that's
+    # not a site change, so don't rebuild/redeploy (and churn the service worker)
+    # for it.
+    paths-ignore:
+      - 'data/**'
   workflow_dispatch: {}
 
 permissions:

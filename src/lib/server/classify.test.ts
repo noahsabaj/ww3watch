@@ -55,4 +55,20 @@ describe('classifyArticles', () => {
     expect(relevant.has('fa1')).toBe(false) // non-English deferred (no verdict)
     expect(rejected.has('fa1')).toBe(false)
   })
+
+  it('reports batch failure counts (the LLM-down dead-man switch)', async () => {
+    mockedCallLLM.mockResolvedValue('[1]') // single batch, succeeds
+    const ok = await classifyArticles([
+      { guid: 'a', title: 'Strike kills commander', summary: null, source_lang: 'en' },
+    ])
+    expect(ok.totalBatches).toBe(1)
+    expect(ok.failedBatches).toBe(0)
+
+    mockedCallLLM.mockResolvedValue('not json') // single batch, malformed → failed
+    const down = await classifyArticles([
+      { guid: 'b', title: 'Strike kills commander', summary: null, source_lang: 'en' },
+    ])
+    expect(down.totalBatches).toBe(1)
+    expect(down.failedBatches).toBe(1) // failed === total ⇒ run() throws
+  })
 })

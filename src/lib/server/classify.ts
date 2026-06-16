@@ -55,12 +55,17 @@ export interface ClassifyResult {
    *  decisions are deliberately NOT included: those articles stay "new" and get
    *  a real LLM verdict on the next run. */
   rejected: Set<string>
+  /** Batches attempted, and how many threw (fell back to keyword/defer). When
+   *  failedBatches === totalBatches > 0 the LLM is effectively down — the
+   *  pipeline fails the run loudly instead of laundering a near-empty result. */
+  totalBatches: number
+  failedBatches: number
 }
 
 export async function classifyArticles(articles: ArticleInput[]): Promise<ClassifyResult> {
   const relevant = new Set<string>()
   const rejected = new Set<string>()
-  if (articles.length === 0) return { relevant, rejected }
+  if (articles.length === 0) return { relevant, rejected, totalBatches: 0, failedBatches: 0 }
 
   // Batch ALL articles (every language) through the LLM — it judges by meaning.
   // On a batch's LLM failure: English falls back to the keyword filter;
@@ -74,6 +79,7 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Classi
 
   const results = await Promise.allSettled(batches.map(b => classifyBatch(b)))
 
+  let failedBatches = 0
   results.forEach((result, bi) => {
     const batch = batches[bi]
     if (result.status === 'fulfilled') {
@@ -82,6 +88,7 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Classi
         else rejected.add(batch[j].guid)
       })
     } else {
+      failedBatches++
       console.error('[classify] batch failed, keyword fallback (en only):', result.reason)
       batch.forEach(a => {
         if (a.source_lang === 'en' && isRelevant(a.title, a.summary ?? '')) relevant.add(a.guid)
@@ -89,5 +96,5 @@ export async function classifyArticles(articles: ArticleInput[]): Promise<Classi
     }
   })
 
-  return { relevant, rejected }
+  return { relevant, rejected, totalBatches: batches.length, failedBatches }
 }

@@ -295,6 +295,40 @@ async function recordRun(startedAt: Date, stats: RunStats, error: unknown): Prom
   }
 }
 
+// Operator health gate, read once per run. ops_health() returns DB size + the
+// last retention-cron outcome. Runs at the END of a run: a tripped threshold
+// must ALERT (fail the run → GitHub issue), never halt ingestion (already done).
+async function checkOpsHealth(stats: RunStats): Promise<void> {
+  let health: Record<string, unknown> | null = null
+  try {
+    const { data } = await supabaseAdmin.rpc('ops_health')
+    health = (data as Record<string, unknown>) ?? null
+  } catch (err) {
+    console.error('[pipeline] ops_health check failed (non-fatal):', err)
+  }
+  if (!health) return
+  stats.db = health
+  const sizeMb = Number(health.db_size_mb) || 0
+  const lastAt = health.retention_last_at ? new Date(health.retention_last_at as string).getTime() : 0
+  if (!lastAt || Date.now() - lastAt > 48 * 3600_000) {
+    console.error(`[pipeline] WARNING: retention has not succeeded in >48h (last: ${health.retention_last_at ?? 'never'})`)
+  }
+  if (sizeMb > 400) console.error(`[pipeline] WARNING: DB size ${sizeMb}MB (free-tier cap is 500MB)`)
+  if (sizeMb > 450) {
+    throw new Error(`DB size ${sizeMb}MB exceeds the 450MB ceiling (free tier is 500MB) — prune or upgrade`)
+  }
+}
+
+// Local-model clustering + trending + the ops-health gate. Shared by the
+// no-new-articles path and the main path so every run captures trending status
+// and DB health (and self-heals clustering).
+async function finalize(stats: RunStats, startedAt: number): Promise<void> {
+  await embedAndAssignClusters(stats)
+  stats.trending = await updateTrending()
+  await checkOpsHealth(stats)
+  console.log(`[pipeline] done in ${Date.now() - startedAt}ms`)
+}
+
 async function run(stats: RunStats): Promise<void> {
   const startedAt = Date.now()
 
@@ -309,6 +343,14 @@ async function run(stats: RunStats): Promise<void> {
   )
   Object.assign(stats, logFeedSummary(results))
   await updateSourceHealth(results)
+
+  // Dead-man's switch: if EVERY feed failed (runner egress outage, proxy down,
+  // DNS), a "no new articles" success would reset the freshness clock on the
+  // exact failure class the readout exists for. Fail loudly — after the health
+  // write (so per-source failures are recorded); recordRun fires via finally.
+  if ((stats.feeds_ok as number) === 0) {
+    throw new Error('all feeds failed to fetch — refusing to record a successful run')
+  }
 
   const candidates = results.flatMap((r) => r.articles).filter((a) => a.guid !== '')
 
@@ -326,9 +368,7 @@ async function run(stats: RunStats): Promise<void> {
     // Still run clustering: a previous run's embed/assign failure leaves
     // backlog that must heal even on quiet runs.
     console.log('[pipeline] no new articles; clustering self-heal + trending only')
-    await embedAndAssignClusters(stats)
-    await updateTrending()
-    console.log(`[pipeline] done in ${Date.now() - startedAt}ms`)
+    await finalize(stats, startedAt)
     return
   }
 
@@ -339,7 +379,7 @@ async function run(stats: RunStats): Promise<void> {
   if (fresh.length > toClassify.length) {
     console.log(`[pipeline] deferring ${fresh.length - toClassify.length} new articles to next run (classify cap)`)
   }
-  const { relevant, rejected } = await classifyArticles(toClassify)
+  const { relevant, rejected, failedBatches, totalBatches } = await classifyArticles(toClassify)
   const articles = toClassify.filter((a) => relevant.has(a.guid))
   console.log(`[pipeline] ${articles.length} relevant, ${rejected.size} rejected of ${toClassify.length} classified`)
   Object.assign(stats, {
@@ -347,6 +387,8 @@ async function run(stats: RunStats): Promise<void> {
     deferred: fresh.length - toClassify.length,
     relevant: articles.length,
     rejected: rejected.size,
+    cls_batches_failed: failedBatches,
+    cls_batches_total: totalBatches,
   })
   const shadow = await classifyShadowStats(toClassify, relevant)
   if (shadow) stats.cls_prefilter = shadow
@@ -383,13 +425,18 @@ async function run(stats: RunStats): Promise<void> {
     }
   }
 
-  // 5. Embed titles + assign stories. Driven purely by story_id IS NULL,
-  //    so a missed/slow/failed run never orphans an article.
-  await embedAndAssignClusters(stats)
+  // 5/6/7. Embed + assign stories (story_id IS NULL worklist self-heals),
+  //         recompute trending, and read the ops-health gate.
+  await finalize(stats, startedAt)
 
-  // 6. Recompute trending (keeps previous selection on LLM failure).
-  await updateTrending()
-  console.log(`[pipeline] done in ${Date.now() - startedAt}ms`)
+  // 8. Loud failure for a TOTAL LLM outage (e.g. model deprecation) — AFTER the
+  //    inserts (keyword-fallback survivors still ingested) and the clustering
+  //    self-heal, so a Groq outage degrades rather than dropping everything, but
+  //    the run still FAILS (freshness amber + GitHub issue) instead of laundering
+  //    a near-empty result into a green run.
+  if (totalBatches > 0 && failedBatches === totalBatches) {
+    throw new Error(`all ${totalBatches} classify batches failed — LLM appears down (relevant=${articles.length})`)
+  }
 }
 
 async function main() {
