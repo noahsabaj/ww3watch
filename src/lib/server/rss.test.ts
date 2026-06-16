@@ -117,7 +117,7 @@ describe('fetchFeed', () => {
     expect(result.error?.kind).toBe('timeout')
   })
 
-  it('classifies a parse failure (kind=parse) and includes a snippet', async () => {
+  it('classifies a WAF challenge / non-feed HTML as kind=blocked (not parse)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response('<html><body>Just a moment... (WAF challenge)</body></html>', {
         status: 200,
@@ -126,8 +126,45 @@ describe('fetchFeed', () => {
     )
     const result = await fetchFeed(mockFeed)
     expect(result.articles).toEqual([])
-    expect(result.error?.kind).toBe('parse')
+    expect(result.error?.kind).toBe('blocked')
     expect(result.error?.detail).toContain('content-type=text/html')
+  })
+
+  it('sends a browser User-Agent + Accept-Language (direct path)', async () => {
+    const spy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('<rss version="2.0"><channel><title>T</title></channel></rss>', { status: 200 }))
+    await fetchFeed(mockFeed)
+    const headers = (spy.mock.calls[0][1] as RequestInit).headers as Record<string, string>
+    expect(headers['User-Agent']).toContain('Mozilla/5.0')
+    expect(headers['User-Agent']).toContain('Chrome/')
+    expect(headers['Accept-Language']).toBe('en-US,en;q=0.9')
+  })
+
+  it('tolerates a leading-whitespace feed (Non-whitespace-before-first-tag cluster)', async () => {
+    const rssXml = `\n\n   <?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
+      <item><title>Lead ws</title><link>https://x/1</link><guid>https://x/1</guid></item></channel></rss>`
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/xml' } }),
+    )
+    const result = await fetchFeed(mockFeed)
+    expect(result.error).toBeUndefined()
+    expect(result.articles).toHaveLength(1)
+  })
+
+  it('recovers a malformed-but-XML feed via the tolerant fallback parser', async () => {
+    // `&nbsp;` is undefined in XML → rss-parser (strict sax) throws; fast-xml-parser
+    // (htmlEntities) tolerates it, so the item is still ingested.
+    const rssXml = `<?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
+      <item><title>Iran&nbsp;talks resume</title><link>https://x/1</link><guid>https://x/1</guid></item></channel></rss>`
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/xml' } }),
+    )
+    const result = await fetchFeed(mockFeed)
+    expect(result.error).toBeUndefined()
+    expect(result.articles).toHaveLength(1)
+    expect(result.articles[0].guid).toBe('https://x/1')
+    expect(result.articles[0].title).toContain('Iran')
   })
 
   it('returns parsed articles from valid RSS (via direct, no error)', async () => {
@@ -177,23 +214,51 @@ describe('fetchFeed', () => {
     expect(result.articles[0].published_at).toBeNull()
   })
 
-  it('retries through the proxy when direct fails and proxy env is set', async () => {
+  it('fetches PROXY-FIRST when proxy env is set (first call hits the proxy)', async () => {
     process.env.FEED_PROXY_URL = 'https://proxy.example/fetch'
     process.env.FEED_PROXY_SECRET = 'secret'
     const rssXml = `<?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
       <item><title>Proxied</title><link>https://x/1</link><guid>https://x/1</guid></item></channel></rss>`
     const spy = vi
       .spyOn(globalThis, 'fetch')
-      .mockRejectedValueOnce(new Error('direct blocked'))
       .mockResolvedValueOnce(new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/xml' } }))
     const result = await fetchFeed(mockFeed)
     expect(result.via).toBe('proxy')
     expect(result.articles).toHaveLength(1)
     expect(result.articles[0].title).toBe('Proxied')
-    // second call went to the proxy URL with the secret header
-    const secondCall = spy.mock.calls[1]
-    expect(String(secondCall[0])).toContain('proxy.example')
-    expect((secondCall[1] as RequestInit).headers).toMatchObject({ 'x-proxy-key': 'secret' })
+    // The FIRST call went to the proxy URL with the secret header.
+    const firstCall = spy.mock.calls[0]
+    expect(String(firstCall[0])).toContain('proxy.example')
+    expect((firstCall[1] as RequestInit).headers).toMatchObject({ 'x-proxy-key': 'secret' })
+  })
+
+  it('falls back to a direct fetch when the proxy fails', async () => {
+    process.env.FEED_PROXY_URL = 'https://proxy.example/fetch'
+    process.env.FEED_PROXY_SECRET = 'secret'
+    const rssXml = `<?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
+      <item><title>Direct fallback</title><link>https://x/1</link><guid>https://x/1</guid></item></channel></rss>`
+    const spy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new Error('proxy down'))
+      .mockResolvedValueOnce(new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/xml' } }))
+    const result = await fetchFeed(mockFeed)
+    expect(result.via).toBe('direct')
+    expect(result.articles).toHaveLength(1)
+    expect(String(spy.mock.calls[0][0])).toContain('proxy.example') // proxy tried first
+    expect(String(spy.mock.calls[1][0])).toBe(mockFeed.url) // then direct
+  })
+
+  it('reports the PROXY error kind (not direct) when both paths fail', async () => {
+    process.env.FEED_PROXY_URL = 'https://proxy.example/fetch'
+    process.env.FEED_PROXY_SECRET = 'secret'
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('blocked', { status: 403 })) // proxy → http
+      .mockRejectedValueOnce(new DOMException('aborted', 'AbortError')) // direct → timeout
+    const result = await fetchFeed(mockFeed)
+    expect(result.articles).toEqual([])
+    expect(result.error?.kind).toBe('http') // the proxy (decisive) kind, not 'timeout'
+    expect(result.error?.detail).toContain('proxy: HTTP 403')
+    expect(result.error?.detail).toContain('direct: timeout')
   })
 
   it('skips items with no guid and no link', async () => {
