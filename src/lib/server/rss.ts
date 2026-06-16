@@ -23,6 +23,8 @@ export interface FeedFetchResult {
   articles: ArticleInsert[]
   /** which path produced the result (or was attempted last on failure) */
   via: 'direct' | 'proxy'
+  /** count of items whose pubDate parsed but was clamped out of range (telemetry) */
+  clamped?: number
   error?: { kind: FeedErrorKind; detail: string }
 }
 
@@ -56,14 +58,36 @@ export function buildGuid(item: { guid?: unknown; link?: string }): string {
   return item.link ?? ''
 }
 
+const MAX_FUTURE_SKEW_MS = 10 * 60 * 1000 // tolerate minor publisher clock skew
+const MAX_PAST_AGE_MS = 365 * 24 * 60 * 60 * 1000 // 1 year
+
 // Some feeds (notably locale-formatted Persian/Arabic ones) emit pubDate strings
 // that `new Date()` can't parse. `new Date('garbage').toISOString()` throws a
 // RangeError — and because the throw happens inside the items .map() below, it
 // used to drop the ENTIRE feed. Return null on any unparseable date instead.
-export function parseDate(pubDate: string | undefined): string | null {
+//
+// ALSO clamp out-of-range dates to null: a feed with a broken timezone/year emits
+// future- or ancient-dated items that otherwise poison every recency calc —
+// trending's 4h window (a future date reads as "0m ago" forever), the cluster
+// representative (= newest published member), and the ±window assignment anchor.
+// nowMs is injected (matching utils.ts) so the function stays pure and testable.
+export function parseDate(pubDate: string | undefined, nowMs: number = Date.now()): string | null {
   if (!pubDate) return null
-  const d = new Date(pubDate)
-  return isNaN(d.getTime()) ? null : d.toISOString()
+  const t = new Date(pubDate).getTime()
+  if (isNaN(t)) return null
+  if (t > nowMs + MAX_FUTURE_SKEW_MS) return null
+  if (t < nowMs - MAX_PAST_AGE_MS) return null
+  return new Date(t).toISOString()
+}
+
+// True when a pubDate parsed cleanly but fell outside the accepted window (i.e.
+// parseDate clamped it to null). Lets the pipeline count clamps — a misconfigured
+// feed — distinctly from missing/unparseable dates, for the curation pass.
+export function isClampedDate(pubDate: string | undefined, nowMs: number = Date.now()): boolean {
+  if (!pubDate) return false
+  const t = new Date(pubDate).getTime()
+  if (isNaN(t)) return false
+  return t > nowMs + MAX_FUTURE_SKEW_MS || t < nowMs - MAX_PAST_AGE_MS
 }
 
 // ── Fetching ─────────────────────────────────────────────────────────────────
@@ -110,30 +134,37 @@ async function withProxySlot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-function parseArticles(feed: Feed, xml: string): Promise<ArticleInsert[]> {
-  return parser.parseString(xml).then((parsed) =>
-    parsed.items
-      .map((item) => ({
-        guid: buildGuid(item),
-        title: item.title?.trim() ?? '(no title)',
-        url: item.link ?? feed.url,
-        summary: item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null,
-        published_at: parseDate(item.pubDate),
-        source_name: feed.name,
-        source_region: feed.region as SourceRegion,
-        source_lang: feed.lang,
-        feed_url: feed.url,
-        source_id: feed.id ?? null,
-        body_hash: bodyHash(item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null),
-      }))
-      .filter((a) => a.guid !== ''),
-  )
+function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInsert[]; clamped: number }> {
+  const now = Date.now()
+  return parser.parseString(xml).then((parsed) => {
+    let clamped = 0
+    const articles = parsed.items
+      .map((item) => {
+        if (isClampedDate(item.pubDate, now)) clamped++
+        const summary = item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null
+        return {
+          guid: buildGuid(item),
+          title: item.title?.trim() ?? '(no title)',
+          url: item.link ?? feed.url,
+          summary,
+          published_at: parseDate(item.pubDate, now),
+          source_name: feed.name,
+          source_region: feed.region as SourceRegion,
+          source_lang: feed.lang,
+          feed_url: feed.url,
+          source_id: feed.id ?? null,
+          body_hash: bodyHash(summary),
+        }
+      })
+      .filter((a) => a.guid !== '')
+    return { articles, clamped }
+  })
 }
 
 async function fetchAndParse(
   feed: Feed,
   doFetch: () => Promise<{ text: string; contentType: string }>,
-): Promise<ArticleInsert[]> {
+): Promise<{ articles: ArticleInsert[]; clamped: number }> {
   const { text, contentType } = await doFetch()
   try {
     return await parseArticles(feed, text)
@@ -149,8 +180,8 @@ async function fetchAndParse(
 export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
   let directError: FeedError
   try {
-    const articles = await fetchAndParse(feed, () => fetchXml(feed.url, FEED_HEADERS, FEED_TIMEOUT_MS))
-    return { feed, via: 'direct', articles }
+    const { articles, clamped } = await fetchAndParse(feed, () => fetchXml(feed.url, FEED_HEADERS, FEED_TIMEOUT_MS))
+    return { feed, via: 'direct', articles, clamped }
   } catch (err) {
     directError = err instanceof FeedError ? err : new FeedError('network', String(err))
   }
@@ -163,7 +194,7 @@ export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
   }
 
   try {
-    const articles = await withProxySlot(() =>
+    const { articles, clamped } = await withProxySlot(() =>
       fetchAndParse(feed, () =>
         fetchXml(
           `${proxy.url}?url=${encodeURIComponent(feed.url)}`,
@@ -172,7 +203,7 @@ export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
         ),
       ),
     )
-    return { feed, via: 'proxy', articles }
+    return { feed, via: 'proxy', articles, clamped }
   } catch (err) {
     const proxyError = err instanceof FeedError ? err : new FeedError('network', String(err))
     // Report the DIRECT failure kind (it diagnoses why the feed is blocked); the

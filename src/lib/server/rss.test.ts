@@ -1,22 +1,64 @@
 // src/lib/server/rss.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildGuid, fetchFeed, parseDate } from './rss'
+import { buildGuid, fetchFeed, parseDate, isClampedDate } from './rss'
 import type { Feed } from '../types'
 
 const mockFeed: Feed = { name: 'Test', url: 'https://example.com/rss', region: 'US/Western', lang: 'en' }
 
 describe('parseDate', () => {
+  // Fixed reference instant so clamp boundaries are deterministic no matter when
+  // the suite runs (the old fixed-date fixture became a time bomb in 2027).
+  const NOW = Date.parse('2026-06-12T00:00:00.000Z')
+  const DAY = 24 * 3600_000
+  const at = (offsetMs: number) => new Date(NOW + offsetMs).toUTCString()
+
   it('returns null for missing date', () => {
-    expect(parseDate(undefined)).toBeNull()
+    expect(parseDate(undefined, NOW)).toBeNull()
   })
 
   it('returns null for an unparseable date (instead of throwing)', () => {
-    expect(parseDate('۱۴۰۳/۱۲/۱۵')).toBeNull()
-    expect(parseDate('not a date')).toBeNull()
+    expect(parseDate('۱۴۰۳/۱۲/۱۵', NOW)).toBeNull()
+    expect(parseDate('not a date', NOW)).toBeNull()
   })
 
-  it('returns an ISO string for a valid date', () => {
-    expect(parseDate('Mon, 03 Mar 2026 10:00:00 GMT')).toBe('2026-03-03T10:00:00.000Z')
+  it('returns an ISO string for an in-range date', () => {
+    expect(parseDate('Mon, 03 Mar 2026 10:00:00 GMT', NOW)).toBe('2026-03-03T10:00:00.000Z')
+  })
+
+  it('clamps a far-future date to null (broken feed timezone/year)', () => {
+    expect(parseDate(at(2 * DAY), NOW)).toBeNull()
+  })
+
+  it('tolerates a few minutes of future clock skew', () => {
+    expect(parseDate(at(5 * 60_000), NOW)).not.toBeNull()
+  })
+
+  it('clamps an ancient date (>1 year old) to null', () => {
+    expect(parseDate(at(-400 * DAY), NOW)).toBeNull()
+  })
+
+  it('keeps a date within the last year', () => {
+    expect(parseDate(at(-30 * DAY), NOW)).not.toBeNull()
+  })
+})
+
+describe('isClampedDate', () => {
+  const NOW = Date.parse('2026-06-12T00:00:00.000Z')
+  const DAY = 24 * 3600_000
+  const at = (offsetMs: number) => new Date(NOW + offsetMs).toUTCString()
+
+  it('is false for missing or unparseable dates', () => {
+    expect(isClampedDate(undefined, NOW)).toBe(false)
+    expect(isClampedDate('not a date', NOW)).toBe(false)
+  })
+
+  it('is false for an in-range date', () => {
+    expect(isClampedDate(at(-DAY), NOW)).toBe(false)
+  })
+
+  it('is true for far-future and ancient dates', () => {
+    expect(isClampedDate(at(2 * DAY), NOW)).toBe(true)
+    expect(isClampedDate(at(-400 * DAY), NOW)).toBe(true)
   })
 })
 
