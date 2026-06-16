@@ -25,7 +25,6 @@ export type SourceRegion = keyof typeof REGIONS
 
 export interface Article {
   id: string
-  guid: string
   title: string
   url: string
   summary: string | null
@@ -37,13 +36,16 @@ export interface Article {
   // Curated outlet allegiance (state | public | exile | null), denormalized
   // from sources.affiliation at ingest.
   source_affiliation: string | null
-  feed_url: string
-  source_id: string | null
   body_hash: string | null
   story_id: string | null
-  // Legacy mirror of the story's rep-id-as-text, kept for N-1 PWA clients
-  // until the cleanup migration drops it.
-  cluster_id: string | null
+  // Dropped from the feed's boot query (unused client-side) but still delivered
+  // on realtime row payloads — hence optional. The pipeline/server use the
+  // separate ArticleInsert shape. cluster_id is the legacy rep-id mirror kept
+  // for N-1 PWA clients until the cleanup migration drops it.
+  guid?: string
+  feed_url?: string
+  source_id?: string | null
+  cluster_id?: string | null
 }
 
 // The fetchable shape of a roster entry. The roster itself lives in the

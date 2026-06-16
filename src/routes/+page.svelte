@@ -130,6 +130,40 @@
     }, 5000)
   }
 
+  // Realtime burst batching: the pipeline writes a burst of inserts +
+  // cluster-assignment updates every ~15 min. Accumulate raw events in
+  // non-reactive buffers and apply them in ONE state reassignment per ~500ms
+  // window, instead of a full derived-graph recompute per event.
+  let pendingInserts: Article[] = []
+  let pendingUpdates = new Map<string, Article>()
+  let realtimeFlushTimer: ReturnType<typeof setTimeout> | undefined
+  function scheduleRealtimeFlush() {
+    clearTimeout(realtimeFlushTimer)
+    realtimeFlushTimer = setTimeout(applyRealtime, 500)
+  }
+  function applyRealtime() {
+    if (pendingInserts.length > 0) {
+      const incoming = pendingInserts
+      pendingInserts = []
+      // Dedupe against current lists (realtime replays on reconnect) + within batch.
+      const known = new Set<string>([...articles, ...newQueue].map((a) => a.id))
+      const fresh: Article[] = []
+      for (const a of incoming) if (!known.has(a.id)) { known.add(a.id); fresh.push(a) }
+      if (fresh.length > 0) {
+        // isPaused (scrollY>300) read at flush time, so a mid-burst scroll wins.
+        if (isPaused) newQueue = [...fresh, ...newQueue]
+        else articles = [...fresh, ...articles].slice(0, MAX_ARTICLES)
+      }
+    }
+    if (pendingUpdates.size > 0) {
+      const updates = pendingUpdates
+      pendingUpdates = new Map()
+      // Patch in whichever list holds each id; unknown ids no-op.
+      articles = articles.map((a) => updates.get(a.id) ?? a)
+      newQueue = newQueue.map((a) => updates.get(a.id) ?? a)
+    }
+  }
+
   function flushQueue() {
     articles = [...newQueue, ...articles].slice(0, MAX_ARTICLES)
     newQueue = []
@@ -174,31 +208,9 @@
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'articles' },
         (payload) => {
-          const article = payload.new as Article
+          pendingInserts.push(payload.new as Article)
           schedulePipelineStatusRefresh()
-          // Dedupe against both lists — realtime can replay events on reconnect.
-          if (articles.some(a => a.id === article.id) || newQueue.some(a => a.id === article.id)) return
-          if (isPaused) {
-            newQueue = [article, ...newQueue]
-          } else {
-            articles = [article, ...articles].slice(0, MAX_ARTICLES)
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'articles' },
-        (payload) => {
-          // Cluster assignments arrive minutes after the INSERT — patch in place
-          // (in whichever list holds the article) so open tabs regroup live.
-          // Unknown ids no-op: the pipeline also updates backlog articles far
-          // outside our 500-row window.
-          const updated = payload.new as Article
-          if (articles.some(a => a.id === updated.id)) {
-            articles = articles.map(a => (a.id === updated.id ? updated : a))
-          } else if (newQueue.some(a => a.id === updated.id)) {
-            newQueue = newQueue.map(a => (a.id === updated.id ? updated : a))
-          }
+          scheduleRealtimeFlush()
         }
       )
       .on(
@@ -217,11 +229,35 @@
         realtimeStatus = status
       })
 
+    // UPDATE on its OWN channel with a server-side filter: cluster-assignment
+    // patches arrive minutes after the INSERT (recent fetched_at), so we only
+    // need recent rows — this stops every backlog UPDATE fanning out to every
+    // client (egress + radio wakeups). A SEPARATE channel means a filter
+    // rejection degrades only cluster-patching, never the INSERT/trending feed.
+    const recentCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+    const updatesChannel = supabase
+      .channel('articles-updates')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'articles', filter: `fetched_at=gt.${recentCutoff}` },
+        (payload) => {
+          pendingUpdates.set((payload.new as Article).id, payload.new as Article)
+          scheduleRealtimeFlush()
+        },
+      )
+      .subscribe((status) => {
+        // Only cluster-patching depends on this channel; if its filter is ever
+        // rejected, log it (the main feed is unaffected) rather than failing silently.
+        if (status === 'CHANNEL_ERROR') console.warn('[realtime] articles-updates channel error — live cluster regrouping degraded')
+      })
+
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       clearTimeout(trendingRefreshTimer)
       clearTimeout(statusRefreshTimer)
+      clearTimeout(realtimeFlushTimer)
       supabase.removeChannel(channel)
+      supabase.removeChannel(updatesChannel)
     }
   })
 </script>

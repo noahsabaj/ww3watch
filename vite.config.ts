@@ -39,6 +39,11 @@ export default defineConfig({
               cacheName: 'supabase-rest',
               networkTimeoutSeconds: 3,
               cacheableResponse: { statuses: [0, 200] },
+              // Bound the cache so stale REST URLs (e.g. an old select=* entry
+              // after a column-list change) don't linger forever. Generous age:
+              // ExpirationPlugin deletes on access, so a too-short age would
+              // leave an offline user with nothing.
+              expiration: { maxEntries: 16, maxAgeSeconds: 7 * 24 * 60 * 60 },
             },
           },
         ],
