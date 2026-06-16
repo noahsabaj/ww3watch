@@ -12,6 +12,13 @@ concurrency:
   group: ww3watch-pipeline
   cancel-in-progress: false # never interrupt an in-flight ingestion run
 
+# contents: checkout; issues: file/append the pipeline-failure alert; actions:
+# re-arm scheduled workflows against GitHub's 60-day inactivity auto-disable.
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -64,3 +71,38 @@ jobs:
         with:
           path: ~/.cache/ww3watch-transformers
           key: me5b-q8-1ec9243
+
+      # Push, don't pull: the freshness readout requires someone to LOOK at the
+      # site. File (or append to) a single pipeline-failure issue so breakage
+      # emails the maintainer. The pipeline self-fails on zero feeds, a total
+      # LLM outage, and a >450MB DB — all route here.
+      - name: Alert on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create pipeline-failure --color B60205 --description "Ingestion pipeline failure" --force >/dev/null 2>&1 || true
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          existing=$(gh issue list --label pipeline-failure --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Pipeline run failed again: $run_url"
+          else
+            gh issue create --title "Ingestion pipeline failing" --label pipeline-failure \
+              --body "The ingestion pipeline failed — see $run_url. Close this issue once resolved; repeat failures append here instead of spamming."
+          fi
+
+      # GitHub disables scheduled workflows after 60 days of repo inactivity;
+      # re-enabling via the API resets that timer without a dummy commit. Gated
+      # to ~once a week (Monday, hour 00 UTC) so it's a handful of idempotent
+      # calls, not one per 15-min run. (backup.yml's weekly commit also resets it.)
+      - name: Keepalive — re-arm scheduled workflows
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%u)" = "1" ] && [ "$(date -u +%H)" = "00" ]; then
+            for wf in pipeline.yml backup.yml; do
+              gh api -X PUT "repos/${{ github.repository }}/actions/workflows/$wf/enable" >/dev/null 2>&1 || true
+            done
+            echo "[keepalive] re-armed pipeline.yml + backup.yml"
+          fi
