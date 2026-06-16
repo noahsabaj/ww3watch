@@ -38,6 +38,12 @@ if (typeof DOMPurify.addHook === 'function') {
       node.setAttribute('target', '_blank')
       node.setAttribute('rel', 'noopener noreferrer')
     }
+    // Reader article images are below the fold and off-origin; defer them so they
+    // never block the panel's first paint or burn bandwidth on a quick skim.
+    if (node.tagName === 'IMG') {
+      node.setAttribute('loading', 'lazy')
+      node.setAttribute('decoding', 'async')
+    }
   })
 }
 

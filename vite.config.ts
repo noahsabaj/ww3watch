@@ -31,6 +31,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // og.png is a 1200×630 social-share card scraped by external crawlers —
+        // it's never rendered in-app, so precaching it just bloats every install.
+        globIgnores: ['**/og.png'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,

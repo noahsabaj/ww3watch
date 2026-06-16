@@ -45,7 +45,13 @@
   const isNew = $derived(!breaking && isBreaking(rep.published_at, clock.now))
 </script>
 
-<article class="border-l-4 {REGION_BORDER[rep.source_region] ?? 'border-gray-600'} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
+<!-- content-visibility:auto lets the browser skip rendering/layout for cards
+     scrolled off-screen (a 200+ card feed otherwise lays out every card on each
+     reactive update). contain-intrinsic-size:auto remembers each card's real
+     height after first paint, falling back to ~180px, so the scrollbar stays
+     stable. Native virtualization — no JS, no interaction with the divider/
+     pagination/filter logic, and off-screen cards remain in the a11y tree. -->
+<article class="[content-visibility:auto] [contain-intrinsic-size:auto_180px] border-l-4 {REGION_BORDER[rep.source_region] ?? 'border-gray-600'} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
   <!-- Header row -->
   <div class="flex items-center gap-2 mb-1.5 min-w-0">
     <RegionBadge region={rep.source_region} />

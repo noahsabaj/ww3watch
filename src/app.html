@@ -8,6 +8,12 @@
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="WW3Watch" />
+		<!-- Warm the Supabase connection (TLS + DNS) before the client load() fires
+		     its first REST query — the whole feed comes from this origin. crossorigin
+		     because the API calls are CORS with an apikey header. Hardcoded like the
+		     canonical/OG URLs below; the project ref is fixed for this deploy. -->
+		<link rel="preconnect" href="https://qusjbpknlduuklnfciws.supabase.co" crossorigin />
+		<link rel="dns-prefetch" href="https://qusjbpknlduuklnfciws.supabase.co" />
 		<!-- %sveltekit.assets% carries the GitHub Pages base path; a literal "/" href
 		     404'd in production and silently killed the PWA install prompt. -->
 		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
