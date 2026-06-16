@@ -46,3 +46,16 @@ jobs:
           key: playwright-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+
+  functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # Type-check the npm-free shared modules (SSRF math, http, hash) — fast and
+      # stable. The npm-dependent entrypoints are bundled + deployed by
+      # deploy-functions.yml; their pure logic is exercised by the tests below.
+      - run: deno check supabase/functions/_shared/net.ts supabase/functions/_shared/http.ts supabase/functions/_shared/hash.ts
+      - run: deno test --no-check supabase/functions/_shared/
