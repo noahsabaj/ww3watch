@@ -5,37 +5,15 @@
 // PWA clients may still send HTML, which they sanitize client-side with
 // DOMPurify before rendering.
 //
-// verify_jwt is off, so the abuse control is the articles.url gate: requests
-// must reference a URL the pipeline ingested.
+// verify_jwt is off, so the abuse control is the articles.url gate + per-IP rate
+// limiting (see _shared/ratelimit.ts).
 
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders, json } from '../_shared/http.ts'
+import { serviceClient } from '../_shared/client.ts'
+import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
+import { sha256Hex } from '../_shared/hash.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-
-function secretKey(): string {
-  const dict = Deno.env.get('SUPABASE_SECRET_KEYS')
-  if (dict) {
-    try {
-      const parsed = JSON.parse(dict)
-      if (typeof parsed?.default === 'string') return parsed.default
-    } catch {
-      // fall through
-    }
-  }
-  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-}
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, secretKey(), {
-  auth: { persistSession: false },
-})
+const supabase = serviceClient()
 
 const LLM_BASE_URL = Deno.env.get('LLM_BASE_URL')!
 const LLM_API_KEY = Deno.env.get('LLM_API_KEY')!
@@ -48,50 +26,13 @@ const MAX_CONTENT_CHARS = 8000
 // Each uncached call burns LLM quota; 20/h is far beyond human reading pace.
 const RATE_LIMIT_PER_HOUR = 20
 
-// Per-IP hourly rate limit. Fail-OPEN on limiter errors: a bookkeeping hiccup
-// must never take the feature down; the limit exists to stop scripted abuse.
-function clientIp(req: Request): string {
-  const xff = req.headers.get('x-forwarded-for')
-  return xff?.split(',')[0]?.trim() || 'unknown'
-}
-
-function secondsToNextHour(): number {
-  const now = new Date()
-  return Math.max(1, Math.ceil((3600_000 - (now.getTime() % 3600_000)) / 1000))
-}
-
-async function rateLimited(req: Request, fn: string, limit: number): Promise<Response | null> {
-  try {
-    const { data: allowed, error } = await supabase.rpc('check_rate_limit', {
-      p_ip: clientIp(req),
-      p_fn: fn,
-      p_limit: limit,
-    })
-    if (error) {
-      console.error(`[${fn}] rate-limit check failed (failing open):`, error)
-      return null
-    }
-    if (allowed === false) {
-      return new Response(JSON.stringify({ error: 'rate_limited' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(secondsToNextHour()) },
-      })
-    }
-  } catch (err) {
-    console.error(`[${fn}] rate-limit check failed (failing open):`, err)
-  }
-  return null
-}
-
-
-async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
+
+  // Bound the request body before reading the article row / hashing.
+  const big = tooLarge(req)
+  if (big) return big
 
   let body: { title?: unknown; content?: unknown; lang?: unknown; url?: unknown }
   try {
@@ -109,7 +50,7 @@ Deno.serve(async (req) => {
     return json({ error: 'invalid_body' }, 400)
   }
 
-  const limited = await rateLimited(req, 'translate', RATE_LIMIT_PER_HOUR)
+  const limited = await rateLimited(supabase, req, 'translate', RATE_LIMIT_PER_HOUR)
   if (limited) return limited
 
   // Gate: must reference an article the pipeline ingested.

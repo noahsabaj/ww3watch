@@ -19,7 +19,7 @@
   type ReaderState =
     | { status: 'idle' }
     | { status: 'loading' }
-    | { status: 'loaded'; title: string; byline: string | null; content: string }
+    | { status: 'loaded'; title: string; byline: string | null; content: string; fetchedAt?: string | null }
     | { status: 'failed' }
 
   let reader = $state<ReaderState>({ status: 'idle' })
@@ -46,6 +46,15 @@
     : 'Translate to English'
   )
 
+  // When the cached extraction is more than a few hours old, label its vintage —
+  // conflict reporting is corrected/retracted often, so a silent old snapshot is
+  // a duty-of-care gap. Guarded: N-1 reader responses omit fetchedAt → no line.
+  const snapshotAgeLabel = $derived.by(() => {
+    if (reader.status !== 'loaded' || !reader.fetchedAt) return null
+    if (clock.now - new Date(reader.fetchedAt).getTime() < 3 * 3600_000) return null
+    return `Snapshot from ${timeAgo(reader.fetchedAt, clock.now)}`
+  })
+
   $effect(() => {
     const current = article
     if (!current) {
@@ -71,7 +80,7 @@
             .body.textContent ?? ''
           reader = text.trim().length < 200
             ? { status: 'failed' }
-            : { status: 'loaded', title: data.title, byline: data.byline, content: data.content }
+            : { status: 'loaded', title: data.title, byline: data.byline, content: data.content, fetchedAt: data.fetchedAt }
         }
       })
       .catch(() => {
@@ -287,6 +296,9 @@
         </h1>
         {#if reader.byline}
           <p class="text-xs text-gray-500 mb-3">{reader.byline}</p>
+        {/if}
+        {#if snapshotAgeLabel}
+          <p class="text-xs text-gray-600 mb-3" title="Articles are often corrected or updated after first publication; this is when the reader cached this copy.">{snapshotAgeLabel}</p>
         {/if}
         {#if article.source_lang !== 'en'}
           <button

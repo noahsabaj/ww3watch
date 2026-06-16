@@ -1,158 +1,46 @@
 // Supabase Edge Function: article reader/extractor (Deno).
 // Fetches a known article's URL, extracts the readable article with Mozilla
-// Readability, and returns it. Guarded against SSRF; results are cached in
-// public.article_content (instant repeat opens + survives source takedowns).
-// The returned HTML is sanitized on the CLIENT with DOMPurify before {@html}.
+// Readability, and returns it. Guarded against SSRF (initial host AND every
+// redirect hop); results are cached in public.article_content (instant repeat
+// opens + survives source takedowns). The returned HTML is sanitized on the
+// CLIENT with DOMPurify before {@html}.
 //
 // verify_jwt is off (the publishable key is not a JWT), so the abuse control is
-// the articles.url gate: only URLs the pipeline ingested are fetched or cached.
+// the articles.url gate + per-IP rate limiting (see _shared/ratelimit.ts).
 
-import { Readability } from 'npm:@mozilla/readability@0.6'
-import { parseHTML } from 'npm:linkedom@0.18'
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { Readability } from 'npm:@mozilla/readability@0.6.0'
+import { parseHTML } from 'npm:linkedom@0.18.12'
+import { corsHeaders, json } from '../_shared/http.ts'
+import { serviceClient } from '../_shared/client.ts'
+import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
+import { fetchGuarded } from '../_shared/net.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-}
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-
-// Service client from Supabase's auto-injected env: prefer the new secret-keys
-// dict, fall back to the legacy service-role key.
-function secretKey(): string {
-  const dict = Deno.env.get('SUPABASE_SECRET_KEYS')
-  if (dict) {
-    try {
-      const parsed = JSON.parse(dict)
-      if (typeof parsed?.default === 'string') return parsed.default
-    } catch {
-      // fall through
-    }
-  }
-  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-}
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, secretKey(), {
-  auth: { persistSession: false },
-})
+const supabase = serviceClient()
 
 const MAX_CACHE_CONTENT_CHARS = 400_000
 // Generous human-proof ceiling; cache hits count too (they're still requests).
 const RATE_LIMIT_PER_HOUR = 120
+// Conflict reporting has the highest correction/retraction rate of any genre —
+// re-extract a cached copy older than this so corrections propagate (falling
+// back to the stale copy if the re-fetch fails, preserving the link-rot archive).
+const CACHE_FRESH_MS = 24 * 3600_000
 
-// Per-IP hourly rate limit. Fail-OPEN on limiter errors: a bookkeeping hiccup
-// must never take the feature down; the limit exists to stop scripted abuse.
-function clientIp(req: Request): string {
-  const xff = req.headers.get('x-forwarded-for')
-  return xff?.split(',')[0]?.trim() || 'unknown'
+type CacheRow = {
+  title: string
+  byline: string | null
+  content: string
+  site_name: string | null
+  fetched_at: string
 }
-
-function secondsToNextHour(): number {
-  const now = new Date()
-  return Math.max(1, Math.ceil((3600_000 - (now.getTime() % 3600_000)) / 1000))
-}
-
-async function rateLimited(req: Request, fn: string, limit: number): Promise<Response | null> {
-  try {
-    const { data: allowed, error } = await supabase.rpc('check_rate_limit', {
-      p_ip: clientIp(req),
-      p_fn: fn,
-      p_limit: limit,
-    })
-    if (error) {
-      console.error(`[${fn}] rate-limit check failed (failing open):`, error)
-      return null
-    }
-    if (allowed === false) {
-      return new Response(JSON.stringify({ error: 'rate_limited' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(secondsToNextHour()) },
-      })
-    }
-  } catch (err) {
-    console.error(`[${fn}] rate-limit check failed (failing open):`, err)
-  }
-  return null
-}
-
-
-function ipv4ToInt(ip: string): number | null {
-  const parts = ip.split('.')
-  if (parts.length !== 4) return null
-  let n = 0
-  for (const part of parts) {
-    const octet = Number(part)
-    if (!Number.isInteger(octet) || octet < 0 || octet > 255) return null
-    n = (n << 8) | octet
-  }
-  return n >>> 0
-}
-function isPrivateIpv4(ip: string): boolean {
-  const n = ipv4ToInt(ip)
-  if (n === null) return false
-  const inRange = (base: string, bits: number) => {
-    const baseInt = ipv4ToInt(base)!
-    const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0
-    return (n & mask) === (baseInt & mask)
-  }
-  return (
-    inRange('0.0.0.0', 8) ||
-    inRange('10.0.0.0', 8) ||
-    inRange('100.64.0.0', 10) ||
-    inRange('127.0.0.0', 8) ||
-    inRange('169.254.0.0', 16) ||
-    inRange('172.16.0.0', 12) ||
-    inRange('192.0.0.0', 24) ||
-    inRange('192.168.0.0', 16) ||
-    inRange('198.18.0.0', 15)
-  )
-}
-function isBlockedIpv6(ip: string): boolean {
-  const lower = ip.toLowerCase()
-  return lower === '::1' || lower === '::' || lower.startsWith('fe80') || lower.startsWith('fc') || lower.startsWith('fd')
-}
-async function assertPublicUrl(raw: string): Promise<URL> {
-  let url: URL
-  try {
-    url = new URL(raw)
-  } catch {
-    throw new Error('invalid_url')
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('invalid_url')
-  const host = url.hostname.toLowerCase()
-  if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) throw new Error('blocked_host')
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
-    if (isPrivateIpv4(host)) throw new Error('blocked_host')
-    return url
-  }
-  if (host.includes(':')) {
-    if (isBlockedIpv6(host)) throw new Error('blocked_host')
-    return url
-  }
-  try {
-    const [a, aaaa] = await Promise.allSettled([Deno.resolveDns(host, 'A'), Deno.resolveDns(host, 'AAAA')])
-    const ips = [
-      ...(a.status === 'fulfilled' ? a.value : []),
-      ...(aaaa.status === 'fulfilled' ? aaaa.value : []),
-    ]
-    for (const ip of ips) {
-      if (ip.includes(':') ? isBlockedIpv6(ip) : isPrivateIpv4(ip)) throw new Error('blocked_host')
-    }
-  } catch (err) {
-    if (err instanceof Error && err.message === 'blocked_host') throw err
-  }
-  return url
-}
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+const staleHit = (c: CacheRow) =>
+  json({ title: c.title, byline: c.byline, content: c.content, siteName: c.site_name, fetchedAt: c.fetched_at, cached: true, stale: true })
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  // Bound the request body before reading/parsing it.
+  const big = tooLarge(req)
+  if (big) return big
 
   let articleUrl: string | null = new URL(req.url).searchParams.get('url')
   if (!articleUrl && req.method === 'POST') {
@@ -165,7 +53,7 @@ Deno.serve(async (req) => {
   }
   if (!articleUrl) return json({ error: 'missing_url' }, 400)
 
-  const limited = await rateLimited(req, 'reader', RATE_LIMIT_PER_HOUR)
+  const limited = await rateLimited(supabase, req, 'reader', RATE_LIMIT_PER_HOUR)
   if (limited) return limited
 
   // Gate: only URLs the pipeline ingested. Blocks cache-stuffing and limits the
@@ -178,45 +66,47 @@ Deno.serve(async (req) => {
   if (gateError) console.error('[reader] gate lookup failed:', gateError)
   if (!known?.length) return json({ error: 'unknown_article' }, 404)
 
-  // Cache hit → instant, and survives source-page takedowns.
+  // Cache: a FRESH copy serves directly; a STALE copy gets a re-extraction attempt
+  // (corrections propagate) and is the fallback if the re-fetch/extract fails.
   const { data: cached } = await supabase
     .from('article_content')
-    .select('title, byline, content, site_name')
+    .select('title, byline, content, site_name, fetched_at')
     .eq('url', articleUrl)
     .maybeSingle()
-  if (cached) {
+  const cacheAgeMs = cached?.fetched_at ? Date.now() - new Date(cached.fetched_at).getTime() : Infinity
+  if (cached && cacheAgeMs < CACHE_FRESH_MS) {
     return json({
       title: cached.title,
       byline: cached.byline,
       content: cached.content,
       siteName: cached.site_name,
+      fetchedAt: cached.fetched_at,
       cached: true,
     })
   }
 
-  let target: URL
-  try {
-    target = await assertPublicUrl(articleUrl)
-  } catch {
-    return json({ error: 'invalid_url' }, 400)
-  }
-
+  // (Re-)extract.
   let html: string
   try {
-    const res = await fetch(target, {
-      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml' },
-      signal: AbortSignal.timeout(8000),
-    })
-    if (!res.ok) return json({ error: 'extraction_failed' }, 422)
+    const res = await fetchGuarded(articleUrl, 8000)
+    if (!res.ok) throw new Error(`status ${res.status}`)
     html = await res.text()
-  } catch {
-    return json({ error: 'extraction_failed' }, 422)
+  } catch (err) {
+    if (cached) return staleHit(cached as CacheRow) // serve the prior good copy
+    const msg = err instanceof Error ? err.message : String(err)
+    const blocked = msg === 'invalid_url' || msg === 'blocked_host'
+    return json({ error: blocked ? 'invalid_url' : 'extraction_failed' }, blocked ? 400 : 422)
   }
 
   try {
-    const { document } = parseHTML(html)
-    const article = new Readability(document as unknown as Document).parse()
-    if (!article) return json({ error: 'extraction_failed' }, 422)
+    // linkedom returns a DOM-like document; cast through unknown so we don't need
+    // the browser `Document` lib type (absent in Deno) — Readability reads it fine.
+    const { document } = parseHTML(html) as unknown as { document: unknown }
+    const article = new Readability(document as never).parse()
+    if (!article) {
+      if (cached) return staleHit(cached as CacheRow)
+      return json({ error: 'extraction_failed' }, 422)
+    }
 
     const result = {
       title: article.title ?? '',
@@ -225,11 +115,12 @@ Deno.serve(async (req) => {
       siteName: article.siteName ?? null,
     }
 
-    // Cache write is best-effort — never fail the response over it. Skip
-    // near-empty extractions (bot-wall/redirect pages) so junk is never
-    // permanent; the client decides how to display the uncached response.
+    const now = new Date().toISOString()
     const textLen = (article.textContent ?? '').trim().length
     if (result.content && result.content.length <= MAX_CACHE_CONTENT_CHARS && textLen >= 200) {
+      // Overwrite on refresh (ignoreDuplicates:false) and ALWAYS set fetched_at —
+      // PostgREST only updates payload columns, so omitting it would freeze the
+      // timestamp and turn the cache into a permanent origin-hammering pass-through.
       const { error: cacheError } = await supabase.from('article_content').upsert(
         {
           url: articleUrl,
@@ -237,14 +128,20 @@ Deno.serve(async (req) => {
           byline: result.byline,
           content: result.content,
           site_name: result.siteName,
+          fetched_at: now,
         },
-        { onConflict: 'url', ignoreDuplicates: true },
+        { onConflict: 'url', ignoreDuplicates: false },
       )
       if (cacheError) console.error('[reader] cache write failed:', cacheError)
+      return json({ ...result, fetchedAt: now })
     }
 
-    return json(result)
+    // Near-empty extraction (bot-wall/redirect page): never persist junk. If we
+    // have a prior good copy, keep serving it; else return the uncached result.
+    if (cached) return staleHit(cached as CacheRow)
+    return json({ ...result, fetchedAt: now })
   } catch {
+    if (cached) return staleHit(cached as CacheRow)
     return json({ error: 'extraction_failed' }, 422)
   }
 })
