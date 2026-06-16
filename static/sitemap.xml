@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Only the root is listed: it's the one URL GitHub Pages serves with a 200
+     (deploy.yml copies 404.html -> index.html). Every other path resolves through
+     the SPA fallback with an HTTP-404 status, so listing them would just point
+     crawlers at 404s. The feed itself is one live, client-rendered route. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://noahsabaj.github.io/ww3watch/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Methodology & live source health
+    url: https://noahsabaj.github.io/ww3watch/about
+    about: How stories are clustered, ranked, and labelled — and the live status of every source.
+  - name: Contributing guide
+    url: https://github.com/noahsabaj/ww3watch/blob/main/CONTRIBUTING.md
+    about: Local setup, the house rules, and how to propose changes.

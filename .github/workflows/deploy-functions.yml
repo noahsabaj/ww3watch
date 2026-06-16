@@ -1,7 +1,7 @@
 name: Deploy edge functions
 
 # Edge functions previously deployed only via a manual MCP/CLI step, so the repo
-# and production could silently drift. Deploy reader + translate automatically
+# and production could silently drift. Deploy reader + translate + rss automatically
 # whenever supabase/functions/** changes on main — merged code is the running code.
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
       # Gate at the SHELL level (the secrets context isn't available in `if:`).
       # Degrades gracefully to a warning if the token isn't set yet, so a
       # functions change never hard-fails before SUPABASE_ACCESS_TOKEN exists.
-      - name: Deploy reader + translate
+      - name: Deploy reader + translate + rss
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
@@ -33,4 +33,4 @@ jobs:
             echo "::warning::SUPABASE_ACCESS_TOKEN not set — skipping function deploy. Add it to enable auto-deploy."
             exit 0
           fi
-          supabase functions deploy reader translate --no-verify-jwt --project-ref qusjbpknlduuklnfciws
+          supabase functions deploy reader translate rss --no-verify-jwt --project-ref qusjbpknlduuklnfciws
