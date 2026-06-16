@@ -11,6 +11,7 @@ type ArticleInsert = {
   source_name: string
   source_region: SourceRegion
   source_lang: string
+  source_affiliation: string | null
   feed_url: string
   source_id: string | null
   body_hash: string | null
@@ -151,6 +152,7 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
           source_name: feed.name,
           source_region: feed.region as SourceRegion,
           source_lang: feed.lang,
+          source_affiliation: feed.affiliation ?? null,
           feed_url: feed.url,
           source_id: feed.id ?? null,
           body_hash: bodyHash(summary),

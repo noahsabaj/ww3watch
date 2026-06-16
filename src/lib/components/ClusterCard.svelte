@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { Cluster } from '$lib/cluster'
+  import { wireDuplicateIds } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
-  import { timeAgo, langFlag, isBreaking } from '$lib/utils'
+  import { timeAgo, langTag, isBreaking } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
+  import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
 
   let { cluster, onselect }: { cluster: Cluster; onselect?: (a: Article) => void } = $props()
   let expanded = $state(false)
@@ -15,40 +17,45 @@
   const regionDots = $derived(
     [...new Set(cluster.articles.map(a => a.source_region))].slice(0, 5)
   )
-  const repFlag = $derived(langFlag(rep.source_lang))
-  const breaking = $derived(isBreaking(rep.published_at, clock.now))
+  const repLang = $derived(langTag(rep.source_lang))
 
-  // Wire-syndication marks: members sharing a body_hash are reprints of the
-  // same agency copy. Badge every copy EXCEPT the earliest-published one (the
-  // origin), so "N sources" reads honestly in the expanded list.
-  const wireIds = $derived.by(() => {
-    const byHash = new Map<string, Article[]>()
-    for (const a of cluster.articles) {
-      if (!a.body_hash) continue
-      const g = byHash.get(a.body_hash)
-      if (g) g.push(a)
-      else byHash.set(a.body_hash, [a])
-    }
-    const ids = new Set<string>()
-    for (const group of byHash.values()) {
-      if (group.length < 2) continue
-      const sorted = [...group].sort((x, y) =>
-        (x.published_at ?? '9999').localeCompare(y.published_at ?? '9999'))
-      for (const copy of sorted.slice(1)) ids.add(copy.id)
-    }
-    return ids
+  // Wire-syndication marks: members sharing a body_hash are reprints of the same
+  // agency copy. Badge every copy EXCEPT the earliest-published origin (shared
+  // with trending's independent-source count so the two never drift).
+  const wireIds = $derived(wireDuplicateIds(cluster.articles))
+
+  // BREAKING is reserved for genuinely corroborated breakers, not "a feed emitted
+  // XML < 30 min ago" (which on ~900 articles/day would paint the whole feed red).
+  // Require a recent representative AND ≥3 distinct non-wire sources whose
+  // earliest report is < 90 min old; everything else recent gets a neutral NEW.
+  const breaking = $derived.by(() => {
+    if (!isBreaking(rep.published_at, clock.now)) return false
+    const independent = new Set(
+      cluster.articles.filter(a => !wireIds.has(a.id)).map(a => a.source_name)
+    )
+    if (independent.size < 3) return false
+    const times = cluster.articles
+      .map(a => (a.published_at ? new Date(a.published_at).getTime() : null))
+      .filter((t): t is number => t !== null)
+    const earliest = times.length ? Math.min(...times) : clock.now
+    return clock.now - earliest < 90 * 60 * 1000
   })
+  const isNew = $derived(!breaking && isBreaking(rep.published_at, clock.now))
 </script>
 
-<article class="border-l-4 {REGION_BORDER[rep.source_region]} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
+<article class="border-l-4 {REGION_BORDER[rep.source_region] ?? 'border-gray-600'} bg-[#111113] hover:bg-[#18181b] transition-colors px-4 py-3">
   <!-- Header row -->
   <div class="flex items-center gap-2 mb-1.5 min-w-0">
     <RegionBadge region={rep.source_region} />
     {#if breaking}
       <span class="bg-red-950/60 border border-red-800/60 text-red-400 text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded shrink-0">BREAKING</span>
+    {:else if isNew}
+      <span class="bg-gray-800/70 border border-gray-700 text-gray-400 text-[10px] font-semibold tracking-widest px-1.5 py-0.5 rounded shrink-0">NEW</span>
     {/if}
-    <span class="text-sm font-medium text-gray-300 truncate min-w-0">
-      {repFlag}{repFlag ? ' ' : ''}{rep.source_name}
+    <span class="flex items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0">
+      {#if repLang}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{repLang}</span>{/if}
+      <span class="truncate">{rep.source_name}</span>
+      <AffiliationBadge affiliation={rep.source_affiliation} />
     </span>
     {#if !isSingle}
       <div class="flex items-center gap-1 shrink-0">
@@ -102,9 +109,11 @@
         {#each others as article (article.id)}
           <div class="flex items-center gap-2 py-0.5">
             <RegionBadge region={article.source_region} size="sm" />
-            <span class="text-xs text-gray-400 shrink-0">
-              {langFlag(article.source_lang)}{article.source_name}
+            <span class="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+              {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(article.source_lang)}</span>{/if}
+              {article.source_name}
             </span>
+            <AffiliationBadge affiliation={article.source_affiliation} />
             {#if wireIds.has(article.id)}
               <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
             {/if}

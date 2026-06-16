@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
-  import { timeAgo } from '$lib/utils'
+  import { timeAgo, langTag } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import { supabase } from '$lib/supabase'
   import { cleanHtml } from '$lib/sanitize-html'
   import { base } from '$app/paths'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
+  import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
 
   let { article, cluster = null, onclose, onselect }: {
     article: Article | null
@@ -216,7 +217,11 @@
     <!-- Top bar -->
     <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
       <RegionBadge region={article.source_region} />
-      <span class="text-sm font-medium text-gray-300 truncate min-w-0">{article.source_name}</span>
+      <span class="flex items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0">
+        {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{langTag(article.source_lang)}</span>{/if}
+        <span class="truncate">{article.source_name}</span>
+        <AffiliationBadge affiliation={article.source_affiliation} />
+      </span>
       <span class="text-xs text-gray-500 shrink-0 whitespace-nowrap">{timeAgo(article.published_at, clock.now)}</span>
       <a
         href={article.url}
@@ -337,7 +342,11 @@
             {#each cluster.articles as other (other.id)}
               <div class="flex items-center gap-2 py-0.5">
                 <RegionBadge region={other.source_region} size="sm" />
-                <span class="text-xs text-gray-500 shrink-0">{other.source_name}</span>
+                <span class="flex items-center gap-1 text-xs text-gray-500 shrink-0">
+                  {#if langTag(other.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(other.source_lang)}</span>{/if}
+                  {other.source_name}
+                </span>
+                <AffiliationBadge affiliation={other.source_affiliation} />
                 {#if other.id === article.id}
                   <span class="text-xs text-blue-400 line-clamp-1 flex-1 min-w-0">← reading now</span>
                 {:else}

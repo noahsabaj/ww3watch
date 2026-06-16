@@ -14,6 +14,29 @@ function ts(a: Article): number {
   return a.published_at ? new Date(a.published_at).getTime() : 0
 }
 
+// Members sharing a body_hash are reprints of the same agency copy. Returns the
+// ids of every copy EXCEPT the earliest-published one (the origin), so wire
+// reprints can be badged in the UI and excluded from independent-source counts
+// (ClusterCard badges them; trending collapses them before ranking). Shared so
+// the two never drift.
+export function wireDuplicateIds(articles: Article[]): Set<string> {
+  const byHash = new Map<string, Article[]>()
+  for (const a of articles) {
+    if (!a.body_hash) continue
+    const g = byHash.get(a.body_hash)
+    if (g) g.push(a)
+    else byHash.set(a.body_hash, [a])
+  }
+  const ids = new Set<string>()
+  for (const group of byHash.values()) {
+    if (group.length < 2) continue
+    const sorted = [...group].sort((x, y) =>
+      (x.published_at ?? '9999').localeCompare(y.published_at ?? '9999'))
+    for (const copy of sorted.slice(1)) ids.add(copy.id)
+  }
+  return ids
+}
+
 // Groups articles by their pipeline-assigned story_id (multilingual embedding
 // clustering, assign_story_by_embedding). Articles without one — junk-titled
 // or not-yet-assigned rows — render as singletons by design; there is no
