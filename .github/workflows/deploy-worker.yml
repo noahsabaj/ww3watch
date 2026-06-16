@@ -1,0 +1,48 @@
+name: Deploy feed-proxy worker
+
+# The Cloudflare Worker (cloudflare/feed-proxy.js) previously deployed only via a
+# manual dashboard/CLI step, so the repo and the running Worker could silently
+# drift. Deploy it automatically whenever cloudflare/** changes on main — merged
+# code is the running code. PRs validate the build without deploying.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare/**'
+  pull_request:
+    paths:
+      - 'cloudflare/**'
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare
+    steps:
+      - uses: actions/checkout@v6
+
+      # PRs: build-only validation. No secrets needed, so it runs on forks too.
+      - name: Validate (dry-run)
+        if: github.event_name == 'pull_request'
+        run: npx --yes wrangler@4 deploy --dry-run
+
+      # Gate at the SHELL level (the secrets context isn't available in `if:`).
+      # Degrades to a warning if the token isn't set yet, so a cloudflare/** change
+      # never hard-fails before CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID exist.
+      - name: Deploy
+        if: github.event_name != 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::CLOUDFLARE_API_TOKEN not set — skipping worker deploy. Add it (and CLOUDFLARE_ACCOUNT_ID) to enable auto-deploy."
+            exit 0
+          fi
+          npx --yes wrangler@4 deploy

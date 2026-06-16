@@ -10,7 +10,7 @@
 // -> recompute trending. Every run writes one pipeline_runs row (stats jsonb
 // + error) for dashboard observability.
 
-import { fetchFeed, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
+import { fetchFeed, FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
 import type { Feed } from '../src/lib/types'
 import { classifyArticles } from '../src/lib/server/classify'
 import {
@@ -111,14 +111,16 @@ function logFeedSummary(results: FeedFetchResult[]) {
   const direct = ok.filter((r) => r.via === 'direct').length
   const proxy = ok.filter((r) => r.via === 'proxy').length
   const failed = results.filter((r) => r.error)
-  const byKind: Record<FeedErrorKind, number> = { http: 0, timeout: 0, parse: 0, network: 0 }
+  // Build the tally from the canonical kind list so it can't drift when a kind
+  // is added (e.g. 'blocked').
+  const byKind = Object.fromEntries(FEED_ERROR_KINDS.map((k) => [k, 0])) as Record<FeedErrorKind, number>
   for (const r of failed) byKind[r.error!.kind]++
 
   const datesClamped = results.reduce((sum, r) => sum + (r.clamped ?? 0), 0)
 
+  const kindSummary = FEED_ERROR_KINDS.map((k) => `${k}=${byKind[k]}`).join(' ')
   console.log(
-    `[pipeline] feeds ok ${ok.length}/${results.length} (direct ${direct}, proxy ${proxy}) | ` +
-      `failed ${failed.length}: http=${byKind.http} timeout=${byKind.timeout} parse=${byKind.parse} network=${byKind.network}`,
+    `[pipeline] feeds ok ${ok.length}/${results.length} (direct ${direct}, proxy ${proxy}) | failed ${failed.length}: ${kindSummary}`,
   )
   for (const r of failed) {
     console.log(`[feed-fail] ${r.feed.name} [${r.feed.region}] ${r.error!.kind}: ${r.error!.detail}`)

@@ -5,10 +5,12 @@
 // Cloudflare egress IPs are rarely blocked. Free tier: 100k req/day (we need
 // ~15k/day worst case), no metered egress.
 //
-// Deploy: Cloudflare dashboard → Workers → create "feed-proxy" → paste this file
-// (or `npx wrangler deploy cloudflare/feed-proxy.js --name feed-proxy`).
-// Then set the Worker secret FEED_PROXY_SECRET (Settings → Variables and Secrets)
-// to the same random string stored as the GitHub Actions secret.
+// Deploy: automated by .github/workflows/deploy-worker.yml on any push to
+// cloudflare/** on main (config in cloudflare/wrangler.toml), gated on the repo
+// secrets CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID. Manual fallback:
+// `npx wrangler deploy` from cloudflare/. The Worker secret FEED_PROXY_SECRET is
+// NOT managed by the deploy — set it once via `wrangler secret put FEED_PROXY_SECRET`
+// (or the dashboard) to the same random string stored as the GitHub Actions secret.
 //
 // Usage: GET {worker-url}?url=<encoded feed url>  with header  x-proxy-key: <secret>
 
@@ -46,18 +48,29 @@ export default {
     try {
       const upstream = await fetch(url, {
         headers: {
-          'User-Agent': 'WW3Watch/1.0 (news aggregator)',
-          'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+          // Match the app's direct-path headers (src/lib/server/rss.ts). A real
+          // browser UA + Accept-Language gets past WAFs that 403 a bot UA.
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+          'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
         },
         redirect: 'follow',
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(10000),
       })
-      return new Response(upstream.body, {
+      // Buffer the body HERE, inside the try: streaming upstream.body straight
+      // through surfaces a mid-stream origin reset to the caller as an opaque
+      // "TypeError: fetch failed". Reading it now turns that into a clean,
+      // diagnosable 502 and lets a slow body finish within our budget.
+      const body = await upstream.text()
+      return new Response(body, {
         status: upstream.status,
         headers: { 'content-type': upstream.headers.get('content-type') ?? 'application/octet-stream' },
       })
     } catch (err) {
-      return new Response(`upstream fetch failed: ${err?.name ?? 'error'}`, { status: 502 })
+      return new Response(`upstream fetch failed: ${err?.name ?? 'error'}: ${err?.message ?? ''}`.slice(0, 200), {
+        status: 502,
+      })
     }
   },
 }
