@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
-  import { timeAgo, langTag } from '$lib/utils'
+  import { timeAgo, langTag, LANG_NAMES, TARGET_LANGS, isRtlLang } from '$lib/utils'
+  import { prefs, setReadingLang } from '$lib/prefs.svelte'
   import { clock } from '$lib/now.svelte'
   import { supabase } from '$lib/supabase'
   import { cleanHtml } from '$lib/sanitize-html'
@@ -43,8 +44,21 @@
     translation.status === 'loading' ? 'Translating…'
     : translation.status === 'failed' ? 'Translation failed — tap to retry'
     : showTranslated ? 'Show original'
-    : 'Translate to English'
+    : 'Translate'
   )
+  // Translated output renders RTL when the reading language is RTL (the source
+  // body keeps dir="auto").
+  const translatedDir = $derived(isRtlLang(prefs.readingLang) ? 'rtl' : 'ltr')
+
+  function changeReadingLang(code: string) {
+    if (code === prefs.readingLang) return
+    const wasShowing = showTranslated && translation.status === 'done'
+    setReadingLang(code)
+    translation = { status: 'idle' }
+    showTranslated = false
+    // Re-translate to the newly chosen language if one was already on screen.
+    if (wasShowing && article && article.source_lang !== code) translate()
+  }
 
   // When the cached extraction is more than a few hours old, label its vintage —
   // conflict reporting is corrected/retracted often, so a silent old snapshot is
@@ -168,7 +182,7 @@
       : (article.summary ?? '')
     try {
       const { data, error } = await supabase.functions.invoke('translate', {
-        body: { title, content, lang: article.source_lang, url: article.url },
+        body: { title, content, lang: article.source_lang, url: article.url, target: prefs.readingLang },
       })
       if (error || !data?.title || !data?.content) throw new Error('Translation failed')
       translation = { status: 'done', title: data.title, content: data.content }
@@ -205,6 +219,31 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if article}
+  <!-- Translate action + reading-language picker (set once, remembered). Hidden
+       when the article is already in the reading language. Rendered in both the
+       loaded and failed reader states. -->
+  {#snippet translateControls()}
+    {#if article && article.source_lang !== prefs.readingLang}
+      <div class="flex items-center gap-2 mb-4 flex-wrap text-xs">
+        <button
+          onclick={translate}
+          class="transition-colors {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
+        >{translateLabel}</button>
+        <span class="text-gray-600" aria-hidden="true">→</span>
+        <select
+          value={prefs.readingLang}
+          onchange={(e) => changeReadingLang(e.currentTarget.value)}
+          aria-label="Reading language"
+          class="bg-[#1a1a1d] border border-gray-700 rounded text-gray-300 py-0.5 px-1.5 focus:outline-none focus:border-blue-500"
+        >
+          {#each TARGET_LANGS as code}
+            <option value={code}>{LANG_NAMES[code]}</option>
+          {/each}
+        </select>
+      </div>
+    {/if}
+  {/snippet}
+
   <!-- Backdrop -->
   <div
     class="fixed inset-0 bg-black/50 z-40"
@@ -300,15 +339,8 @@
         {#if snapshotAgeLabel}
           <p class="text-xs text-gray-600 mb-3" title="Articles are often corrected or updated after first publication; this is when the reader cached this copy.">{snapshotAgeLabel}</p>
         {/if}
-        {#if article.source_lang !== 'en'}
-          <button
-            onclick={translate}
-            class="text-xs transition-colors mb-4 block {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
-          >
-            {translateLabel}
-          </button>
-        {/if}
-        <div class="prose-reader" dir="auto">
+        {@render translateControls()}
+        <div class="prose-reader" dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'}>
           {#if showTranslated && translation.status === 'done'}
             <!-- Translations are plain-text paragraphs — text interpolation, no sanitize needed -->
             {#each translation.content.split(/\n{2,}/) as para}
@@ -324,16 +356,9 @@
         <h1 dir="auto" class="text-xl font-bold text-white leading-snug mb-3">
           {showTranslated && translation.status === 'done' ? translation.title : article.title}
         </h1>
-        {#if article.source_lang !== 'en'}
-          <button
-            onclick={translate}
-            class="text-xs transition-colors mb-3 block {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
-          >
-            {translateLabel}
-          </button>
-        {/if}
+        {@render translateControls()}
         {#if article.summary}
-          <p dir="auto" class="text-gray-300 leading-relaxed mb-6">
+          <p dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'} class="text-gray-300 leading-relaxed mb-6">
             {showTranslated && translation.status === 'done' ? translation.content : article.summary}
           </p>
         {/if}

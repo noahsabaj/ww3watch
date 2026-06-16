@@ -1,9 +1,10 @@
-// Supabase Edge Function: in-panel translation to English (Deno).
-// Calls the OpenAI-compatible LLM (Cerebras) and caches results in
-// public.article_translations so identical inputs never re-burn LLM quota.
-// Current clients send plain text and render the result as text; older cached
-// PWA clients may still send HTML, which they sanitize client-side with
-// DOMPurify before rendering.
+// Supabase Edge Function: in-panel translation (Deno).
+// Translates an article from its source language into the caller's chosen
+// reading language (default English) via the OpenAI-compatible LLM (Cerebras),
+// caching results in public.article_translations so identical inputs never
+// re-burn LLM quota. Current clients send plain text and render the result as
+// text; older cached PWA clients may still send HTML, which they sanitize
+// client-side with DOMPurify before rendering.
 //
 // verify_jwt is off, so the abuse control is the articles.url gate + per-IP rate
 // limiting (see _shared/ratelimit.ts).
@@ -12,6 +13,7 @@ import { corsHeaders, json } from '../_shared/http.ts'
 import { serviceClient } from '../_shared/client.ts'
 import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
 import { sha256Hex } from '../_shared/hash.ts'
+import { isSupportedTarget, translationCacheParts, LANG_NAMES } from '../_shared/lang.ts'
 
 const supabase = serviceClient()
 
@@ -20,8 +22,8 @@ const LLM_API_KEY = Deno.env.get('LLM_API_KEY')!
 const LLM_MODEL = Deno.env.get('LLM_MODEL')!
 
 // Plain-text regime (the client sends extracted text, not HTML). 8000 chars
-// keeps worst-case output (CJK input → English) under max_tokens — at 12000 a
-// Chinese article could exceed the cap and fail deterministically on retry.
+// keeps worst-case output (e.g. CJK target) under max_tokens — at 12000 a
+// dense-script translation could exceed the cap and fail deterministically.
 const MAX_CONTENT_CHARS = 8000
 // Each uncached call burns LLM quota; 20/h is far beyond human reading pace.
 const RATE_LIMIT_PER_HOUR = 20
@@ -34,7 +36,7 @@ Deno.serve(async (req) => {
   const big = tooLarge(req)
   if (big) return big
 
-  let body: { title?: unknown; content?: unknown; lang?: unknown; url?: unknown }
+  let body: { title?: unknown; content?: unknown; lang?: unknown; url?: unknown; target?: unknown }
   try {
     body = await req.json()
   } catch {
@@ -50,6 +52,17 @@ Deno.serve(async (req) => {
     return json({ error: 'invalid_body' }, 400)
   }
 
+  // Target reading language. Absent → 'en' (deploy skew: N-1 clients send no
+  // target, so they keep getting English). Present-but-unknown → 400: never
+  // interpolate a raw client value into the prompt, and keep cache cardinality
+  // bounded to the allowlist.
+  const target = typeof body.target === 'string' ? body.target : 'en'
+  if (!isSupportedTarget(target)) return json({ error: 'unsupported_target' }, 400)
+
+  // No-op when the article is already in the reading language (the client also
+  // hides the button) — echo the input, no LLM call.
+  if (lang === target) return json({ title, content, untranslated: true })
+
   const limited = await rateLimited(supabase, req, 'translate', RATE_LIMIT_PER_HOUR)
   if (limited) return limited
 
@@ -62,10 +75,11 @@ Deno.serve(async (req) => {
   if (gateError) console.error('[translate] gate lookup failed:', gateError)
   if (!known?.length) return json({ error: 'unknown_article' }, 404)
 
-  // Hash the POST-truncation input (what the LLM actually sees), delimited so
-  // (lang,title,content) boundaries are unambiguous.
+  // Hash the POST-truncation input (what the LLM actually sees). English keeps
+  // the legacy [lang,title,content] formula so the existing English cache is
+  // reused; other targets get a distinct namespace (translationCacheParts).
   const truncated = content.slice(0, MAX_CONTENT_CHARS)
-  const inputHash = await sha256Hex([lang, title, truncated].join(String.fromCharCode(31)))
+  const inputHash = await sha256Hex(translationCacheParts(lang, target, title, truncated))
 
   const { data: cached } = await supabase
     .from('article_translations')
@@ -76,7 +90,7 @@ Deno.serve(async (req) => {
 
   // The conditional HTML clause stays for deploy skew: PWA autoUpdate means old
   // cached clients keep sending HTML for a session+ after this ships.
-  const systemPrompt = `Translate the following article from language code "${lang}" to English.
+  const systemPrompt = `Translate the following article from language code "${lang}" to ${LANG_NAMES[target]}.
 Return ONLY a JSON object with two fields: "title" (string) and "content" (string).
 If the content contains HTML tags, preserve all HTML tags exactly as-is — only translate the visible text between tags.
 Otherwise the content is plain-text paragraphs separated by blank lines — keep the same paragraph breaks.
@@ -139,7 +153,7 @@ No markdown, no explanation, no wrapping.`
 
   // Cache write is best-effort.
   const { error: cacheError } = await supabase.from('article_translations').upsert(
-    { input_hash: inputHash, title: parsed.title, content: parsed.content },
+    { input_hash: inputHash, title: parsed.title, content: parsed.content, target_lang: target },
     { onConflict: 'input_hash', ignoreDuplicates: true },
   )
   if (cacheError) console.error('[translate] cache write failed:', cacheError)

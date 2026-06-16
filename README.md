@@ -12,7 +12,7 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 - **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event; deterministic, quota-free
 - **Trending Now** — LLM-picked top stories, updating live
 - **Wire detection** — near-identical copies inside a story are marked, so "12 sources" doesn't overstate independent confirmation
-- **In-app reader + translation** — cached extraction (survives link rot), on-demand translation with the original one click away
+- **In-app reader + translation** — cached extraction (survives link rot), on-demand translation into your reading language (set once; defaults from your browser locale), the original one click away
 - **Source roster with live health** — every feed and its fetch health, public on [/about](https://noahsabaj.github.io/ww3watch/about)
 - **Freshness dead-man's switch** — the header shows when ingestion last succeeded; it goes amber/red if the pipeline stalls
 - **Region filtering, RTL, PWA** — 16 region/perspective buckets; first-class Persian/Arabic/Hebrew rendering; installable
