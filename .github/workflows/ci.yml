@@ -60,5 +60,5 @@ jobs:
       # --no-config: ignore the repo's SvelteKit tsconfig (its module/
       # moduleResolution conflict with Deno's defaults); --node-modules-dir=none:
       # use Deno's own npm cache, not the project's node_modules.
-      - run: deno check --no-config --node-modules-dir=none supabase/functions/_shared/net.ts supabase/functions/_shared/http.ts supabase/functions/_shared/hash.ts
+      - run: deno check --no-config --node-modules-dir=none supabase/functions/_shared/net.ts supabase/functions/_shared/http.ts supabase/functions/_shared/hash.ts supabase/functions/_shared/rss.ts
       - run: deno test --no-check --no-config --node-modules-dir=none supabase/functions/_shared/
