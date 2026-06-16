@@ -5,11 +5,19 @@
 //
 // Only the CURATED columns are dumped — not health/timestamps, which churn every
 // run and would create noisy commits. Sorted by name for a clean, reviewable diff.
+//
+// Uses a standalone Supabase client (NOT ../src/lib/server/supabase, which eagerly
+// validates the LLM env this job has no reason to carry).
 import { writeFileSync, mkdirSync } from 'node:fs'
-import { supabaseAdmin } from '../src/lib/server/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const url = process.env.SUPABASE_URL
+const key = process.env.SUPABASE_SECRET_KEY
+if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required')
+const supabase = createClient(url, key, { auth: { persistSession: false } })
 
 async function main() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('sources')
     .select('url, name, region, lang, enabled, affiliation')
     .order('name')
