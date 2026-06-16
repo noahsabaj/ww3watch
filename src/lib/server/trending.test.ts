@@ -54,6 +54,7 @@ function article(id: string, title: string, source: string, storyId: string | nu
     source_name: source,
     source_region: 'US/Western',
     source_lang: 'en',
+    source_affiliation: null,
     feed_url: 'https://example.com/rss',
     source_id: null,
     body_hash: null,
@@ -86,10 +87,10 @@ describe('updateTrending', () => {
     mockedCallLLM.mockResolvedValue('[0,1,2]')
     await updateTrending()
 
-    // groupByStoryId: the s-haifa story (2 sources) sorts first, so the prompt
-    // shows it as "2 sources" — proving distinct-source counting via the shared path.
+    // groupByStoryId: the s-haifa story (2 distinct sources) sorts first by
+    // independent-source count, so the prompt shows it as "2 independent sources".
     const prompt = mockedCallLLM.mock.calls[0][0][1].content
-    expect(prompt).toContain('[2 sources')
+    expect(prompt).toContain('[2 independent sources')
     expect(state.deleteCalled).toBe(true)
     expect(state.insertedRows).toHaveLength(3)
     const first = state.insertedRows![0] as { rank: number; article_id: string; story_id: string | null }
@@ -101,6 +102,20 @@ describe('updateTrending', () => {
     // singletons carry a null story_id
     const singles = (state.insertedRows as Array<{ story_id: string | null }>).slice(1)
     expect(singles.every((r) => r.story_id === null)).toBe(true)
+  })
+
+  it('collapses wire reprints in the independent-source count shown to the curator', async () => {
+    // Same story: two members share a body_hash (a wire copy) + one original.
+    const wireA = { ...article('w1', 'Wire copy', 'Reuters', 's-wire'), body_hash: 'h1', published_at: '2026-06-10T10:00:00Z' }
+    const wireB = { ...article('w2', 'Wire copy', 'AP', 's-wire'), body_hash: 'h1', published_at: '2026-06-10T10:05:00Z' }
+    const indep = { ...article('w3', 'Original reporting', 'BBC', 's-wire'), body_hash: null, published_at: '2026-06-10T10:03:00Z' }
+    state.articlesResult = { data: [wireA, wireB, indep], error: null }
+    mockedCallLLM.mockResolvedValue('[0,0,0]') // invalid (one cluster) → no insert, but the prompt is still built
+    await updateTrending()
+    const prompt = mockedCallLLM.mock.calls[0][0][1].content
+    // AP is the later reprint of h1 → excluded; independent sources = Reuters + BBC = 2, not 3.
+    expect(prompt).toContain('[2 independent sources')
+    expect(state.insertedRows).toBeNull()
   })
 
   it('rejects duplicate indices and keeps the previous selection (no delete)', async () => {

@@ -1,10 +1,28 @@
-const LANG_FLAGS: Record<string, string> = {
-  fa: '🇮🇷', ar: '🇸🇦', he: '🇮🇱', ru: '🇷🇺',
-  zh: '🇨🇳', tr: '🇹🇷', fr: '🇫🇷', de: '🇩🇪', ur: '🇵🇰',
+// Full language names for tooltips / aria, and the translation UI (PR-D2 reuses
+// this; the edge function keeps its own _shared copy).
+export const LANG_NAMES: Record<string, string> = {
+  en: 'English', fa: 'Persian', ar: 'Arabic', he: 'Hebrew', ru: 'Russian',
+  zh: 'Chinese', tr: 'Turkish', fr: 'French', de: 'German', ur: 'Urdu',
+  no: 'Norwegian', sv: 'Swedish', uk: 'Ukrainian', hi: 'Hindi', es: 'Spanish', pt: 'Portuguese',
 }
 
-export function langFlag(lang: string): string {
-  return LANG_FLAGS[lang] ?? ''
+// Short uppercase language code shown as a provenance tag next to a source name.
+// Replaces the old nation-flag emoji, which misattributed language to a single
+// state (Arabic→🇸🇦, Persian→🇮🇷, exile Russians→🇷🇺) and made screen readers
+// announce e.g. "flag: Saudi Arabia" before a Qatari headline. English (the
+// default majority) returns '' so the tag only marks non-English provenance.
+export function langTag(lang: string): string {
+  return !lang || lang === 'en' ? '' : lang.toUpperCase()
+}
+
+// Curated outlet-allegiance classes (sources.affiliation): labels + tooltips.
+export const AFFILIATION_LABELS: Record<string, string> = {
+  state: 'STATE', public: 'PUBLIC', exile: 'EXILE',
+}
+export const AFFILIATION_TITLES: Record<string, string> = {
+  state: 'State-controlled or state-owned media',
+  public: 'Public broadcaster — publicly funded with an editorial charter',
+  exile: 'Exile / diaspora outlet operating outside the country it covers',
 }
 
 // Time-anchored helpers take an optional nowMs so components can pass the

@@ -7,9 +7,9 @@ export const REGIONS = {
   'UK':                  { color: 'bg-blue-400 text-white',    border: 'border-blue-400'    },
   'European':            { color: 'bg-indigo-500 text-white',  border: 'border-indigo-500'  },
   'Israeli':             { color: 'bg-orange-500 text-white',  border: 'border-orange-500'  },
-  'Iranian State':       { color: 'bg-red-700 text-white',     border: 'border-red-700'     },
-  'Iranian Independent': { color: 'bg-amber-500 text-black',   border: 'border-amber-500'   },
-  'Iranian Local':       { color: 'bg-yellow-400 text-black',  border: 'border-yellow-400'  },
+  // Geography only — the state/independent split lives in sources.affiliation now
+  // (collapsed from the former Iranian State/Independent/Local buckets in PR-B).
+  'Iranian':             { color: 'bg-red-700 text-white',     border: 'border-red-700'     },
   'Arab/Gulf':           { color: 'bg-teal-600 text-white',    border: 'border-teal-600'    },
   'Kurdish':             { color: 'bg-purple-600 text-white',  border: 'border-purple-600'  },
   'Turkish':             { color: 'bg-slate-500 text-white',   border: 'border-slate-500'   },
@@ -34,6 +34,9 @@ export interface Article {
   source_name: string
   source_region: SourceRegion
   source_lang: string
+  // Curated outlet allegiance (state | public | exile | null), denormalized
+  // from sources.affiliation at ingest.
+  source_affiliation: string | null
   feed_url: string
   source_id: string | null
   body_hash: string | null
@@ -53,6 +56,7 @@ export interface Feed {
   url: string
   region: SourceRegion
   lang: string
+  affiliation?: string | null
 }
 
 export const ALL_REGIONS = Object.keys(REGIONS) as SourceRegion[]

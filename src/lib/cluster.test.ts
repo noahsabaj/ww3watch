@@ -16,6 +16,7 @@ function article(overrides: Partial<Article> = {}): Article {
     source_name: `Source ${seq}`,
     source_region: 'US/Western',
     source_lang: 'en',
+    source_affiliation: null,
     feed_url: 'https://example.com/feed',
     source_id: null,
     body_hash: null,
