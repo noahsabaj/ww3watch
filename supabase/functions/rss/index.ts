@@ -14,6 +14,10 @@ import { buildRssXml, type FeedItem } from '../_shared/rss.ts'
 
 const supabase = serviceClient()
 const SITE_URL = 'https://noahsabaj.github.io/ww3watch'
+// Hardcoded, not derived from req.url: behind Supabase's TLS-terminating proxy the
+// request arrives as http://<ref>.supabase.co/rss (internal scheme + rewritten
+// path), so req.url would yield a wrong, non-resolving atom:self link.
+const FEED_URL = 'https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss'
 const MAX_ITEMS = 40
 // Over-fetch so story dedup still yields a full feed when recent stories have
 // many members.
@@ -59,10 +63,9 @@ Deno.serve(async (req) => {
     if (items.length >= MAX_ITEMS) break
   }
 
-  const feedUrl = new URL(req.url).href.split('?')[0]
   const xml = buildRssXml(items, {
     siteUrl: SITE_URL,
-    feedUrl,
+    feedUrl: FEED_URL,
     buildDate: items[0]?.publishedAt ?? new Date().toISOString(),
   })
 
