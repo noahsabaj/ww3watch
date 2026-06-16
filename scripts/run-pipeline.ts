@@ -114,6 +114,8 @@ function logFeedSummary(results: FeedFetchResult[]) {
   const byKind: Record<FeedErrorKind, number> = { http: 0, timeout: 0, parse: 0, network: 0 }
   for (const r of failed) byKind[r.error!.kind]++
 
+  const datesClamped = results.reduce((sum, r) => sum + (r.clamped ?? 0), 0)
+
   console.log(
     `[pipeline] feeds ok ${ok.length}/${results.length} (direct ${direct}, proxy ${proxy}) | ` +
       `failed ${failed.length}: http=${byKind.http} timeout=${byKind.timeout} parse=${byKind.parse} network=${byKind.network}`,
@@ -121,8 +123,16 @@ function logFeedSummary(results: FeedFetchResult[]) {
   for (const r of failed) {
     console.log(`[feed-fail] ${r.feed.name} [${r.feed.region}] ${r.error!.kind}: ${r.error!.detail}`)
   }
+  if (datesClamped > 0) console.log(`[pipeline] clamped ${datesClamped} out-of-range pubDate(s) to null`)
 
-  return { feeds_ok: ok.length, feeds_direct: direct, feeds_proxy: proxy, feeds_failed: failed.length, fail_kinds: byKind }
+  return {
+    feeds_ok: ok.length,
+    feeds_direct: direct,
+    feeds_proxy: proxy,
+    feeds_failed: failed.length,
+    fail_kinds: byKind,
+    dates_clamped: datesClamped,
+  }
 }
 
 async function existingGuids(guids: string[]): Promise<Set<string>> {
@@ -356,8 +366,14 @@ async function run(stats: RunStats): Promise<void> {
   stats.inserted = inserted
 
   if (rejected.size > 0) {
-    const titleByGuid = new Map(toClassify.map((a) => [a.guid, a.title]))
-    const rejectRows = [...rejected].map((guid) => ({ guid, title: titleByGuid.get(guid) ?? null }))
+    // Project explicit, homogeneous columns (never spread the article objects —
+    // PostgREST 400s on unknown columns, and a batch needs uniform keys).
+    // source_id + lang give the curation pass accept-rate per source/language.
+    const byGuid = new Map(toClassify.map((a) => [a.guid, a]))
+    const rejectRows = [...rejected].map((guid) => {
+      const a = byGuid.get(guid)
+      return { guid, title: a?.title ?? null, source_id: a?.source_id ?? null, lang: a?.source_lang ?? null }
+    })
     for (let i = 0; i < rejectRows.length; i += UPSERT_BATCH) {
       const batch = rejectRows.slice(i, i + UPSERT_BATCH)
       const { error } = await supabaseAdmin
