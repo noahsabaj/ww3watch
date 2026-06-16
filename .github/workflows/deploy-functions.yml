@@ -19,9 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: supabase/setup-cli@v1
+      # v2 is a composite action (v1 ran on the deprecated Node 20 runtime). The
+      # github-token authenticates the "latest" release lookup v2 does via the API,
+      # so it can't hit the unauthenticated rate limit and fail the deploy.
+      - uses: supabase/setup-cli@v2
         with:
           version: latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       # Gate at the SHELL level (the secrets context isn't available in `if:`).
       # Degrades gracefully to a warning if the token isn't set yet, so a
       # functions change never hard-fails before SUPABASE_ACCESS_TOKEN exists.
