@@ -1,13 +1,40 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { base } from '$app/paths'
+  import { supabase } from '$lib/supabase'
   import { REGION_COLORS } from '$lib/types'
   import { timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import type { SourceRegion } from '$lib/types'
-  import type { PageData } from './$types'
+  import type { SourceRosterRow } from './+page'
 
-  let { data }: { data: PageData } = $props()
+  // Live data, fetched client-side so the prerendered prose never freezes it.
+  let sources = $state<SourceRosterRow[]>([])
+  let windowTotal = $state(0)
+  let regionCounts = $state<[string, number][]>([])
+
+  onMount(async () => {
+    const [sourcesResult, windowResult] = await Promise.all([
+      supabase
+        .from('sources')
+        .select('name, region, lang, enabled, last_ok_at, consecutive_failures')
+        .order('region')
+        .order('name'),
+      supabase
+        .from('articles')
+        .select('source_region')
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .limit(500),
+    ])
+    sources = (sourcesResult.data ?? []) as SourceRosterRow[]
+    const counts = new Map<string, number>()
+    for (const row of windowResult.data ?? []) {
+      counts.set(row.source_region, (counts.get(row.source_region) ?? 0) + 1)
+    }
+    windowTotal = windowResult.data?.length ?? 0
+    regionCounts = [...counts.entries()].sort((a, b) => b[1] - a[1])
+  })
 
   // Healthy = succeeded recently; failing = multiple consecutive misses
   // (pipeline runs every ~30–120 min, so >6 misses ≈ dead for half a day+).
@@ -19,8 +46,8 @@
   }
 
   const byRegion = $derived.by(() => {
-    const map = new Map<string, typeof data.sources>()
-    for (const s of data.sources) {
+    const map = new Map<string, SourceRosterRow[]>()
+    for (const s of sources) {
       const g = map.get(s.region)
       if (g) g.push(s)
       else map.set(s.region, [s])
@@ -48,7 +75,7 @@
       <h1 class="text-2xl font-bold text-white mb-3">What this is</h1>
       <p class="text-gray-300 leading-relaxed mb-3">
         WW3Watch is a real-time aggregator of conflict and geopolitical news from
-        {data.sources.length} sources across every major region and perspective — US and European
+        {sources.length || '200+'} sources across every major region and perspective — US and European
         wires next to Iranian state media, Israeli papers next to Arab ones, Russian outlets next
         to OSINT researchers. It does not tell you what is true. It shows you who is saying what,
         side by side, as they say it.
@@ -87,17 +114,17 @@
     <section>
       <h2 class="text-xl font-bold text-white mb-3">The current window, by region</h2>
       <p class="text-gray-500 text-sm leading-relaxed mb-3">
-        Distribution of the {data.windowTotal} most recent articles (the feed's serving window).
+        Distribution of the {windowTotal || 500} most recent articles (the feed's serving window).
         Volume varies with the news cycle and with which feeds are reachable — shown here so the
         skew is visible rather than implicit.
       </p>
       <div class="space-y-1.5">
-        {#each data.regionCounts as [region, count]}
+        {#each regionCounts as [region, count]}
           <div class="flex items-center gap-2 text-xs">
             <span class="w-36 shrink-0 text-gray-400">{region}</span>
             <div class="flex-1 bg-gray-900 rounded h-3 overflow-hidden">
               <div class="h-full rounded {REGION_COLORS[region as SourceRegion]?.split(' ')[0] ?? 'bg-gray-600'}"
-                   style="width: {Math.max(2, (count / data.windowTotal) * 100)}%"></div>
+                   style="width: {Math.max(2, (count / (windowTotal || 1)) * 100)}%"></div>
             </div>
             <span class="w-10 text-right text-gray-500">{count}</span>
           </div>
@@ -112,6 +139,9 @@
         on recent runs. Amber: failing recently (many news sites block datacenter IPs; a proxy
         rescues most). Red: failing for half a day or more. Gray: disabled.
       </p>
+      {#if sources.length === 0}
+        <p class="text-gray-600 text-sm">Loading the live roster…</p>
+      {/if}
       {#each byRegion as [region, sources]}
         <details class="mb-2 group">
           <summary class="cursor-pointer list-none flex items-center gap-2 py-1.5 text-sm text-gray-300 hover:text-white transition-colors">
