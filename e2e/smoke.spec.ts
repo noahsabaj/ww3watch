@@ -50,6 +50,29 @@ test('reader panel opens as a dialog, focuses close, Escape restores', async ({ 
   await expect(dialog).toBeHidden()
 })
 
+test('reading-language picker stays available when the article matches the reading language', async ({ page }) => {
+  // Regression: the picker used to be gated on source_lang !== readingLang, so a
+  // reader whose language matched the article (a Russian reader on a Russian
+  // article) lost the picker AND the translate button — stranded. Seed Russian,
+  // open a Russian-source story, and assert the picker is still there.
+  await page.addInitScript(() => localStorage.setItem('reading-lang', 'ru'))
+  await page.reload()
+  await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
+
+  // Prefer a card whose representative carries the "RU" language chip (source==target,
+  // the exact regression case); fall back to the first story if none is on screen.
+  const ruCard = page.locator('article').filter({ has: page.getByText('RU', { exact: true }) }).first()
+  const headline = (await ruCard.count())
+    ? ruCard.locator('a[href]').first()
+    : page.locator('article a[href]').first()
+  await headline.click()
+
+  await expect(page.getByRole('dialog')).toBeVisible()
+  // The picker renders once the reader settles (loaded or failed) — it must appear
+  // regardless of whether the article is in the reading language.
+  await expect(page.getByLabel('Reading language')).toBeVisible({ timeout: 20_000 })
+})
+
 test('day separators render at the top of the feed', async ({ page }) => {
   await expect(page.locator('main div', { hasText: /^(Today|Yesterday)$/ }).first()).toBeVisible()
 })
