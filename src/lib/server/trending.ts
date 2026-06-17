@@ -114,6 +114,25 @@ export async function updateTrending(): Promise<string> {
     console.error('[trending] Supabase insert error:', error)
     return 'error:insert'
   }
+
+  // Append the trail: `trending` is overwritten every run, so trending_log is the
+  // only record of what was highlighted over time (the /about "recently highlighted"
+  // view reads it). Denormalize the display fields so it survives article pruning.
+  // Log-only — a failure here must never undo the trending update we just committed.
+  const logPicks = indices.map((clusterIdx, rank) => {
+    const rep = clusters[clusterIdx].representative
+    return {
+      article_id: rep.id,
+      story_id: clusters[clusterIdx].storyId,
+      rank,
+      title: rep.title,
+      source_name: rep.source_name,
+      source_region: rep.source_region,
+    }
+  })
+  const { error: logError } = await supabaseAdmin.from('trending_log').insert({ picks: logPicks })
+  if (logError) console.error('[trending] trending_log append failed (non-fatal):', logError)
+
   console.log(`[trending] Updated: ${rows.map((r) => r.article_id).join(', ')}`)
   return `updated:${rows.length}`
 }
