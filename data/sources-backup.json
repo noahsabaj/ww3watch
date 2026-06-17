@@ -20,7 +20,7 @@
     "name": "ACLED",
     "region": "Independent/OSINT",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -32,7 +32,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.aftabnews.ir/rss",
+    "url": "https://www.aftabnews.ir/fa/rss/allnews",
     "name": "Aftab News",
     "region": "Iranian",
     "lang": "fa",
@@ -40,7 +40,7 @@
     "affiliation": null
   },
   {
-    "url": "https://english.alarabiya.net/rss",
+    "url": "https://english.alarabiya.net/feed/flipboard/en.xml",
     "name": "Al Arabiya English",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -72,7 +72,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.alarabiya.net/ar/rss.xml",
+    "url": "https://www.alarabiya.net/feed/flipboard/ar.xml",
     "name": "Al-Arabiya Arabic",
     "region": "Arab/Gulf",
     "lang": "ar",
@@ -88,7 +88,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.alef.ir/rss.xml",
+    "url": "https://www.alef.ir/rss/latest/all.xml",
     "name": "Alef News",
     "region": "Iranian",
     "lang": "fa",
@@ -96,7 +96,7 @@
     "affiliation": null
   },
   {
-    "url": "https://allafrica.com/export/rss2/en/africa.xml",
+    "url": "https://allafrica.com/tools/headlines/rdf/africa/headlines.rdf",
     "name": "AllAfrica",
     "region": "African",
     "lang": "en",
@@ -104,7 +104,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.aa.com.tr/en/rss/default",
+    "url": "https://www.aa.com.tr/en/rss/default?cat=guncel",
     "name": "Anadolu Agency",
     "region": "Turkish",
     "lang": "en",
@@ -116,7 +116,7 @@
     "name": "AP News",
     "region": "US/Western",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -128,7 +128,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.israelnationalnews.com/Rss.aspx/News",
+    "url": "https://www.israelnationalnews.com/Rss.aspx",
     "name": "Arutz Sheva",
     "region": "Israeli",
     "lang": "en",
@@ -144,7 +144,7 @@
     "affiliation": null
   },
   {
-    "url": "https://english.aawsat.com/rss",
+    "url": "https://english.aawsat.com/feed",
     "name": "Asharq Al-Awsat",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -152,7 +152,7 @@
     "affiliation": null
   },
   {
-    "url": "https://api.axios.com/feed/topics/world",
+    "url": "https://api.axios.com/feed/",
     "name": "Axios World",
     "region": "US/Western",
     "lang": "en",
@@ -220,7 +220,7 @@
     "name": "Carnegie Endowment",
     "region": "Independent/OSINT",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -232,7 +232,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.cfr.org/rss",
+    "url": "http://feeds.feedburner.com/cfr_main",
     "name": "CFR",
     "region": "Independent/OSINT",
     "lang": "en",
@@ -240,7 +240,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.cgtn.com/subscribe/rss/section/world-news.do",
+    "url": "https://www.cgtn.com/subscribe/rss/section/world.xml",
     "name": "CGTN",
     "region": "Chinese",
     "lang": "en",
@@ -248,7 +248,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.channel4.com/news/feed/atom",
+    "url": "http://feeds.feedburner.com/Channel4News",
     "name": "Channel 4 News",
     "region": "UK",
     "lang": "en",
@@ -276,7 +276,7 @@
     "name": "CNN Middle East",
     "region": "US/Western",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -284,11 +284,11 @@
     "name": "CNN World",
     "region": "US/Western",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
-    "url": "https://nation.africa/rss.xml",
+    "url": "https://nation.africa/kenya/rss.xml",
     "name": "Daily Nation Kenya",
     "region": "African",
     "lang": "en",
@@ -296,7 +296,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.dailysabah.com/rss",
+    "url": "https://www.dailysabah.com/rss/politics",
     "name": "Daily Sabah",
     "region": "Turkish",
     "lang": "en",
@@ -304,7 +304,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.thedailystar.net/feed/rss.xml",
+    "url": "https://www.thedailystar.net/frontpage/rss.xml",
     "name": "Daily Star BD",
     "region": "South Asian",
     "lang": "en",
@@ -348,11 +348,11 @@
     "name": "Deutsche Welle",
     "region": "European",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "public"
   },
   {
-    "url": "https://donya-e-eqtesad.com/rss",
+    "url": "https://donya-e-eqtesad.com/feeds/",
     "name": "Donya-e-Eqtesad",
     "region": "Iranian",
     "lang": "fa",
@@ -384,7 +384,7 @@
     "affiliation": null
   },
   {
-    "url": "https://electronicintifada.net/feeds/news",
+    "url": "https://electronicintifada.net/rss.xml",
     "name": "Electronic Intifada",
     "region": "Independent/OSINT",
     "lang": "en",
@@ -392,7 +392,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.entekhab.ir/rss",
+    "url": "https://www.entekhab.ir/fa/rss/allnews",
     "name": "Entekhab",
     "region": "Iranian",
     "lang": "fa",
@@ -420,7 +420,7 @@
     "name": "Fars News",
     "region": "Iranian",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
@@ -432,7 +432,7 @@
     "affiliation": null
   },
   {
-    "url": "https://financialtribune.com/rss",
+    "url": "https://financialtribune.com/rss.xml",
     "name": "Financial Tribune",
     "region": "Iranian",
     "lang": "en",
@@ -440,7 +440,7 @@
     "affiliation": null
   },
   {
-    "url": "https://focustaiwan.tw/rss",
+    "url": "https://feeds.feedburner.com/rsscna/engnews",
     "name": "Focus Taiwan",
     "region": "East Asian",
     "lang": "en",
@@ -456,7 +456,7 @@
     "affiliation": null
   },
   {
-    "url": "https://moxie.foxnews.com/google-publisher/national-security.xml",
+    "url": "https://moxie.foxnews.com/google-publisher/politics.xml",
     "name": "Fox News Nat Sec",
     "region": "US/Western",
     "lang": "en",
@@ -488,7 +488,7 @@
     "affiliation": "public"
   },
   {
-    "url": "https://www.geo.tv/rss/1",
+    "url": "https://www.geo.tv/rss/1/1",
     "name": "Geo News",
     "region": "South Asian",
     "lang": "en",
@@ -512,7 +512,7 @@
     "affiliation": null
   },
   {
-    "url": "https://globalvoices.org/regions/middle-east-north-africa/feed/",
+    "url": "https://globalvoices.org/-/world/middle-east-north-africa/feed/",
     "name": "Global Voices MENA",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -520,7 +520,7 @@
     "affiliation": null
   },
   {
-    "url": "https://en.globes.co.il/en/rss",
+    "url": "https://www.globes.co.il/webservice/rss/rssfeeder.asmx/FeederNode?iID=1725",
     "name": "Globes",
     "region": "Israeli",
     "lang": "en",
@@ -536,7 +536,7 @@
     "affiliation": null
   },
   {
-    "url": "https://gulfnews.com/rss",
+    "url": "https://gulfnews.com/stories.rss",
     "name": "Gulf News",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -544,7 +544,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.haaretz.com/cmlink/1.628765",
+    "url": "https://www.haaretz.com/srv/haaretz-latest-headlines",
     "name": "Haaretz",
     "region": "Israeli",
     "lang": "en",
@@ -580,7 +580,7 @@
     "name": "i24 News",
     "region": "Israeli",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -596,7 +596,7 @@
     "name": "Iran Daily",
     "region": "Iranian",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
@@ -632,7 +632,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.irna.ir/rss/taglist/84004",
+    "url": "https://fars.irna.ir/rss",
     "name": "IRNA Fars",
     "region": "Iranian",
     "lang": "fa",
@@ -640,7 +640,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.irna.ir/rss/taglist/84001",
+    "url": "https://isfahan.irna.ir/rss",
     "name": "IRNA Isfahan",
     "region": "Iranian",
     "lang": "fa",
@@ -648,7 +648,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.irna.ir/rss/taglist/84013",
+    "url": "https://kermanshah.irna.ir/rss",
     "name": "IRNA Kermanshah",
     "region": "Iranian",
     "lang": "fa",
@@ -656,7 +656,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.irna.ir/rss/taglist/84008",
+    "url": "https://khorasanrazavi.irna.ir/rss",
     "name": "IRNA Khorasan",
     "region": "Iranian",
     "lang": "fa",
@@ -664,7 +664,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.irna.ir/rss/taglist/84011",
+    "url": "https://khuzestan.irna.ir/rss",
     "name": "IRNA Khuzestan",
     "region": "Iranian",
     "lang": "fa",
@@ -696,7 +696,7 @@
     "affiliation": null
   },
   {
-    "url": "https://istories.media/feed/",
+    "url": "https://istories.media/rss/all.xml",
     "name": "iStories",
     "region": "Russian",
     "lang": "ru",
@@ -708,11 +708,11 @@
     "name": "ISW",
     "region": "Independent/OSINT",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
-    "url": "https://www.jahannews.com/rss",
+    "url": "https://www.jahannews.com/feeds/",
     "name": "Jahan News",
     "region": "Iranian",
     "lang": "fa",
@@ -760,7 +760,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.khaleejtimes.com/rss.xml",
+    "url": "https://www.khaleejtimes.com/api/v1/collections/top-section.rss",
     "name": "Khaleej Times",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -768,7 +768,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.koreaherald.com/rss/world.xml",
+    "url": "https://www.koreaherald.com/rss/kh_World",
     "name": "Korea Herald",
     "region": "East Asian",
     "lang": "en",
@@ -784,7 +784,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.kuna.net.kw/rss",
+    "url": "https://www.kuna.net.kw/RssFeed.aspx?language=en",
     "name": "KUNA",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -792,7 +792,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.kurdistan24.net/en/rss",
+    "url": "https://www.kurdistan24.net/en/rss.xml",
     "name": "Kurdistan 24",
     "region": "Kurdish",
     "lang": "en",
@@ -812,11 +812,11 @@
     "name": "L'Orient Today",
     "region": "Arab/Gulf",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
-    "url": "https://www.lawfaremedia.org/feed/",
+    "url": "https://feeds.feedburner.com/Lawfare",
     "name": "Lawfare",
     "region": "Independent/OSINT",
     "lang": "en",
@@ -824,7 +824,7 @@
     "affiliation": null
   },
   {
-    "url": "https://mondediplo.com/feed/full",
+    "url": "https://mondediplo.com/backend",
     "name": "Le Monde Diplo",
     "region": "European",
     "lang": "en",
@@ -832,7 +832,7 @@
     "affiliation": null
   },
   {
-    "url": "https://libyaherald.com/feed/",
+    "url": "https://libyaherald.com/rss.xml",
     "name": "Libya Herald",
     "region": "African",
     "lang": "en",
@@ -840,7 +840,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.libyaobserver.ly/feed",
+    "url": "https://www.libyaobserver.ly/feed/",
     "name": "Libya Observer",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -856,7 +856,7 @@
     "affiliation": null
   },
   {
-    "url": "https://mg.co.za/feed/",
+    "url": "https://mg.co.za/rss/",
     "name": "Mail & Guardian",
     "region": "African",
     "lang": "en",
@@ -872,7 +872,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://meduza.io/en/rss/all",
+    "url": "https://meduza.io/rss/en/all",
     "name": "Meduza",
     "region": "Russian",
     "lang": "en",
@@ -920,7 +920,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.naharnet.com/stories/en/rss",
+    "url": "https://www.naharnet.com/tags/lebanon/en/feed.atom",
     "name": "Naharnet",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -964,7 +964,7 @@
     "name": "NHK World",
     "region": "East Asian",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "public"
   },
   {
@@ -984,7 +984,7 @@
     "affiliation": null
   },
   {
-    "url": "https://novayagazeta.eu/feed",
+    "url": "https://novayagazeta.eu/feed/rss",
     "name": "Novaya Gazeta Europe",
     "region": "Russian",
     "lang": "en",
@@ -1000,7 +1000,7 @@
     "affiliation": "public"
   },
   {
-    "url": "https://www.nrttv.com/en/rss",
+    "url": "https://www.nrttv.com/En/rss",
     "name": "NRT Digital",
     "region": "Kurdish",
     "lang": "en",
@@ -1024,7 +1024,7 @@
     "affiliation": "state"
   },
   {
-    "url": "http://en.people.cn/rss/politics.xml",
+    "url": "http://en.people.cn/rss/90785.xml",
     "name": "People's Daily",
     "region": "Chinese",
     "lang": "en",
@@ -1056,7 +1056,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.presstv.ir/homepagerss.aspx",
+    "url": "https://www.presstv.ir/rss.xml",
     "name": "Press TV",
     "region": "Iranian",
     "lang": "en",
@@ -1064,7 +1064,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.qna.org.qa/en/rss",
+    "url": "https://qna.org.qa/en/Pages/RSS-Feeds/General",
     "name": "Qatar News Agency",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -1072,7 +1072,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://www.radiofarda.com/api/ztrqtqpym/rss.xml",
+    "url": "https://www.radiofarda.com/api/zrttpol-vomx-tpeoogpi/rss.xml",
     "name": "Radio Farda",
     "region": "Iranian",
     "lang": "en",
@@ -1080,7 +1080,7 @@
     "affiliation": "public"
   },
   {
-    "url": "https://www.rferl.org/api/zmpiqormvy/rss.xml",
+    "url": "https://www.rferl.org/api/zbgvmtl-vomx-tpeq_kmr",
     "name": "Radio Free Europe",
     "region": "US/Western",
     "lang": "en",
@@ -1088,7 +1088,7 @@
     "affiliation": "public"
   },
   {
-    "url": "https://www.svoboda.org/api/ztrqtqpym/rss.xml",
+    "url": "https://www.svoboda.org/api/z-pqpiev-qpp",
     "name": "Radio Svoboda",
     "region": "Russian",
     "lang": "ru",
@@ -1116,7 +1116,7 @@
     "name": "Reuters",
     "region": "US/Western",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -1128,7 +1128,7 @@
     "affiliation": "public"
   },
   {
-    "url": "https://ria.ru/export/rss2/world/index.xml",
+    "url": "https://ria.ru/export/rss2/archive/index.xml",
     "name": "RIA Novosti",
     "region": "Russian",
     "lang": "ru",
@@ -1148,11 +1148,11 @@
     "name": "Rudaw",
     "region": "Kurdish",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
-    "url": "https://saba.ye/en/showrss",
+    "url": "https://saba.ye/en/rsscatfeed15.htm",
     "name": "SABA Yemen Agency",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -1176,7 +1176,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://saudigazette.com.sa/rss",
+    "url": "https://saudigazette.com.sa/rssFeed/74",
     "name": "Saudi Gazette",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -1184,7 +1184,7 @@
     "affiliation": null
   },
   {
-    "url": "https://shafaq.com/en/rss",
+    "url": "https://shafaq.com/rss/en",
     "name": "Shafaq News",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -1192,7 +1192,7 @@
     "affiliation": null
   },
   {
-    "url": "https://sharghdaily.com/rss",
+    "url": "https://www.sharghdaily.com/feeds/",
     "name": "Shargh Daily",
     "region": "Iranian",
     "lang": "fa",
@@ -1204,7 +1204,7 @@
     "name": "Sky News",
     "region": "UK",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -1224,7 +1224,7 @@
     "affiliation": null
   },
   {
-    "url": "https://sputniknews.com/export/rss2/military_news/index.xml",
+    "url": "https://sputnikglobe.com/export/rss2/index.xml",
     "name": "Sputnik",
     "region": "Russian",
     "lang": "en",
@@ -1236,11 +1236,11 @@
     "name": "Sputnik World",
     "region": "Russian",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
-    "url": "https://www.stripes.com/arc/outboundfeeds/rss/?outputType=xml",
+    "url": "https://subscribe.stripes.com/rss/middle-east.xml",
     "name": "Stars and Stripes",
     "region": "US/Western",
     "lang": "en",
@@ -1256,10 +1256,10 @@
     "affiliation": null
   },
   {
-    "url": "https://sudantribune.com/feed/",
+    "url": "https://sudantribune.net/feed/",
     "name": "Sudan Tribune",
     "region": "African",
-    "lang": "en",
+    "lang": "ar",
     "enabled": true,
     "affiliation": null
   },
@@ -1272,7 +1272,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.swissinfo.ch/eng/rss/world",
+    "url": "https://cdn.prod.swi-services.ch/rss/eng/rssxml/latest-news/rss",
     "name": "Swiss Info",
     "region": "European",
     "lang": "en",
@@ -1280,7 +1280,7 @@
     "affiliation": "public"
   },
   {
-    "url": "https://www.tabnak.ir/fa/rss",
+    "url": "https://www.tabnak.ir/fa/rss/allnews",
     "name": "Tabnak",
     "region": "Iranian",
     "lang": "fa",
@@ -1300,7 +1300,7 @@
     "name": "Taiwan News",
     "region": "East Asian",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -1312,7 +1312,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.tasnimnews.com/en/rss",
+    "url": "https://www.tasnimnews.com/en/rss/feed/0/7/0/all-stories",
     "name": "Tasnim News",
     "region": "Iranian",
     "lang": "en",
@@ -1352,7 +1352,7 @@
     "affiliation": null
   },
   {
-    "url": "https://thecradle.co/rss.xml",
+    "url": "https://thecradle.co/feed",
     "name": "The Cradle",
     "region": "Independent/OSINT",
     "lang": "en",
@@ -1368,7 +1368,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.theeastafrican.co.ke/tea/rss",
+    "url": "https://nation.africa/tea/rss.xml",
     "name": "The East African",
     "region": "African",
     "lang": "en",
@@ -1432,7 +1432,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.themoscowtimes.com/rss",
+    "url": "https://www.themoscowtimes.com/rss/news",
     "name": "The Moscow Times",
     "region": "Russian",
     "lang": "en",
@@ -1440,7 +1440,7 @@
     "affiliation": "exile"
   },
   {
-    "url": "https://www.thenationalnews.com/rss",
+    "url": "https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml",
     "name": "The National (UAE)",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -1468,7 +1468,7 @@
     "name": "The Peninsula",
     "region": "Arab/Gulf",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -1484,7 +1484,7 @@
     "name": "The Spectator",
     "region": "UK",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -1524,7 +1524,7 @@
     "name": "TRT World",
     "region": "Turkish",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
@@ -1536,7 +1536,7 @@
     "affiliation": null
   },
   {
-    "url": "https://www.voanews.com/api/ztrqtqpym/rss.xml",
+    "url": "https://www.voanews.com/api/zrbopl-vomx-tpeovm_",
     "name": "Voice of America",
     "region": "US/Western",
     "lang": "en",
@@ -1568,7 +1568,7 @@
     "affiliation": "state"
   },
   {
-    "url": "https://english.news.cn/middleeast/rss.xml",
+    "url": "https://english.news.cn/rss/worldrss.xml",
     "name": "Xinhua Middle East",
     "region": "Arab/Gulf",
     "lang": "en",
@@ -1579,7 +1579,7 @@
     "url": "https://www.yemenmonitor.com/feed/",
     "name": "Yemen Monitor",
     "region": "Arab/Gulf",
-    "lang": "en",
+    "lang": "ar",
     "enabled": true,
     "affiliation": null
   },
@@ -1587,7 +1587,7 @@
     "url": "https://www.ynet.co.il/Integration/StoryRss2.xml",
     "name": "Ynet News",
     "region": "Israeli",
-    "lang": "en",
+    "lang": "he",
     "enabled": true,
     "affiliation": null
   },
