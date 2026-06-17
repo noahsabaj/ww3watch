@@ -4,8 +4,10 @@ const state = vi.hoisted(() => ({
   articlesResult: { data: [] as unknown[], error: null as unknown },
   deleteResult: { error: null as unknown },
   insertResult: { error: null as unknown },
+  trendingLogResult: { error: null as unknown },
   deleteCalled: false,
   insertedRows: null as unknown[] | null,
+  trendingLogInserted: null as unknown,
 }))
 
 vi.mock('./llm', () => ({ callLLM: vi.fn() }))
@@ -21,6 +23,15 @@ vi.mock('./supabase', () => ({
         }
         return b
       }
+      if (table === 'trending_log') {
+        return {
+          insert: (row: unknown) => {
+            state.trendingLogInserted = row
+            return Promise.resolve(state.trendingLogResult)
+          },
+        }
+      }
+      // table === 'trending'
       return {
         delete: () => ({
           neq: () => {
@@ -68,8 +79,10 @@ beforeEach(() => {
   state.articlesResult = { data: [], error: null }
   state.deleteResult = { error: null }
   state.insertResult = { error: null }
+  state.trendingLogResult = { error: null }
   state.deleteCalled = false
   state.insertedRows = null
+  state.trendingLogInserted = null
 })
 
 describe('updateTrending', () => {
@@ -102,6 +115,23 @@ describe('updateTrending', () => {
     // singletons carry a null story_id
     const singles = (state.insertedRows as Array<{ story_id: string | null }>).slice(1)
     expect(singles.every((r) => r.story_id === null)).toBe(true)
+
+    // The same picks are appended to trending_log (the /about history trail),
+    // denormalized with display fields so they survive article pruning.
+    const logged = state.trendingLogInserted as { picks: Array<{ article_id: string; rank: number; title: string; source_name: string; source_region: string }> }
+    expect(logged.picks).toHaveLength(3)
+    expect(logged.picks[0].rank).toBe(0)
+    expect(logged.picks[0].title).toBeTruthy()
+    expect(logged.picks[0].source_name).toBeTruthy()
+  })
+
+  it('a trending_log append failure is non-fatal (trending still updated)', async () => {
+    state.articlesResult = { data: recent, error: null }
+    state.trendingLogResult = { error: { message: 'log boom' } }
+    mockedCallLLM.mockResolvedValue('[0,1,2]')
+    const result = await updateTrending()
+    expect(result).toBe('updated:3')
+    expect(state.insertedRows).toHaveLength(3)
   })
 
   it('collapses wire reprints in the independent-source count shown to the curator', async () => {

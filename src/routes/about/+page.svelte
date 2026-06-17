@@ -9,13 +9,23 @@
   import type { SourceRegion } from '$lib/types'
   import type { SourceRosterRow } from './+page'
 
+  type Highlight = {
+    article_id: string
+    story_id: string | null
+    title: string
+    source_name: string
+    source_region: string
+    loggedAt: string
+  }
+
   // Live data, fetched client-side so the prerendered prose never freezes it.
   let sources = $state<SourceRosterRow[]>([])
   let windowTotal = $state(0)
   let regionCounts = $state<[string, number][]>([])
+  let highlights = $state<Highlight[]>([])
 
   onMount(async () => {
-    const [sourcesResult, windowResult] = await Promise.all([
+    const [sourcesResult, windowResult, logResult] = await Promise.all([
       supabase
         .from('sources')
         .select('name, region, lang, enabled, last_ok_at, consecutive_failures')
@@ -26,7 +36,13 @@
         .select('source_region')
         .order('published_at', { ascending: false, nullsFirst: false })
         .limit(500),
+      supabase
+        .from('trending_log')
+        .select('logged_at, picks')
+        .order('logged_at', { ascending: false })
+        .limit(50),
     ])
+
     sources = (sourcesResult.data ?? []) as SourceRosterRow[]
     const counts = new Map<string, number>()
     for (const row of windowResult.data ?? []) {
@@ -34,6 +50,23 @@
     }
     windowTotal = windowResult.data?.length ?? 0
     regionCounts = [...counts.entries()].sort((a, b) => b[1] - a[1])
+
+    // Flatten per-run picks newest-first, keeping each distinct story once
+    // (trending re-picks the same stories across consecutive runs).
+    type LogPick = { article_id: string; story_id: string | null; title: string; source_name: string; source_region: string }
+    const seen = new Set<string>()
+    const flat: Highlight[] = []
+    for (const row of (logResult.data ?? []) as { logged_at: string; picks: LogPick[] }[]) {
+      for (const p of row.picks ?? []) {
+        const key = p.story_id ?? p.article_id
+        if (!key || seen.has(key)) continue
+        seen.add(key)
+        flat.push({ ...p, story_id: p.story_id ?? null, loggedAt: row.logged_at })
+        if (flat.length >= 20) break
+      }
+      if (flat.length >= 20) break
+    }
+    highlights = flat
   })
 
   // Healthy = succeeded recently; failing = multiple consecutive misses
@@ -130,6 +163,33 @@
           </div>
         {/each}
       </div>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-bold text-white mb-3">Recently highlighted</h2>
+      <p class="text-gray-500 text-sm leading-relaxed mb-3">
+        The stories the curator surfaced to Trending over the past few days — distinct
+        picks, most recent first. Trending itself only ever shows the current top three;
+        this is the trail it leaves.
+      </p>
+      {#if highlights.length === 0}
+        <p class="text-gray-600 text-sm">Loading recent highlights…</p>
+      {:else}
+        <div class="space-y-2">
+          {#each highlights as h}
+            <div class="flex items-center gap-2 text-xs">
+              <RegionBadge region={h.source_region as SourceRegion} size="sm" />
+              <a
+                href="{base}/?{h.story_id ? `story=${h.story_id}` : `article=${h.article_id}`}"
+                dir="auto"
+                class="text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0"
+              >{h.title}</a>
+              <span class="text-gray-600 shrink-0">{h.source_name}</span>
+              <span class="text-gray-600 shrink-0 whitespace-nowrap">trended {timeAgo(h.loggedAt, clock.now)}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </section>
 
     <section>
