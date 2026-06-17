@@ -273,17 +273,25 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if article}
-  <!-- Translate action + reading-language picker (set once, remembered). Hidden
-       when the article is already in the reading language. Rendered in both the
-       loaded and failed reader states. -->
+  <!-- Reading-language picker (set once, remembered) + a Translate action. The
+       picker is ALWAYS shown so the reader can switch languages even when the
+       article is already in their reading language — gating both on
+       source_lang !== readingLang stranded same-language readers (a Russian
+       reader on a Russian article had no button AND no way to switch). The
+       Translate button only appears when there's a different language to
+       translate into. Rendered in both the loaded and failed reader states. -->
   {#snippet translateControls()}
-    {#if article && article.source_lang !== prefs.readingLang}
+    {#if article}
       <div class="flex items-center gap-2 mb-4 flex-wrap text-xs">
-        <button
-          onclick={translate}
-          class="transition-colors {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
-        >{translateLabel}</button>
-        <span class="text-gray-600" aria-hidden="true">→</span>
+        {#if article.source_lang !== prefs.readingLang}
+          <button
+            onclick={translate}
+            class="transition-colors {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
+          >{translateLabel}</button>
+          <span class="text-gray-600" aria-hidden="true">→</span>
+        {:else}
+          <span class="text-gray-500">Original ({LANG_NAMES[article.source_lang] ?? article.source_lang.toUpperCase()}) — read in</span>
+        {/if}
         <select
           value={prefs.readingLang}
           onchange={(e) => changeReadingLang(e.currentTarget.value)}
