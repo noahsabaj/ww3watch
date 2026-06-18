@@ -30,7 +30,7 @@ const GUID_QUERY_CHUNK = 1000 // existing_guids RPC POSTs the array — no URL-l
 const MAX_CLASSIFY_PER_RUN = 300
 // Clustering worklist: everything unassigned from the last day, capped. Covers
 // this run's inserts AND articles from runs whose embed/assign step failed
-// (self-heal — driven purely by cluster_id IS NULL, nothing is ever orphaned).
+// (self-heal — driven purely by story_id IS NULL, nothing is ever orphaned).
 const ASSIGN_LOOKBACK_HOURS = 24
 const ASSIGN_CAP = 300
 const ASSIGN_RPC_CHUNK = 100
@@ -204,8 +204,7 @@ async function classifyShadowStats(
 
 // Embeds unassigned recent titles and assigns stories via the
 // assign_story_by_embedding RPC (star linkage against story representatives,
-// item-relative ±EMBED_WINDOW_HOURS window; also mirrors the legacy
-// cluster_id for N-1 PWA clients). Failure here never fails the run:
+// item-relative ±EMBED_WINDOW_HOURS window). Failure here never fails the run:
 // articles stay story_id NULL and the next run picks them up.
 async function embedAndAssignClusters(stats: RunStats): Promise<void> {
   try {

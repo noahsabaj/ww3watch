@@ -70,7 +70,6 @@ function article(id: string, title: string, source: string, storyId: string | nu
     source_id: null,
     body_hash: null,
     story_id: storyId,
-    cluster_id: null,
   }
 }
 

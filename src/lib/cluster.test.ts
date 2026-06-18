@@ -21,7 +21,6 @@ function article(overrides: Partial<Article> = {}): Article {
     source_id: null,
     body_hash: null,
     story_id: null,
-    cluster_id: null,
     ...overrides,
   }
 }
