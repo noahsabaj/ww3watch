@@ -9,7 +9,7 @@ import type { PageLoad } from './$types'
 export const load: PageLoad = async () => {
   const [articlesResult, trendingResult, statusResult] = await Promise.all([
     // Explicit column list — only what the feed/reader render. Drops
-    // guid/feed_url/source_id/cluster_id (~25% of row width × 500 × every boot,
+    // guid/feed_url/source_id (~25% of row width × 500 × every boot,
     // against the 5GB/mo egress budget); none are read client-side. Realtime
     // payloads still carry full rows, so the Article type marks those optional.
     supabase

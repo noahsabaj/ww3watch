@@ -59,9 +59,10 @@ front of users by default is out of scope by design.
 
 `registerType: 'autoUpdate'` keeps N-1 bundles alive for roughly a session
 after every deploy. Any schema/protocol change must serve BOTH client
-generations until a later cleanup: mirror old columns (`cluster_id` alongside
-`story_id`), keep old request shapes working (translate accepts HTML and plain
-text), and tolerate missing fields from SW-cached REST rows (`story_id ?? id`).
+generations until a later cleanup: mirror old columns (`cluster_id` was kept
+alongside `story_id` until the June-18 cleanup dropped it), keep old request
+shapes working (translate accepts HTML and plain text), and tolerate missing
+fields from SW-cached REST rows (`story_id ?? id`).
 
 ## Frontend
 

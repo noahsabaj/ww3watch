@@ -40,12 +40,10 @@ export interface Article {
   story_id: string | null
   // Dropped from the feed's boot query (unused client-side) but still delivered
   // on realtime row payloads — hence optional. The pipeline/server use the
-  // separate ArticleInsert shape. cluster_id is the legacy rep-id mirror kept
-  // for N-1 PWA clients until the cleanup migration drops it.
+  // separate ArticleInsert shape.
   guid?: string
   feed_url?: string
   source_id?: string | null
-  cluster_id?: string | null
 }
 
 // The fetchable shape of a roster entry. The roster itself lives in the

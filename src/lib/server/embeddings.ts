@@ -52,7 +52,7 @@ export function preprocessTitle(title: string): string {
 // Titles that must NOT be embedded: placeholder/empty/near-empty titles are
 // identical or near-identical strings across feeds (rss.ts stamps a literal
 // "(no title)") and would false-merge at similarity ~1.0. Skipped articles
-// stay cluster_id=null; the client Jaccard fallback covers them.
+// stay story_id=null; the client Jaccard fallback covers them.
 export function shouldEmbed(title: string): boolean {
   const t = preprocessTitle(title)
   return t.length >= 15 && t !== '(no title)'

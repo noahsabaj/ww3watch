@@ -4,7 +4,7 @@
 //   node --import tsx scripts/calibrate-embeddings.ts
 //
 // Phase 1 backfills article_embeddings for every article missing one (touches
-// NO cluster_id — history is never re-clustered; upserts are idempotent and
+// NO story_id — history is never re-clustered; upserts are idempotent and
 // safe alongside a live pipeline run).
 //
 // Phase 2 calibrates EMBED_SIM_THRESHOLD against the LLM-assigned clusters as
