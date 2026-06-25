@@ -1,5 +1,11 @@
 # WW3Watch
 
+<p align="center">
+  <a href="https://noahsabaj.github.io/ww3watch/">
+    <img src="docs/demo.gif" alt="WW3Watch — real-time global conflict news, grouped across languages" width="100%">
+  </a>
+</p>
+
 A real-time global news aggregator focused on geopolitical conflict and world events. 200 sources across every major region and perspective; related stories grouped across languages by multilingual embeddings; trending surfaced as it breaks. Headlines appear exactly as their newsrooms wrote them.
 
 **Live at [noahsabaj.github.io/ww3watch](https://noahsabaj.github.io/ww3watch/)** · [How it works](https://noahsabaj.github.io/ww3watch/about)
