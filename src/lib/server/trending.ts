@@ -68,9 +68,11 @@ export async function updateTrending(): Promise<string> {
 
   let indices: number[]
   try {
+    // The answer is a tiny index array, but reasoning models (gpt-oss) spend
+    // thinking tokens from the same max_tokens budget — leave headroom.
     const clean = await callLLM(
       [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userContent }],
-      40,
+      512,
     )
     const parsed: unknown = JSON.parse(clean)
 

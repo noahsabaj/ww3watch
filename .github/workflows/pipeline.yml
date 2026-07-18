@@ -49,6 +49,9 @@ jobs:
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          # gpt-oss thinks before answering, spending completion tokens; 'low'
+          # keeps that spend inside the classify/trending max_tokens budgets.
+          LLM_REASONING_EFFORT: low
           # Groq free tier is ~6K tokens/min — keep call starts sparse so heavy
           # runs don't live in 429 backoff (which leaks junk through the keyword path).
           LLM_MAX_RPM: '2'
