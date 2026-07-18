@@ -23,12 +23,15 @@ async function classifyBatch(articles: ArticleInput[]): Promise<boolean[]> {
     .join('\n')
 
   // callLLM handles rate-limiting, 429 retry/backoff, and fence stripping.
+  // Budget: ~5 tokens per verdict plus headroom for reasoning models (gpt-oss),
+  // whose thinking spends from max_tokens before the answer — a cap sized to
+  // the answer alone truncates it into unparseable JSON.
   const clean = await callLLM(
     [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userContent },
     ],
-    BATCH_SIZE * 5,
+    1024 + BATCH_SIZE * 5,
   )
   const parsed: unknown = JSON.parse(clean)
 

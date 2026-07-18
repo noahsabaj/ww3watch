@@ -1,4 +1,4 @@
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_MAX_RPM } from './env'
+import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_MAX_RPM, LLM_REASONING_EFFORT } from './env'
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant'
@@ -47,6 +47,7 @@ export async function callLLM(messages: LLMMessage[], maxTokens: number): Promis
         messages,
         temperature: 0,
         max_tokens: maxTokens,
+        ...(LLM_REASONING_EFFORT ? { reasoning_effort: LLM_REASONING_EFFORT } : {}),
       }),
       signal: AbortSignal.timeout(15000),
     })

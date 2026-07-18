@@ -24,3 +24,9 @@ export const LLM_MODEL = required('LLM_MODEL')
 // Max LLM requests/minute the pipeline will start (tune to the provider's free
 // tier: Groq ~30, Cerebras 5). callLLM also retries 429s with backoff.
 export const LLM_MAX_RPM = Math.max(1, Number(process.env.LLM_MAX_RPM ?? '8') || 8)
+
+// Reasoning models (gpt-oss-*) spend completion tokens thinking before they
+// answer; 'low' keeps that spend small so tight max_tokens budgets still fit
+// the final JSON. Unset by default — non-reasoning models and providers that
+// don't know the param (e.g. Cerebras with non-gpt-oss models) would 400 on it.
+export const LLM_REASONING_EFFORT = process.env.LLM_REASONING_EFFORT || undefined
