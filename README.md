@@ -21,7 +21,7 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 - **In-app reader + translation** — cached extraction (survives link rot), on-demand translation into your reading language (set once; defaults from your browser locale), the original one click away
 - **Source roster with live health** — every feed and its fetch health, public on [/about](https://noahsabaj.github.io/ww3watch/about)
 - **Freshness dead-man's switch** — the header shows when ingestion last succeeded; it goes amber/red if the pipeline stalls
-- **Region filtering, RTL, PWA** — 16 region/perspective buckets; first-class Persian/Arabic/Hebrew rendering; installable
+- **Region filtering, RTL, PWA** — 14 region/perspective buckets; first-class Persian/Arabic/Hebrew rendering; installable
 
 ## Stack
 

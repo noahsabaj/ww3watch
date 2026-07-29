@@ -22,6 +22,7 @@ import { serviceClient } from '../_shared/client.ts'
 import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
 import { sha256Hex } from '../_shared/hash.ts'
 import { isSupportedTarget, translationCacheParts, LANG_NAMES } from '../_shared/lang.ts'
+import { countEchoed, selectWithinBudget } from '../_shared/segments.ts'
 
 const supabase = serviceClient()
 
@@ -31,10 +32,19 @@ const LLM_MODEL = Deno.env.get('LLM_MODEL')!
 
 // Legacy plain-text cap. 8000 chars keeps worst-case output under max_tokens.
 const MAX_CONTENT_CHARS = 8000
-// Segment-mode bounds. Segments beyond MAX_SEGMENTS, or longer than
-// MAX_SEGMENT_CHARS, are echoed UNTRANSLATED (never spliced as a partial) — the
-// segment regime needs more total room than legacy, so the body cap is larger.
-const MAX_SEGMENTS = 100
+// Segment-mode bounds.
+//
+// The real ceiling is max_tokens on the OUTPUT (8000, below), not a count of
+// segments. The old 100-segment cap was a poor proxy for it in both directions:
+// it silently cut long articles in half, while 100 large segments could still
+// overrun the budget and come back finish_reason=length — a hard failure.
+//
+// So budget CHARACTERS instead, sized for the worst case rather than English:
+// 8000 output tokens is roughly 30k characters of Latin script but only ~12-16k
+// of Arabic, Persian or CJK, and the JSON envelope costs another ~10%. Segments
+// past the budget are ECHOED verbatim, never dropped, so the client can splice
+// 1:1 and say how much was left untranslated.
+const MAX_TRANSLATE_CHARS = 12_000
 const MAX_SEGMENT_CHARS = 8000
 const MAX_BODY_BYTES = 200 * 1024
 // Transient LLM errors (Cerebras 429/5xx, network blips) fail in ~300ms; retry a
@@ -139,10 +149,11 @@ Deno.serve(async (req) => {
 
   // Mode: SEGMENT if a segments array is present, else LEGACY plain text.
   const segMode = Array.isArray(body.segments)
-  // Keep the FULL segment text (sliced only for the LLM prompt below) so an
-  // over-cap segment can be echoed untranslated rather than spliced as a partial.
+  // Every segment is kept — the request body is already bounded by MAX_BODY_BYTES,
+  // and the output array must stay index-aligned with the input so the client can
+  // splice 1:1. Which ones are actually SENT is decided by the budget below.
   const inSegments: string[] = segMode
-    ? (body.segments as unknown[]).slice(0, MAX_SEGMENTS).map((s) => (typeof s === 'string' ? s : ''))
+    ? (body.segments as unknown[]).map((s) => (typeof s === 'string' ? s : ''))
     : []
   const content = typeof body.content === 'string' ? body.content.slice(0, MAX_CONTENT_CHARS) : null
   if (!segMode && content === null) return json({ error: 'invalid_body' }, 400)
@@ -186,7 +197,7 @@ Deno.serve(async (req) => {
       try {
         const segs = JSON.parse(cached.content)
         if (Array.isArray(segs) && segs.length === inSegments.length) {
-          return json({ title: cached.title, segments: segs, cached: true })
+          return json({ title: cached.title, segments: segs, cached: true, untranslated: countEchoed(inSegments, segs) })
         }
       } catch {
         // corrupt cache row — fall through and re-translate
@@ -202,10 +213,10 @@ Deno.serve(async (req) => {
     const systemPrompt = `Translate each numbered text segment from language code "${lang}" to ${targetName}.
 Return ONLY a JSON object whose keys are the segment numbers as strings ("0","1",…) with the translated plain text as values, plus a "title" key holding the translated title.
 Translate every segment; output plain text only (no markdown, no HTML, no wrapping). Example: {"title":"…","0":"…","1":"…"}`
-    // The LLM only ever sees a per-segment-capped prompt (token safety); the full
-    // originals live in inSegments for the echo path below.
-    const promptSegments = inSegments.map((s) => s.slice(0, MAX_SEGMENT_CHARS))
-    const userContent = `title: ${title}\n` + promptSegments.map((s, i) => `${i}: ${s}`).join('\n')
+    // Choose what fits the output budget, keeping ORIGINAL indices so the reply
+    // stays index-aligned with inSegments. Everything not chosen is echoed.
+    const sendIdx = selectWithinBudget(inSegments, MAX_TRANSLATE_CHARS, MAX_SEGMENT_CHARS)
+    const userContent = `title: ${title}\n` + sendIdx.map((i) => `${i}: ${inSegments[i]}`).join('\n')
 
     const raw = await runLLM(systemPrompt, userContent)
     if (raw === null) return json({ error: 'translation_failed' }, 502)
@@ -216,12 +227,11 @@ Translate every segment; output plain text only (no markdown, no HTML, no wrappi
       return json({ error: 'translation_failed' }, 502)
     }
     // Align to the input by index. A missing/non-string key keeps the original;
-    // an over-cap segment is echoed UNTRANSLATED (never a truncated translation
-    // spliced over the full original — that would silently delete the tail).
+    // anything outside the budget is echoed UNTRANSLATED (never a truncated
+    // translation spliced over the full original — that would delete the tail).
     const outTitle = typeof obj.title === 'string' && obj.title.trim() ? obj.title : title
     let translatedCount = 0
     const outSegments = inSegments.map((orig, i) => {
-      if (orig.length > MAX_SEGMENT_CHARS) return orig
       const t = obj[String(i)]
       if (typeof t === 'string' && t.trim()) {
         translatedCount++
@@ -230,10 +240,11 @@ Translate every segment; output plain text only (no markdown, no HTML, no wrappi
       return orig
     })
     // Reject a mostly-empty (broken/partial) response instead of caching it for
-    // 30 days — fail so the next open re-translates.
-    const translatable = inSegments.filter((s) => s.trim() && s.length <= MAX_SEGMENT_CHARS).length
-    if (translatable > 0 && translatedCount < translatable * 0.5) {
-      console.error(`[translate] partial segment response (${translatedCount}/${translatable}) — not caching`)
+    // 30 days — fail so the next open re-translates. Judged against what was
+    // actually SENT, not the whole article: deliberately-echoed overflow is not
+    // the model failing.
+    if (sendIdx.length > 0 && translatedCount < sendIdx.length * 0.5) {
+      console.error(`[translate] partial segment response (${translatedCount}/${sendIdx.length}) — not caching`)
       return json({ error: 'translation_failed' }, 502)
     }
 
@@ -244,7 +255,9 @@ Translate every segment; output plain text only (no markdown, no HTML, no wrappi
       { onConflict: 'input_hash', ignoreDuplicates: false },
     )
     if (cacheError) console.error('[translate] cache write failed:', cacheError)
-    return json({ title: outTitle, segments: outSegments })
+    // How much of the article did NOT get translated, so the reader can be told
+    // rather than served a silently half-English page.
+    return json({ title: outTitle, segments: outSegments, untranslated: countEchoed(inSegments, outSegments) })
   }
 
   // LEGACY plain-text mode. The HTML clause stays for N-1 clients that still send

@@ -149,10 +149,14 @@
       }
       return result
     }
+    // clock.now, not Date.now(): inside a $derived, Date.now() is not a reactive
+    // dependency, so this window never slid — the fallback selection froze until
+    // something else happened to invalidate the derivation. Time-derived values
+    // read the shared clock (docs/CONVENTIONS.md).
     return allClustered
       .filter(c =>
         c.representative.published_at
-          ? Date.now() - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
+          ? clock.now - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
           : false
       )
       .sort((a, b) => b.sourceCount - a.sourceCount)

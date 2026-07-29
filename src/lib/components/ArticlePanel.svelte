@@ -31,8 +31,14 @@
     | { status: 'loading' }
     // isHtml: content is reassembled article HTML (images/structure preserved,
     // rendered via cleanHtml); otherwise plain-text paragraphs.
-    | { status: 'done'; title: string; content: string; isHtml: boolean }
+    | { status: 'done'; title: string; content: string; isHtml: boolean; untranslated: number }
     | { status: 'failed' }
+
+  // Upper bound on what we'll ship in one request — a guard on body size
+  // (the function rejects >200KB), NOT a translation cap. How much actually
+  // gets translated is one decision, made server-side by a token budget, and
+  // whatever it echoes back untranslated is reported to the reader below.
+  const MAX_REQUEST_CHARS = 150_000
 
   let translation = $state<TranslateState>({ status: 'idle' })
   let showTranslated = $state(false)
@@ -200,7 +206,8 @@
         const nodes: Text[] = []
         const segments: string[] = []
         const wraps: Array<[string, string]> = []
-        for (let node = walker.nextNode(); node && segments.length < 100; node = walker.nextNode()) {
+        let shipped = 0
+        for (let node = walker.nextNode(); node && shipped < MAX_REQUEST_CHARS; node = walker.nextNode()) {
           const raw = node.nodeValue ?? ''
           const trimmed = raw.trim()
           if (!trimmed) continue
@@ -208,6 +215,7 @@
           if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE' || tag === 'PRE') continue
           nodes.push(node as Text)
           segments.push(trimmed)
+          shipped += trimmed.length
           wraps.push([raw.slice(0, raw.length - raw.trimStart().length), raw.slice(raw.trimEnd().length)])
         }
         if (segments.length > 0) {
@@ -220,7 +228,13 @@
             const t = data.segments[i]
             if (typeof t === 'string' && t.trim()) node.nodeValue = wraps[i][0] + t + wraps[i][1]
           })
-          translation = { status: 'done', title: data.title, content: doc.body.innerHTML, isHtml: true }
+          translation = {
+            status: 'done',
+            title: data.title,
+            content: doc.body.innerHTML,
+            isHtml: true,
+            untranslated: typeof data.untranslated === 'number' ? data.untranslated : 0,
+          }
           showTranslated = true
           return
         }
@@ -233,7 +247,7 @@
         body: { title, content: plain, lang: article.source_lang, url: article.url, target },
       })
       if (error || !data?.title || typeof data?.content !== 'string') throw new Error('Translation failed')
-      translation = { status: 'done', title: data.title, content: data.content, isHtml: false }
+      translation = { status: 'done', title: data.title, content: data.content, isHtml: false, untranslated: 0 }
       showTranslated = true
     } catch {
       translation = { status: 'failed' }
@@ -402,6 +416,16 @@
           <p class="text-xs text-gray-600 mb-3" title="Articles are often corrected or updated after first publication; this is when the reader cached this copy.">{snapshotAgeLabel}</p>
         {/if}
         {@render translateControls()}
+        <!-- A long article can exceed the translator's output budget; the tail
+             comes back in its original language. Say so rather than serving a
+             silently half-translated page. -->
+        {#if showTranslated && translation.status === 'done' && translation.untranslated > 0}
+          <p class="text-xs text-amber-500/80 mb-3">
+            {translation.untranslated}
+            {translation.untranslated === 1 ? 'paragraph is' : 'paragraphs are'}
+            too far into the article to translate and {translation.untranslated === 1 ? 'remains' : 'remain'} in the original language.
+          </p>
+        {/if}
         <div class="prose-reader" dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'}>
           {#if showTranslated && translation.status === 'done'}
             {#if translation.isHtml}
