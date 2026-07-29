@@ -22,9 +22,25 @@ import {
 } from '../src/lib/server/embeddings'
 import { updateTrending } from '../src/lib/server/trending'
 import { existingGuids } from '../src/lib/server/dedupe'
+import { llmStats } from '../src/lib/server/llm'
 import { supabaseAdmin } from '../src/lib/server/supabase'
 
 const UPSERT_BATCH = 200
+// Wall-clock budget for the whole run, and the share of it classify may spend.
+//
+// The job's timeout-minutes is a KILL, not a budget: a run that hits it dies
+// mid-classify having written nothing — no inserts, no recorded rejects — so the
+// identical backlog returns next run and the next run dies the same way. That is
+// how 38 of 40 scheduled runs went, silently, because a job killed by
+// timeout-minutes reports "cancelled" and if: failure() never fires.
+//
+// So the run bounds ITSELF, below the kill, and classify stops STARTING work
+// when its share is gone. Unclassified articles stay "new" and are picked up
+// next run — the same deferral the per-run cap already relies on. The remaining
+// minutes belong to the stages after classify, which are what actually persist
+// the run's work.
+const RUN_BUDGET_MS = Number(process.env.RUN_BUDGET_MS || '') || 15 * 60_000
+const CLASSIFY_BUDGET_MS = Number(process.env.CLASSIFY_BUDGET_MS || '') || 9 * 60_000
 // Cap classify volume per run so a backlog can't blow the Action's time budget
 // under the rate limiter. Deferred articles stay "new" and are picked next run.
 const MAX_CLASSIFY_PER_RUN = 300
@@ -313,26 +329,49 @@ async function checkOpsHealth(stats: RunStats): Promise<void> {
 // no-new-articles path and the main path so every run captures trending status
 // and DB health (and self-heals clustering).
 async function finalize(stats: RunStats, startedAt: number): Promise<void> {
-  await embedAndAssignClusters(stats)
-  stats.trending = await updateTrending()
-  await checkOpsHealth(stats)
-  console.log(`[pipeline] done in ${Date.now() - startedAt}ms`)
+  const timings = (stats.timings ??= {}) as Record<string, number>
+  const timed = async <T>(stage: string, fn: () => Promise<T>): Promise<T> => {
+    const t0 = Date.now()
+    try {
+      return await fn()
+    } finally {
+      timings[stage] = Date.now() - t0
+    }
+  }
+  await timed('cluster', () => embedAndAssignClusters(stats))
+  stats.trending = await timed('trending', () => updateTrending())
+  await timed('ops_health', () => checkOpsHealth(stats))
+  stats.total_ms = Date.now() - startedAt
+  console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(timings)}`)
 }
 
 async function run(stats: RunStats): Promise<void> {
   const startedAt = Date.now()
+  // Per-stage wall-clock into pipeline_runs.stats.timings. Nothing measured the
+  // shape of a run before, so "the pipeline is slow" could not be turned into
+  // "which stage" without reading Actions logs by hand.
+  const timings: Record<string, number> = {}
+  const timed = async <T>(stage: string, fn: () => Promise<T>): Promise<T> => {
+    const t0 = Date.now()
+    try {
+      return await fn()
+    } finally {
+      timings[stage] = Date.now() - t0
+      stats.timings = timings
+    }
+  }
 
   // 1. Load the roster from the DB, then fetch every feed in parallel;
   //    failures are recorded (and proxy-retried), never silently dropped.
-  const sources = await loadSources()
-  const settled = await Promise.allSettled(sources.map((feed) => fetchFeed(feed)))
+  const sources = await timed('roster', () => loadSources())
+  const settled = await timed('fetch', () => Promise.allSettled(sources.map((feed) => fetchFeed(feed))))
   const results: FeedFetchResult[] = settled.map((s, i) =>
     s.status === 'fulfilled'
       ? s.value
       : { feed: sources[i], via: 'direct', articles: [], error: { kind: 'network', detail: String(s.reason) } },
   )
   Object.assign(stats, logFeedSummary(results))
-  await updateSourceHealth(results)
+  await timed('source_health', () => updateSourceHealth(results))
 
   // Dead-man's switch: if EVERY feed failed (runner egress outage, proxy down,
   // DNS), a "no new articles" success would reset the freshness clock on the
@@ -349,7 +388,7 @@ async function run(stats: RunStats): Promise<void> {
 
   // 2. De-dup against the DB (kept articles UNION recorded rejects) so we only
   //    spend LLM tokens on genuinely-unseen articles.
-  const existing = await existingGuids(uniqueByGuid.map((a) => a.guid))
+  const existing = await timed('dedupe', () => existingGuids(uniqueByGuid.map((a) => a.guid)))
   const fresh = uniqueByGuid.filter((a) => !existing.has(a.guid))
   console.log(`[pipeline] ${candidates.length} items -> ${uniqueByGuid.length} unique -> ${fresh.length} new`)
   Object.assign(stats, { items: candidates.length, unique: uniqueByGuid.length, new: fresh.length })
@@ -369,19 +408,50 @@ async function run(stats: RunStats): Promise<void> {
   if (fresh.length > toClassify.length) {
     console.log(`[pipeline] deferring ${fresh.length - toClassify.length} new articles to next run (classify cap)`)
   }
-  const { relevant, rejected, failedBatches, totalBatches } = await classifyArticles(toClassify)
+  // Classify gets a share of the run's budget, measured from the START of the
+  // run so a slow fetch eats into it rather than pushing past the job's kill.
+  const classifyDeadline = startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS)
+  const { relevant, rejected, failedBatches, skippedBatches, totalBatches } = await timed(
+    'classify',
+    () => classifyArticles(toClassify, classifyDeadline),
+  )
   const articles = toClassify.filter((a) => relevant.has(a.guid))
-  console.log(`[pipeline] ${articles.length} relevant, ${rejected.size} rejected of ${toClassify.length} classified`)
+  // `classified` counts articles that actually got a verdict, not articles we
+  // set out to classify — with budget deferral those diverge, and reporting the
+  // ambition rather than the outcome is how a degraded run looks healthy.
+  const classified = relevant.size + rejected.size
+  const budgetDeferred = toClassify.length - classified
+  console.log(
+    `[pipeline] ${articles.length} relevant, ${rejected.size} rejected of ${classified} classified` +
+      (budgetDeferred > 0 ? ` (${budgetDeferred} deferred for budget)` : ''),
+  )
   Object.assign(stats, {
-    classified: toClassify.length,
-    deferred: fresh.length - toClassify.length,
+    classified,
+    deferred: fresh.length - toClassify.length + budgetDeferred,
     relevant: articles.length,
     rejected: rejected.size,
     cls_batches_failed: failedBatches,
+    cls_batches_skipped: skippedBatches,
     cls_batches_total: totalBatches,
+    llm: { ...llmStats },
   })
-  const shadow = await classifyShadowStats(toClassify, relevant)
-  if (shadow) stats.cls_prefilter = shadow
+  // Shadow stats embed up to MAX_CLASSIFY_PER_RUN extra titles purely for
+  // telemetry. Skip them once the run is over budget — a measurement is not
+  // worth the inserts it would displace.
+  if (Date.now() - startedAt < RUN_BUDGET_MS) {
+    // ONLY articles that actually received an LLM verdict. The shadow stats
+    // treat "not in `relevant`" as rejected, so anything without a verdict —
+    // a deferred batch, or a failed one — would be scored as a rejection and
+    // drag the rejected-similarity distribution toward the accepted one. That
+    // silently corrupts the very numbers the pre-filter threshold is chosen
+    // from, and it gets much worse now that batches can be deferred for budget.
+    const judged = toClassify.filter((a) => relevant.has(a.guid) || rejected.has(a.guid))
+    const shadow = await timed('classify_shadow', () => classifyShadowStats(judged, relevant))
+    if (shadow) stats.cls_prefilter = shadow
+  } else {
+    console.warn('[pipeline] skipping classify shadow stats — over run budget')
+    stats.cls_prefilter_skipped = true
+  }
 
   // 4. Upsert relevant articles + record rejects so they're never re-classified.
   let inserted = 0
@@ -424,8 +494,12 @@ async function run(stats: RunStats): Promise<void> {
   //    self-heal, so a Groq outage degrades rather than dropping everything, but
   //    the run still FAILS (freshness amber + GitHub issue) instead of laundering
   //    a near-empty result into a green run.
-  if (totalBatches > 0 && failedBatches === totalBatches) {
-    throw new Error(`all ${totalBatches} classify batches failed — LLM appears down (relevant=${articles.length})`)
+  // Judged against batches ATTEMPTED, not all batches. Ones deferred for budget
+  // were never sent, so counting them as failures would declare the LLM down on
+  // exactly the busy runs where it is merely slow.
+  const attemptedBatches = totalBatches - skippedBatches
+  if (attemptedBatches > 0 && failedBatches === attemptedBatches) {
+    throw new Error(`all ${attemptedBatches} attempted classify batches failed — LLM appears down (relevant=${articles.length})`)
   }
 }
 
