@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { classifyArticles } from './classify'
-import { llmStats, resetLlmStats } from './llm'
+import { callLLM, LLMDeadlineError, llmStats, resetLlmStats } from './llm'
 
 // Deliberately does NOT mock ./llm — the point is the real integration:
 // classifyArticles → the real callLLM → its deadline check. A mocked throw
@@ -51,5 +51,35 @@ describe('classifyArticles under an expired budget', () => {
     // would let time pressure quietly lower the relevance bar.
     expect(relevant.size).toBe(0)
     expect(rejected.size).toBe(0)
+  })
+})
+
+describe('the rate limiter past a deadline', () => {
+  // Batches queue on the limiter BEFORE the deadline and can reach the front
+  // after it. If each still paid the rate-limit interval on its way to being
+  // refused, N waiting batches would burn N × interval of dead time entirely
+  // past the budget — putting the run straight back on course for the job
+  // timeout the deadline exists to avoid. The queue must drain, not idle.
+  it('drains a queue of doomed calls instead of sleeping through the interval', async () => {
+    // The deadline must expire WHILE calls are queued — an already-expired one
+    // is refused before the gate is ever reached, which exercises a different
+    // (and already covered) branch. Re-import with a 100ms interval so the
+    // difference is measurable in milliseconds rather than minutes.
+    vi.resetModules()
+    vi.stubEnv('LLM_MAX_RPM', '600') // 60s/600 = 100ms between call starts
+    const llm = await import('./llm')
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('boom'))))
+
+    const deadline = Date.now() + 50 // expires after the first call or two
+    const startedAt = Date.now()
+    await Promise.allSettled(
+      Array.from({ length: 10 }, () => llm.callLLM([{ role: 'user', content: 'x' }], 16, deadline)),
+    )
+    const elapsed = Date.now() - startedAt
+
+    // Draining: the queue empties as soon as the deadline passes (~100ms).
+    // Idling: each of the ~8 doomed callers still sleeps its 100ms interval
+    // first (~800ms), all of it spent past the budget.
+    expect(elapsed).toBeLessThan(400)
   })
 })

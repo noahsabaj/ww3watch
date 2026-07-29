@@ -41,12 +41,19 @@ export class LLMDeadlineError extends Error {
   }
 }
 
-function acquireSlot(): Promise<void> {
+function acquireSlot(deadlineMs?: number): Promise<void> {
   const prev = gate
   let release!: () => void
   gate = new Promise<void>((r) => (release = r))
   return prev.then(async () => {
     try {
+      // Never pay the rate-limit interval for a caller that will be refused the
+      // instant it wakes. Batches queue on this gate BEFORE the deadline and can
+      // reach the front after it; sleeping for each would turn N waiting batches
+      // into N × MIN_INTERVAL of dead time spent entirely past the budget —
+      // which would put the run back on course for the job timeout this whole
+      // deadline exists to avoid. Releasing immediately drains the queue at once.
+      if (deadlineMs !== undefined && Date.now() >= deadlineMs) return
       const wait = lastStart + MIN_INTERVAL_MS - Date.now()
       if (wait > 0) {
         llmStats.limiterWaitMs += wait
@@ -83,7 +90,7 @@ export async function callLLM(
       llmStats.deadlineSkips++
       throw new LLMDeadlineError()
     }
-    await acquireSlot()
+    await acquireSlot(deadlineMs)
     // The slot wait itself can be minutes — re-check rather than starting a
     // request the run has no time left to use.
     if (outOfTime()) {
