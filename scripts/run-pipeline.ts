@@ -21,10 +21,10 @@ import {
   EMBED_WINDOW_HOURS,
 } from '../src/lib/server/embeddings'
 import { updateTrending } from '../src/lib/server/trending'
+import { existingGuids } from '../src/lib/server/dedupe'
 import { supabaseAdmin } from '../src/lib/server/supabase'
 
 const UPSERT_BATCH = 200
-const GUID_QUERY_CHUNK = 1000 // existing_guids RPC POSTs the array — no URL-length limit
 // Cap classify volume per run so a backlog can't blow the Action's time budget
 // under the rate limiter. Deferred articles stay "new" and are picked next run.
 const MAX_CLASSIFY_PER_RUN = 300
@@ -135,17 +135,6 @@ function logFeedSummary(results: FeedFetchResult[]) {
     fail_kinds: byKind,
     dates_clamped: datesClamped,
   }
-}
-
-async function existingGuids(guids: string[]): Promise<Set<string>> {
-  const existing = new Set<string>()
-  for (let i = 0; i < guids.length; i += GUID_QUERY_CHUNK) {
-    const chunk = guids.slice(i, i + GUID_QUERY_CHUNK)
-    const { data, error } = await supabaseAdmin.rpc('existing_guids', { check_guids: chunk })
-    if (error) console.error('[pipeline] existing_guids RPC error:', error)
-    ;(data as Array<{ guid: string }> | null)?.forEach((r) => existing.add(r.guid))
-  }
-  return existing
 }
 
 function dot(a: number[], b: number[]): number {

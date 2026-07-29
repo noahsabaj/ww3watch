@@ -135,16 +135,78 @@ describe('updateTrending', () => {
 
   it('collapses wire reprints in the independent-source count shown to the curator', async () => {
     // Same story: two members share a body_hash (a wire copy) + one original.
+    // Padded to 4 clusters so the LLM path runs at all — at or below PICK_COUNT
+    // the selection is forced and no prompt is built.
     const wireA = { ...article('w1', 'Wire copy', 'Reuters', 's-wire'), body_hash: 'h1', published_at: '2026-06-10T10:00:00Z' }
     const wireB = { ...article('w2', 'Wire copy', 'AP', 's-wire'), body_hash: 'h1', published_at: '2026-06-10T10:05:00Z' }
     const indep = { ...article('w3', 'Original reporting', 'BBC', 's-wire'), body_hash: null, published_at: '2026-06-10T10:03:00Z' }
-    state.articlesResult = { data: [wireA, wireB, indep], error: null }
-    mockedCallLLM.mockResolvedValue('[0,0,0]') // invalid (one cluster) → no insert, but the prompt is still built
+    state.articlesResult = {
+      data: [wireA, wireB, indep, article('p1', 'Padding one', 'DW', null), article('p2', 'Padding two', 'CNN', null), article('p3', 'Padding three', 'NPR', null)],
+      error: null,
+    }
+    mockedCallLLM.mockResolvedValue('[0,0,0]') // duplicate indices → rejected, no insert
     await updateTrending()
     const prompt = mockedCallLLM.mock.calls[0][0][1].content
     // AP is the later reprint of h1 → excluded; independent sources = Reuters + BBC = 2, not 3.
     expect(prompt).toContain('[2 independent sources')
     expect(state.insertedRows).toBeNull()
+  })
+
+  // The deadlock: the validator demands exactly PICK_COUNT DISTINCT indices in
+  // [0, clusters.length), which 1 or 2 candidates can never satisfy. Every run
+  // spent an LLM call, failed validation, returned error:llm and kept a stale
+  // selection — and a quiet window does not fix itself.
+  it('writes all candidates without an LLM call when there are fewer than PICK_COUNT', async () => {
+    state.articlesResult = { data: [article('only', 'The one story in the window', 'Reuters', null)], error: null }
+    const result = await updateTrending()
+
+    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(result).toBe('updated:1')
+    expect(state.deleteCalled).toBe(true)
+    expect(state.insertedRows).toHaveLength(1)
+    expect((state.insertedRows![0] as { article_id: string }).article_id).toBe('only')
+  })
+
+  it('ranks the forced selection by independent source count', async () => {
+    // Two clusters: 's-two' has 2 distinct sources, the single has 1.
+    state.articlesResult = {
+      data: [
+        article('s1', 'Two-source story', 'Reuters', 's-two'),
+        article('s2', 'Two-source story echoed', 'AP', 's-two'),
+        article('lone', 'One-source story', 'BBC', null),
+      ],
+      error: null,
+    }
+    const result = await updateTrending()
+
+    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(result).toBe('updated:2')
+    const rows = state.insertedRows as Array<{ rank: number; story_id: string | null }>
+    expect(rows[0].rank).toBe(0)
+    expect(rows[0].story_id).toBe('s-two') // 2 independent sources outranks 1
+    expect(rows[1].story_id).toBeNull()
+  })
+
+  it('still appends the forced selection to trending_log', async () => {
+    state.articlesResult = { data: [article('only', 'The one story', 'Reuters', null)], error: null }
+    await updateTrending()
+    const logged = state.trendingLogInserted as { picks: Array<{ title: string }> }
+    expect(logged.picks).toHaveLength(1)
+    expect(logged.picks[0].title).toBe('The one story')
+  })
+
+  it('exactly PICK_COUNT candidates is still forced (no call to rank what is already all of them)', async () => {
+    state.articlesResult = {
+      data: [
+        article('x', 'Story x', 'Reuters', null),
+        article('y', 'Story y', 'AP', null),
+        article('z', 'Story z', 'BBC', null),
+      ],
+      error: null,
+    }
+    const result = await updateTrending()
+    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(result).toBe('updated:3')
   })
 
   it('rejects duplicate indices and keeps the previous selection (no delete)', async () => {

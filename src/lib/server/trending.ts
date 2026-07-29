@@ -1,5 +1,6 @@
 import { callLLM } from './llm'
 import { groupByStoryId, wireDuplicateIds } from '../cluster'
+import type { Cluster } from '../cluster'
 import { supabaseAdmin } from './supabase'
 
 const TRENDING_WINDOW_HOURS = 4
@@ -66,6 +67,23 @@ export async function updateTrending(): Promise<string> {
     })
     .join('\n')
 
+  // With PICK_COUNT or fewer candidates the selection is forced — there is
+  // nothing to curate. Skip the LLM entirely.
+  //
+  // This was a deadlock: the validation below demands exactly PICK_COUNT
+  // DISTINCT indices in [0, clusters.length), which 1 or 2 candidates can never
+  // satisfy. Every run spent a call, failed validation, logged error:llm and
+  // kept a stale selection — indefinitely, since a quiet window does not fix
+  // itself. Reachable at cold start, after an ingestion outage, or in any
+  // genuinely quiet 4-hour window.
+  //
+  // `scored` is already sorted by independent source count descending, so
+  // taking them in order is the same ranking the curator is asked to refine.
+  if (clusters.length <= PICK_COUNT) {
+    console.log(`[trending] ${clusters.length} candidate(s) — selection is forced, skipping the LLM`)
+    return await writeTrending(clusters, clusters.map((_, i) => i))
+  }
+
   let indices: number[]
   try {
     // The answer is a tiny index array, but reasoning models (gpt-oss) spend
@@ -93,6 +111,13 @@ export async function updateTrending(): Promise<string> {
     return 'error:llm' // keep previous trending intact on failure
   }
 
+  return await writeTrending(clusters, indices)
+}
+
+// Commit a selection: overwrite `trending`, then append the trail to
+// trending_log. Shared by the curated path and the forced (≤PICK_COUNT) one so
+// the two can never drift in what they write.
+async function writeTrending(clusters: Cluster[], indices: number[]): Promise<string> {
   const rows = indices.map((clusterIdx, rank) => ({
     // article_id stays the newest member's id — bit-identical to the
     // pre-stories value, which N-1 clients resolve by membership. New clients
