@@ -75,8 +75,7 @@ One-time setup (all free tier):
 
 1. **Cerebras** — create an API key at [cloud.cerebras.ai](https://cloud.cerebras.ai/); note the model (`gpt-oss-120b`).
 2. **Supabase**
-   - Enable RLS on `articles` and `trending` with policies allowing **anon `SELECT`** (the SPA + realtime read with the anon key; writes stay service-role only).
-   - Ensure `articles` is in the `supabase_realtime` publication.
+   - Apply [supabase/migrations](supabase/migrations) in filename order — they build the whole schema from empty, including `articles` / `trending`, their anon-`SELECT` RLS policies, and realtime publication membership. Writes stay service-role only.
    - Deploy the functions and set their secrets:
      ```bash
      supabase functions deploy reader translate
