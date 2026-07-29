@@ -32,8 +32,13 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /ww3watch
-          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
-          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          # Repo VARIABLES, not secrets — matching ci.yml's e2e job. These are
+          # publishable credentials that ship inside the built bundle, so hiding
+          # them achieves nothing and reading them from two different stores meant
+          # a rotation could update one and leave CI testing a different backend
+          # than the one being deployed.
+          PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
       - name: SPA root + disable Jekyll
         # adapter-static (SPA mode) emits only 404.html; copy it to index.html so
         # the site root returns 200. .nojekyll keeps GitHub Pages from hiding _app/.
