@@ -1,4 +1,4 @@
-import { callLLM } from './llm'
+import { callLLM, LLMDeadlineError } from './llm'
 import { groupByStoryId, wireDuplicateIds } from '../cluster'
 import type { Cluster } from '../cluster'
 import { supabaseAdmin } from './supabase'
@@ -20,8 +20,14 @@ Return ONLY a JSON array of ${PICK_COUNT} integers (0-indexed positions from the
 
 // Returns a short status string for pipeline_runs.stats (so chronic trending-LLM
 // failure is visible, not just stale selected_at values): 'updated:N' | 'empty'
-// | 'error:fetch|llm|delete|insert'.
-export async function updateTrending(): Promise<string> {
+// | 'deferred:budget' | 'error:fetch|llm|delete|insert'.
+//
+// `deadlineMs` is the run's absolute wall-clock ceiling. Without it this call
+// sat OUTSIDE the budget guard entirely: run 474 slept a provider-requested
+// 149s here, and a larger retry-after would have pushed the job back into the
+// 20-minute kill the budget exists to prevent. Curation is the most deferrable
+// work in the run — a stale selection for one cycle beats losing the inserts.
+export async function updateTrending(deadlineMs?: number): Promise<string> {
   const since = new Date(Date.now() - TRENDING_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
   const { data: recent, error: dbError } = await supabaseAdmin
     .from('articles')
@@ -91,6 +97,7 @@ export async function updateTrending(): Promise<string> {
     const clean = await callLLM(
       [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userContent }],
       512,
+      deadlineMs,
     )
     const parsed: unknown = JSON.parse(clean)
 
@@ -107,6 +114,13 @@ export async function updateTrending(): Promise<string> {
 
     indices = parsed as number[]
   } catch (err) {
+    // Out of budget is not the LLM being down. Conflating them would make every
+    // busy run look like a provider outage — the same distinction classify draws
+    // between skippedBatches and failedBatches.
+    if (err instanceof LLMDeadlineError) {
+      console.warn('[trending] out of run budget, keeping previous selection')
+      return 'deferred:budget'
+    }
     console.error('[trending] LLM selection failed, skipping update:', err)
     return 'error:llm' // keep previous trending intact on failure
   }

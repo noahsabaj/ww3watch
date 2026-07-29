@@ -339,8 +339,13 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
     }
   }
   await timed('cluster', () => embedAndAssignClusters(stats))
-  stats.trending = await timed('trending', () => updateTrending())
+  stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
+  // Snapshot LAST, not after classify. Taken mid-run it excluded trending
+  // entirely: run 474 recorded backoffMs 0 while the log showed a 149,000ms
+  // backoff, and calls:1 while two calls had succeeded. A stat named `llm` that
+  // silently covers one stage is worse than no stat — it reads as whole-run.
+  stats.llm = { ...llmStats }
   stats.total_ms = Date.now() - startedAt
   console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(timings)}`)
 }
@@ -433,7 +438,6 @@ async function run(stats: RunStats): Promise<void> {
     cls_batches_failed: failedBatches,
     cls_batches_skipped: skippedBatches,
     cls_batches_total: totalBatches,
-    llm: { ...llmStats },
   })
   // Shadow stats embed up to MAX_CLASSIFY_PER_RUN extra titles purely for
   // telemetry. Skip them once the run is over budget — a measurement is not
