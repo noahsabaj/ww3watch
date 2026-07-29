@@ -75,9 +75,13 @@
   // Chronological "who reported first" timeline for the in-panel source list.
   const clusterTimeline = $derived(cluster && cluster.sourceCount > 1 ? storyTimeline(cluster.articles) : null)
 
+  // Keyed on the URL, not the article object: the feed replaces a row's object
+  // on a realtime cluster-assignment patch, and re-reading the same article
+  // would refetch the extraction and silently discard an open translation.
+  // The URL is what the reader actually loads.
   $effect(() => {
-    const current = article
-    if (!current) {
+    const url = article?.url
+    if (!url) {
       reader = { status: 'idle' }
       return
     }
@@ -88,7 +92,7 @@
     // switched articles before it resolved.
     let cancelled = false
     supabase.functions
-      .invoke('reader', { body: { url: current.url } })
+      .invoke('reader', { body: { url } })
       .then(({ data, error }) => {
         if (cancelled) return
         if (error || !data || data.error) {
