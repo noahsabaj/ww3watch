@@ -22,6 +22,7 @@ import {
 } from '../src/lib/server/embeddings'
 import { updateTrending } from '../src/lib/server/trending'
 import { existingGuids } from '../src/lib/server/dedupe'
+import { selectStaleWriteOffs, staleRejectRow } from '../src/lib/server/backlog'
 import { llmStats } from '../src/lib/server/llm'
 import { supabaseAdmin } from '../src/lib/server/supabase'
 
@@ -44,6 +45,12 @@ const CLASSIFY_BUDGET_MS = Number(process.env.CLASSIFY_BUDGET_MS || '') || 9 * 6
 // Cap classify volume per run so a backlog can't blow the Action's time budget
 // under the rate limiter. Deferred articles stay "new" and are picked next run.
 const MAX_CLASSIFY_PER_RUN = 300
+// Past the cap, an article this old is written off unjudged rather than deferred
+// forever. Sized against what the product can actually show: the feed serves the
+// newest 500 articles, which even at a healthy accept rate is well under a day
+// of content — so a verdict on a 48h-old item cannot change what anyone sees.
+// Env-overridable to make draining an accumulated backlog a one-run operation.
+const STALE_WRITEOFF_HOURS = Number(process.env.STALE_WRITEOFF_HOURS || '') || 48
 // Clustering worklist: everything unassigned from the last day, capped. Covers
 // this run's inserts AND articles from runs whose embed/assign step failed
 // (self-heal — driven purely by story_id IS NULL, nothing is ever orphaned).
@@ -328,6 +335,23 @@ async function checkOpsHealth(stats: RunStats): Promise<void> {
 // Local-model clustering + trending + the ops-health gate. Shared by the
 // no-new-articles path and the main path so every run captures trending status
 // and DB health (and self-heals clustering).
+// Both reject paths — real LLM verdicts and unjudged stale write-offs — go
+// through here so they can never drift in what they write. `reason` is the only
+// thing that distinguishes them, and calibrate-classify.ts depends on it being
+// accurate: it loads reason='llm' as the negatives class for the pre-filter
+// floor, so a mislabelled row would tune that floor against no verdict at all.
+async function writeRejects(
+  rows: Array<{ guid: string; title: string | null; source_id: string | null; lang: string | null; reason: 'llm' | 'stale' }>,
+): Promise<void> {
+  for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
+    const batch = rows.slice(i, i + UPSERT_BATCH)
+    const { error } = await supabaseAdmin
+      .from('classified_rejects')
+      .upsert(batch, { onConflict: 'guid', ignoreDuplicates: true })
+    if (error) console.error('[pipeline] reject record error:', error)
+  }
+}
+
 async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   const timings = (stats.timings ??= {}) as Record<string, number>
   const timed = async <T>(stage: string, fn: () => Promise<T>): Promise<T> => {
@@ -410,8 +434,26 @@ async function run(stats: RunStats): Promise<void> {
   //    and are reconsidered next run.
   const ordered = [...fresh].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
   const toClassify = ordered.slice(0, MAX_CLASSIFY_PER_RUN)
-  if (fresh.length > toClassify.length) {
-    console.log(`[pipeline] deferring ${fresh.length - toClassify.length} new articles to next run (classify cap)`)
+
+  // Anything past the cap that is already too old to display is written off
+  // unjudged. "Deferred to next run" was a lie for nine days: judged_total sat
+  // at exactly 300/day (one run in ~96) while the deferred remainder grew to
+  // 6,007 — permanently re-fetched, re-deduped and never reconsidered. A verdict
+  // on a two-day-old article cannot change what anyone sees; the feed serves the
+  // newest 500. Costs zero tokens and keeps `new` meaning "actually new".
+  const deferred = ordered.slice(MAX_CLASSIFY_PER_RUN)
+  const stale = selectStaleWriteOffs(deferred, Date.now() - STALE_WRITEOFF_HOURS * 3_600_000)
+  if (stale.length > 0) {
+    await timed('stale_writeoff', () => writeRejects(stale.map(staleRejectRow)))
+    console.log(
+      `[pipeline] wrote off ${stale.length} unjudged articles older than ${STALE_WRITEOFF_HOURS}h (too old to display)`,
+    )
+  }
+  stats.stale_written_off = stale.length
+  if (deferred.length > 0) {
+    console.log(
+      `[pipeline] deferring ${deferred.length - stale.length} new articles to next run (classify cap)`,
+    )
   }
   // Classify gets a share of the run's budget, measured from the START of the
   // run so a slow fetch eats into it rather than pushing past the job's kill.
@@ -478,15 +520,15 @@ async function run(stats: RunStats): Promise<void> {
     const byGuid = new Map(toClassify.map((a) => [a.guid, a]))
     const rejectRows = [...rejected].map((guid) => {
       const a = byGuid.get(guid)
-      return { guid, title: a?.title ?? null, source_id: a?.source_id ?? null, lang: a?.source_lang ?? null }
+      return {
+        guid,
+        title: a?.title ?? null,
+        source_id: a?.source_id ?? null,
+        lang: a?.source_lang ?? null,
+        reason: 'llm' as const,
+      }
     })
-    for (let i = 0; i < rejectRows.length; i += UPSERT_BATCH) {
-      const batch = rejectRows.slice(i, i + UPSERT_BATCH)
-      const { error } = await supabaseAdmin
-        .from('classified_rejects')
-        .upsert(batch, { onConflict: 'guid', ignoreDuplicates: true })
-      if (error) console.error('[pipeline] reject record error:', error)
-    }
+    await writeRejects(rejectRows)
   }
 
   // 5/6/7. Embed + assign stories (story_id IS NULL worklist self-heals),
