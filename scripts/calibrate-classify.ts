@@ -137,10 +137,16 @@ async function main() {
   const positives = await pageAll<{ title: string; source_lang: string }>((f, t) =>
     supabase.from('articles').select('title, source_lang').gte('fetched_at', SINCE).order('id').range(f, t),
   )
+  // reason='llm' ONLY. The table also holds reason='stale' rows — items written
+  // off unjudged because they were already too old to display. No model ever
+  // read those, so scoring them as negatives would calibrate the floor against
+  // an age filter's output rather than a relevance verdict, and the false-reject
+  // number would be wrong in a direction nothing here could reveal.
   const negatives = await pageAll<{ title: string; lang: string }>((f, t) =>
     supabase
       .from('classified_rejects')
       .select('title, lang')
+      .eq('reason', 'llm')
       .not('title', 'is', null)
       .gte('rejected_at', SINCE)
       .order('guid')
