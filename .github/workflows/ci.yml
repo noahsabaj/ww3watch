@@ -61,4 +61,7 @@ jobs:
       # moduleResolution conflict with Deno's defaults); --node-modules-dir=none:
       # use Deno's own npm cache, not the project's node_modules.
       - run: deno check --no-config --node-modules-dir=none supabase/functions/_shared/net.ts supabase/functions/_shared/http.ts supabase/functions/_shared/hash.ts supabase/functions/_shared/rss.ts
-      - run: deno test --no-check --no-config --node-modules-dir=none supabase/functions/_shared/
+      # --allow-net is scoped to [::1] for the SSRF live repro, which binds a real
+      # loopback listener and asserts fetchGuarded refuses to reach it. Nothing
+      # else in this suite touches the network; keep the scope narrow.
+      - run: deno test --no-check --no-config --node-modules-dir=none --allow-net='[::1]' supabase/functions/_shared/
