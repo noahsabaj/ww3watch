@@ -431,7 +431,14 @@ async function run(stats: RunStats): Promise<void> {
   // telemetry. Skip them once the run is over budget — a measurement is not
   // worth the inserts it would displace.
   if (Date.now() - startedAt < RUN_BUDGET_MS) {
-    const shadow = await timed('classify_shadow', () => classifyShadowStats(toClassify, relevant))
+    // ONLY articles that actually received an LLM verdict. The shadow stats
+    // treat "not in `relevant`" as rejected, so anything without a verdict —
+    // a deferred batch, or a failed one — would be scored as a rejection and
+    // drag the rejected-similarity distribution toward the accepted one. That
+    // silently corrupts the very numbers the pre-filter threshold is chosen
+    // from, and it gets much worse now that batches can be deferred for budget.
+    const judged = toClassify.filter((a) => relevant.has(a.guid) || rejected.has(a.guid))
+    const shadow = await timed('classify_shadow', () => classifyShadowStats(judged, relevant))
     if (shadow) stats.cls_prefilter = shadow
   } else {
     console.warn('[pipeline] skipping classify shadow stats — over run budget')
