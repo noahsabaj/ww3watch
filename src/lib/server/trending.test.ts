@@ -10,7 +10,13 @@ const state = vi.hoisted(() => ({
   trendingLogInserted: null as unknown,
 }))
 
-vi.mock('./llm', () => ({ callLLM: vi.fn() }))
+// importOriginal, not a bare object: trending.ts narrows failures with
+// `err instanceof LLMDeadlineError`, and a mock that omits the class makes that
+// check throw TypeError instead of matching.
+vi.mock('./llm', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./llm')>()),
+  callLLM: vi.fn(),
+}))
 vi.mock('./supabase', () => ({
   supabaseAdmin: {
     from: (table: string) => {
@@ -48,7 +54,7 @@ vi.mock('./supabase', () => ({
   },
 }))
 
-import { callLLM } from './llm'
+import { callLLM, LLMDeadlineError } from './llm'
 import { updateTrending } from './trending'
 
 const mockedCallLLM = vi.mocked(callLLM)
@@ -231,5 +237,27 @@ describe('updateTrending', () => {
     await updateTrending()
     expect(mockedCallLLM).not.toHaveBeenCalled()
     expect(state.deleteCalled).toBe(false)
+  })
+
+  it('passes the run deadline through to callLLM', async () => {
+    // Regression: this argument was missing, so trending's 429 backoff slept
+    // OUTSIDE the run's wall-clock guard. Run 474 slept a provider-requested
+    // 149s here; a larger retry-after would have re-armed the 20-minute kill.
+    state.articlesResult = { data: recent, error: null }
+    mockedCallLLM.mockResolvedValue('[0,1,2]')
+    const deadline = Date.now() + 60_000
+    await updateTrending(deadline)
+    expect(mockedCallLLM).toHaveBeenCalledWith(expect.anything(), expect.any(Number), deadline)
+  })
+
+  it('reports a budget deferral as deferred:budget, not error:llm', async () => {
+    // A run that ran out of time is not a provider outage. Reporting it as
+    // error:llm would make every busy run look like one and bury the real thing.
+    state.articlesResult = { data: recent, error: null }
+    mockedCallLLM.mockRejectedValue(new LLMDeadlineError())
+    const result = await updateTrending(Date.now() - 1)
+    expect(result).toBe('deferred:budget')
+    expect(state.deleteCalled).toBe(false)
+    expect(state.insertedRows).toBeNull()
   })
 })

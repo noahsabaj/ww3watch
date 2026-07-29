@@ -19,18 +19,67 @@ let lastStart = 0
 // which is why 19 minutes of rate-limit backoff looked like a silent hang: the
 // limiter sleeps and the 429 retries never logged anything. Recorded into
 // pipeline_runs.stats.llm so the next tuning decision comes from data.
-export const llmStats = {
-  calls: 0, // successful round-trips
-  attempts: 0, // including retries
-  rateLimited: 0, // 429 responses
-  limiterWaitMs: 0, // time spent waiting for a rate-limiter slot
-  backoffMs: 0, // time spent in 429 backoff
-  requestMs: 0, // time spent awaiting the provider
-  deadlineSkips: 0, // calls refused because the run was out of budget
+export interface LlmStats {
+  calls: number // successful round-trips
+  attempts: number // including retries
+  rateLimited: number // 429 responses
+  limiterWaitMs: number // time spent waiting for a rate-limiter slot
+  backoffMs: number // time spent in 429 backoff
+  requestMs: number // time spent awaiting the provider
+  deadlineSkips: number // calls refused because the run was out of budget
+  /**
+   * The first 429 of the run, verbatim: which limit, which window, how much
+   * headroom. The counters alone cannot distinguish a requests-per-minute cap
+   * from a token bucket — run 474 had to infer "token bucket, retry-after
+   * >= 485s" from the deadline-guard arithmetic because this was discarded.
+   * pipeline_runs has RLS on with zero policies (service-role only), so the
+   * provider's message is not published by recording it.
+   */
+  rateLimitNote: string | null
+  /** Largest backoff the provider asked for, ms. Sizes the run budget. */
+  maxRetryAfterMs: number
 }
 
+const EMPTY_STATS: LlmStats = {
+  calls: 0,
+  attempts: 0,
+  rateLimited: 0,
+  limiterWaitMs: 0,
+  backoffMs: 0,
+  requestMs: 0,
+  deadlineSkips: 0,
+  rateLimitNote: null,
+  maxRetryAfterMs: 0,
+}
+
+export const llmStats: LlmStats = { ...EMPTY_STATS }
+
+// Reset from a literal rather than zeroing every key: `rateLimitNote` is a
+// string, and the old Object.keys loop would have quietly set it to 0.
 export function resetLlmStats(): void {
-  Object.keys(llmStats).forEach((k) => ((llmStats as Record<string, number>)[k] = 0))
+  Object.assign(llmStats, EMPTY_STATS)
+}
+
+/** Provider rate-limit detail, flattened for pipeline_runs.stats. */
+function describeRateLimit(res: Response, body: string): string {
+  const headers = [
+    'retry-after',
+    'x-ratelimit-limit-requests',
+    'x-ratelimit-remaining-requests',
+    'x-ratelimit-reset-requests',
+    'x-ratelimit-limit-tokens',
+    'x-ratelimit-remaining-tokens',
+    'x-ratelimit-reset-tokens',
+  ]
+    .map((k) => {
+      const v = res.headers.get(k)
+      return v ? `${k}=${v}` : null
+    })
+    .filter(Boolean)
+    .join(' ')
+  // The body carries the sentence that names the limit ("...on tokens per day
+  // (TPD): Limit X, Used Y, Requested Z"), which no header does.
+  return [headers || null, body.trim().slice(0, 300) || null].filter(Boolean).join(' | ')
 }
 
 /** Thrown when a call cannot start (or retry) inside the run's remaining budget. */
@@ -127,6 +176,12 @@ export async function callLLM(
         Number.isFinite(retryAfter) && retryAfter > 0
           ? retryAfter * 1000
           : Math.min(30_000, 1000 * 2 ** attempt)
+      llmStats.maxRetryAfterMs = Math.max(llmStats.maxRetryAfterMs, backoff)
+      // Capture once per run. Reading the body consumes it, and nothing below
+      // this point uses it on the 429 path.
+      if (llmStats.rateLimitNote === null) {
+        llmStats.rateLimitNote = describeRateLimit(res, await res.text().catch(() => ''))
+      }
       // Don't sleep past the run's budget just to start a call that will then be
       // refused — give the time back to the stages that still have work to do.
       if (deadlineMs !== undefined && Date.now() + backoff >= deadlineMs) {
