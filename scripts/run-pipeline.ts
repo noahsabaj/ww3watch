@@ -416,10 +416,18 @@ async function run(stats: RunStats): Promise<void> {
     () => classifyArticles(toClassify, classifyDeadline),
   )
   const articles = toClassify.filter((a) => relevant.has(a.guid))
-  console.log(`[pipeline] ${articles.length} relevant, ${rejected.size} rejected of ${toClassify.length} classified`)
+  // `classified` counts articles that actually got a verdict, not articles we
+  // set out to classify — with budget deferral those diverge, and reporting the
+  // ambition rather than the outcome is how a degraded run looks healthy.
+  const classified = relevant.size + rejected.size
+  const budgetDeferred = toClassify.length - classified
+  console.log(
+    `[pipeline] ${articles.length} relevant, ${rejected.size} rejected of ${classified} classified` +
+      (budgetDeferred > 0 ? ` (${budgetDeferred} deferred for budget)` : ''),
+  )
   Object.assign(stats, {
-    classified: toClassify.length,
-    deferred: fresh.length - toClassify.length,
+    classified,
+    deferred: fresh.length - toClassify.length + budgetDeferred,
     relevant: articles.length,
     rejected: rejected.size,
     cls_batches_failed: failedBatches,
