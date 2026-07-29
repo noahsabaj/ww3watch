@@ -79,8 +79,15 @@ jobs:
       # site. File (or append to) a single pipeline-failure issue so breakage
       # emails the maintainer. The pipeline self-fails on zero feeds, a total
       # LLM outage, and a >450MB DB — all route here.
+      # `failure() || cancelled()`, not `failure()`. A job killed by
+      # timeout-minutes reports conclusion CANCELLED, for which failure() is
+      # false — so the alert was skipped on the one failure mode that has been
+      # dominating: 38 of the last 40 scheduled runs hit the 20-minute timeout
+      # and none of them said anything. The freshness readout went red and the
+      # push alert, which exists precisely because "the pipeline once died
+      # silently for three months", could not fire.
       - name: Alert on failure
-        if: failure()
+        if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

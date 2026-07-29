@@ -1,6 +1,16 @@
 import adapter from '@sveltejs/adapter-static'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 
+// The CSP's connect-src is derived from the Supabase URL this build targets,
+// rather than hardcoding a wildcard. In production that is strictly TIGHTER than
+// the old `https://*.supabase.co` (one project origin, not every Supabase
+// project), and it is what lets the e2e suite build against a local fixture
+// stack on 127.0.0.1 instead of asserting against live production data.
+const supabaseOrigin = new URL(
+  process.env.PUBLIC_SUPABASE_URL || 'https://qusjbpknlduuklnfciws.supabase.co',
+).origin
+const supabaseSocket = supabaseOrigin.replace(/^http/, 'ws') // realtime
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
@@ -24,7 +34,7 @@ const config = {
         'script-src': ['self'],
         'style-src': ['self', 'unsafe-inline'],
         'img-src': ['*', 'data:', 'blob:'],
-        'connect-src': ['self', 'https://*.supabase.co', 'wss://*.supabase.co'],
+        'connect-src': ['self', supabaseOrigin, supabaseSocket],
         'worker-src': ['self'],
       },
     },
