@@ -1,16 +1,27 @@
 import { test, expect } from '@playwright/test'
 
-// Locks in the hand-verified QA flows. Runs against live data — assertions
-// are structural (counts, states, focus), never about specific headlines.
+// Locks in the hand-verified QA flows.
+//
+// Runs against the SEEDED fixture backend (supabase/seed.sql), not production.
+// It used to assert against live data, which meant a PR went red when the
+// ingestion pipeline was having a bad morning — and a red CI that might not be
+// your fault is a red CI nobody reads. Numbers below are exact because the data
+// is fixed; if one changes, the seed changed or the code broke.
+//
+// The live site keeps its own watchdog in .github/workflows/prod-smoke.yml.
+
+// 64 seeded articles group into 59 story cards: one 4-member story, one
+// 3-member story, and 57 singletons.
+const STORY_CARDS = 59
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
 })
 
-test('feed renders a substantial story list from the live backend', async ({ page }) => {
-  expect(await page.locator('article').count()).toBeGreaterThan(50)
-  await expect(page.locator('header')).toContainText(/\d+ stories/)
+test('feed renders every seeded story, grouped', async ({ page }) => {
+  await expect(page.locator('article')).toHaveCount(STORY_CARDS)
+  await expect(page.locator('header')).toContainText(`${STORY_CARDS} stories`)
 })
 
 test('search filters and clears', async ({ page }) => {
@@ -127,13 +138,14 @@ test('reading-language picker stays available when the article matches the readi
   await page.reload()
   await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
 
-  // Prefer a card whose representative carries the "RU" language chip (source==target,
-  // the exact regression case); fall back to the first story if none is on screen.
+  // The seed guarantees a Russian-language card, so this targets the exact
+  // regression case (source language == reading language) every run. The old
+  // "fall back to the first story if no RU card is on screen" branch existed
+  // only because live data might not contain one — with a fixture that branch
+  // was masking, not resilience.
   const ruCard = page.locator('article').filter({ has: page.getByText('RU', { exact: true }) }).first()
-  const headline = (await ruCard.count())
-    ? ruCard.locator('a[href]').first()
-    : page.locator('article a[href]').first()
-  await headline.click()
+  await expect(ruCard).toBeVisible()
+  await ruCard.locator('a[href]').first().click()
 
   await expect(page.getByRole('dialog')).toBeVisible()
   // The picker renders once the reader settles (loaded or failed) — it must appear
@@ -147,4 +159,13 @@ test('day separators render at the top of the feed', async ({ page }) => {
 
 test('freshness readout is present and recent-ish', async ({ page }) => {
   await expect(page.locator('header')).toContainText(/updated .* ago|updated just now/)
+})
+
+test('wire reprints are badged so the source count is not overstated', async ({ page }) => {
+  // The seed's 3-member wire story: two outlets share a body_hash, one is
+  // original reporting. The later reprint must be badged.
+  const wireCard = page.locator('article').filter({ hasText: 'ceasefire talks resume' }).first()
+  await expect(wireCard).toBeVisible()
+  await wireCard.getByRole('button', { name: /sources covered this/ }).click()
+  await expect(wireCard.getByText('wire', { exact: true })).toHaveCount(1)
 })

@@ -1,0 +1,59 @@
+name: Production smoke
+
+# Watchdog for the DEPLOYED site.
+#
+# The PR suite runs against a seeded fixture backend so a red CI always means the
+# change broke something. That deliberately gave up the one automated check that
+# production still renders — the pipeline's dead-man's switch covers ingestion,
+# so a broken frontend on a healthy backend would go unnoticed until someone
+# looked. This is that check, moved off the PR path where it was causing
+# unrelated failures.
+#
+# Push, don't pull: a failure files (or appends to) a single GitHub issue, the
+# same pattern pipeline.yml uses, so breakage reaches the maintainer by email.
+
+on:
+  schedule:
+    - cron: '40 7 * * *' # daily, offset from the pipeline's :00/:15/:30/:45 slots
+  workflow_dispatch: {}
+
+concurrency:
+  group: ww3watch-prod-smoke
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config playwright.prod.config.ts
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create prod-smoke-failure --color B60205 --description "Deployed site smoke failure" --force >/dev/null 2>&1 || true
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          existing=$(gh issue list --label prod-smoke-failure --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Production smoke failed again: $run_url"
+          else
+            gh issue create --title "Deployed site smoke test failing" --label prod-smoke-failure \
+              --body "The deployed site failed its daily smoke check — see $run_url. Close this issue once resolved; repeat failures append here instead of spamming."
+          fi

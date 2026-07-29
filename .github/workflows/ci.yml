@@ -32,12 +32,43 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Real publishable creds (public by design — they ship in the deployed
-      # bundle); set as repo VARIABLES, not secrets.
+
+      # The suite runs against a SEEDED local backend, not production. Asserting
+      # against live data meant a PR went red when the ingestion pipeline was
+      # having a bad morning, and a red CI that might not be your fault is a red
+      # CI nobody reads. The deployed site keeps its own watchdog in
+      # prod-smoke.yml.
+      - uses: supabase/setup-cli@v2
+        with:
+          version: latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Start the local Supabase stack
+        run: supabase start
+
+      # Migrations are applied with psql in filename order rather than via
+      # `supabase db reset`. The CLI derives a migration's version from the
+      # leading digits of its filename, and this repo's files are dated
+      # YYYYMMDD, so nine of them collapse to the version "20260611" — on
+      # duplicates the CLI applies NOTHING and still reports success. Filename
+      # order is the contract these migrations were written and applied under
+      # (docs/CONVENTIONS.md), so CI follows it exactly and loudly.
+      - name: Apply migrations in filename order, then the fixture seed
+        run: |
+          set -euo pipefail
+          for f in supabase/migrations/*.sql; do
+            echo "applying $(basename "$f")"
+            docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < "$f"
+          done
+          docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/seed.sql
+
+      # The local stack's publishable key is a fixed, well-known constant —
+      # every `supabase start` anywhere produces this same value, because the
+      # local JWT secret is a documented default. It grants nothing beyond this
+      # ephemeral container.
       - run: npm run build
         env:
-          PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
-          PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
+          PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
       # Replicate deploy.yml's fallback copy so sirv --single serves the SPA.
       - run: cp build/404.html build/index.html
       - uses: actions/cache@v5
