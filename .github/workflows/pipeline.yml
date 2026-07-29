@@ -22,7 +22,12 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 20 # classify is rate-limited (LLM_MAX_RPM); leave headroom
+    # BACKSTOP, not the operative limit. The run bounds itself with RUN_BUDGET_MS
+    # / CLASSIFY_BUDGET_MS below and defers whatever doesn't fit, so it should
+    # finish well inside this. If this timeout ever fires again, something is
+    # ignoring its budget — and it now alerts, because a timeout reports
+    # "cancelled" and the alert step below no longer keys on failure() alone.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -55,6 +60,14 @@ jobs:
           # Groq free tier is ~6K tokens/min — keep call starts sparse so heavy
           # runs don't live in 429 backoff (which leaks junk through the keyword path).
           LLM_MAX_RPM: '2'
+          # The run's own wall-clock budget, kept under timeout-minutes above.
+          # Classify stops STARTING batches at CLASSIFY_BUDGET_MS and defers the
+          # rest (they stay "new"), so the run always reaches the upsert. Before
+          # this, a run that overran was killed mid-classify having written
+          # nothing — so the same backlog returned every run and 38 of 40
+          # consecutive runs died the same way.
+          RUN_BUDGET_MS: '900000'      # 15 min
+          CLASSIFY_BUDGET_MS: '540000' # 9 min, leaving room for embed/cluster/trending
           # Optional: route WAF-blocked feeds through the Cloudflare proxy.
           FEED_PROXY_URL: ${{ secrets.FEED_PROXY_URL }}
           FEED_PROXY_SECRET: ${{ secrets.FEED_PROXY_SECRET }}

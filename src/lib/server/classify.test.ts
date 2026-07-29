@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // classify routes through callLLM (rate-limited + 429-retried), so mock that.
-vi.mock('./llm', () => ({ callLLM: vi.fn() }))
+// LLMDeadlineError comes from the REAL module — classify distinguishes it by
+// instanceof, so a stand-in class would make the test pass for the wrong reason.
+vi.mock('./llm', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./llm')>()),
+  callLLM: vi.fn(),
+}))
 import { callLLM } from './llm'
 import { classifyArticles } from './classify'
 
@@ -70,5 +75,26 @@ describe('classifyArticles', () => {
     ])
     expect(down.totalBatches).toBe(1)
     expect(down.failedBatches).toBe(1) // failed === total ⇒ run() throws
+  })
+
+  const three = [
+    { guid: 'a', title: 'Strike kills commander in border raid', summary: null, source_lang: 'en' },
+    { guid: 'b', title: 'Ceasefire talks collapse overnight', summary: null, source_lang: 'en' },
+    { guid: 'c', title: 'حملة جوية على ميناء', summary: null, source_lang: 'ar' },
+  ]
+
+  it('passes the deadline through to callLLM', async () => {
+    mockedCallLLM.mockResolvedValue('[1,1,1]')
+    const deadline = Date.now() + 60_000
+    await classifyArticles(three, deadline)
+    expect(mockedCallLLM.mock.calls[0][2]).toBe(deadline)
+  })
+
+  it('still classifies normally when no deadline is given', async () => {
+    mockedCallLLM.mockResolvedValue('[1,0,1]')
+    const r = await classifyArticles(three)
+    expect(r.skippedBatches).toBe(0)
+    expect(r.relevant.size).toBe(2)
+    expect(r.rejected.size).toBe(1)
   })
 })
