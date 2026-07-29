@@ -164,12 +164,21 @@ async function calibrate(): Promise<void> {
     }
   }
   const byId = new Map(clustered.map((a) => [a.id, a]))
+  // A rep is a Row we have already established has BOTH a resolved story_id and
+  // a published_at — the map below returns null otherwise. Naming that as its
+  // own type is what makes the filter a valid type predicate: narrowing to Row
+  // was rejected because Row.story_id is nullable and these are not, which left
+  // `reps` nullable and cascaded into a dozen "possibly null" errors below.
+  // It also retires the `published_at!` assertions those errors were papered
+  // over with.
+  type Rep = Omit<Row, 'story_id' | 'published_at'> & { story_id: string; published_at: string }
   const reps = [...repIdByStory.entries()]
-    .map(([sid, repId]) => {
+    .map(([sid, repId]): Rep | null => {
       const rep = byId.get(repId)
-      return rep && vecs.has(rep.id) && rep.published_at ? { ...rep, story_id: sid } : null
+      if (!rep || !vecs.has(rep.id) || !rep.published_at) return null
+      return { ...rep, story_id: sid, published_at: rep.published_at }
     })
-    .filter((r): r is Row => r !== null)
+    .filter((r): r is Rep => r !== null)
   const multi = [...clusters.values()].filter((g) => g.length >= 2)
   console.log(`clustered articles ${clustered.length} | stories ${clusters.size} (multi-member ${multi.length}) | usable reps ${reps.length}`)
 
@@ -184,7 +193,7 @@ async function calibrate(): Promise<void> {
     const ts = new Date(a.published_at).getTime()
     for (const rep of reps) {
       if (rep.id === a.id) continue
-      if (Math.abs(new Date(rep.published_at!).getTime() - ts) > WINDOW_MS) continue
+      if (Math.abs(new Date(rep.published_at).getTime() - ts) > WINDOW_MS) continue
       const sim = dot(va, vecs.get(rep.id)!)
       const pair: Pair = {
         sim,
@@ -222,7 +231,7 @@ async function calibrate(): Promise<void> {
     const va = vecs.get(a.id)
     if (!va || !a.published_at || isRep.has(a.id)) continue
     const ts = new Date(a.published_at).getTime()
-    const cands = reps.filter((r) => r.id !== a.id && Math.abs(new Date(r.published_at!).getTime() - ts) <= WINDOW_MS)
+    const cands = reps.filter((r) => r.id !== a.id && Math.abs(new Date(r.published_at).getTime() - ts) <= WINDOW_MS)
     if (!cands.some((r) => r.story_id === a.story_id)) continue // own rep outside window
     const ranked = cands.map((r) => ({ r, sim: dot(va, vecs.get(r.id)!) })).sort((x, y) => y.sim - x.sim)
     simTotal++
