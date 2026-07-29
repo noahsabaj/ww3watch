@@ -1,0 +1,29 @@
+// Type-checking for scripts/, which svelte-check does not cover.
+//
+// The generated .svelte-kit/tsconfig.json's `include` lists only src, test,
+// tests and the vite configs — so scripts/run-pipeline.ts, the ingestion
+// pipeline that runs in production every 15 minutes, had ZERO type coverage in
+// CI. It could have been broken by any change to src/lib/server/* and nothing
+// would have said so until a scheduled run failed.
+//
+// This is a SEPARATE config rather than an `include` override on the root
+// tsconfig on purpose. TypeScript replaces `include` across `extends` instead of
+// merging it, so covering scripts from the root would mean copying SvelteKit's
+// generated list and keeping that copy in step with it by hand — a copy that
+// goes stale silently, under-checking the app while still reporting success.
+// This repo has already been bitten three times by configuration that quietly
+// did nothing (duplicate migration versions making `supabase db reset` a no-op,
+// this very include, and sharp's exports map hiding its own types); one source
+// of truth per scope is cheaper than a fourth.
+//
+// compilerOptions are inherited from the root config so the two agree on
+// strictness. Only the file set differs. Scripts import from src/ with relative
+// paths and use no $lib alias, so nothing else is needed.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["scripts/**/*.ts"]
+}
