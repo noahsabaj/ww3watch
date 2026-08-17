@@ -128,9 +128,8 @@ export async function updateTrending(deadlineMs?: number): Promise<string> {
   return await writeTrending(clusters, indices)
 }
 
-// Commit a selection: overwrite `trending`, then append the trail to
-// trending_log. Shared by the curated path and the forced (≤PICK_COUNT) one so
-// the two can never drift in what they write.
+// Commit a selection: atomically overwrite `trending` and append the trail to
+// trending_log in a single transaction via replace_trending RPC.
 async function writeTrending(clusters: Cluster[], indices: number[]): Promise<string> {
   const rows = indices.map((clusterIdx, rank) => ({
     // article_id stays the newest member's id — bit-identical to the
@@ -142,24 +141,7 @@ async function writeTrending(clusters: Cluster[], indices: number[]): Promise<st
     selected_at: new Date().toISOString(),
   }))
 
-  // The .neq filter only exists to satisfy safeupdate (no unfiltered deletes).
-  // If the delete fails, abort — inserting would PK-conflict and empty nothing,
-  // but we'd log noise; keeping the previous selection is the correct outcome.
-  const { error: deleteError } = await supabaseAdmin.from('trending').delete().neq('article_id', '')
-  if (deleteError) {
-    console.error('[trending] delete failed, keeping previous selection:', deleteError)
-    return 'error:delete'
-  }
-  const { error } = await supabaseAdmin.from('trending').insert(rows)
-  if (error) {
-    console.error('[trending] Supabase insert error:', error)
-    return 'error:insert'
-  }
-
-  // Append the trail: `trending` is overwritten every run, so trending_log is the
-  // only record of what was highlighted over time (the /about "recently highlighted"
-  // view reads it). Denormalize the display fields so it survives article pruning.
-  // Log-only — a failure here must never undo the trending update we just committed.
+  // Denormalize the display fields for trending_log so they survive article pruning.
   const logPicks = indices.map((clusterIdx, rank) => {
     const rep = clusters[clusterIdx].representative
     return {
@@ -171,8 +153,16 @@ async function writeTrending(clusters: Cluster[], indices: number[]): Promise<st
       source_region: rep.source_region,
     }
   })
-  const { error: logError } = await supabaseAdmin.from('trending_log').insert({ picks: logPicks })
-  if (logError) console.error('[trending] trending_log append failed (non-fatal):', logError)
+
+  const { error } = await supabaseAdmin.rpc('replace_trending', {
+    p_rows: rows,
+    p_log_picks: logPicks,
+  })
+
+  if (error) {
+    console.error('[trending] replace_trending RPC error:', error)
+    return 'error:rpc'
+  }
 
   console.log(`[trending] Updated: ${rows.map((r) => r.article_id).join(', ')}`)
   return `updated:${rows.length}`

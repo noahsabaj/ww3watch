@@ -7,8 +7,8 @@ const SYSTEM_PROMPT = `You are the relevance filter for WW3Watch — a real-time
 
 Articles may be in any language (Persian, Arabic, Russian, etc.) — judge by meaning, not language.
 For each numbered article, output 1 if it belongs on WW3Watch, or 0 if not.
-Return ONLY a valid JSON array of integers (0 or 1), one per article, same order as input.
-No explanation. No markdown. Just the array. Example: [1,0,1,1,0]`
+Return ONLY a valid JSON object mapping each article number to 1 or 0.
+No explanation. No markdown. Just the JSON object. Example: {"1": 1, "2": 0, "3": 1}`
 
 interface ArticleInput {
   guid: string
@@ -17,39 +17,53 @@ interface ArticleInput {
   source_lang: string
 }
 
-async function classifyBatch(articles: ArticleInput[], deadlineMs?: number): Promise<boolean[]> {
+function parseVerdict(val: unknown): boolean | null {
+  if (val === 1 || val === '1' || val === true) return true
+  if (val === 0 || val === '0' || val === false) return false
+  return null
+}
+
+async function classifyBatch(articles: ArticleInput[], deadlineMs?: number): Promise<Array<boolean | null>> {
   const userContent = articles
     .map((a, i) => `${i + 1}. "${a.title}" | ${(a.summary ?? '').slice(0, 200)}`)
     .join('\n')
 
   // callLLM handles rate-limiting, 429 retry/backoff, and fence stripping.
-  // Budget: ~5 tokens per verdict plus headroom for reasoning models (gpt-oss),
-  // whose thinking spends from max_tokens before the answer — a cap sized to
-  // the answer alone truncates it into unparseable JSON.
+  // Budget: ~10 tokens per verdict plus headroom for reasoning models (gpt-oss),
+  // whose thinking spends from max_tokens before the answer.
   const clean = await callLLM(
     [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userContent },
     ],
-    1024 + BATCH_SIZE * 5,
+    1024 + BATCH_SIZE * 10,
     deadlineMs,
   )
   const parsed: unknown = JSON.parse(clean)
 
-  // Strict: every element must be exactly 0 or 1. Strings ("1"), booleans, or
-  // anything else mean the model went off-script — treat as batch failure rather
-  // than verdicts. Critical now that rejections are recorded permanently: a
-  // `["1","0",...]` response slipping through the old shape check would have
-  // rejected an entire batch (including relevant articles) forever.
-  if (
-    !Array.isArray(parsed) ||
-    parsed.length !== articles.length ||
-    !parsed.every((v): v is 0 | 1 => v === 0 || v === 1)
-  ) {
-    throw new Error(`Bad LLM response shape, expected ${articles.length} 0/1 ints: ${JSON.stringify(parsed)?.slice(0, 120)}`)
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`Bad LLM response shape, expected index-keyed JSON object: ${JSON.stringify(parsed)?.slice(0, 120)}`)
   }
 
-  return parsed.map(v => v === 1)
+  const record = parsed as Record<string, unknown>
+  const verdicts: Array<boolean | null> = []
+  let validCount = 0
+
+  for (let i = 0; i < articles.length; i++) {
+    const key1 = String(i + 1)
+    const key0 = String(i)
+    const rawVal = record[key1] !== undefined ? record[key1] : record[key0]
+    const verdict = parseVerdict(rawVal)
+    verdicts.push(verdict)
+    if (verdict !== null) validCount++
+  }
+
+  // If not a single valid verdict was parsed from the object, treat the batch as failed.
+  if (validCount === 0 && articles.length > 0) {
+    throw new Error(`No valid verdicts in LLM response: ${JSON.stringify(parsed)?.slice(0, 120)}`)
+  }
+
+  return verdicts
 }
 
 export interface ClassifyResult {
@@ -106,9 +120,19 @@ export async function classifyArticles(
   results.forEach((result, bi) => {
     const batch = batches[bi]
     if (result.status === 'fulfilled') {
-      result.value.forEach((isRel, j) => {
-        if (isRel) relevant.add(batch[j].guid)
-        else rejected.add(batch[j].guid)
+      result.value.forEach((verdict, j) => {
+        const a = batch[j]
+        if (verdict === true) {
+          relevant.add(a.guid)
+        } else if (verdict === false) {
+          rejected.add(a.guid)
+        } else {
+          // Missing or malformed key: graceful per-item fallback.
+          // English falls back to keyword filter; non-English stays unjudged.
+          if (a.source_lang === 'en' && isRelevant(a.title, a.summary ?? '')) {
+            relevant.add(a.guid)
+          }
+        }
       })
     } else if (result.reason instanceof LLMDeadlineError) {
       // Out of budget, not broken. Give NO verdict so every article in the batch
