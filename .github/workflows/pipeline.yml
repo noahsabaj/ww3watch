@@ -111,8 +111,20 @@ jobs:
             gh issue comment "$existing" --body "Pipeline run failed again: $run_url"
           else
             gh issue create --title "Ingestion pipeline failing" --label pipeline-failure \
-              --body "The ingestion pipeline failed — see $run_url. Close this issue once resolved; repeat failures append here instead of spamming."
+              --body "The ingestion pipeline failed — see $run_url. The issue will automatically close on a subsequent successful run, or repeat failures will append here."
           fi
+
+      - name: Resolve alert on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh issue list --label pipeline-failure --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$existing" ]; then
+            run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            gh issue close "$existing" --comment "Pipeline run succeeded: $run_url. Auto-closing issue." --reason "completed"
+          fi
+
 
       # GitHub disables scheduled workflows after 60 days of repo inactivity;
       # re-enabling via the API resets that timer without a dummy commit. Gated
