@@ -5,6 +5,8 @@ const state = vi.hoisted(() => ({
   rpcResult: { error: null as unknown },
   rpcCalled: false,
   rpcParams: null as { p_rows: unknown[]; p_log_picks: unknown[] } | null,
+  // The live selection's newest selected_at (null = no selection).
+  selectedAt: null as string | null,
 }))
 
 // importOriginal, not a bare object: trending.ts narrows failures with
@@ -26,6 +28,16 @@ vi.mock('./supabase', () => ({
         }
         return b
       }
+      if (table === 'trending') {
+        const t = {
+          select: () => t,
+          order: () => t,
+          limit: () => t,
+          maybeSingle: () =>
+            Promise.resolve({ data: state.selectedAt ? { selected_at: state.selectedAt } : null, error: null }),
+        }
+        return t
+      }
       return {}
     },
     rpc: (name: string, params: unknown) => {
@@ -40,7 +52,7 @@ vi.mock('./supabase', () => ({
 }))
 
 import { callLLM, LLMDeadlineError } from './llm'
-import { updateTrending } from './trending'
+import { updateTrending, trendingStuck, TRENDING_MIN_INTERVAL_MS, TRENDING_STUCK_MS } from './trending'
 
 const mockedCallLLM = vi.mocked(callLLM)
 
@@ -70,6 +82,7 @@ beforeEach(() => {
   state.rpcResult = { error: null }
   state.rpcCalled = false
   state.rpcParams = null
+  state.selectedAt = null
 })
 
 describe('updateTrending', () => {
@@ -189,5 +202,41 @@ describe('updateTrending', () => {
     const result = await updateTrending(Date.now() - 1)
     expect(result).toBe('deferred:budget')
     expect(state.rpcCalled).toBe(false)
+  })
+
+  it('skips curation while the live selection is younger than the minimum interval', async () => {
+    state.articlesResult = { data: recent, error: null }
+    state.selectedAt = new Date(Date.now() - TRENDING_MIN_INTERVAL_MS / 2).toISOString()
+    const result = await updateTrending()
+    expect(result).toBe('fresh:skipped')
+    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(state.rpcCalled).toBe(false)
+  })
+
+  it('re-curates once the live selection is older than the minimum interval', async () => {
+    state.articlesResult = { data: recent, error: null }
+    state.selectedAt = new Date(Date.now() - TRENDING_MIN_INTERVAL_MS - 1000).toISOString()
+    mockedCallLLM.mockResolvedValue('[0,1,2]')
+    expect(await updateTrending()).toBe('updated:3')
+  })
+})
+
+describe('trendingStuck', () => {
+  const now = Date.parse('2026-09-13T12:00:00Z')
+  const fresh = new Date(now - 60_000).toISOString()
+  const old = new Date(now - TRENDING_STUCK_MS - 60_000).toISOString()
+
+  it('is only ever raised by an error status', () => {
+    for (const status of ['updated:3', 'empty', 'fresh:skipped', 'deferred:budget']) {
+      expect(trendingStuck(status, old, now)).toBe(false)
+      expect(trendingStuck(status, null, now)).toBe(false)
+    }
+  })
+  it('tolerates a single failure on top of a recent selection', () => {
+    expect(trendingStuck('error:rpc', fresh, now)).toBe(false)
+  })
+  it('fires when the failure sits on a selection nobody has replaced for hours, or none at all', () => {
+    expect(trendingStuck('error:rpc', old, now)).toBe(true)
+    expect(trendingStuck('error:llm', null, now)).toBe(true)
   })
 })

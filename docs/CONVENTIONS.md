@@ -34,6 +34,11 @@ front of users by default is out of scope by design.
   against articles rather than carrying second time horizons.
 - **Text columns fed from the wild**: strip control characters first —
   Postgres `text` rejects NUL, and one bad row poisons a whole batched upsert.
+- **Every DELETE/UPDATE needs a WHERE clause** — production runs Supabase's
+  safe-update guard (`21000: DELETE requires a WHERE clause`); the CI stack
+  does not, so a bare `delete from t;` passes every test and fails only in
+  prod. Write `where true` when you mean all rows (`replace_trending` shipped
+  without it and trending was stuck for four weeks).
 
 ## LLMs and models
 
@@ -92,3 +97,14 @@ fields from SW-cached REST rows (`story_id ?? id`).
   would reset the freshness dead-man's switch. Failures must be loud; the
   header's "updated Xm ago" readout exists because the pipeline once died
   silently for three months.
+- **A recorded status is not an alert.** `stats.trending='error:rpc'` was
+  written on every run for four weeks and nobody saw it. Any stage that can
+  fail without failing the run needs a stuck-detector that eventually DOES
+  fail the run (`trendingStuck`), plus a prod-smoke assertion for what the
+  user would see missing.
+- **Cadence is self-chained.** GitHub throttles a `*/15` cron to ~7 runs a
+  day; `pipeline.yml`'s last step dispatches the next run, paced by
+  `CADENCE_SECONDS`, and the cron is only the backstop. Cancelling a run
+  stops the chain until the cron restarts it. Stages that call the LLM per
+  run must pace themselves (`TRENDING_MIN_INTERVAL_MS`) or the chain
+  multiplies their daily cost.

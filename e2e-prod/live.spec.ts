@@ -35,3 +35,14 @@ test('the reader still opens', async ({ page }) => {
   await page.locator('article a[href]').first().click()
   await expect(page.getByRole('dialog')).toBeVisible()
 })
+
+test('Trending Now is on the page with at least one pick', async ({ page }) => {
+  await page.goto('./')
+  await expect(page.locator('article').first()).toBeVisible({ timeout: 30_000 })
+  // The section renders only when the pipeline's picks resolve against the
+  // loaded feed. It went missing for four weeks when replace_trending started
+  // failing: the stale picks pointed outside the feed window, the client
+  // resolved nothing, and no check noticed. The pipeline now fails loudly when
+  // trending is stuck; this is the user-facing half of that check.
+  await expect(page.locator('#trending-list li').first()).toBeVisible()
+})

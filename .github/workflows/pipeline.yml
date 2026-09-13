@@ -3,10 +3,23 @@ name: Ingestion pipeline
 # Fetches RSS feeds, classifies + clusters, and writes to Supabase.
 # Replaces the old Vercel cron + cron-job.org trigger. Runs on a Node runner so
 # rss-parser and the rest of the npm pipeline work natively (no edge runtime).
+#
+# CADENCE: each run dispatches the next one (the "Chain the next run" step),
+# paced to CADENCE_SECONDS between job starts. The schedule below is only the
+# backstop that restarts the chain if it ever breaks (a cancelled run, a
+# workflow edit, an Actions outage). GitHub throttles busy crons hard: the
+# '*/15' schedule alone fired ~7 times a day (2–4 h gaps, measured over
+# Sept 8–13 2026), so "real-time" ingestion had hours of latency.
 on:
   schedule:
-    - cron: '*/15 * * * *' # every 15 min (GitHub's min is 5; runs are best-effort)
-  workflow_dispatch: {} # manual "Run workflow" button
+    - cron: '*/15 * * * *' # backstop only — see CADENCE above
+  workflow_dispatch: {} # manual "Run workflow" button, and the chain's own trigger
+
+env:
+  # Target seconds between consecutive job starts. The chain step sleeps the
+  # remainder of this after the run's work, so a quick run doesn't turn into a
+  # tight loop of LLM calls — and a slow one dispatches immediately.
+  CADENCE_SECONDS: 900
 
 concurrency:
   group: ww3watch-pipeline
@@ -27,8 +40,13 @@ jobs:
     # finish well inside this. If this timeout ever fires again, something is
     # ignoring its budget — and it now alerts, because a timeout reports
     # "cancelled" and the alert step below no longer keys on failure() alone.
+    # Must cover setup + the run budget + the chain step's pacing sleep, which
+    # is CADENCE_SECONDS measured from job start (so at most ~15 min total
+    # before the dispatch, plus setup).
     timeout-minutes: 20
     steps:
+      - id: clock
+        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
@@ -126,12 +144,34 @@ jobs:
           fi
 
 
+      # Self-chain: dispatch the next run, paced to CADENCE_SECONDS from THIS
+      # job's start. Runs on failure too — a broken LLM must not also stop
+      # ingestion (the alert above already fired) — but not on cancellation,
+      # which is how a person stops the chain. The concurrency group keeps it
+      # to one chain: GitHub holds at most one pending run per group, so a
+      # backstop schedule firing while a chained run is pending just replaces
+      # it. workflow_dispatch is one of the two events GITHUB_TOKEN may trigger.
+      - name: Chain the next run
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          elapsed=$(( $(date +%s) - ${{ steps.clock.outputs.start }} ))
+          wait=$(( CADENCE_SECONDS - elapsed ))
+          if [ "$wait" -gt 0 ]; then
+            echo "[chain] run took ${elapsed}s; sleeping ${wait}s to pace the next start"
+            sleep "$wait"
+          fi
+          gh workflow run pipeline.yml --ref "${{ github.ref_name }}" && echo "[chain] dispatched the next run"
+
       # GitHub disables scheduled workflows after 60 days of repo inactivity;
       # re-enabling via the API resets that timer without a dummy commit. Gated
       # to ~once a week (Monday, hour 00 UTC) so it's a handful of idempotent
       # calls, not one per 15-min run. (backup.yml's weekly commit also resets it.)
+      # Not gated on the schedule event any more: chained runs are
+      # workflow_dispatch, and with a run every 15 min one of them always lands
+      # in the Monday 00:xx window.
       - name: Keepalive — re-arm scheduled workflows
-        if: ${{ github.event_name == 'schedule' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

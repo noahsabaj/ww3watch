@@ -6,6 +6,17 @@ import { supabaseAdmin } from './supabase'
 const TRENDING_WINDOW_HOURS = 4
 const CANDIDATE_LIMIT = 20                      // max clusters to send to LLM
 const PICK_COUNT = 3                            // stories to select
+// Don't re-curate a selection younger than this. The pipeline now chains itself
+// every ~15 min (pipeline.yml); a curation call per run would be ~100 LLM
+// calls/day for a 4-hour window that barely moves between runs, and every one
+// of them competes with classify for the provider's daily token budget.
+export const TRENDING_MIN_INTERVAL_MS = 30 * 60_000
+// A selection older than this while the run keeps reporting error:* means
+// trending is STUCK, not quiet — the pipeline fails the run so the GitHub issue
+// fires. Without it replace_trending failed on every run for four weeks
+// (stats.trending='error:rpc') and nothing said a word; the site showed no
+// Trending section the whole time.
+export const TRENDING_STUCK_MS = 6 * 3600_000
 
 const SYSTEM_PROMPT = `You are the story curator for WW3Watch — a real-time tracker of escalating global conflicts: wars, military strikes, assassinations, nuclear threats, coups, and major geopolitical crises.
 
@@ -18,9 +29,35 @@ De-prioritize: background tensions at equilibrium, diplomatic statements with no
 
 Return ONLY a JSON array of ${PICK_COUNT} integers (0-indexed positions from the list). No explanation. No markdown. Example: [2, 0, 11]`
 
+// When the current selection was written (null = no selection). Null on a query
+// error too: the caller treats "can't read it" the same as "never written",
+// which errs toward re-curating and toward alerting.
+export async function lastTrendingSelectedAt(): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from('trending')
+    .select('selected_at')
+    .order('selected_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) {
+    console.error('[trending] selected_at lookup failed:', error)
+    return null
+  }
+  return (data?.selected_at as string | undefined) ?? null
+}
+
+// True when this run's trending status is an error AND the live selection is
+// older than TRENDING_STUCK_MS (or missing). One failed run is noise; a failed
+// run on top of a selection nobody has replaced for hours is an outage.
+export function trendingStuck(status: string, lastSelectedAt: string | null, now: number): boolean {
+  if (!status.startsWith('error:')) return false
+  if (!lastSelectedAt) return true
+  return now - new Date(lastSelectedAt).getTime() > TRENDING_STUCK_MS
+}
+
 // Returns a short status string for pipeline_runs.stats (so chronic trending-LLM
 // failure is visible, not just stale selected_at values): 'updated:N' | 'empty'
-// | 'deferred:budget' | 'error:fetch|llm|delete|insert'.
+// | 'fresh:skipped' | 'deferred:budget' | 'error:fetch|llm|rpc'.
 //
 // `deadlineMs` is the run's absolute wall-clock ceiling. Without it this call
 // sat OUTSIDE the budget guard entirely: run 474 slept a provider-requested
@@ -28,6 +65,12 @@ Return ONLY a JSON array of ${PICK_COUNT} integers (0-indexed positions from the
 // 20-minute kill the budget exists to prevent. Curation is the most deferrable
 // work in the run — a stale selection for one cycle beats losing the inserts.
 export async function updateTrending(deadlineMs?: number): Promise<string> {
+  const lastSelectedAt = await lastTrendingSelectedAt()
+  if (lastSelectedAt && Date.now() - new Date(lastSelectedAt).getTime() < TRENDING_MIN_INTERVAL_MS) {
+    console.log(`[trending] selection from ${lastSelectedAt} is fresh, skipping`)
+    return 'fresh:skipped'
+  }
+
   const since = new Date(Date.now() - TRENDING_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
   const { data: recent, error: dbError } = await supabaseAdmin
     .from('articles')
