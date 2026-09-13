@@ -70,13 +70,24 @@ function rng(seed: number): () => number {
   }
 }
 
+// Paged reads with retry: PostgREST answers a slow page with a bare
+// "Gateway Timeout" now and then (it did on the first training run), and a
+// 30-second job should not die on one of thirty pages.
 async function pageAll<T>(
   query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
 ): Promise<T[]> {
   const all: T[] = []
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await query(from, from + PAGE - 1)
-    if (error) throw new Error(`page query failed: ${JSON.stringify(error)}`)
+    let data: T[] | null = null
+    let lastError: unknown = null
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      const res = await query(from, from + PAGE - 1)
+      if (!res.error) { data = res.data; lastError = null; break }
+      lastError = res.error
+      console.warn(`  page ${from}: ${JSON.stringify(res.error)} (attempt ${attempt})`)
+      await new Promise((r) => setTimeout(r, 2000 * attempt))
+    }
+    if (lastError) throw new Error(`page query failed: ${JSON.stringify(lastError)}`)
     if (!data || data.length === 0) break
     all.push(...data)
     if (data.length < PAGE) break
@@ -151,7 +162,7 @@ async function main() {
     supabase.from('articles').select('title, source_lang').order('id').range(f, t),
   )
   const negatives = await pageAll<{ title: string | null; lang: string | null }>((f, t) =>
-    supabase.from('classified_rejects').select('title, lang').eq('reason', 'llm').order('guid').range(f, t),
+    supabase.from('classified_rejects').select('title, lang').eq('reason', 'llm').order('rejected_at').order('guid').range(f, t),
   )
   // Dedupe by title: wire copies would otherwise let one headline vote many times.
   const seen = new Set<string>()
