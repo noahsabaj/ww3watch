@@ -5,9 +5,10 @@
 // src/lib/server/*, which now reads config from process.env (see env.ts).
 //
 // Pipeline: fetch all feeds -> de-dup (within run + against DB+rejects) ->
-// classify only NEW articles -> upsert + record rejects -> embed titles +
-// assign clusters (multilingual embeddings, assign_clusters_by_embedding RPC)
-// -> recompute trending. Every run writes one pipeline_runs row (stats jsonb
+// classify only NEW articles (local relevance head first, LLM for the uncertain
+// band) -> upsert + record rejects -> embed titles + assign clusters
+// (multilingual embeddings, assign_clusters_by_embedding RPC) -> recompute
+// trending. Every run writes one pipeline_runs row (stats jsonb
 // + error) for dashboard observability.
 
 import { fetchFeed, FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
@@ -23,8 +24,10 @@ import {
 import { updateTrending, lastTrendingSelectedAt, trendingStuck } from '../src/lib/server/trending'
 import { existingGuids } from '../src/lib/server/dedupe'
 import { selectStaleWriteOffs, staleRejectRow } from '../src/lib/server/backlog'
+import { loadHead, headScore, partitionByHead, auditAgreement } from '../src/lib/server/prefilter'
 import { llmStats } from '../src/lib/server/llm'
 import { supabaseAdmin } from '../src/lib/server/supabase'
+import { appendFileSync } from 'node:fs'
 
 const UPSERT_BATCH = 200
 // Wall-clock budget for the whole run, and the share of it classify may spend.
@@ -42,9 +45,25 @@ const UPSERT_BATCH = 200
 // the run's work.
 const RUN_BUDGET_MS = Number(process.env.RUN_BUDGET_MS || '') || 15 * 60_000
 const CLASSIFY_BUDGET_MS = Number(process.env.CLASSIFY_BUDGET_MS || '') || 9 * 60_000
-// Cap classify volume per run so a backlog can't blow the Action's time budget
-// under the rate limiter. Deferred articles stay "new" and are picked next run.
+// Cap LLM classify volume per run so a backlog can't blow the Action's time
+// budget under the rate limiter. Deferred articles stay "new" and are picked
+// next run.
 const MAX_CLASSIFY_PER_RUN = 300
+// The local relevance head (src/lib/server/prefilter.ts) scores up to this
+// many new articles per run — embedding is local and cheap (~25/s on the
+// runner), so the pool is sized for draining a backlog, not for a quiet run.
+// Only the uncertain band goes on to the LLM cap above.
+const HEAD_POOL_CAP = Number(process.env.HEAD_POOL_CAP || '') || 2000
+// Share of confident head verdicts that still get an LLM verdict, so the head's
+// live agreement is measured every run (stats.cls_head.audit) instead of
+// trusted from its training holdout. 3% of ~2000 is ~60 titles: one batch.
+const HEAD_AUDIT_RATE = Number(process.env.HEAD_AUDIT_RATE || '') || 0.03
+// Consecutive failed fetches after which a source is switched off. With a run
+// every ~15 min this is roughly two days of solid failure — a moved feed URL or
+// a WAF that now blocks the runner and the proxy alike, not a bad afternoon.
+// Disabled sources are listed in stats.sources_disabled and the workflow files
+// a feed-health issue so a person re-curates (curation is SQL, not commits).
+const AUTO_DISABLE_AFTER = Number(process.env.AUTO_DISABLE_AFTER || '') || 200
 // Past the cap, an article this old is written off unjudged rather than deferred
 // forever. Sized against what the product can actually show: the feed serves the
 // newest 500 articles, which even at a healthy accept rate is well under a day
@@ -86,9 +105,11 @@ async function loadSources(): Promise<SourceRow[]> {
 
 // Write per-source health back after the fetch pass. Two homogeneous upserts
 // (PostgREST requires uniform payload keys): successes reset the failure
-// counter; failures increment it and record the kind/detail. Best-effort —
-// health bookkeeping must never fail the run.
-async function updateSourceHealth(results: FeedFetchResult[]): Promise<void> {
+// counter; failures increment it and record the kind/detail. A source crossing
+// AUTO_DISABLE_AFTER consecutive failures is switched off here; its name is
+// returned so the run can report it. Best-effort — health bookkeeping must
+// never fail the run.
+async function updateSourceHealth(results: FeedFetchResult[]): Promise<string[]> {
   const now = new Date().toISOString()
   const base = (s: SourceRow) => ({
     id: s.id,
@@ -109,16 +130,24 @@ async function updateSourceHealth(results: FeedFetchResult[]): Promise<void> {
       last_error_kind: null,
       last_error: null,
     }))
+  const disabled: string[] = []
   const failed = results
     .filter((r) => r.error)
-    .map((r) => ({
-      ...base(r.feed as SourceRow),
-      consecutive_failures: ((r.feed as SourceRow).consecutive_failures ?? 0) + 1,
-      last_error_kind: r.error!.kind,
-      // Feed error details can embed binary/HTML response snippets — Postgres
-      // text rejects NUL (and friends); one bad row poisons the whole batch.
-      last_error: r.error!.detail.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').slice(0, 300),
-    }))
+    .map((r) => {
+      const feed = r.feed as SourceRow
+      const consecutive = (feed.consecutive_failures ?? 0) + 1
+      const stillEnabled = consecutive < AUTO_DISABLE_AFTER
+      if (!stillEnabled) disabled.push(`${feed.name} (${r.error!.kind}: ${r.error!.detail.slice(0, 80)})`)
+      return {
+        ...base(feed),
+        enabled: stillEnabled,
+        consecutive_failures: consecutive,
+        last_error_kind: r.error!.kind,
+        // Feed error details can embed binary/HTML response snippets — Postgres
+        // text rejects NUL (and friends); one bad row poisons the whole batch.
+        last_error: r.error!.detail.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').slice(0, 300),
+      }
+    })
   for (const rows of [ok, failed]) {
     for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
       const { error } = await supabaseAdmin
@@ -127,6 +156,15 @@ async function updateSourceHealth(results: FeedFetchResult[]): Promise<void> {
       if (error) console.error('[pipeline] source health write failed:', error)
     }
   }
+  if (disabled.length > 0) {
+    console.warn(`[pipeline] auto-disabled ${disabled.length} source(s) after ${AUTO_DISABLE_AFTER} consecutive failures:`)
+    for (const d of disabled) console.warn(`  - ${d}`)
+    // Hand the list to the workflow so it can file the feed-health issue.
+    if (process.env.GITHUB_OUTPUT) {
+      appendFileSync(process.env.GITHUB_OUTPUT, `disabled_sources<<EOF\n${disabled.join('\n')}\nEOF\n`)
+    }
+  }
+  return disabled
 }
 
 function logFeedSummary(results: FeedFetchResult[]) {
@@ -157,60 +195,6 @@ function logFeedSummary(results: FeedFetchResult[]) {
     feeds_failed: failed.length,
     fail_kinds: byKind,
     dates_clamped: datesClamped,
-  }
-}
-
-function dot(a: number[], b: number[]): number {
-  let sum = 0
-  for (let i = 0; i < a.length; i++) sum += a[i] * b[i]
-  return sum
-}
-
-function percentile(sorted: number[], p: number): number | null {
-  if (sorted.length === 0) return null
-  return +sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))].toFixed(4)
-}
-
-// SHADOW MODE ONLY: measures how an embedding-similarity relevance pre-filter
-// WOULD have agreed with the LLM, logged to pipeline_runs.stats.cls_prefilter.
-// Zero behavior change — enabling a threshold is a later, data-backed change.
-async function classifyShadowStats(
-  toClassify: Array<{ guid: string; title: string }>,
-  relevant: Set<string>,
-): Promise<Record<string, unknown> | null> {
-  try {
-    const { data: raw, error } = await supabaseAdmin.rpc('relevant_centroid', { p_days: 14 })
-    if (error || !raw) return null
-    const centroid = (typeof raw === 'string' ? JSON.parse(raw) : raw) as number[]
-    // avg() of unit vectors is not unit-length — normalize for cosine.
-    const norm = Math.sqrt(centroid.reduce((acc, x) => acc + x * x, 0))
-    if (!norm) return null
-    const unit = centroid.map((x) => x / norm)
-
-    const embeddable = toClassify.filter((a) => shouldEmbed(a.title))
-    if (embeddable.length === 0) return null
-    const vecs = await embedTitles(embeddable.map((a) => a.title))
-    const sims = embeddable.map((a, i) => ({ accepted: relevant.has(a.guid), sim: dot(vecs[i], unit) }))
-
-    const acc = sims.filter((x) => x.accepted).map((x) => x.sim).sort((m, n) => m - n)
-    const rej = sims.filter((x) => !x.accepted).map((x) => x.sim).sort((m, n) => m - n)
-    const agreement: Record<string, number> = {}
-    // First live reading: accepted_p50 0.875 vs rejected_p50 0.849 — the
-    // decision zone sits in 0.84-0.88, not the originally guessed 0.74-0.82.
-    for (const t of [0.84, 0.85, 0.86, 0.87, 0.88]) {
-      agreement[String(t)] = +(sims.filter((x) => x.sim >= t === x.accepted).length / sims.length).toFixed(3)
-    }
-    return {
-      n: sims.length,
-      accepted_p10: percentile(acc, 10),
-      accepted_p50: percentile(acc, 50),
-      rejected_p50: percentile(rej, 50),
-      rejected_p90: percentile(rej, 90),
-      agreement,
-    }
-  } catch (err) {
-    console.error('[pipeline] classify shadow stats failed (non-fatal):', err)
-    return null
   }
 }
 
@@ -335,13 +319,14 @@ async function checkOpsHealth(stats: RunStats): Promise<void> {
 // Local-model clustering + trending + the ops-health gate. Shared by the
 // no-new-articles path and the main path so every run captures trending status
 // and DB health (and self-heals clustering).
-// Both reject paths — real LLM verdicts and unjudged stale write-offs — go
-// through here so they can never drift in what they write. `reason` is the only
-// thing that distinguishes them, and calibrate-classify.ts depends on it being
-// accurate: it loads reason='llm' as the negatives class for the pre-filter
-// floor, so a mislabelled row would tune that floor against no verdict at all.
+// Every reject path — LLM verdicts, the head's confident rejects, and unjudged
+// stale write-offs — goes through here so they can never drift in what they
+// write. `reason` is the only thing that distinguishes them, and
+// train-classifier.ts depends on it being accurate: it loads reason='llm' as
+// the negatives class, so a mislabelled row would train the head against a
+// verdict no model ever gave (or against its own).
 async function writeRejects(
-  rows: Array<{ guid: string; title: string | null; source_id: string | null; lang: string | null; reason: 'llm' | 'stale' }>,
+  rows: Array<{ guid: string; title: string | null; source_id: string | null; lang: string | null; reason: 'llm' | 'stale' | 'head' }>,
 ): Promise<void> {
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const batch = rows.slice(i, i + UPSERT_BATCH)
@@ -415,7 +400,7 @@ async function run(stats: RunStats): Promise<void> {
       : { feed: sources[i], via: 'direct', articles: [], error: { kind: 'network', detail: String(s.reason) } },
   )
   Object.assign(stats, logFeedSummary(results))
-  await timed('source_health', () => updateSourceHealth(results))
+  stats.sources_disabled = await timed('source_health', () => updateSourceHealth(results))
 
   // Dead-man's switch: if EVERY feed failed (runner egress outage, proxy down,
   // DNS), a "no new articles" success would reset the freshness clock on the
@@ -445,18 +430,55 @@ async function run(stats: RunStats): Promise<void> {
     return
   }
 
-  // 3. Classify new articles. Newest first, capped per run; the rest stay "new"
-  //    and are reconsidered next run.
+  // 3. Classify. Newest first. When the local relevance head is available, it
+  //    scores a large pool locally: confident accepts and rejects are settled
+  //    on the spot, and only the uncertain band (plus a small audit slice of
+  //    the confident tiers) spends LLM budget. Without a head, the LLM judges
+  //    the newest MAX_CLASSIFY_PER_RUN as before. Either way whatever doesn't
+  //    fit stays "new" for the next run.
   const ordered = [...fresh].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
-  const toClassify = ordered.slice(0, MAX_CLASSIFY_PER_RUN)
+  const head = loadHead()
+  let toClassify: typeof ordered
+  let deferred: typeof ordered
+  let headAccept: typeof ordered = []
+  let headReject: typeof ordered = []
+  let audit: Map<(typeof ordered)[number], 'accept' | 'reject' | 'uncertain'> = new Map()
+  if (head) {
+    const pool = ordered.slice(0, HEAD_POOL_CAP)
+    const embeddable = pool.filter((a) => shouldEmbed(a.title))
+    const vecs = await timed('head', () => embedTitles(embeddable.map((a) => a.title)))
+    const part = partitionByHead(embeddable, vecs.map((v) => headScore(head, v)), head, { auditRate: HEAD_AUDIT_RATE })
+    headAccept = part.accept
+    headReject = part.reject
+    audit = part.audit
+    // Titles too short to embed get no head opinion — they go to the LLM.
+    const uncertain = [...part.uncertain, ...pool.filter((a) => !shouldEmbed(a.title))]
+      .sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
+    toClassify = uncertain.slice(0, MAX_CLASSIFY_PER_RUN)
+    deferred = [...uncertain.slice(MAX_CLASSIFY_PER_RUN), ...ordered.slice(HEAD_POOL_CAP)]
+    stats.cls_head = {
+      trained_at: head.trained_at,
+      pool: pool.length,
+      accept: headAccept.length,
+      reject: headReject.length,
+      uncertain: part.uncertain.length,
+      audit: part.audit.size,
+    }
+    console.log(
+      `[pipeline] head: ${pool.length} scored → accept ${headAccept.length}, reject ${headReject.length}, ` +
+        `uncertain ${part.uncertain.length} (+${part.audit.size} audit) → LLM gets ${toClassify.length}`,
+    )
+  } else {
+    toClassify = ordered.slice(0, MAX_CLASSIFY_PER_RUN)
+    deferred = ordered.slice(MAX_CLASSIFY_PER_RUN)
+  }
 
-  // Anything past the cap that is already too old to display is written off
+  // Anything deferred that is already too old to display is written off
   // unjudged. "Deferred to next run" was a lie for nine days: judged_total sat
   // at exactly 300/day (one run in ~96) while the deferred remainder grew to
   // 6,007 — permanently re-fetched, re-deduped and never reconsidered. A verdict
   // on a two-day-old article cannot change what anyone sees; the feed serves the
   // newest 500. Costs zero tokens and keeps `new` meaning "actually new".
-  const deferred = ordered.slice(MAX_CLASSIFY_PER_RUN)
   const stale = selectStaleWriteOffs(deferred, Date.now() - STALE_WRITEOFF_HOURS * 3_600_000)
   if (stale.length > 0) {
     await timed('stale_writeoff', () => writeRejects(stale.map(staleRejectRow)))
@@ -477,41 +499,35 @@ async function run(stats: RunStats): Promise<void> {
     'classify',
     () => classifyArticles(toClassify, classifyDeadline),
   )
-  const articles = toClassify.filter((a) => relevant.has(a.guid))
+  // The head's confident accepts join the LLM's. Audit items are NOT in
+  // headAccept/headReject (they rode along to the LLM), so nothing is counted
+  // twice and the LLM's verdict is the one that lands for them.
+  const articles = [...toClassify.filter((a) => relevant.has(a.guid)), ...headAccept]
   // `classified` counts articles that actually got a verdict, not articles we
   // set out to classify — with budget deferral those diverge, and reporting the
   // ambition rather than the outcome is how a degraded run looks healthy.
   const classified = relevant.size + rejected.size
   const budgetDeferred = toClassify.length - classified
   console.log(
-    `[pipeline] ${articles.length} relevant, ${rejected.size} rejected of ${classified} classified` +
-      (budgetDeferred > 0 ? ` (${budgetDeferred} deferred for budget)` : ''),
+    `[pipeline] LLM: ${relevant.size} relevant, ${rejected.size} rejected of ${classified} classified` +
+      (budgetDeferred > 0 ? ` (${budgetDeferred} deferred for budget)` : '') +
+      (head ? ` | head: +${headAccept.length} accepted, ${headReject.length} rejected` : ''),
   )
   Object.assign(stats, {
     classified,
-    deferred: fresh.length - toClassify.length + budgetDeferred,
+    deferred: deferred.length + budgetDeferred,
     relevant: articles.length,
-    rejected: rejected.size,
+    rejected: rejected.size + headReject.length,
     cls_batches_failed: failedBatches,
     cls_batches_skipped: skippedBatches,
     cls_batches_total: totalBatches,
   })
-  // Shadow stats embed up to MAX_CLASSIFY_PER_RUN extra titles purely for
-  // telemetry. Skip them once the run is over budget — a measurement is not
-  // worth the inserts it would displace.
-  if (Date.now() - startedAt < RUN_BUDGET_MS) {
-    // ONLY articles that actually received an LLM verdict. The shadow stats
-    // treat "not in `relevant`" as rejected, so anything without a verdict —
-    // a deferred batch, or a failed one — would be scored as a rejection and
-    // drag the rejected-similarity distribution toward the accepted one. That
-    // silently corrupts the very numbers the pre-filter threshold is chosen
-    // from, and it gets much worse now that batches can be deferred for budget.
-    const judged = toClassify.filter((a) => relevant.has(a.guid) || rejected.has(a.guid))
-    const shadow = await timed('classify_shadow', () => classifyShadowStats(judged, relevant))
-    if (shadow) stats.cls_prefilter = shadow
-  } else {
-    console.warn('[pipeline] skipping classify shadow stats — over run budget')
-    stats.cls_prefilter_skipped = true
+  if (head && audit.size > 0) {
+    const agreement = auditAgreement(audit, (a) => a.guid, relevant, rejected)
+    ;(stats.cls_head as Record<string, unknown>).audit_agreement = agreement
+    console.log(
+      `[pipeline] head audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed with the LLM`,
+    )
   }
 
   // 4. Upsert relevant articles + record rejects so they're never re-classified.
@@ -528,21 +544,22 @@ async function run(stats: RunStats): Promise<void> {
   console.log(`[pipeline] inserted ${inserted} new articles`)
   stats.inserted = inserted
 
-  if (rejected.size > 0) {
+  if (rejected.size > 0 || headReject.length > 0) {
     // Project explicit, homogeneous columns (never spread the article objects —
     // PostgREST 400s on unknown columns, and a batch needs uniform keys).
     // source_id + lang give the curation pass accept-rate per source/language.
+    // reason distinguishes a real LLM verdict from the head's — the trainer
+    // loads only 'llm' rows as negatives (see 20260914000000_reject_reason_head).
     const byGuid = new Map(toClassify.map((a) => [a.guid, a]))
-    const rejectRows = [...rejected].map((guid) => {
-      const a = byGuid.get(guid)
-      return {
-        guid,
-        title: a?.title ?? null,
-        source_id: a?.source_id ?? null,
-        lang: a?.source_lang ?? null,
-        reason: 'llm' as const,
-      }
-    })
+    const rejectRows = [
+      ...[...rejected].map((guid) => {
+        const a = byGuid.get(guid)
+        return { guid, title: a?.title ?? null, source_id: a?.source_id ?? null, lang: a?.source_lang ?? null, reason: 'llm' as const }
+      }),
+      ...headReject.map((a) => ({
+        guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason: 'head' as const,
+      })),
+    ]
     await writeRejects(rejectRows)
   }
 
