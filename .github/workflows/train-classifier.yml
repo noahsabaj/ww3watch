@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   train:
@@ -32,19 +33,31 @@ jobs:
         with:
           path: ~/.cache/ww3watch-transformers
           key: me5b-q8-1ec9243
-      - run: node --import tsx scripts/train-classifier.ts
+      - run: node --import tsx scripts/train-classifier.ts | tee train.log
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      - name: Commit if changed
+      # main is protected (PR + required checks), so the weights go up as a PR
+      # on a fixed branch: one open PR at a time, force-updated by each retrain,
+      # with the holdout metrics as its body so the reviewer sees what changed.
+      - name: Open or update the retrain PR
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/classifier-me5b.json
           if git diff --cached --quiet; then
             echo "weights unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B retrain-head
+          git commit -m "chore: retrain relevance head"
+          git push --force origin retrain-head
+          body=$(sed -n '/^## Relevance head/,$p' train.log)
+          if gh pr view retrain-head --json number >/dev/null 2>&1; then
+            gh pr edit retrain-head --body "$body"
           else
-            git commit -m "chore: retrain relevance head"
-            git push
+            gh pr create --base main --head retrain-head --title "chore: retrain relevance head" --body "$body"
           fi
