@@ -1,13 +1,15 @@
 <script lang="ts">
   import type { SourceRegion } from '$lib/types'
   import { ALL_REGIONS, REGION_COLORS } from '$lib/types'
-  import { timeAgo } from '$lib/utils'
+  import { timeAgo, LANG_NAMES } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import { base } from '$app/paths'
 
   let {
     searchQuery = $bindable(),
     activeRegions = $bindable(),
+    excludedLangs = $bindable(),
+    availableLangs,
     filterDropdownOpen = $bindable(),
     storyCount,
     totalCount,
@@ -18,6 +20,8 @@
   }: {
     searchQuery: string
     activeRegions: Set<SourceRegion>
+    excludedLangs: Set<string>
+    availableLangs: { lang: string; count: number }[]
     filterDropdownOpen: boolean
     storyCount: number
     totalCount: number
@@ -35,6 +39,13 @@
   }
   function selectAll() { activeRegions = new Set(ALL_REGIONS) }
   function clearAll() { activeRegions = new Set() }
+  function toggleLang(lang: string) {
+    const next = new Set(excludedLangs)
+    if (next.has(lang)) next.delete(lang)
+    else next.add(lang)
+    excludedLangs = next
+  }
+  const filterActive = $derived(activeRegions.size < ALL_REGIONS.length || excludedLangs.size > 0)
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && filterDropdownOpen) filterDropdownOpen = false
@@ -92,11 +103,11 @@
       <div class="relative hidden md:block">
         <button
           onclick={() => filterDropdownOpen = !filterDropdownOpen}
-          aria-label="Filter by region"
+          aria-label="Filter by region and language"
           aria-haspopup="true"
           aria-expanded={filterDropdownOpen}
           aria-controls="region-filter-dropdown"
-          class="flex items-center justify-center w-7 h-7 rounded transition-colors {filterDropdownOpen || activeRegions.size < ALL_REGIONS.length ? 'text-blue-400' : 'text-gray-600 hover:text-gray-300'}"
+          class="flex items-center justify-center w-7 h-7 rounded transition-colors {filterDropdownOpen || filterActive ? 'text-blue-400' : 'text-gray-600 hover:text-gray-300'}"
         >
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -125,6 +136,21 @@
                   class="text-xs px-2 py-0.5 rounded font-medium transition-opacity cursor-pointer {REGION_COLORS[region]} {activeRegions.has(region) ? 'opacity-100' : 'opacity-30'}"
                 >
                   {region}
+                </button>
+              {/each}
+            </div>
+            <!-- Language chips: exclusion toggles over whatever the loaded feed
+                 contains (nearly half of it is non-English). -->
+            <div class="mt-3 mb-2 text-[10px] text-gray-600 uppercase tracking-widest">Languages</div>
+            <div class="flex flex-wrap gap-1.5">
+              {#each availableLangs as { lang, count } (lang)}
+                <button
+                  onclick={() => toggleLang(lang)}
+                  aria-pressed={!excludedLangs.has(lang)}
+                  title="{LANG_NAMES[lang] ?? lang} · {count} {count === 1 ? 'article' : 'articles'}"
+                  class="text-xs px-2 py-0.5 rounded font-medium transition-opacity cursor-pointer bg-gray-800 text-gray-200 border border-gray-700 {excludedLangs.has(lang) ? 'opacity-30' : 'opacity-100'}"
+                >
+                  {LANG_NAMES[lang] ?? lang.toUpperCase()}
                 </button>
               {/each}
             </div>

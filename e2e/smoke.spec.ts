@@ -52,6 +52,23 @@ test('region filter: None empties the feed, All restores it', async ({ page }) =
   await expect(dropdown).toBeHidden()
 })
 
+test('language filter excludes a language and clearing restores it', async ({ page }) => {
+  const before = await page.locator('article').count()
+  await page.getByLabel('Filter by region and language').click()
+  const dropdown = page.locator('#region-filter-dropdown')
+  const english = dropdown.getByRole('button', { name: 'English', exact: true })
+  await expect(english).toHaveAttribute('aria-pressed', 'true')
+  await english.click()
+  await expect(english).toHaveAttribute('aria-pressed', 'false')
+  // The fixture is roughly half English: excluding it removes stories without
+  // emptying the feed.
+  await expect.poll(() => page.locator('article').count()).toBeLessThan(before)
+  expect(await page.locator('article').count()).toBeGreaterThan(0)
+  await expect(page.locator('header')).toContainText(/of \d+ stories/)
+  await english.click()
+  await expect.poll(() => page.locator('article').count()).toBe(before)
+})
+
 test('reader panel opens as a dialog, focuses close, Escape restores', async ({ page }) => {
   await page.locator('article a[href]').first().click()
   const dialog = page.getByRole('dialog')
