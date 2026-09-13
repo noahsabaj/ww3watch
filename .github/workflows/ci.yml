@@ -42,8 +42,18 @@ jobs:
         with:
           version: latest
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      # `supabase start` also applies supabase/migrations on a fresh database,
+      # and the current CLI (`latest`, Sept 2026) now REFUSES this repo's
+      # duplicate 8-digit versions ("duplicate key value violates unique
+      # constraint schema_migrations_pkey ... 20260609") where earlier releases
+      # skipped them silently. The next step applies every file itself, in
+      # filename order, so hide the directory from the CLI's own pass rather
+      # than pin a CLI version and wait for the next behaviour change.
       - name: Start the local Supabase stack
-        run: supabase start
+        run: |
+          mv supabase/migrations /tmp/ww3watch-migrations
+          supabase start
+          mv /tmp/ww3watch-migrations supabase/migrations
 
       # Migrations are applied with psql in filename order rather than via
       # `supabase db reset`. The CLI derives a migration's version from the
