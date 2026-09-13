@@ -36,7 +36,9 @@ curl https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss
 ## `GET|POST /reader`
 
 Extracts the readable article body for a **known** article URL (Mozilla
-Readability), cached in `article_content` and SSRF-guarded on every redirect hop.
+Readability, falling back to the page's NewsArticle JSON-LD `articleBody` when
+Readability's pick is a link list or near-empty), cached in `article_content`
+and SSRF-guarded on every redirect hop.
 
 - **Input:** `?url=<article url>` (query) or `{ "url": "<article url>" }` (POST body).
 - **Output (JSON):** `{ title, byline, content, siteName, fetchedAt, cached?, stale? }`.

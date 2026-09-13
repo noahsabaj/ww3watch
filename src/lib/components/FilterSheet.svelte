@@ -1,14 +1,19 @@
 <script lang="ts">
   import type { SourceRegion } from '$lib/types'
   import { REGION_COLORS, ALL_REGIONS } from '$lib/types'
+  import { LANG_NAMES } from '$lib/utils'
 
   let {
     open = $bindable(),
     activeRegions = $bindable(),
+    excludedLangs = $bindable(),
+    availableLangs,
     searchQuery = $bindable(),
   }: {
     open: boolean
     activeRegions: Set<SourceRegion>
+    excludedLangs: Set<string>
+    availableLangs: { lang: string; count: number }[]
     searchQuery: string
   } = $props()
 
@@ -21,6 +26,12 @@
 
   function selectAll() { activeRegions = new Set(ALL_REGIONS) }
   function clearAll() { activeRegions = new Set() }
+  function toggleLang(lang: string) {
+    const next = new Set(excludedLangs)
+    if (next.has(lang)) next.delete(lang)
+    else next.add(lang)
+    excludedLangs = next
+  }
 
   // Focus the sheet itself on open (NOT the search input — that pops the mobile
   // keyboard over a sheet most users open for the region chips); restore after.
@@ -59,7 +70,7 @@
     bind:this={sheetEl}
     role="dialog"
     aria-modal="true"
-    aria-label="Search and region filters"
+    aria-label="Search, region and language filters"
     tabindex="-1"
     class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 md:hidden"
     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
@@ -90,6 +101,21 @@
             class="text-xs px-2 py-1 rounded font-medium transition-opacity cursor-pointer {REGION_COLORS[region]} {activeRegions.has(region) ? 'opacity-100' : 'opacity-30'}"
           >
             {region}
+          </button>
+        {/each}
+      </div>
+
+      <!-- Language toggles -->
+      <div class="text-[10px] text-gray-600 uppercase tracking-widest">Languages</div>
+      <div class="flex flex-wrap gap-1.5">
+        {#each availableLangs as { lang, count } (lang)}
+          <button
+            onclick={() => toggleLang(lang)}
+            aria-pressed={!excludedLangs.has(lang)}
+            title="{LANG_NAMES[lang] ?? lang} · {count} {count === 1 ? 'article' : 'articles'}"
+            class="text-xs px-2 py-1 rounded font-medium transition-opacity cursor-pointer bg-gray-800 text-gray-200 border border-gray-700 {excludedLangs.has(lang) ? 'opacity-30' : 'opacity-100'}"
+          >
+            {LANG_NAMES[lang] ?? lang.toUpperCase()}
           </button>
         {/each}
       </div>

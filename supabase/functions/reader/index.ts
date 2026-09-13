@@ -14,6 +14,7 @@ import { corsHeaders, json } from '../_shared/http.ts'
 import { serviceClient } from '../_shared/client.ts'
 import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
 import { fetchGuarded } from '../_shared/net.ts'
+import { fallbackArticle, looksLikeJunk, htmlToText, MIN_TEXT_CHARS } from '../_shared/extract.ts'
 
 const supabase = serviceClient()
 
@@ -103,21 +104,41 @@ Deno.serve(async (req) => {
     // the browser `Document` lib type (absent in Deno) — Readability reads it fine.
     const { document } = parseHTML(html) as unknown as { document: unknown }
     const article = new Readability(document as never).parse()
-    if (!article) {
+
+    // Readability's pick is sometimes a nav or related-links list (link-dense)
+    // or a bot-wall stub (near-empty). Before giving up, try the page's
+    // NewsArticle JSON-LD body — most news CMSes embed the full text there.
+    let result = {
+      title: article?.title ?? '',
+      byline: article?.byline ?? null,
+      content: article?.content ?? '',
+      siteName: article?.siteName ?? null,
+    }
+    let textLen = (article?.textContent ?? '').trim().length
+    let via: 'readability' | 'jsonld' = 'readability'
+    if (!article || looksLikeJunk(result.content, textLen)) {
+      const fallback = fallbackArticle(html)
+      if (fallback) {
+        result = {
+          title: fallback.title || result.title,
+          byline: fallback.byline ?? result.byline,
+          content: fallback.content,
+          siteName: result.siteName,
+        }
+        textLen = htmlToText(fallback.content).length
+        via = 'jsonld'
+      }
+    }
+    // One line per extraction so quality is measurable from the function logs
+    // (before this, a nav-list "success" and a real article looked identical).
+    console.log(`[reader] extracted host=${new URL(articleUrl).hostname} via=${via} textLen=${textLen}`)
+    if (!result.content) {
       if (cached) return staleHit(cached as CacheRow)
       return json({ error: 'extraction_failed' }, 422)
     }
 
-    const result = {
-      title: article.title ?? '',
-      byline: article.byline ?? null,
-      content: article.content ?? '',
-      siteName: article.siteName ?? null,
-    }
-
     const now = new Date().toISOString()
-    const textLen = (article.textContent ?? '').trim().length
-    if (result.content && result.content.length <= MAX_CACHE_CONTENT_CHARS && textLen >= 200) {
+    if (result.content.length <= MAX_CACHE_CONTENT_CHARS && textLen >= MIN_TEXT_CHARS) {
       // Overwrite on refresh (ignoreDuplicates:false) and ALWAYS set fetched_at —
       // PostgREST only updates payload columns, so omitting it would freeze the
       // timestamp and turn the cache into a permanent origin-hammering pass-through.

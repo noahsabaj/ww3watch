@@ -31,6 +31,11 @@
   let scrollY = $state(0)
   let searchQuery = $state('')
   let activeRegions = $state(new Set<SourceRegion>(ALL_REGIONS))
+  // Language filter is an EXCLUSION set (empty = everything), unlike regions:
+  // the language list is whatever the loaded feed contains, so a language that
+  // first appears via realtime must show by default rather than be silently
+  // filtered out by a "selected" set that predates it.
+  let excludedLangs = $state(new Set<string>())
 
   // ── Reader panel = shallow routing ─────────────────────────────────────────
   // The open article lives in page.state, not a local variable, so ONE mechanism
@@ -110,7 +115,17 @@
   let filterSheetOpen = $state(false)
   let filterDropdownOpen = $state(false)
   let realtimeStatus = $state('CLOSED')
-  let isFiltered = $derived(searchQuery.trim() !== '' || activeRegions.size < ALL_REGIONS.length)
+  let isFiltered = $derived(
+    searchQuery.trim() !== '' || activeRegions.size < ALL_REGIONS.length || excludedLangs.size > 0,
+  )
+  // Languages present in the loaded feed, most common first — the chips the
+  // filter UI offers. Counted over the unfiltered list so a chip never
+  // disappears because you excluded it.
+  let availableLangs = $derived.by(() => {
+    const counts = new Map<string, number>()
+    for (const a of articles) counts.set(a.source_lang, (counts.get(a.source_lang) ?? 0) + 1)
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([lang, count]) => ({ lang, count }))
+  })
 
   // Index of the first cluster older than the last visit. The feed is DESC, so
   // this is the boundary between "new since you were here" (above) and "seen
@@ -194,11 +209,12 @@
   let filtered = $derived(
     articles.filter(a => {
       const matchesRegion = activeRegions.has(a.source_region)
+      const matchesLang = !excludedLangs.has(a.source_lang)
       const q = searchQuery.trim().toLowerCase()
       const matchesSearch = q === '' ||
         a.title.toLowerCase().includes(q) ||
         (a.summary ?? '').toLowerCase().includes(q)
-      return matchesRegion && matchesSearch
+      return matchesRegion && matchesLang && matchesSearch
     })
   )
   let clustered = $derived(groupByStoryId(filtered))
@@ -306,6 +322,7 @@
   function clearFilters() {
     searchQuery = ''
     activeRegions = new Set(ALL_REGIONS)
+    excludedLangs = new Set()
   }
 
   // "Load older": pull the next page from the server (offset against the same
@@ -493,6 +510,8 @@
   <Header
     bind:searchQuery
     bind:activeRegions
+    bind:excludedLangs
+    {availableLangs}
     bind:filterDropdownOpen
     storyCount={clustered.length}
     totalCount={Math.max(allClustered.length, clustered.length)}
@@ -624,7 +643,7 @@
   </button>
 
   <!-- Mobile filter sheet -->
-  <FilterSheet bind:open={filterSheetOpen} bind:activeRegions bind:searchQuery />
+  <FilterSheet bind:open={filterSheetOpen} bind:activeRegions bind:excludedLangs {availableLangs} bind:searchQuery />
 
   <ArticlePanel article={selectedArticle} cluster={selectedCluster} onclose={closeArticle} onselect={openArticle} />
 
