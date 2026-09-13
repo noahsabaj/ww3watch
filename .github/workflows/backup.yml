@@ -16,6 +16,7 @@ concurrency:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   backup:
@@ -31,14 +32,22 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-      - name: Commit if changed
+      # main is protected (PR + required checks): a direct push is rejected, so
+      # the dump goes up as a PR on a fixed branch, force-updated each week.
+      - name: Open or update the backup PR
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/sources-backup.json
           if git diff --cached --quiet; then
             echo "no roster changes"
-          else
-            git commit -m "chore: weekly sources roster backup"
-            git push
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B sources-backup
+          git commit -m "chore: weekly sources roster backup"
+          git push --force origin sources-backup
+          if ! gh pr view sources-backup --json number >/dev/null 2>&1; then
+            gh pr create --base main --head sources-backup --title "chore: weekly sources roster backup"               --body "Automated dump of the curated sources roster (data/sources-backup.json). Merge to keep the committed backup current."
           fi
