@@ -55,10 +55,17 @@ front of users by default is out of scope by design.
 - **Calibrate against audited examples, not raw metrics.** When ground-truth
   labels come from a weaker system, your improvements show up as "errors" —
   the clustering threshold was chosen from a hand-audited boundary band, not
-  the false-merge sweep. Measure in shadow mode before enabling anything
-  (`stats.cls_prefilter`).
+  the false-merge sweep. Measure before enabling: the relevance head picks its
+  thresholds on a held-out split with per-language false-reject caps, refuses
+  to ship a fit that fails them, and keeps auditing itself in production
+  (`stats.cls_head.audit_agreement` — a random slice of its confident verdicts
+  still goes to the LLM every run).
 - Prefer deterministic local models on the runner over API LLMs wherever
-  judgment isn't required — quota-free, uncapped, reproducible.
+  judgment isn't required — quota-free, uncapped, reproducible. The relevance
+  head (`src/lib/server/prefilter.ts`, trained by `train-classifier.yml`) is
+  the pattern: distil the LLM's verdicts into a local model, keep the LLM for
+  the uncertain band, and never train on the local model's own output
+  (`classified_rejects.reason` keeps 'llm' and 'head' apart for exactly this).
 
 ## Deploy skew (PWA)
 

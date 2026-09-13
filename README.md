@@ -16,12 +16,13 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 
 - **Real-time feed** — new articles, story regroupings, and trending changes push live via Supabase Realtime
 - **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event; deterministic, quota-free
+- **Local relevance head** — a logistic-regression layer over those same embeddings, distilled monthly from the LLM's own verdicts, settles the confident mass of new articles on the runner; only the uncertain band spends LLM budget, and a random audit slice keeps checking the head against the LLM every run
 - **Trending Now** — LLM-picked top stories, updating live
 - **Wire detection** — near-identical copies inside a story are marked, so "12 sources" doesn't overstate independent confirmation
 - **In-app reader + translation** — cached extraction (survives link rot), on-demand translation into your reading language (set once; defaults from your browser locale), the original one click away
-- **Source roster with live health** — every feed and its fetch health, public on [/about](https://noahsabaj.github.io/ww3watch/about)
+- **Source roster with live health** — every feed and its fetch health, public on [/about](https://noahsabaj.github.io/ww3watch/about); a feed that fails for ~2 days straight is switched off and a feed-health issue is filed for re-curation
 - **Freshness dead-man's switch** — the header shows when ingestion last succeeded; it goes amber/red if the pipeline stalls
-- **Region + language filtering, RTL, PWA** — 14 region/perspective buckets and per-language toggles over whatever the feed contains; first-class Persian/Arabic/Hebrew rendering; installable
+- **Region + language filtering, RTL, PWA** — 15 region/perspective buckets and per-language toggles over whatever the feed contains; first-class Persian/Arabic/Hebrew rendering; installable
 
 ## Stack
 
@@ -42,7 +43,7 @@ GitHub Actions (self-chained, ~every 15 min) Browser (static SPA on GitHub Pages
     roster ◄── sources table (health ──►)       realtime ◄── INSERT/UPDATE events
     fetch feeds (direct → CF proxy)             ArticlePanel ──► Edge Functions
     de-dup vs DB ∪ rejects                        reader (extract, cached)
-    classify (LLM) + shadow pre-filter            translate (LLM, cached)
+    classify: local head → LLM (uncertain)        translate (LLM, cached)
     upsert articles (+body_hash wire marks)
     embed titles (local e5-base)
     assign stories (pgvector RPC) ──► stories

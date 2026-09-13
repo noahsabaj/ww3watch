@@ -14,6 +14,7 @@ export const REGIONS = {
   'Kurdish':             { color: 'bg-purple-600 text-white',  border: 'border-purple-600'  },
   'Turkish':             { color: 'bg-slate-500 text-white',   border: 'border-slate-500'   },
   'Russian':             { color: 'bg-rose-700 text-white',    border: 'border-rose-700'    },
+  'Ukrainian':           { color: 'bg-yellow-500 text-black',  border: 'border-yellow-500'  },
   'Chinese':             { color: 'bg-red-500 text-white',     border: 'border-red-500'     },
   'South Asian':         { color: 'bg-emerald-600 text-white', border: 'border-emerald-600' },
   'East Asian':          { color: 'bg-cyan-600 text-white',    border: 'border-cyan-600'    },

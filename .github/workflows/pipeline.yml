@@ -65,7 +65,8 @@ jobs:
           path: ~/.cache/ww3watch-transformers
           key: me5b-q8-1ec9243
 
-      - run: npm run pipeline
+      - id: run
+        run: npm run pipeline
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -130,6 +131,26 @@ jobs:
           else
             gh issue create --title "Ingestion pipeline failing" --label pipeline-failure \
               --body "The ingestion pipeline failed — see $run_url. The issue will automatically close on a subsequent successful run, or repeat failures will append here."
+          fi
+
+      # A source the run just switched off (AUTO_DISABLE_AFTER consecutive
+      # failures) needs a person: a moved feed URL, a WAF that now blocks the
+      # runner and proxy alike, or a dead outlet. One feed-health issue collects
+      # them; curation is SQL against the sources table, then close it.
+      - name: File feed-health issue for auto-disabled sources
+        if: ${{ !cancelled() && steps.run.outputs.disabled_sources != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISABLED: ${{ steps.run.outputs.disabled_sources }}
+        run: |
+          gh label create feed-health --color FBCA04 --description "Feed sources needing re-curation" --force >/dev/null 2>&1 || true
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body=$(printf 'Auto-disabled after %s consecutive failed fetches (run %s):\n\n%s\n\nFix the feed URL or leave it disabled; re-enable with SQL on the sources table.' "200" "$run_url" "$(echo "$DISABLED" | sed 's/^/- /')")
+          existing=$(gh issue list --label feed-health --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "Feed sources auto-disabled — re-curation needed" --label feed-health --body "$body"
           fi
 
       - name: Resolve alert on success
