@@ -20,7 +20,7 @@ import {
   EMBED_SIM_THRESHOLD,
   EMBED_WINDOW_HOURS,
 } from '../src/lib/server/embeddings'
-import { updateTrending } from '../src/lib/server/trending'
+import { updateTrending, lastTrendingSelectedAt, trendingStuck } from '../src/lib/server/trending'
 import { existingGuids } from '../src/lib/server/dedupe'
 import { selectStaleWriteOffs, staleRejectRow } from '../src/lib/server/backlog'
 import { llmStats } from '../src/lib/server/llm'
@@ -372,6 +372,21 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   stats.llm = { ...llmStats }
   stats.total_ms = Date.now() - startedAt
   console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(timings)}`)
+
+  // Loud failure for STUCK trending — after everything else has persisted, so
+  // it alerts (freshness stays green: articles did land) without costing the
+  // run's work. A single error:* is tolerated; error:* while the live selection
+  // is hours old is not. replace_trending failed every run for four weeks with
+  // only stats.trending saying so, and the site showed no Trending section.
+  const trendingStatus = String(stats.trending ?? '')
+  if (trendingStatus.startsWith('error:')) {
+    const lastSelectedAt = await lastTrendingSelectedAt()
+    if (trendingStuck(trendingStatus, lastSelectedAt, Date.now())) {
+      throw new Error(
+        `trending is stuck: this run reported ${trendingStatus} and the live selection is from ${lastSelectedAt ?? 'never'}`,
+      )
+    }
+  }
 }
 
 async function run(stats: RunStats): Promise<void> {
