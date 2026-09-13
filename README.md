@@ -31,7 +31,7 @@ All free-tier, no provider that pauses idle hobby projects:
 - [GitHub Pages](https://pages.github.com/) — hosting · [GitHub Actions](https://docs.github.com/actions) — scheduled ingestion (also runs as a container, see `Dockerfile`)
 - [Supabase](https://supabase.com/) — Postgres (+pgvector, pg_cron retention) + Realtime + two Deno Edge Functions (`reader`, `translate`)
 - [Transformers.js](https://huggingface.co/docs/transformers.js) — multilingual-e5-base embeddings, locally on the runner (story grouping)
-- [Groq](https://groq.com/) — relevance classification + trending picks · [Cerebras](https://cloud.cerebras.ai/) — on-demand translation
+- [Groq](https://groq.com/) — relevance classification, trending picks, and on-demand translation (any OpenAI-compatible endpoint works; translation can run on its own provider via `TRANSLATE_LLM_*` secrets)
 - [Tailwind CSS v4](https://tailwindcss.com/)
 
 ## Architecture
@@ -76,13 +76,13 @@ One-time setup (all free tier):
 1. **Cerebras** — create an API key at [cloud.cerebras.ai](https://cloud.cerebras.ai/); note the model (`gpt-oss-120b`).
 2. **Supabase**
    - Apply [supabase/migrations](supabase/migrations) in filename order — they build the whole schema from empty, including `articles` / `trending`, their anon-`SELECT` RLS policies, and realtime publication membership. Writes stay service-role only.
-   - Deploy the functions and set their secrets:
+   - The edge functions and their LLM secrets deploy from GitHub ([deploy-functions.yml](.github/workflows/deploy-functions.yml)) once the secrets below exist — the functions' `LLM_*` secrets are synced from the repo's on every deploy, so they can't drift from the pipeline's. To deploy by hand instead:
      ```bash
-     supabase functions deploy reader translate
-     supabase secrets set LLM_BASE_URL=https://api.cerebras.ai/v1 LLM_API_KEY=... LLM_MODEL=gpt-oss-120b
+     supabase functions deploy reader translate rss --no-verify-jwt
+     supabase secrets set LLM_BASE_URL=https://api.groq.com/openai/v1 LLM_API_KEY=... LLM_MODEL=openai/gpt-oss-120b LLM_REASONING_EFFORT=low
      ```
 3. **GitHub**
-   - Repo **Settings → Secrets and variables → Actions** → add: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (the `sb_secret_…` key), `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, and (optional) `FEED_PROXY_URL` + `FEED_PROXY_SECRET`.
+   - Repo **Settings → Secrets and variables → Actions** → add: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (the `sb_secret_…` key), `SUPABASE_ACCESS_TOKEN` (function deploys), `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, and (optional) `FEED_PROXY_URL` + `FEED_PROXY_SECRET`. Optional `TRANSLATE_LLM_BASE_URL` / `TRANSLATE_LLM_API_KEY` / `TRANSLATE_LLM_MODEL` point translation at a different provider than the pipeline (it sends a few large requests rather than many small ones, so a bigger per-request token cap matters more than RPM).
    - **Settings → Pages** → Source = **GitHub Actions**.
    - Push to `main`: [deploy.yml](.github/workflows/deploy.yml) publishes the site; [pipeline.yml](.github/workflows/pipeline.yml) ingests every 15 min (or run it manually via **Actions → Ingestion pipeline → Run workflow**).
 4. **Feed proxy (optional but recommended)** — many news-site WAFs block GitHub Actions' datacenter IPs, killing most feeds. The pipeline therefore fetches **proxy-first** (with a direct fallback) through the Cloudflare Worker in [cloudflare/feed-proxy.js](cloudflare/feed-proxy.js) when configured. Setup:

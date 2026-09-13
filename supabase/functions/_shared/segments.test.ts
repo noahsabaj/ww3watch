@@ -1,5 +1,14 @@
 import { assertEquals } from 'jsr:@std/assert@1'
-import { countEchoed, selectWithinBudget } from './segments.ts'
+import {
+  countEchoed,
+  selectWithinBudget,
+  outputTokenBudget,
+  isShortRequest,
+  MAX_OUTPUT_TOKENS,
+  MIN_OUTPUT_TOKENS,
+  SHORT_TITLE_CHARS,
+  SHORT_CONTENT_CHARS,
+} from './segments.ts'
 
 Deno.test('selectWithinBudget takes everything when it fits', () => {
   assertEquals(selectWithinBudget(['aaa', 'bbb', 'ccc'], 100, 50), [0, 1, 2])
@@ -46,4 +55,19 @@ Deno.test('countEchoed reports a fully untranslated tail', () => {
 
 Deno.test('countEchoed is zero when everything was translated', () => {
   assertEquals(countEchoed(['a', 'b'], ['A', 'B']), 0)
+})
+
+Deno.test('outputTokenBudget scales with the input and stays inside the ceiling', () => {
+  assertEquals(outputTokenBudget(0), MIN_OUTPUT_TOKENS)
+  assertEquals(outputTokenBudget(-5), MIN_OUTPUT_TOKENS) // defensive: never below the floor
+  assertEquals(outputTokenBudget(300), MIN_OUTPUT_TOKENS + 150) // a headline stays tiny
+  assertEquals(outputTokenBudget(12_000), 6512) // a full article well under the cap
+  assertEquals(outputTokenBudget(1_000_000), MAX_OUTPUT_TOKENS)
+})
+
+Deno.test('isShortRequest is decided by size alone', () => {
+  assertEquals(isShortRequest('Headline', 'A two-sentence summary.'), true)
+  assertEquals(isShortRequest('Headline', 'x'.repeat(SHORT_CONTENT_CHARS)), true)
+  assertEquals(isShortRequest('Headline', 'x'.repeat(SHORT_CONTENT_CHARS + 1)), false)
+  assertEquals(isShortRequest('t'.repeat(SHORT_TITLE_CHARS + 1), 'short'), false)
 })

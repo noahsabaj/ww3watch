@@ -1,8 +1,9 @@
 // Supabase Edge Function: in-panel translation (Deno).
 // Translates an article from its source language into the caller's chosen
-// reading language (default English) via the OpenAI-compatible LLM (Cerebras),
-// caching results in public.article_translations so identical inputs never
-// re-burn LLM quota.
+// reading language (default English) via the OpenAI-compatible LLM configured
+// in LLM_* (synced from the repo's secrets by deploy-functions.yml), caching
+// results in public.article_translations so identical inputs never re-burn LLM
+// quota.
 //
 // Two request modes:
 //  - SEGMENT mode (current client): { title, segments: string[] } — the client
@@ -11,8 +12,12 @@
 //    The LLM only ever sees plain text and returns an index-keyed JSON object
 //    (parsed tolerantly — missing keys keep the original), so it never emits
 //    load-bearing structure.
-//  - LEGACY mode (N-1 cached PWA clients): { title, content: string } — a single
-//    plain-text blob in, { title, content } out.
+//  - PLAIN mode: { title, content: string } — a single plain-text blob in,
+//    { title, content } out. The feed card's headline+summary translation and
+//    the reader's failed-extraction fallback both use it (and N-1 cached PWA
+//    clients still send it as the legacy shape). A SHORT plain request — judged
+//    by size, never by a client flag — draws on a separate, larger rate-limit
+//    bucket because it costs a few hundred tokens, not a few thousand.
 //
 // verify_jwt is off, so the abuse control is the articles.url gate + per-IP rate
 // limiting (see _shared/ratelimit.ts).
@@ -22,51 +27,76 @@ import { serviceClient } from '../_shared/client.ts'
 import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
 import { sha256Hex } from '../_shared/hash.ts'
 import { isSupportedTarget, translationCacheParts, LANG_NAMES } from '../_shared/lang.ts'
-import { countEchoed, selectWithinBudget } from '../_shared/segments.ts'
+import { countEchoed, selectWithinBudget, outputTokenBudget, isShortRequest } from '../_shared/segments.ts'
 
 const supabase = serviceClient()
 
 const LLM_BASE_URL = Deno.env.get('LLM_BASE_URL')!
 const LLM_API_KEY = Deno.env.get('LLM_API_KEY')!
 const LLM_MODEL = Deno.env.get('LLM_MODEL')!
+// gpt-oss-class models think before answering and that spend comes out of
+// max_tokens; the pipeline runs them at 'low' for the same reason. Unset for
+// providers/models that don't take the parameter (a 400 also degrades to a
+// bare request below, so a wrong value can't take translation down).
+const LLM_REASONING_EFFORT = Deno.env.get('LLM_REASONING_EFFORT') || null
 
-// Legacy plain-text cap. 8000 chars keeps worst-case output under max_tokens.
+// Plain-text cap. 8000 chars keeps worst-case output under the token ceiling.
 const MAX_CONTENT_CHARS = 8000
 // Segment-mode bounds.
 //
-// The real ceiling is max_tokens on the OUTPUT (8000, below), not a count of
-// segments. The old 100-segment cap was a poor proxy for it in both directions:
-// it silently cut long articles in half, while 100 large segments could still
-// overrun the budget and come back finish_reason=length — a hard failure.
+// The real ceiling is the OUTPUT token budget (outputTokenBudget, ≤8000), not a
+// count of segments. The old 100-segment cap was a poor proxy for it in both
+// directions: it silently cut long articles in half, while 100 large segments
+// could still overrun the budget and come back finish_reason=length — a hard
+// failure.
 //
 // So budget CHARACTERS instead, sized for the worst case rather than English:
 // 8000 output tokens is roughly 30k characters of Latin script but only ~12-16k
 // of Arabic, Persian or CJK, and the JSON envelope costs another ~10%. Segments
 // past the budget are ECHOED verbatim, never dropped, so the client can splice
 // 1:1 and say how much was left untranslated.
+//
+// A provider's per-REQUEST token cap (free tiers pre-check tokens-per-minute
+// against the whole request) can sit below this budget; a 413 halves it and
+// retries, so a long article degrades to "partly translated, remainder
+// reported" instead of "failed" — see BUDGET_SHRINK_ATTEMPTS.
 const MAX_TRANSLATE_CHARS = 12_000
 const MAX_SEGMENT_CHARS = 8000
+const BUDGET_SHRINK_ATTEMPTS = 3
 const MAX_BODY_BYTES = 200 * 1024
-// Transient LLM errors (Cerebras 429/5xx, network blips) fail in ~300ms; retry a
-// few times with backoff so a single transient blip doesn't surface as "failed".
+// Transient LLM errors (429/5xx, network blips) fail in ~300ms; retry a few
+// times with backoff so a single transient blip doesn't surface as "failed".
 const LLM_ATTEMPTS = 3
-// Each uncached call burns LLM quota; 20/h is far beyond human reading pace.
+// Each uncached call burns LLM quota. A full article at 20/h is far beyond
+// human reading pace; a headline+summary is ~1/20th the tokens, and a reader
+// scanning a feed of foreign-language cards translates dozens, so it gets its
+// own bucket — otherwise 20 card taps would lock the reader out of the panel.
 const RATE_LIMIT_PER_HOUR = 20
+const SHORT_RATE_LIMIT_PER_HOUR = 120
 
-// One LLM round-trip with json_object mode (degrading once to free-form on a 400),
-// retried on TRANSIENT failures only (network/timeout, 429, 5xx, empty body).
-// Deterministic failures (length truncation, non-400 4xx) don't retry. Returns
-// the cleaned response text, or null after exhausting attempts.
-async function runLLM(systemPrompt: string, userContent: string): Promise<string | null> {
-  const call = (jsonMode: boolean) =>
+type LLMResult = { text: string } | { error: 'too_large' | 'failed' }
+
+// Matches the provider phrasings for "this single request exceeds a token cap"
+// when they come back as a 400 rather than a 413 (context length, TPM pre-check).
+const TOO_LARGE_RE = /too large|context[_ ]length|maximum context|too many tokens|tokens? per minute/i
+
+// One LLM round-trip with json_object mode + reasoning_effort (degrading once
+// to a bare request on a 400), retried on TRANSIENT failures only (network/
+// timeout, 429, 5xx, empty body). Deterministic failures (length truncation,
+// non-400 4xx) don't retry. A request the provider refuses for SIZE is reported
+// as such so the caller can shrink and try again; nothing else is retried
+// deterministically.
+async function runLLM(systemPrompt: string, userContent: string, maxTokens: number): Promise<LLMResult> {
+  const call = (extras: boolean) =>
     fetch(`${LLM_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LLM_API_KEY}` },
       body: JSON.stringify({
         model: LLM_MODEL,
         temperature: 0,
-        max_tokens: 8000,
-        ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+        max_tokens: maxTokens,
+        ...(extras ? { response_format: { type: 'json_object' } } : {}),
+        ...(extras && LLM_REASONING_EFFORT ? { reasoning_effort: LLM_REASONING_EFFORT } : {}),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },
@@ -83,7 +113,14 @@ async function runLLM(systemPrompt: string, userContent: string): Promise<string
     try {
       res = await call(true)
       if (res.status === 400) {
-        console.error('[translate] response_format rejected (400), retrying without')
+        // Either the model rejects response_format/reasoning_effort, or the
+        // request itself is oversized — only the bare retry tells them apart.
+        const body = await res.text().catch(() => '')
+        if (TOO_LARGE_RE.test(body)) {
+          console.error('[translate] request too large (400):', body.slice(0, 300))
+          return { error: 'too_large' }
+        }
+        console.error('[translate] extras rejected (400), retrying bare:', body.slice(0, 300))
         res = await call(false)
       }
     } catch (err) {
@@ -93,7 +130,11 @@ async function runLLM(systemPrompt: string, userContent: string): Promise<string
     }
 
     if (!res.ok) {
-      console.error(`[translate] LLM status ${res.status} (attempt ${attempt + 1})`)
+      // The body names the actual limit ("insufficient balance", "TPM: Limit X,
+      // Requested Y"); the status alone left the last outage undiagnosable.
+      const body = await res.text().catch(() => '')
+      console.error(`[translate] LLM status ${res.status} (attempt ${attempt + 1}):`, body.slice(0, 300))
+      if (res.status === 413 || (res.status === 400 && TOO_LARGE_RE.test(body))) return { error: 'too_large' }
       if ((res.status === 429 || res.status >= 500) && !last) {
         // Honor Retry-After on a 429 (capped at 4s) so retries actually escape a
         // brief rate-limit window instead of hammering it; else linear backoff.
@@ -101,7 +142,7 @@ async function runLLM(systemPrompt: string, userContent: string): Promise<string
         await sleep(res.status === 429 && ra > 0 ? Math.min(ra, 4) * 1000 : 500 * (attempt + 1))
         continue
       }
-      return null // non-retryable 4xx, or out of attempts
+      return { error: 'failed' } // non-retryable 4xx, or out of attempts
     }
 
     let data: { choices?: Array<{ finish_reason?: string; message?: { content?: string } }> }
@@ -113,17 +154,17 @@ async function runLLM(systemPrompt: string, userContent: string): Promise<string
     }
     if (data.choices?.[0]?.finish_reason === 'length') {
       console.error('[translate] output truncated at max_tokens')
-      return null // deterministic at temp 0 — retrying won't help
+      return { error: 'failed' } // deterministic at temp 0 — retrying won't help
     }
     const raw = (data.choices?.[0]?.message?.content ?? '')
       .trim()
       .replace(/^```[a-z]*\n?/, '')
       .replace(/\n?```$/, '')
       .trim()
-    if (raw) return raw
+    if (raw) return { text: raw }
     if (!last) await sleep(500 * (attempt + 1)) // empty content → retry
   }
-  return null
+  return { error: 'failed' }
 }
 
 Deno.serve(async (req) => {
@@ -147,7 +188,7 @@ Deno.serve(async (req) => {
     return json({ error: 'invalid_body' }, 400)
   }
 
-  // Mode: SEGMENT if a segments array is present, else LEGACY plain text.
+  // Mode: SEGMENT if a segments array is present, else PLAIN text.
   const segMode = Array.isArray(body.segments)
   // Every segment is kept — the request body is already bounded by MAX_BODY_BYTES,
   // and the output array must stay index-aligned with the input so the client can
@@ -170,7 +211,10 @@ Deno.serve(async (req) => {
       : json({ title, content, untranslated: true })
   }
 
-  const limited = await rateLimited(supabase, req, 'translate', RATE_LIMIT_PER_HOUR)
+  const short = !segMode && isShortRequest(title, content!)
+  const limited = short
+    ? await rateLimited(supabase, req, 'translate_short', SHORT_RATE_LIMIT_PER_HOUR)
+    : await rateLimited(supabase, req, 'translate', RATE_LIMIT_PER_HOUR)
   if (limited) return limited
 
   // Gate: must reference an article the pipeline ingested.
@@ -213,16 +257,26 @@ Deno.serve(async (req) => {
     const systemPrompt = `Translate each numbered text segment from language code "${lang}" to ${targetName}.
 Return ONLY a JSON object whose keys are the segment numbers as strings ("0","1",…) with the translated plain text as values, plus a "title" key holding the translated title.
 Translate every segment; output plain text only (no markdown, no HTML, no wrapping). Example: {"title":"…","0":"…","1":"…"}`
-    // Choose what fits the output budget, keeping ORIGINAL indices so the reply
-    // stays index-aligned with inSegments. Everything not chosen is echoed.
-    const sendIdx = selectWithinBudget(inSegments, MAX_TRANSLATE_CHARS, MAX_SEGMENT_CHARS)
-    const userContent = `title: ${title}\n` + sendIdx.map((i) => `${i}: ${inSegments[i]}`).join('\n')
 
-    const raw = await runLLM(systemPrompt, userContent)
-    if (raw === null) return json({ error: 'translation_failed' }, 502)
+    // Choose what fits the output budget, keeping ORIGINAL indices so the reply
+    // stays index-aligned with inSegments. Everything not chosen is echoed. If
+    // the provider refuses the request for size, halve the budget and retry:
+    // partial-with-a-notice beats a hard failure on a long article.
+    let budget = MAX_TRANSLATE_CHARS
+    let sendIdx: number[] = []
+    let result: LLMResult = { error: 'failed' }
+    for (let shrink = 0; shrink < BUDGET_SHRINK_ATTEMPTS; shrink++) {
+      sendIdx = selectWithinBudget(inSegments, budget, MAX_SEGMENT_CHARS)
+      const userContent = `title: ${title}\n` + sendIdx.map((i) => `${i}: ${inSegments[i]}`).join('\n')
+      result = await runLLM(systemPrompt, userContent, outputTokenBudget(userContent.length))
+      if (!('error' in result) || result.error !== 'too_large' || sendIdx.length === 0) break
+      budget = Math.floor(budget / 2)
+      console.error(`[translate] shrinking segment budget to ${budget} chars`)
+    }
+    if ('error' in result) return json({ error: 'translation_failed' }, 502)
     let obj: Record<string, unknown>
     try {
-      obj = JSON.parse(raw)
+      obj = JSON.parse(result.text)
     } catch {
       return json({ error: 'translation_failed' }, 502)
     }
@@ -260,8 +314,8 @@ Translate every segment; output plain text only (no markdown, no HTML, no wrappi
     return json({ title: outTitle, segments: outSegments, untranslated: countEchoed(inSegments, outSegments) })
   }
 
-  // LEGACY plain-text mode. The HTML clause stays for N-1 clients that still send
-  // HTML for a session after this deploys.
+  // PLAIN-text mode. The HTML clause stays for N-1 clients that still send HTML
+  // for a session after a deploy.
   const systemPrompt = `Translate the following article from language code "${lang}" to ${targetName}.
 Return ONLY a JSON object with two fields: "title" (string) and "content" (string).
 If the content contains HTML tags, preserve all HTML tags exactly as-is — only translate the visible text between tags.
@@ -269,13 +323,13 @@ Otherwise the content is plain-text paragraphs separated by blank lines — keep
 No markdown, no explanation, no wrapping.`
   const userContent = JSON.stringify({ title, content })
 
-  const raw = await runLLM(systemPrompt, userContent)
-  if (raw === null) return json({ error: 'translation_failed' }, 502)
+  const result = await runLLM(systemPrompt, userContent, outputTokenBudget(userContent.length))
+  if ('error' in result) return json({ error: 'translation_failed' }, 502)
   let parsed: { title?: unknown; content?: unknown }
   try {
-    parsed = JSON.parse(raw)
+    parsed = JSON.parse(result.text)
   } catch {
-    console.error('[translate] JSON parse failed:', raw.slice(0, 200))
+    console.error('[translate] JSON parse failed:', result.text.slice(0, 200))
     return json({ error: 'translation_failed' }, 502)
   }
   if (typeof parsed.title !== 'string' || typeof parsed.content !== 'string') {
