@@ -6,6 +6,7 @@
   import { prefs, setReadingLang } from '$lib/prefs.svelte'
   import { clock } from '$lib/now.svelte'
   import { supabase } from '$lib/supabase'
+  import { failureLabel, failureReason, type TranslateFailure } from '$lib/translate'
   import { cleanHtml } from '$lib/sanitize-html'
   import { base } from '$app/paths'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
@@ -32,7 +33,7 @@
     // isHtml: content is reassembled article HTML (images/structure preserved,
     // rendered via cleanHtml); otherwise plain-text paragraphs.
     | { status: 'done'; title: string; content: string; isHtml: boolean; untranslated: number }
-    | { status: 'failed' }
+    | { status: 'failed'; reason: TranslateFailure }
 
   // Upper bound on what we'll ship in one request — a guard on body size
   // (the function rejects >200KB), NOT a translation cap. How much actually
@@ -51,7 +52,7 @@
 
   const translateLabel = $derived(
     translation.status === 'loading' ? 'Translating…'
-    : translation.status === 'failed' ? 'Translation failed — tap to retry'
+    : translation.status === 'failed' ? failureLabel(translation.reason)
     : showTranslated ? 'Show original'
     : 'Translate'
   )
@@ -226,7 +227,10 @@
           const { data, error } = await supabase.functions.invoke('translate', {
             body: { title, segments, lang: article.source_lang, url: article.url, target },
           })
-          if (error || !data?.title || !Array.isArray(data?.segments)) throw new Error('Translation failed')
+          // Rethrow the supabase error itself: its status is what tells a rate
+          // limit ("try later") apart from a provider failure ("tap to retry").
+          if (error) throw error
+          if (!data?.title || !Array.isArray(data?.segments)) throw new Error('Translation failed')
           // 1:1 by index; a missing translation leaves the original text in place.
           nodes.forEach((node, i) => {
             const t = data.segments[i]
@@ -250,11 +254,12 @@
       const { data, error } = await supabase.functions.invoke('translate', {
         body: { title, content: plain, lang: article.source_lang, url: article.url, target },
       })
-      if (error || !data?.title || typeof data?.content !== 'string') throw new Error('Translation failed')
+      if (error) throw error
+      if (!data?.title || typeof data?.content !== 'string') throw new Error('Translation failed')
       translation = { status: 'done', title: data.title, content: data.content, isHtml: false, untranslated: 0 }
       showTranslated = true
-    } catch {
-      translation = { status: 'failed' }
+    } catch (err) {
+      translation = { status: 'failed', reason: failureReason(err) }
     }
   }
 

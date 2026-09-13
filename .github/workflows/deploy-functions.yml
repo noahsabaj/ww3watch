@@ -26,6 +26,35 @@ jobs:
         with:
           version: latest
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      # The functions' LLM credentials used to be set by hand (`supabase secrets
+      # set`) and drifted from the pipeline's: translation ran on a separately
+      # provisioned key that quietly went 402 while ingestion carried on. Sync
+      # them from the repo's secrets on every deploy so both halves run on the
+      # same provider — or on a dedicated one, when TRANSLATE_LLM_* are set
+      # (translation is a different workload: a few large requests, not many
+      # small ones, so a provider with a bigger per-request token cap can pay off).
+      - name: Sync LLM secrets from the repo's secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          LLM_BASE_URL: ${{ secrets.TRANSLATE_LLM_BASE_URL || secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.TRANSLATE_LLM_API_KEY || secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.TRANSLATE_LLM_MODEL || secrets.LLM_MODEL }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::warning::SUPABASE_ACCESS_TOKEN not set — skipping secrets sync."
+            exit 0
+          fi
+          if [ -z "$LLM_API_KEY" ] || [ -z "$LLM_BASE_URL" ] || [ -z "$LLM_MODEL" ]; then
+            echo "::warning::LLM_* secrets incomplete — leaving the functions' existing LLM secrets untouched."
+            exit 0
+          fi
+          # gpt-oss-class models spend completion tokens thinking; 'low' keeps that
+          # inside the translator's output budget (the function drops the parameter
+          # on a 400, so a model that doesn't take it is unaffected).
+          supabase secrets set --project-ref qusjbpknlduuklnfciws \
+            LLM_BASE_URL="$LLM_BASE_URL" LLM_API_KEY="$LLM_API_KEY" LLM_MODEL="$LLM_MODEL" \
+            LLM_REASONING_EFFORT=low
+
       # Gate at the SHELL level (the secrets context isn't available in `if:`).
       # Degrades gracefully to a warning if the token isn't set yet, so a
       # functions change never hard-fails before SUPABASE_ACCESS_TOKEN exists.

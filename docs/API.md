@@ -51,12 +51,19 @@ Readability), cached in `article_content` and SSRF-guarded on every redirect hop
 Translates an article's title + body into a target language. Text-node-level, so
 images and inline markup are preserved; same-language requests short-circuit.
 
-- **Input (JSON):** `{ title, content, lang, url, target }` — `lang` is the source
-  language code, `target` is one of the supported reading languages (see
+- **Input (JSON):** `{ title, lang, url, target }` plus either `segments: string[]`
+  (the article's text blocks; the reader panel) or `content: string` (plain text;
+  the feed card's headline + summary). `lang` is the source language code,
+  `target` is one of the supported reading languages (see
   [`_shared/lang.ts`](../supabase/functions/_shared/lang.ts)).
-- **Output (JSON):** `{ title, content }` in the target language.
-- **Errors:** `400` (bad target / oversized body), `429` (rate limited, ~20/h per
-  IP), `502` (translation provider failure / partial response — not cached).
+- **Output (JSON):** `{ title, segments, untranslated }` or `{ title, content }` in
+  the target language. `segments` is index-aligned with the input; `untranslated`
+  counts segments echoed in the original language because the article exceeded
+  the provider's per-request budget (the tail of a long article).
+- **Errors:** `400` (bad target / oversized body), `404 unknown_article`, `429`
+  (rate limited per IP: ~20/h for articles, ~120/h for short title+summary
+  requests — decided by size, not by the caller), `502` (translation provider
+  failure / partial response — not cached).
 
 ---
 

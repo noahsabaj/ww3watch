@@ -3,8 +3,14 @@
   import { wireDuplicateIds, storyTimeline } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_COLORS, REGION_BORDER } from '$lib/types'
-  import { timeAgo, langTag, isBreaking, offsetLabel } from '$lib/utils'
+  import { timeAgo, langTag, isBreaking, offsetLabel, isRtlLang } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
+  import { prefs } from '$lib/prefs.svelte'
+  import {
+    translateHeadline, cachedHeadline, failureLabel, failureReason,
+    type HeadlineTranslation, type TranslateFailure,
+  } from '$lib/translate'
+  import { untrack } from 'svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
 
@@ -13,6 +19,78 @@
 
   const rep = $derived(cluster.representative)
   const isSingle = $derived(cluster.sourceCount === 1)
+
+  // ── Opt-in headline translation ─────────────────────────────────────────────
+  // Translation is the one place model prose reaches the feed, so it is a tap
+  // away, labeled, and one more tap from the original (docs/CONVENTIONS.md).
+  // Offered only when the headline isn't already in the reading language.
+  const canTranslate = $derived(rep.source_lang !== prefs.readingLang)
+  type HeadlineState =
+    | { status: 'idle' }
+    | { status: 'loading' }
+    | { status: 'done'; url: string; target: string; result: HeadlineTranslation }
+    | { status: 'failed'; reason: TranslateFailure }
+  let headline = $state<HeadlineState>({ status: 'idle' })
+  let showTranslated = $state(false)
+  // What's on screen: the translation, only while it is for THIS headline (the
+  // representative can change under a realtime regroup) in the CURRENT reading
+  // language, and the reader hasn't flipped back to the original.
+  const shown = $derived(
+    showTranslated && headline.status === 'done' && headline.url === rep.url && headline.target === prefs.readingLang
+      ? headline.result
+      : null,
+  )
+  const titleText = $derived(shown ? shown.title : rep.title)
+  const summaryText = $derived(shown ? shown.summary : rep.summary)
+  // Translated text renders in the reading language's direction (the original
+  // keeps dir="auto").
+  const translatedDir = $derived(isRtlLang(prefs.readingLang) ? 'rtl' : 'ltr')
+  const translateLabel = $derived(
+    headline.status === 'loading' ? 'Translating…'
+    : headline.status === 'failed' ? failureLabel(headline.reason)
+    : shown ? 'Translated · show original'
+    : 'Translate',
+  )
+  const hasActions = $derived(!isSingle || canTranslate)
+
+  // A headline the reader already translated this session comes back translated
+  // when its card remounts (filtered away and back) or the reading language
+  // returns to one it was translated into — the opt-in was given; asking for
+  // it again is just friction.
+  $effect(() => {
+    const target = prefs.readingLang
+    const url = rep.url
+    const hit = cachedHeadline(rep, target)
+    if (!hit) return
+    const current = untrack(() => headline)
+    if (current.status === 'done' && current.url === url && current.target === target) return
+    headline = { status: 'done', url, target, result: hit }
+    showTranslated = true
+  })
+
+  async function translate() {
+    if (headline.status === 'loading') return
+    const target = prefs.readingLang
+    const url = rep.url
+    if (headline.status === 'done' && headline.url === url && headline.target === target) {
+      showTranslated = !showTranslated
+      return
+    }
+    headline = { status: 'loading' }
+    try {
+      const result = await translateHeadline(rep, target)
+      // Staleness guard: the representative or reading language moved on while
+      // the request was in flight — don't show a translation of something else.
+      if (rep.url !== url || prefs.readingLang !== target) {
+        headline = { status: 'idle' }
+        return
+      }
+      headline = { status: 'done', url, target, result }
+      showTranslated = true
+    } catch (err) {
+      headline = { status: 'failed', reason: failureReason(err) }
+    }
+  }
   const regionDots = $derived(
     [...new Set(cluster.articles.map(a => a.source_region))].slice(0, 5)
   )
@@ -81,7 +159,7 @@
     href={rep.url}
     target="_blank"
     rel="noopener noreferrer"
-    dir="auto"
+    dir={shown ? translatedDir : 'auto'}
     class="block text-white font-semibold leading-snug hover:text-blue-400 transition-colors mb-1 cursor-pointer"
     onclick={(e) => {
       // Plain left-click opens the reader; modified clicks (ctrl/cmd/shift/alt)
@@ -92,26 +170,39 @@
       }
     }}
   >
-    {rep.title}
+    {titleText}
   </a>
 
   <!-- Summary -->
-  {#if rep.summary}
-    <p dir="auto" class="text-sm text-gray-400 line-clamp-2 {isSingle ? '' : 'mb-2'}">{rep.summary}</p>
+  {#if summaryText}
+    <p dir={shown ? translatedDir : 'auto'} class="text-sm text-gray-400 line-clamp-2 {hasActions ? 'mb-2' : ''}">{summaryText}</p>
   {/if}
 
-  <!-- Expand toggle -->
-  {#if !isSingle}
-    <button
-      onclick={() => expanded = !expanded}
-      aria-expanded={expanded}
-      aria-controls="cluster-sources-{cluster.id}"
-      class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors mt-1"
-    >
-      <span class="inline-block transition-transform {expanded ? 'rotate-180' : ''}">▾</span>
-      {expanded ? 'Hide sources' : `${cluster.sourceCount} sources covered this`}
-    </button>
+  <!-- Card actions: source-list toggle (multi-source stories) + opt-in translation -->
+  {#if hasActions}
+    <div class="flex items-center gap-3 mt-1 text-xs">
+      {#if !isSingle}
+        <button
+          onclick={() => expanded = !expanded}
+          aria-expanded={expanded}
+          aria-controls="cluster-sources-{cluster.id}"
+          class="flex items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          <span class="inline-block transition-transform {expanded ? 'rotate-180' : ''}">▾</span>
+          {expanded ? 'Hide sources' : `${cluster.sourceCount} sources covered this`}
+        </button>
+      {/if}
+      {#if canTranslate}
+        <button
+          onclick={translate}
+          aria-busy={headline.status === 'loading'}
+          class="transition-colors {headline.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
+        >{translateLabel}</button>
+      {/if}
+    </div>
+  {/if}
 
+  {#if !isSingle}
     {#if expanded}
       <div id="cluster-sources-{cluster.id}" class="mt-2 border-t border-gray-800 pt-2">
         {#if timeline.firstAt}

@@ -59,3 +59,30 @@ export function countEchoed(input: string[], output: string[]): number {
   }
   return n
 }
+
+// ── Output budget ───────────────────────────────────────────────────────────
+// Providers that pre-check tokens-per-minute count max_tokens as REQUESTED
+// tokens, so a fixed 8000 made every call — a 30-character headline included —
+// look like an 8k-token request and bounce off an 8k TPM tier with a 413. Size
+// the ceiling to the input instead: a translation is about as long as its
+// source, and 2 chars/token is a worst case for non-Latin targets, so
+// chars/2 is a generous output estimate. The floor covers the JSON envelope and
+// a reasoning model's hidden thinking tokens, which draw from the same budget.
+export const MAX_OUTPUT_TOKENS = 8000
+export const MIN_OUTPUT_TOKENS = 512
+
+export function outputTokenBudget(inputChars: number): number {
+  return Math.min(MAX_OUTPUT_TOKENS, MIN_OUTPUT_TOKENS + Math.ceil(Math.max(0, inputChars) / 2))
+}
+
+// ── Short requests ──────────────────────────────────────────────────────────
+// A headline + summary (the feed card's translate control, and the reader's
+// fallback when extraction fails) costs a few hundred tokens — a different
+// order of magnitude from a full article. Judged by SIZE, not a client flag,
+// so the cheaper bucket can't be claimed for an expensive request.
+export const SHORT_TITLE_CHARS = 400
+export const SHORT_CONTENT_CHARS = 1500
+
+export function isShortRequest(title: string, content: string): boolean {
+  return title.length <= SHORT_TITLE_CHARS && content.length <= SHORT_CONTENT_CHARS
+}

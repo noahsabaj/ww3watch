@@ -169,3 +169,25 @@ test('wire reprints are badged so the source count is not overstated', async ({ 
   await wireCard.getByRole('button', { name: /sources covered this/ }).click()
   await expect(wireCard.getByText('wire', { exact: true })).toHaveCount(1)
 })
+
+// ── Feed-card translation ───────────────────────────────────────────────────
+// The card offers translation only for a headline that isn't already in the
+// reading language — the same gate as the reader panel. Both directions are
+// asserted so the control can't be accidentally always-on or always-off.
+
+test('feed cards offer translation only for headlines outside the reading language', async ({ page }) => {
+  // Playwright's browser reports en-US, so the reading language defaults to English.
+  const ruCard = page.locator('article').filter({ has: page.getByText('RU', { exact: true }) }).first()
+  await expect(ruCard.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
+  // The wire story is English on every member — nothing to translate into English.
+  const enCard = page.locator('article', { hasText: 'Agency copy: ceasefire talks resume' }).first()
+  await expect(enCard).toBeVisible()
+  await expect(enCard.getByRole('button', { name: 'Translate', exact: true })).toHaveCount(0)
+
+  // Flip the reading language: the gate flips with it.
+  await page.addInitScript(() => localStorage.setItem('reading-lang', 'ru'))
+  await page.reload()
+  await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
+  await expect(ruCard.getByRole('button', { name: 'Translate', exact: true })).toHaveCount(0)
+  await expect(enCard.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
+})
