@@ -575,10 +575,34 @@ async function run(stats: RunStats): Promise<void> {
   // Judged against batches ATTEMPTED, not all batches. Ones deferred for budget
   // were never sent, so counting them as failures would declare the LLM down on
   // exactly the busy runs where it is merely slow.
+  //
+  // One failed batch is not an outage. With the relevance head most runs send a
+  // single batch, so "all attempted batches failed" became "one 5xx from the
+  // provider", which filed a failure issue every time. A single-batch run only
+  // counts as down when the PREVIOUS run's batches all failed too — a real
+  // outage shows up on the second 15-minute run, a hiccup never does. Runs
+  // that attempted two or more batches still fail on their own evidence.
   const attemptedBatches = totalBatches - skippedBatches
-  if (attemptedBatches > 0 && failedBatches === attemptedBatches) {
+  const allFailed = attemptedBatches > 0 && failedBatches === attemptedBatches
+  stats.cls_all_failed = allFailed
+  if (allFailed && (attemptedBatches >= 2 || (await previousRunAllBatchesFailed()))) {
     throw new Error(`all ${attemptedBatches} attempted classify batches failed — LLM appears down (relevant=${articles.length})`)
   }
+}
+
+// Did the last recorded run also lose every classify batch it attempted?
+// Read from pipeline_runs.stats so the guard has memory across runs. Unknown
+// (no prior row, query error) reads as false: the guard errs toward not alerting
+// on one run's evidence, which is the whole point of consulting it.
+async function previousRunAllBatchesFailed(): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from('pipeline_runs')
+    .select('stats')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error || !data) return false
+  return (data.stats as Record<string, unknown> | null)?.cls_all_failed === true
 }
 
 async function main() {
