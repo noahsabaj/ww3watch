@@ -14,6 +14,7 @@
 import { fetchFeed, FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
 import type { Feed } from '../src/lib/types'
 import { classifyArticles } from '../src/lib/server/classify'
+import { jevEnabled, partitionByJev, JEV_ACCEPT_ABOVE, JEV_REJECT_BELOW } from '../src/lib/server/jev-classify'
 import {
   embedTitles,
   shouldEmbed,
@@ -57,6 +58,12 @@ const HEAD_POOL_CAP = Number(process.env.HEAD_POOL_CAP || '') || 2000
 // Share of confident head verdicts that still get an LLM verdict, so the head's
 // live agreement is measured every run (stats.cls_head.audit) instead of
 // trusted from its training holdout. 3% of ~2000 is ~60 titles: one batch.
+// Jev (TypeSafe) judges up to this many of the still-unsettled articles per run.
+// No daily cap and ~150ms a call, so the bound is wall-clock, not quota.
+const JEV_POOL_CAP = Number(process.env.JEV_POOL_CAP || '') || 2000
+// Share of Jev's confident verdicts that still go to the LLM, so its live
+// agreement is measured every run (stats.cls_jev.audit_agreement).
+const JEV_AUDIT_RATE = Number(process.env.JEV_AUDIT_RATE || '') || 0.05
 const HEAD_AUDIT_RATE = Number(process.env.HEAD_AUDIT_RATE || '') || 0.03
 // Consecutive failed fetches after which a source is switched off. With a run
 // every ~15 min this is roughly two days of solid failure — a moved feed URL or
@@ -330,7 +337,7 @@ async function checkOpsHealth(stats: RunStats): Promise<void> {
 // the negatives class, so a mislabelled row would train the head against a
 // verdict no model ever gave (or against its own).
 async function writeRejects(
-  rows: Array<{ guid: string; title: string | null; source_id: string | null; lang: string | null; reason: 'llm' | 'stale' | 'head' }>,
+  rows: Array<{ guid: string; title: string | null; source_id: string | null; lang: string | null; reason: 'llm' | 'stale' | 'head' | 'jev' }>,
 ): Promise<void> {
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const batch = rows.slice(i, i + UPSERT_BATCH)
@@ -491,6 +498,41 @@ async function run(stats: RunStats): Promise<void> {
     deferred = ordered.slice(MAX_CLASSIFY_PER_RUN)
   }
 
+  // 3b. Jev: a second routing tier over everything still unsettled. It has no
+  //     daily token cap, so it takes the whole uncertain band (not just the
+  //     LLM's per-run cap) and only what Jev is itself unsure about — plus a
+  //     small audit slice — goes on to the LLM. Off without TYPESAFE_API_KEY.
+  let jevAccept: typeof ordered = []
+  let jevReject: typeof ordered = []
+  let jevAudit: Map<(typeof ordered)[number], 'accept' | 'reject' | 'uncertain'> = new Map()
+  if (jevEnabled()) {
+    const unsettled = [...toClassify, ...deferred]
+    const pool = unsettled.slice(0, JEV_POOL_CAP)
+    const part = await timed('jev', () =>
+      partitionByJev(pool, { auditRate: JEV_AUDIT_RATE, deadlineMs: startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS) }),
+    )
+    jevAccept = part.accept
+    jevReject = part.reject
+    jevAudit = part.audit
+    const forLlm = [...part.uncertain].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
+    toClassify = forLlm.slice(0, MAX_CLASSIFY_PER_RUN)
+    deferred = [...forLlm.slice(MAX_CLASSIFY_PER_RUN), ...unsettled.slice(JEV_POOL_CAP)]
+    stats.cls_jev = {
+      pool: pool.length,
+      accept: jevAccept.length,
+      reject: jevReject.length,
+      uncertain: part.uncertain.length - part.audit.size,
+      audit: part.audit.size,
+      failed: part.failed,
+      input_tokens: part.inputTokens,
+      bands: [JEV_REJECT_BELOW, JEV_ACCEPT_ABOVE],
+    }
+    console.log(
+      `[pipeline] jev: ${pool.length} judged → accept ${jevAccept.length}, reject ${jevReject.length}, ` +
+        `uncertain ${part.uncertain.length - part.audit.size} (+${part.audit.size} audit, ${part.failed} failed) → LLM gets ${toClassify.length}`,
+    )
+  }
+
   // Anything deferred that is already too old to display is written off
   // unjudged. "Deferred to next run" was a lie for nine days: judged_total sat
   // at exactly 300/day (one run in ~96) while the deferred remainder grew to
@@ -517,14 +559,20 @@ async function run(stats: RunStats): Promise<void> {
   // items are NOT in headAccept/headReject (they ride along to the LLM), so
   // nothing here is judged twice.
   let inserted = 0
-  if (headAccept.length > 0) {
-    inserted += await timed('head_upsert', () => upsertArticles(headAccept))
+  const settledAccept = [...headAccept, ...jevAccept]
+  if (settledAccept.length > 0) {
+    inserted += await timed('head_upsert', () => upsertArticles(settledAccept))
     await timed('head_cluster', () => embedAndAssignClusters(stats))
   }
-  if (headReject.length > 0) {
+  // 'jev' is its own reason, like 'head': who said no stays on the record.
+  const settledReject = [
+    ...headReject.map((a) => ({ a, reason: 'head' as const })),
+    ...jevReject.map((a) => ({ a, reason: 'jev' as const })),
+  ]
+  if (settledReject.length > 0) {
     await writeRejects(
-      headReject.map((a) => ({
-        guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason: 'head' as const,
+      settledReject.map(({ a, reason }) => ({
+        guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason,
       })),
     )
   }
@@ -537,8 +585,8 @@ async function run(stats: RunStats): Promise<void> {
     () => classifyArticles(toClassify, classifyDeadline),
   )
   const llmAccept = toClassify.filter((a) => relevant.has(a.guid))
-  // For the stats: the head's confident accepts (already inserted) plus the LLM's.
-  const articles = [...llmAccept, ...headAccept]
+  // For the stats: the head's and Jev's confident accepts (already inserted) plus the LLM's.
+  const articles = [...llmAccept, ...settledAccept]
   // `classified` counts articles that actually got a verdict, not articles we
   // set out to classify — with budget deferral those diverge, and reporting the
   // ambition rather than the outcome is how a degraded run looks healthy.
@@ -547,22 +595,34 @@ async function run(stats: RunStats): Promise<void> {
   console.log(
     `[pipeline] LLM: ${relevant.size} relevant, ${rejected.size} rejected of ${classified} classified` +
       (budgetDeferred > 0 ? ` (${budgetDeferred} deferred for budget)` : '') +
-      (head ? ` | head: +${headAccept.length} accepted, ${headReject.length} rejected` : ''),
+      (head ? ` | head: +${headAccept.length} accepted, ${headReject.length} rejected` : '') +
+      (jevEnabled() ? ` | jev: +${jevAccept.length} accepted, ${jevReject.length} rejected` : ''),
   )
   Object.assign(stats, {
     classified,
     deferred: deferred.length + budgetDeferred,
     relevant: articles.length,
-    rejected: rejected.size + headReject.length,
+    rejected: rejected.size + settledReject.length,
     cls_batches_failed: failedBatches,
     cls_batches_skipped: skippedBatches,
     cls_batches_total: totalBatches,
   })
+  if (jevAudit.size > 0) {
+    const agreement = auditAgreement(jevAudit, (a) => a.guid, relevant, rejected)
+    ;(stats.cls_jev as Record<string, unknown>).audit_agreement = agreement
+    console.log(
+      `[pipeline] jev audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed with the LLM`,
+    )
+  }
   if (head && audit.size > 0) {
-    const agreement = auditAgreement(audit, (a) => a.guid, relevant, rejected)
+    // The head's audit slice is judged by whoever settles it downstream — Jev
+    // when it is confident, the LLM otherwise.
+    const downstreamYes = new Set([...relevant, ...jevAccept.map((a) => a.guid)])
+    const downstreamNo = new Set([...rejected, ...jevReject.map((a) => a.guid)])
+    const agreement = auditAgreement(audit, (a) => a.guid, downstreamYes, downstreamNo)
     ;(stats.cls_head as Record<string, unknown>).audit_agreement = agreement
     console.log(
-      `[pipeline] head audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed with the LLM`,
+      `[pipeline] head audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed downstream`,
     )
   }
 
