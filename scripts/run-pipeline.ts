@@ -7,7 +7,7 @@
 // Pipeline: fetch all feeds -> de-dup (within run + against DB+rejects) ->
 // classify only NEW articles (local relevance head first, Jev for the uncertain
 // band) -> upsert + record rejects -> embed titles + assign clusters
-// (multilingual embeddings, assign_clusters_by_embedding RPC) -> recompute
+// (multilingual embeddings, assign_story_by_embedding RPC) -> recompute
 // trending. Every run writes one pipeline_runs row (stats jsonb
 // + error) for dashboard observability.
 
