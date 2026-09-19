@@ -14,6 +14,11 @@
 import { fetchFeed, FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
 import type { Feed } from '../src/lib/types'
 import { askSignals } from '../src/lib/server/jev-signals'
+import type { Json, TablesInsert } from '../src/lib/database.types'
+import type { AppDatabase } from '../src/lib/db'
+import type { ArticleSignals } from '../src/lib/signals'
+
+type ArticleUpsert = AppDatabase['public']['Tables']['articles']['Insert']
 import { judgeSameEvent, PAIR_BAND } from '../src/lib/server/jev-pairs'
 import { jevEnabled, partitionByJev, JEV_THRESHOLD } from '../src/lib/server/jev-classify'
 import {
@@ -168,7 +173,8 @@ async function updateSourceHealth(results: FeedFetchResult[]): Promise<string[]>
         last_error: r.error!.detail.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').slice(0, 300),
       }
     })
-  for (const rows of [ok, failed]) {
+  const batches: TablesInsert<'sources'>[][] = [ok, failed]
+  for (const rows of batches) {
     for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
       const { error } = await supabaseAdmin
         .from('sources')
@@ -222,7 +228,9 @@ function logFeedSummary(results: FeedFetchResult[]) {
 // assign_story_by_embedding RPC (star linkage against story representatives,
 // item-relative ±EMBED_WINDOW_HOURS window). Failure here never fails the run:
 // articles stay story_id NULL and the next run picks them up.
-interface AssignItem {
+// A `type`, not an `interface`: only type aliases are assignable to the generated
+// `Json` (an index-signature type) that RPC arguments are declared as.
+type AssignItem = {
   id: string
   published_at: string | null
   embedding: number[]
@@ -250,7 +258,7 @@ async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>
       })
       if (error) throw new Error(`nearest_story_candidates failed: ${JSON.stringify(error)}`)
       const byId = new Map(items.map((it) => [it.id, it]))
-      for (const r of (data ?? []) as Array<{ r_article_id: string; r_story_id: string | null; r_rep_title: string | null; r_sim: number | null }>) {
+      for (const r of data ?? []) {
         const item = byId.get(r.r_article_id)
         if (!item || !r.r_story_id || !r.r_rep_title || r.r_sim === null) continue
         if (r.r_sim >= PAIR_BAND.lo && r.r_sim < PAIR_BAND.hi) grey.push({ item, storyId: r.r_story_id, repTitle: r.r_rep_title })
@@ -354,7 +362,7 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
         p_window_hours: EMBED_WINDOW_HOURS,
       })
       if (error) throw new Error(`assign RPC failed: ${JSON.stringify(error)}`)
-      const rows = (data ?? []) as Array<{ r_story_id: string; r_is_new: boolean }>
+      const rows = data ?? []
       assigned += rows.length
       newClusters += rows.filter((r) => r.r_is_new).length
       for (const r of rows) if (!r.r_is_new) joined.add(r.r_story_id)
@@ -399,7 +407,7 @@ async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void>
     if (error) throw new Error(`worklist query failed: ${JSON.stringify(error)}`)
     if (!pending?.length) return
 
-    const items: Array<Record<string, unknown>> = []
+    const items: Array<{ id: string } & ArticleSignals> = []
     const irrelevant: string[] = []
     let failed = 0
     let tokens = 0
@@ -459,7 +467,7 @@ async function reportLowYield(stats: RunStats): Promise<void> {
       p_days: LOW_YIELD.days, p_min_items: LOW_YIELD.minItems, p_max_pct: LOW_YIELD.maxPct,
     })
     if (error) throw new Error(JSON.stringify(error))
-    const rows = (data ?? []) as Array<{ r_name: string; r_accepted: number; r_rejected: number; r_pct: number }>
+    const rows = data ?? []
     stats.low_yield_sources = rows.map((r) => ({ name: r.r_name, accepted: r.r_accepted, rejected: r.r_rejected }))
     if (rows.length > 0 && process.env.GITHUB_OUTPUT) {
       const lines = rows.map((r) => `${r.r_name}: ${r.r_accepted} accepted / ${r.r_rejected} rejected in ${LOW_YIELD.days}d (${Number(r.r_pct).toFixed(1)}%)`)
@@ -478,7 +486,9 @@ async function recordRun(startedAt: Date, stats: RunStats, error: unknown): Prom
       started_at: startedAt.toISOString(),
       finished_at: new Date().toISOString(),
       error: error ? String(error).slice(0, 1000) : null,
-      stats,
+      // RunStats is assembled from JSON-able values only; the generated column
+      // type is the recursive Json, which a Record<string, unknown> cannot prove.
+      stats: stats as Json,
     })
     if (insertError) console.error('[pipeline] run-log write failed:', insertError)
   } catch (err) {
@@ -531,7 +541,7 @@ async function writeRejects(
   }
 }
 
-async function upsertArticles<T extends { guid: string }>(articles: T[]): Promise<number> {
+async function upsertArticles(articles: ArticleUpsert[]): Promise<number> {
   let inserted = 0
   for (let i = 0; i < articles.length; i += UPSERT_BATCH) {
     const batch = articles.slice(i, i + UPSERT_BATCH)

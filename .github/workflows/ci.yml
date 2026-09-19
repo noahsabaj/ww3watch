@@ -71,6 +71,31 @@ jobs:
           done
           docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/seed.sql
 
+      # Every function in `public` is CALLED once (supabase/tests/rpc_smoke.sql).
+      # plpgsql bodies are not checked at CREATE time: a function comparing a TEXT
+      # column to a UUID shipped, failed on every call in production, and nothing
+      # noticed because its caller logs and carries on. The file also fails if a
+      # function exists that it does not call.
+      - name: RPC smoke test
+        run: docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/tests/rpc_smoke.sql
+
+      # Type-check the repo against types generated from THIS database — the one
+      # just built from supabase/migrations — not the committed copy. A migration
+      # that renames or retypes something a caller uses fails here even when
+      # src/lib/database.types.ts was not regenerated. The header comment is
+      # re-attached so the file stays self-describing if someone copies it out.
+      - name: Type-check against the migrated schema
+        run: |
+          set -euo pipefail
+          head -n 9 src/lib/database.types.ts > /tmp/header.ts
+          supabase gen types typescript --local > /tmp/generated.ts
+          cat /tmp/header.ts /tmp/generated.ts > src/lib/database.types.ts
+          npm run check
+          if ! git diff --quiet -- src/lib/database.types.ts; then
+            echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
+            git --no-pager diff --stat -- src/lib/database.types.ts
+          fi
+
       # The local stack's publishable key is a fixed, well-known constant —
       # every `supabase start` anywhere produces this same value, because the
       # local JWT secret is a documented default. It grants nothing beyond this
