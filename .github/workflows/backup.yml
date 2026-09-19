@@ -48,6 +48,9 @@ jobs:
           git checkout -B sources-backup
           git commit -m "chore: weekly sources roster backup"
           git push --force origin sources-backup
-          if ! gh pr view sources-backup --json number >/dev/null 2>&1; then
+          # OPEN PRs only: `gh pr view <branch>` also matches a MERGED PR from the
+          # same branch name, which would stop every backup after the first
+          # merged one from ever opening a PR.
+          if [ -z "$(gh pr list --head sources-backup --state open --json number --jq '.[0].number')" ]; then
             gh pr create --base main --head sources-backup --title "chore: weekly sources roster backup"               --body "Automated dump of the curated sources roster (data/sources-backup.json). Merge to keep the committed backup current."
           fi
