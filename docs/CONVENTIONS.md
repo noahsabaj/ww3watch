@@ -84,6 +84,12 @@ front of users by default is out of scope by design.
   (`jev-1.13.0`, never `jev-latest`) because `JEV_THRESHOLD` and the pair band
   are tuned to that version's probabilities, and an alias moves without a
   change on our side.
+- **The inference runtime is a model artifact too.** `@huggingface/transformers`
+  is an exact version and `onnxruntime-*` are pinned in `overrides`:
+  onnxruntime-node 1.24.3 → 1.30.0 moved the same titles' vectors to cosine
+  0.95 of their old selves, which would orphan every stored embedding and the
+  0.83 threshold. Before moving them, embed a fixed set of titles on both
+  versions and require identical vectors — otherwise it is a re-backfill.
 - **Calibrate against audited examples, not raw metrics.** When ground-truth
   labels come from a weaker system, your improvements show up as "errors" —
   the clustering threshold was chosen from a hand-audited boundary band, not
