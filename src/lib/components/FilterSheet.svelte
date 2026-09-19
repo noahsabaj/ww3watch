@@ -2,6 +2,8 @@
   import type { SourceRegion } from '$lib/types'
   import { REGION_COLORS, ALL_REGIONS } from '$lib/types'
   import { LANG_NAMES } from '$lib/utils'
+  import SignalFilters from '$lib/components/SignalFilters.svelte'
+  import type { Actor, SignalFilter, Topic } from '$lib/signals'
 
   let {
     open = $bindable(),
@@ -9,11 +11,17 @@
     excludedLangs = $bindable(),
     availableLangs,
     searchQuery = $bindable(),
+    signalFilter = $bindable(),
+    availableTopics,
+    availableActors,
   }: {
     open: boolean
     activeRegions: Set<SourceRegion>
     excludedLangs: Set<string>
     availableLangs: { lang: string; count: number }[]
+    signalFilter: SignalFilter
+    availableTopics: { key: Topic; count: number }[]
+    availableActors: { key: Actor; count: number }[]
     searchQuery: string
   } = $props()
 
@@ -70,9 +78,9 @@
     bind:this={sheetEl}
     role="dialog"
     aria-modal="true"
-    aria-label="Search, region and language filters"
+    aria-label="Search, region, language and topic filters"
     tabindex="-1"
-    class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 md:hidden"
+    class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 md:hidden max-h-[85vh] overflow-y-auto"
     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
   >
     <!-- Drag handle -->
@@ -119,6 +127,7 @@
           </button>
         {/each}
       </div>
+      <SignalFilters bind:filter={signalFilter} {availableTopics} {availableActors} size="md" />
     </div>
   </div>
 {/if}

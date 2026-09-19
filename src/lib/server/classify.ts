@@ -126,6 +126,7 @@ export async function classifyArticles(
 
   let failedBatches = 0
   let skippedBatches = 0
+  let skippedArticles = 0
   results.forEach((result, bi) => {
     const batch = batches[bi]
     if (result.status === 'fulfilled') {
@@ -148,6 +149,7 @@ export async function classifyArticles(
       // stays "new" for the next run — the keyword fallback exists for a failed
       // LLM, and applying it here would let a slow run quietly lower the bar.
       skippedBatches++
+      skippedArticles += batch.length
     } else {
       failedBatches++
       console.error('[classify] batch failed, keyword fallback (en only):', result.reason)
@@ -159,7 +161,7 @@ export async function classifyArticles(
 
   if (skippedBatches > 0) {
     console.warn(
-      `[classify] ${skippedBatches}/${batches.length} batches deferred — out of run budget or daily token cap (${skippedBatches * BATCH_SIZE} articles stay new)`,
+      `[classify] ${skippedBatches}/${batches.length} batches deferred — out of run budget or daily token cap (${skippedArticles} articles stay new)`,
     )
   }
 

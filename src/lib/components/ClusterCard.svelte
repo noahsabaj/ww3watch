@@ -13,6 +13,7 @@
   import { untrack } from 'svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
+  import SignalBadges from '$lib/components/SignalBadges.svelte'
 
   let { cluster, onselect }: { cluster: Cluster; onselect?: (a: Article) => void } = $props()
   let expanded = $state(false)
@@ -142,6 +143,7 @@
       {#if repLang}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{repLang}</span>{/if}
       <span class="truncate">{rep.source_name}</span>
       <AffiliationBadge affiliation={rep.source_affiliation} />
+      <SignalBadges article={rep} />
     </span>
     {#if !isSingle}
       <div class="flex items-center gap-1 shrink-0">

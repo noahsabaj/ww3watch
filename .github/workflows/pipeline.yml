@@ -82,6 +82,8 @@ jobs:
           # Optional: TypeSafe Jev as a routing tier between the local head and
           # the LLM (src/lib/server/jev-classify.ts). Unset → tier is skipped.
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          # '1' retires the LLM as a classifier (see jev-classify.ts). Repo variable.
+          JEV_FINAL: ${{ vars.JEV_FINAL }}
           # Optional: classification on its own provider, so its token spend
           # (~all of the pipeline's) stops competing with trending for one daily
           # cap. Unset secrets arrive as empty strings and fall back to LLM_*.

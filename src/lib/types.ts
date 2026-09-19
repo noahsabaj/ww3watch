@@ -24,6 +24,8 @@ export const REGIONS = {
 
 export type SourceRegion = keyof typeof REGIONS
 
+import type { Actor, Topic } from './signals'
+
 export interface Article {
   id: string
   title: string
@@ -39,6 +41,14 @@ export interface Article {
   source_affiliation: string | null
   body_hash: string | null
   story_id: string | null
+  // Jev's per-article signals (src/lib/signals.ts). Absent until the pipeline's
+  // signals stage has annotated the row — seconds after insert, normally.
+  topic?: Topic | null
+  severity?: number | null
+  claim?: number | null
+  unverified?: number | null
+  opinion?: number | null
+  actors?: Actor[] | null
   // Dropped from the feed's boot query (unused client-side) but still delivered
   // on realtime row payloads — hence optional. The pipeline/server use the
   // separate ArticleInsert shape.

@@ -11,6 +11,7 @@
   import { base } from '$app/paths'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
+  import SignalBadges from '$lib/components/SignalBadges.svelte'
 
   let { article, cluster = null, onclose, onselect }: {
     article: Article | null
@@ -354,6 +355,7 @@
         {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{langTag(article.source_lang)}</span>{/if}
         <span class="truncate">{article.source_name}</span>
         <AffiliationBadge affiliation={article.source_affiliation} />
+        <SignalBadges {article} />
       </span>
       <span class="text-xs text-gray-500 shrink-0 whitespace-nowrap">{timeAgo(article.published_at, clock.now)}</span>
       <a

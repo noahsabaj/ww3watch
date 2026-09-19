@@ -14,7 +14,8 @@
 import { fetchFeed, FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
 import type { Feed } from '../src/lib/types'
 import { classifyArticles } from '../src/lib/server/classify'
-import { jevEnabled, partitionByJev, JEV_ACCEPT_ABOVE, JEV_REJECT_BELOW } from '../src/lib/server/jev-classify'
+import { askSignals } from '../src/lib/server/jev-signals'
+import { jevEnabled, jevFinal, partitionByJev, JEV_ACCEPT_ABOVE, JEV_REJECT_BELOW } from '../src/lib/server/jev-classify'
 import {
   embedTitles,
   shouldEmbed,
@@ -58,6 +59,12 @@ const HEAD_POOL_CAP = Number(process.env.HEAD_POOL_CAP || '') || 2000
 // Share of confident head verdicts that still get an LLM verdict, so the head's
 // live agreement is measured every run (stats.cls_head.audit) instead of
 // trusted from its training holdout. 3% of ~2000 is ~60 titles: one batch.
+// Accepted articles Jev annotates per run (topic, severity, claim status, actors
+// — src/lib/signals.ts). A worklist, so a backlog or an outage drains over the
+// following runs instead of being lost.
+const SIGNALS_CAP = Number(process.env.SIGNALS_CAP || '') || 600
+const SIGNALS_LOOKBACK_HOURS = 48
+const SIGNALS_CONCURRENCY = 16
 // Jev (TypeSafe) judges up to this many of the still-unsettled articles per run.
 // No daily cap and ~150ms a call, so the bound is wall-clock, not quota.
 const JEV_POOL_CAP = Number(process.env.JEV_POOL_CAP || '') || 2000
@@ -287,6 +294,59 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
   }
 }
 
+// Annotate accepted articles that have no signals yet (signals_at IS NULL).
+// Same contract as clustering: failure never fails the run, the rows stay on
+// the worklist, and the next run picks them up.
+async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void> {
+  if (!jevEnabled()) return
+  const bump = (key: string, n: number) => { stats[key] = (Number(stats[key]) || 0) + n }
+  try {
+    const since = new Date(Date.now() - SIGNALS_LOOKBACK_HOURS * 3600_000).toISOString()
+    const { data: pending, error } = await supabaseAdmin
+      .from('articles')
+      .select('id, title, summary, source_lang')
+      .is('signals_at', null)
+      .gte('fetched_at', since)
+      .order('fetched_at', { ascending: false })
+      .limit(SIGNALS_CAP)
+    if (error) throw new Error(`worklist query failed: ${JSON.stringify(error)}`)
+    if (!pending?.length) return
+
+    const items: Array<Record<string, unknown>> = []
+    let failed = 0
+    let tokens = 0
+    let next = 0
+    await Promise.all(
+      Array.from({ length: Math.min(SIGNALS_CONCURRENCY, pending.length) }, async () => {
+        while (next < pending.length && Date.now() < deadlineMs) {
+          const a = pending[next++]
+          try {
+            const { inputTokens, ...signals } = await askSignals(a, deadlineMs)
+            tokens += inputTokens
+            items.push({ id: a.id, ...signals })
+          } catch (err) {
+            failed++
+            if (failed <= 3) console.error('[signals] jev call failed (article stays on the worklist):', String(err).slice(0, 200))
+          }
+        }
+      }),
+    )
+    let applied = 0
+    for (let i = 0; i < items.length; i += UPSERT_BATCH) {
+      const { data, error: rpcError } = await supabaseAdmin.rpc('apply_article_signals', { p_items: items.slice(i, i + UPSERT_BATCH) })
+      if (rpcError) throw new Error(`apply_article_signals failed: ${JSON.stringify(rpcError)}`)
+      applied += Number(data) || 0
+    }
+    bump('signals_applied', applied)
+    bump('signals_failed', failed)
+    bump('signals_tokens', tokens)
+    console.log(`[pipeline] signals: ${applied} articles annotated (${failed} failed, ${pending.length - items.length - failed} left for next run)`)
+  } catch (err) {
+    console.error('[pipeline] signals FAILED (articles stay un-annotated; next run self-heals):', err)
+    stats.signals_error = String(err).slice(0, 300)
+  }
+}
+
 async function recordRun(startedAt: Date, stats: RunStats, error: unknown): Promise<void> {
   // Best-effort: a run-log failure must never fail the run (and a total
   // Supabase-connectivity fatal can't record itself — accepted).
@@ -373,6 +433,8 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
     }
   }
   await timed('cluster', () => embedAndAssignClusters(stats))
+  // Before trending, which ranks on these.
+  await timed('signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
   stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
   // Snapshot LAST, not after classify. Taken mid-run it excluded trending
@@ -509,7 +571,7 @@ async function run(stats: RunStats): Promise<void> {
     const unsettled = [...toClassify, ...deferred]
     const pool = unsettled.slice(0, JEV_POOL_CAP)
     const part = await timed('jev', () =>
-      partitionByJev(pool, { auditRate: JEV_AUDIT_RATE, deadlineMs: startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS) }),
+      partitionByJev(pool, { final: jevFinal(), auditRate: JEV_AUDIT_RATE, deadlineMs: startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS) }),
     )
     jevAccept = part.accept
     jevReject = part.reject
@@ -526,6 +588,7 @@ async function run(stats: RunStats): Promise<void> {
       failed: part.failed,
       input_tokens: part.inputTokens,
       bands: [JEV_REJECT_BELOW, JEV_ACCEPT_ABOVE],
+      final: jevFinal(),
     }
     console.log(
       `[pipeline] jev: ${pool.length} judged → accept ${jevAccept.length}, reject ${jevReject.length}, ` +
@@ -563,6 +626,7 @@ async function run(stats: RunStats): Promise<void> {
   if (settledAccept.length > 0) {
     inserted += await timed('head_upsert', () => upsertArticles(settledAccept))
     await timed('head_cluster', () => embedAndAssignClusters(stats))
+    await timed('head_signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
   }
   // 'jev' is its own reason, like 'head': who said no stays on the record.
   const settledReject = [

@@ -89,19 +89,20 @@ export function jevState(a: JevArticle) {
   return { article: summary ? { title: a.title, summary, language: a.source_lang } : { title: a.title, language: a.source_lang } }
 }
 
-/** One Jev round-trip for one article. 429/529 are retried with backoff. */
-export async function askJev(
-  article: JevArticle,
-  questions: Record<string, unknown> = jevQuestions,
-  deadlineMs?: number,
-): Promise<JevVerdict> {
+export interface JevResponse {
+  answers: Record<string, { noul?: number; choice?: string; score?: number; confidence?: number; probabilities?: Record<string, number> }>
+  inputTokens: number
+}
+
+/** One Jev round-trip: any state, any typed questions. 429/529 retried with backoff. */
+export async function callJev(state: unknown, questions: Record<string, unknown>, deadlineMs?: number): Promise<JevResponse> {
   const apiKey = process.env.TYPESAFE_API_KEY
   if (!apiKey) throw new Error('TYPESAFE_API_KEY is not set')
   for (let attempt = 0; ; attempt++) {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ state: jevState(article), model: JEV_MODEL, questions }),
+      body: JSON.stringify({ state, model: JEV_MODEL, questions }),
       signal: AbortSignal.timeout(15000),
     })
     if ((res.status === 429 || res.status === 529) && attempt < MAX_RETRIES) {
@@ -113,13 +114,24 @@ export async function askJev(
     }
     if (!res.ok) throw new Error(`jev ${res.status}: ${(await res.text()).slice(0, 300)}`)
     const data = await res.json()
-    const relevant = Number(data.answers?.relevant?.noul)
-    if (!Number.isFinite(relevant)) throw new Error(`jev: no relevant.noul in ${JSON.stringify(data).slice(0, 200)}`)
-    return {
-      relevant,
-      topic: String(data.answers?.topic?.choice ?? ''),
-      topicConfidence: Number(data.answers?.topic?.confidence) || 0,
-      inputTokens: Number(data.usage?.input_tokens) || 0,
-    }
+    if (!data?.answers || typeof data.answers !== 'object') throw new Error(`jev: no answers in ${JSON.stringify(data).slice(0, 200)}`)
+    return { answers: data.answers, inputTokens: Number(data.usage?.input_tokens) || 0 }
+  }
+}
+
+/** Relevance verdict for one article. */
+export async function askJev(
+  article: JevArticle,
+  questions: Record<string, unknown> = jevQuestions,
+  deadlineMs?: number,
+): Promise<JevVerdict> {
+  const { answers, inputTokens } = await callJev(jevState(article), questions, deadlineMs)
+  const relevant = Number(answers.relevant?.noul)
+  if (!Number.isFinite(relevant)) throw new Error(`jev: no relevant.noul in ${JSON.stringify(answers).slice(0, 200)}`)
+  return {
+    relevant,
+    topic: String(answers.topic?.choice ?? ''),
+    topicConfidence: Number(answers.topic?.confidence) || 0,
+    inputTokens,
   }
 }
