@@ -54,7 +54,9 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ['src/**/*.{test,spec}.{js,ts}'],
+    // scripts/ci/ holds the workflows' logic (PR/issue/chain handling); its tests
+    // are the only thing standing between that logic and production.
+    include: ['src/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
     // Dummy values so server modules that read these at import (src/lib/server/env.ts)
     // load under vitest. Tests mock the actual network/LLM/DB calls.
     env: {
