@@ -31,3 +31,21 @@ too few to conclude from; watch `stats.cls_jev.borderline` and the head audit.
 Domestic politics of states at war (an election, a pro-government rally) scores
 low. That is a property of the question in `src/lib/server/jev.ts`, not of the
 model — widen the question, not the threshold, if that coverage is wanted.
+
+**Widened the same day.** The question now also covers diplomacy and statements
+about a conflict, alliances and defence policy, occupation and territorial
+disputes, hybrid threats, and wartime domestic politics. Both wordings asked
+side by side on 1,000 rows (`jev-1.13.0`, threshold 0.5):
+
+| set | n | accepted, old | accepted, new |
+|---|---|---|---|
+| LLM rejects | 400 | 6.0% | 11.8% |
+| LLM accepts Jev had scored 0.2–0.5 | 300 | 2.3% | 88.3% |
+| random LLM-era articles | 300 | 89.3% | 100% |
+
+Nothing moved from accept to reject. The 23 newly accepted LLM rejects, read by
+hand, were mostly conflict diplomacy the LLM had been strict about (Witkoff and
+Kushner at the Kremlin, a Hezbollah MP's statement, a US embassy security
+alert); two or three were misses (a history essay, a currency-market roundup).
+The regression baseline was re-recorded: 40 of 300 frozen titles changed side,
+all expected from the wording.

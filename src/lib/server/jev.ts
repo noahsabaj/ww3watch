@@ -20,27 +20,36 @@ export interface JevArticle {
 
 // Jev reads literally: the question must state the condition, and the criteria
 // must carry the boundary cases, because it will not infer intent.
+//
+// Scope is the question, not the threshold. It covers the diplomacy, alliances
+// and wartime domestic politics around a conflict as well as the fighting: the
+// fighting-only wording dropped ~88% of such stories the feed used to carry
+// (docs/evals/2026-09-19-jev-relevance.md). Re-record the regression baseline
+// after any wording change.
 export const jevQuestions = {
   relevant: {
     type: 'noul',
     instructions: {
       question:
-        'Is `article` a news report about armed conflict, military action, or a geopolitical security crisis between or within states?',
+        'Is `article` a news report about armed conflict, military action, a geopolitical or security crisis, or the politics and diplomacy of states involved in one?',
       note: 'The article may be written in any language. Judge by what it reports, not by its language.',
     },
     criteria: {
       true: {
-        what: 'Reports war, military strikes or operations, armed clashes, terrorism, assassinations, coups or violent regime change, nuclear or missile threats, weapons transfers, military mobilisation, sanctions or ultimatums tied to a conflict, ceasefire or peace negotiations, hostages, or civilians killed or displaced by fighting.',
+        what: 'Reports war, military strikes or operations, armed clashes, terrorism, assassinations, coups or regime change, nuclear or missile threats, weapons transfers, military mobilisation, sanctions or ultimatums, ceasefire or peace negotiations, hostages, or civilians killed or displaced by fighting. Also: diplomacy, official statements and disputes between rival powers or about a conflict; military alliances, defence policy and arms build-ups; occupation, annexation and territorial disputes; hybrid threats such as drone incursions, sabotage and cyberattacks; and the domestic politics of a state at war or in crisis when it bears on the conflict or on who leads the country (elections, leadership changes, mass protests, crackdowns).',
         examples: [
           'Drone strike hits oil depot in border region',
           'Foreign ministers meet to negotiate ceasefire terms',
           'Army announces mobilisation of reservists',
+          'Wartime president faces snap election after coalition collapses',
+          'Alliance names new top general as tensions rise',
+          'Unidentified drones shut airport; government suspects foreign state',
         ],
       },
       false: {
         what: 'Anything else, even when it names a country that is at war.',
         not_relevant: [
-          'Domestic politics, elections, or court cases with no security dimension',
+          'Routine domestic politics, elections, or court cases in countries not at war or in crisis',
           'Business, markets, technology, science, health, weather, or natural disasters',
           'Sports, culture, entertainment, lifestyle, or travel',
           'Ordinary crime or accidents',
