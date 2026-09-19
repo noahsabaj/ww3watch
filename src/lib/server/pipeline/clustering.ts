@@ -4,6 +4,7 @@ import { embedTitles, shouldEmbed, EMBEDDING_MODEL_TAG, EMBED_SIM_THRESHOLD, EMB
 import { judgeSameEvent } from '../jev-pairs'
 import { mapPool } from '../pool'
 import { supabaseAdmin } from '../supabase'
+import { STORY_MERGE } from '../config'
 import { ASSIGN_CAP, ASSIGN_LOOKBACK_HOURS, ASSIGN_RPC_CHUNK, ID_QUERY_CHUNK, JEV_CONCURRENCY, PAIR_BAND, PAIR_CHUNK } from '../config'
 import { bump, type RunStats } from './stats'
 
@@ -158,5 +159,52 @@ export async function embedAndAssignClusters(stats: RunStats): Promise<void> {
     // Degradation contract: a failed clustering pass never fails the run.
     console.error('[pipeline] clustering FAILED (articles stay unassigned; next run self-heals):', err)
     stats.cluster_error = String(err).slice(0, 300)
+  }
+}
+
+// Stories can merge. An article joins a story, but two STORIES about one event
+// stayed apart forever — each article met the other's representative below the
+// judged band, or arrived before the other story existed. Compare the
+// representatives of active stories, ask Jev about the close pairs, fold the
+// smaller into the larger. Same contract as the rest of this file: failure never
+// fails the run, and "unsure" changes nothing.
+export async function mergeStories(stats: RunStats): Promise<void> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('story_merge_candidates', {
+      p_hours: STORY_MERGE.hours, p_min_sim: STORY_MERGE.minSim, p_limit: STORY_MERGE.candidates,
+    })
+    if (error) throw new Error(`story_merge_candidates failed: ${JSON.stringify(error)}`)
+    const pairs = data ?? []
+    if (pairs.length === 0) return
+    const judged = await mapPool(pairs, JEV_CONCURRENCY, (p) => judgeSameEvent(p.r_a_title, p.r_b_title))
+    bump(stats, 'merge_pairs_judged', judged.done.length)
+
+    // Highest similarity first (the RPC's order); a story already folded away —
+    // or folded INTO — this run is left for the next run, when its
+    // representative and counts are settled again.
+    const touched = new Set<string>()
+    let merged = 0
+    const same = judged.done
+      .filter((j) => j.value.verdict === 'same' && j.value.p >= STORY_MERGE.minP)
+      .sort((x, y) => y.item.r_sim - x.item.r_sim)
+    for (const { item: p } of same) {
+      if (merged >= STORY_MERGE.maxPerRun) break
+      if (touched.has(p.r_a) || touched.has(p.r_b)) continue
+      const [from, into] = p.r_a_count <= p.r_b_count ? [p.r_a, p.r_b] : [p.r_b, p.r_a]
+      const { data: moved, error: mergeError } = await supabaseAdmin.rpc('merge_stories', { p_from: from, p_into: into })
+      if (mergeError) { console.error('[pipeline] merge_stories failed (non-fatal):', mergeError); continue }
+      touched.add(p.r_a).add(p.r_b)
+      if ((moved ?? 0) > 0) {
+        merged++
+        console.log(`[pipeline] merged story "${(from === p.r_a ? p.r_a_title : p.r_b_title).slice(0, 60)}" into "${(into === p.r_a ? p.r_a_title : p.r_b_title).slice(0, 60)}" (sim ${p.r_sim.toFixed(3)}, ${moved} articles)`)
+      }
+    }
+    if (merged > 0) {
+      bump(stats, 'stories_merged', merged)
+      await supabaseAdmin.rpc('reelect_story_reps', { p_story_ids: [...touched] })
+    }
+  } catch (err) {
+    console.error('[pipeline] story merge FAILED (stories stay as they are):', err)
+    stats.merge_error = String(err).slice(0, 300)
   }
 }

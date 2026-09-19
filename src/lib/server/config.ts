@@ -94,6 +94,13 @@ export const JEV_CONCURRENCY = Math.max(1, num('JEV_CONCURRENCY', 16))
 // prod join above 0.88 was right; most between the 0.83 threshold and 0.88 were
 // not).
 export const PAIR_BAND = { lo: num('JEV_PAIR_LO', 0.78), hi: num('JEV_PAIR_HI', 0.9) }
+// Story MERGE pass: representatives of stories active in the last `hours` whose
+// similarity is at least `minSim` are judged; at most `maxPerRun` merges, so a
+// bad question edit cannot fold the feed into one story before anyone notices.
+// `minP` is stricter than PAIR_YES on purpose: a wrong JOIN misfiles one article,
+// a wrong MERGE misfiles a whole story. On a prod dry run the verdicts between
+// 0.7 and 0.8 were the debatable ones (a daily roundup vs. one incident in it).
+export const STORY_MERGE = { hours: 24, minSim: num('STORY_MERGE_MIN_SIM', 0.8), minP: num('STORY_MERGE_MIN_P', 0.8), candidates: 60, maxPerRun: 15 }
 export const PAIR_YES = num('JEV_PAIR_YES', 0.7)
 export const PAIR_NO = num('JEV_PAIR_NO', 0.3)
 
@@ -102,7 +109,7 @@ export function configSnapshot(): Record<string, unknown> {
   return {
     JEV_MODEL,
     JEV_THRESHOLD, JEV_POOL_CAP, JEV_CONCURRENCY,
-    PAIR_BAND, PAIR_YES, PAIR_NO, PAIR_CHUNK,
+    PAIR_BAND, PAIR_YES, PAIR_NO, PAIR_CHUNK, STORY_MERGE,
     HEAD_POOL_CAP, HEAD_AUDIT_RATE,
     PURGE_BELOW, PURGE_CAP_PER_RUN,
     SIGNALS_CAP, SIGNALS_LOOKBACK_HOURS,

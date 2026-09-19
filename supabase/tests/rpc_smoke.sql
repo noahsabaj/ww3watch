@@ -45,6 +45,37 @@ select count(*) as join_sims from public.story_join_sims(now() - interval '1 day
 select public.reelect_story_reps(array(select id from public.stories)) as reps_reelected;
 select public.detach_from_story(array['00000000-0000-0000-0000-000000000002'::uuid]) as detached;
 
+-- ── story merge ─────────────────────────────────────────────────────────────
+-- Two stories, one article each, identical embeddings → a candidate pair; merging
+-- must move the member, repoint trending, delete the emptied story.
+do $$
+declare
+  a uuid := gen_random_uuid();
+  b uuid := gen_random_uuid();
+  moved integer;
+begin
+  update public.articles set story_id = null where guid in ('smoke-1', 'smoke-2');
+  insert into public.stories (id, rep_article_id) values
+    (a, '00000000-0000-0000-0000-000000000001'), (b, '00000000-0000-0000-0000-000000000002');
+  update public.articles set story_id = a where guid = 'smoke-1';
+  update public.articles set story_id = b where guid = 'smoke-2';
+  update public.article_embeddings set embedding = (select embedding from public.article_embeddings where article_id = '00000000-0000-0000-0000-000000000001')
+   where article_id = '00000000-0000-0000-0000-000000000002';
+  if not exists (select 1 from public.story_merge_candidates(24, 0.8::real, 50) c where (c.r_a, c.r_b) in ((a, b), (b, a))) then
+    raise exception 'story_merge_candidates did not return the identical-embedding pair';
+  end if;
+  moved := public.merge_stories(b, a);
+  if moved <> 1 then raise exception 'merge_stories moved % articles, expected 1', moved; end if;
+  if exists (select 1 from public.stories where id = b) then raise exception 'merge_stories left the emptied story behind'; end if;
+  if (select article_count from public.stories where id = a) <> 2 then raise exception 'merge_stories did not recompute article_count'; end if;
+  if public.merge_stories(a, a) <> 0 then raise exception 'merging a story into itself must be a no-op'; end if;
+end $$;
+
+-- ── verdicts ────────────────────────────────────────────────────────────────
+insert into public.verdicts (guid, judge, decision, p, threshold, model, lang)
+values ('smoke-1', 'jev', 'accept', 0.97, 0.5, 'smoke', 'en'), ('smoke-3', 'head', 'reject', 0.04, 0.28, 'smoke', 'en'), ('smoke-x', 'stale', 'reject', null, null, null, 'en');
+select count(*) as verdict_days from public.verdict_daily;
+
 -- ── signals + purge ─────────────────────────────────────────────────────────
 select public.apply_article_signals('[{"id":"00000000-0000-0000-0000-000000000001","topic":"armed_conflict","severity":0.67,"claim":0.1,"unverified":0.2,"opinion":0.05,"actors":["russia","ukraine"],"jev_relevant":0.97}]'::jsonb) as signals_applied;
 
@@ -78,7 +109,7 @@ declare
     'actor_daily', 'apply_article_signals', 'assign_story_by_embedding', 'check_rate_limit',
     'detach_from_story', 'existing_guids', 'nearest_story_candidates', 'ops_health',
     'pipeline_status', 'purge_irrelevant_articles', 'reelect_story_reps', 'replace_trending',
-    'run_retention', 'source_yield', 'story_join_sims',
+    'run_retention', 'source_yield', 'story_join_sims', 'story_merge_candidates', 'merge_stories',
     -- event-trigger function: fires on DDL, cannot be called directly.
     'rls_auto_enable'
   ];

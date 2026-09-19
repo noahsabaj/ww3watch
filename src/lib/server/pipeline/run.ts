@@ -6,7 +6,7 @@ import { existingGuids } from '../dedupe'
 import { updateTrending, lastTrendingSelectedAt, trendingStuck } from '../trending'
 import { RUN_BUDGET_MS, configSnapshot } from '../config'
 import { loadSources, updateSourceHealth, logFeedSummary } from './sources'
-import { embedAndAssignClusters } from './clustering'
+import { embedAndAssignClusters, mergeStories } from './clustering'
 import { enrichSignals } from './signals'
 import { classifyFresh } from './classify'
 import { checkOpsHealth, reportLowYield, previousRunJevDown } from './ops'
@@ -18,6 +18,9 @@ import { timed as timedStage, type RunStats } from './stats'
 async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   const timed = <T>(stage: string, fn: () => Promise<T>) => timedStage(stats, stage, fn)
   await timed('cluster', () => embedAndAssignClusters(stats))
+  // Before trending: it counts independent sources per story, and two halves of
+  // one story each look half as corroborated.
+  await timed('merge', () => mergeStories(stats))
   // Before trending, which ranks on these.
   await timed('signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
   stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS))

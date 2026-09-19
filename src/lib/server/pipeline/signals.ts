@@ -5,6 +5,8 @@ import { supabaseAdmin } from '../supabase'
 import type { ArticleSignals } from '../../signals'
 import { PURGE_BELOW, PURGE_CAP_PER_RUN, SIGNALS_CAP, SIGNALS_CONCURRENCY, SIGNALS_LOOKBACK_HOURS, UPSERT_BATCH } from '../config'
 import { bump, type RunStats } from './stats'
+import { writeVerdicts } from './persist'
+import { JEV_MODEL } from '../jev'
 
 // Annotate accepted articles that have no signals yet (signals_at IS NULL).
 // Same contract as clustering: failure never fails the run, the rows stay on
@@ -14,7 +16,7 @@ export async function enrichSignals(stats: RunStats, deadlineMs: number): Promis
     const since = new Date(Date.now() - SIGNALS_LOOKBACK_HOURS * 3600_000).toISOString()
     const { data: pending, error } = await supabaseAdmin
       .from('articles')
-      .select('id, title, summary, source_lang, jev_relevant')
+      .select('id, guid, title, summary, source_lang, jev_relevant')
       .is('signals_at', null)
       .gte('fetched_at', since)
       .order('fetched_at', { ascending: false })
@@ -24,6 +26,7 @@ export async function enrichSignals(stats: RunStats, deadlineMs: number): Promis
 
     const items: Array<{ id: string } & ArticleSignals> = []
     const irrelevant: string[] = []
+    const purgeP = new Map<string, { guid: string; p: number; lang: string | null }>()
     let tokens = 0
     // jev_relevant is already set for articles Jev itself accepted; only the
     // head's accepts still need the relevance question.
@@ -32,7 +35,10 @@ export async function enrichSignals(stats: RunStats, deadlineMs: number): Promis
       const { inputTokens, ...signals } = value
       tokens += inputTokens
       items.push({ id: a.id, ...signals })
-      if (a.jev_relevant == null && signals.jev_relevant !== null && signals.jev_relevant < PURGE_BELOW) irrelevant.push(a.id)
+      if (a.jev_relevant == null && signals.jev_relevant !== null && signals.jev_relevant < PURGE_BELOW) {
+        irrelevant.push(a.id)
+        purgeP.set(a.id, { guid: a.guid, p: signals.jev_relevant, lang: a.source_lang })
+      }
     }
     const failed = asked.failed.length
     asked.failed.slice(0, 3).forEach(({ error }) =>
@@ -53,6 +59,11 @@ export async function enrichSignals(stats: RunStats, deadlineMs: number): Promis
       if (purgeError) console.error('[signals] purge failed (articles stay):', purgeError)
       else {
         bump(stats, 'signals_purged', Number(data) || 0)
+        await writeVerdicts(
+          irrelevant.slice(0, PURGE_CAP_PER_RUN).map((id) => purgeP.get(id)!).map((v) => ({
+            guid: v.guid, judge: 'purge', decision: 'reject', p: v.p, threshold: PURGE_BELOW, model: JEV_MODEL, lang: v.lang,
+          })),
+        )
         console.log(`[pipeline] signals: removed ${Number(data) || 0} of ${irrelevant.length} accepted articles Jev puts below P(relevant) ${PURGE_BELOW}`)
       }
     }

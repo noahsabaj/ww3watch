@@ -26,6 +26,7 @@ export interface RunStats {
   rejected?: number
   inserted?: number
   stale_written_off?: number
+  verdicts_recorded?: number
   // clustering
   embedded?: number
   embed_skipped?: number
@@ -33,6 +34,9 @@ export interface RunStats {
   clusters_new?: number
   cluster_error?: string
   reps_reelected?: number
+  stories_merged?: number
+  merge_pairs_judged?: number
+  merge_error?: string
   pairs_judged?: number
   pairs_same?: number
   pairs_different?: number
