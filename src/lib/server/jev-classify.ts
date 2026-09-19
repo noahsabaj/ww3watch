@@ -5,7 +5,7 @@ import { askJev, type JevArticle } from './jev'
 // generative model behind it to escalate to. (There was: an LLM tier capped at
 // ~2,000 verdicts/day by its provider's token quota, which is what Jev replaced.)
 //
-// scripts/eval-jev.ts, 1,475 LLM-labelled titles in 7 languages, titles only:
+// docs/evals/2026-09-19-jev-relevance.md — 1,475 LLM-labelled titles in 7 languages, titles only:
 // AUC 0.956, 87.9% agreement at this cut — and the disagreements read as
 // genuinely borderline stories, not misses. In production Jev also sees the
 // summary. Tunable without a deploy: raise it for a tighter feed.

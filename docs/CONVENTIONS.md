@@ -82,7 +82,7 @@ front of users by default is out of scope by design.
   to ship a fit that fails them, and keeps auditing itself in production
   (`stats.cls_head.audit_agreement` — a random ~3% slice of its confident
   verdicts is judged by Jev anyway, every run). Jev itself was measured before
-  it became the final judge (`scripts/eval-jev.ts`: AUC 0.956 on 1,475
+  it became the final judge (`docs/evals/2026-09-19-jev-relevance.md`: AUC 0.956 on 1,475
   LLM-labelled titles in 7 languages).
 - Prefer deterministic local models on the runner over API calls wherever
   they suffice — free, uncapped, reproducible. The relevance head

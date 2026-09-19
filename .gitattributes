@@ -1,0 +1,9 @@
+# One line-ending policy for every checkout. The index was already LF; without
+# this, Windows working trees were CRLF (core.autocrlf), which broke in-place
+# edit scripts and made every new file warn.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff2 binary

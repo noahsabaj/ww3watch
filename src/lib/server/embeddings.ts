@@ -1,12 +1,12 @@
 // Multilingual title embeddings for clustering (pipeline-side, Node only).
 // Model runs locally on the Actions runner via Transformers.js — no API, no
 // quota, deterministic. Same-story titles across languages (fa/ar/he/ru/zh/…)
-// embed near each other; the assign_clusters_by_embedding RPC does the rest.
+// embed near each other; the assign_story_by_embedding RPC does the rest.
 //
 // Everything about the artifact is pinned: embeddings are only comparable
 // within one (model, revision, dtype) vintage. Changing any of these requires
-// a full re-backfill + threshold re-calibration (see scripts/calibrate-embeddings.ts,
-// which MUST import this module rather than reimplementing it).
+// a full re-backfill, a retrained relevance head (its weights are tied to
+// EMBEDDING_MODEL_TAG) and a re-check of the similarity bands below.
 
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -18,14 +18,14 @@ export const EMBEDDING_DTYPE = 'q8'
 export const EMBEDDING_DIM = 768
 export const EMBEDDING_MODEL_TAG = `me5b-${EMBEDDING_DTYPE}@${EMBEDDING_REVISION.slice(0, 7)}`
 
-// Calibrated 2026-06-11 against the LLM-assigned clusters (e5-base run of
-// scripts/calibrate-embeddings.ts): at 0.83, recall vs (noisy) LLM labels is
-// ~39% with raw false-merge 3.4% — but the audited boundary band showed the
-// "false merges" above ~0.82 are overwhelmingly same-story pairs the LLM
-// failed to merge (en↔no Beirut strike, ar↔en Apache strikes, fa↔en oil
-// jump), i.e. the improvement this project exists for. Genuine same-topic/
-// different-event confusion lives below ~0.82. Env override is an emergency
-// knob, passed through pipeline.yml.
+// The similarity a nearest-story match needs when nobody judges it. History
+// worth keeping: a June 2026 calibration against LLM-assigned clusters chose
+// 0.83 and concluded that matches above ~0.82 were "overwhelmingly same-story".
+// Measured on prod in September that was wrong — 75% of joins sat at 0.83-0.88
+// and most were different events in the same war. Similarity means same
+// SUBJECT. So this number now only decides pairs Jev was unsure about or could
+// not be asked about; between PAIR_BAND.lo and .hi (jev-pairs.ts) a judgment
+// decides. Env override is an emergency knob, passed through pipeline.yml.
 // `||` not `??`: workflows pass unset secrets/vars as EMPTY strings, and
 // Number('') === 0 would merge everything into one cluster.
 export const EMBED_SIM_THRESHOLD = Number(process.env.EMBED_SIM_THRESHOLD || '0.83')
