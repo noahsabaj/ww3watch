@@ -10,6 +10,7 @@
   import ClusterCard from '$lib/components/ClusterCard.svelte'
   import TopStories from '$lib/components/TopStories.svelte'
   import FilterSheet from '$lib/components/FilterSheet.svelte'
+  import { importance } from '$lib/story'
   import { ALL_TOPICS, emptySignalFilter, matchesSignals, signalFilterActive, type Actor, type SignalFilter, type Topic } from '$lib/signals'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import { groupByStoryId } from '$lib/cluster'
@@ -146,7 +147,7 @@
   // this is the boundary between "new since you were here" (above) and "seen
   // before" (below). -1 = no marker (first visit, or nothing new, or all new).
   let lastVisitDividerIndex = $derived.by(() => {
-    if (lastVisitAt === null) return -1
+    if (lastVisitAt === null || sortMode === 'top') return -1
     const t = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : 0)
     for (let i = 1; i < clustered.length; i++) {
       if (t(clustered[i - 1]) > lastVisitAt && t(clustered[i]) <= lastVisitAt) return i
@@ -232,7 +233,25 @@
       return matchesRegion && matchesLang && matchesSearch && matchesSignals(a, signalFilter)
     })
   )
-  let clustered = $derived(groupByStoryId(filtered))
+  // Feed order. 'latest' is the chronological feed. 'top' ranks the last day's
+  // stories by importance (severity, corroboration, recency — src/lib/story.ts):
+  // the same ingredients as Trending, over everything instead of the top three.
+  let sortMode = $state<'latest' | 'top'>('latest')
+  const TOP_WINDOW_MS = 24 * 3_600_000
+  let latestClustered = $derived(groupByStoryId(filtered))
+  let clustered = $derived.by(() => {
+    if (sortMode === 'latest') return latestClustered
+    const newest = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : null)
+    return latestClustered
+      .filter((c) => { const t = newest(c); return t !== null && clock.now - t < TOP_WINDOW_MS })
+      .map((c) => ({ c, score: importance(c.articles, newest(c), clock.now) }))
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.c)
+  })
+  function setSortMode(mode: 'latest' | 'top') {
+    sortMode = mode
+    try { localStorage.setItem('feed-sort', mode) } catch { /* private mode */ }
+  }
   let topStories = $derived.by(() => {
     if (trending.length > 0) {
       // Resolve by story_id when the row has one; fall back to membership
@@ -443,6 +462,7 @@
   }
 
   onMount(() => {
+    try { if (localStorage.getItem('feed-sort') === 'top') sortMode = 'top' } catch { /* private mode */ }
     if (localStorage.getItem('pwa-install-dismissed')) {
       installDismissed = true
     }
@@ -581,6 +601,18 @@
     class="max-w-3xl mx-auto divide-y divide-gray-800/50"
     style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px))"
   >
+    {#if articles.length > 0}
+      <div class="flex items-center gap-1 px-4 pt-2" role="group" aria-label="Feed order">
+        {#each [['latest', 'Latest'], ['top', 'Top · 24h']] as [mode, label] (mode)}
+          <button
+            onclick={() => setSortMode(mode as 'latest' | 'top')}
+            aria-pressed={sortMode === mode}
+            title={mode === 'top' ? 'The last 24 hours, ranked by severity, independent corroboration and recency' : 'Newest first'}
+            class="text-[11px] px-2.5 py-1 rounded-full border transition-colors {sortMode === mode ? 'border-blue-500/50 bg-blue-600/15 text-blue-300' : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-600'}"
+          >{label}</button>
+        {/each}
+      </div>
+    {/if}
     {#if clustered.length === 0}
       <div class="py-20 text-center text-gray-500 text-sm">
         {#if data.loadError && articles.length === 0}
@@ -593,6 +625,14 @@
           </button>
         {:else if articles.length === 0}
           No stories yet — new ones appear here live.
+        {:else if sortMode === 'top' && latestClustered.length > 0}
+          <p class="mb-3">Nothing from the last 24 hours matches.</p>
+          <button
+            onclick={() => setSortMode('latest')}
+            class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+          >
+            Show latest
+          </button>
         {:else}
           <p class="mb-3">No stories match your filters.</p>
           <button
@@ -607,7 +647,7 @@
       {#each clustered as cluster, i (cluster.id)}
         <!-- Day separator at each calendar-day boundary — safe because
              groupByClusterId sorts by representative published_at DESC. -->
-        {#if i === 0 || dayKey(cluster.representative.published_at, clock.now) !== dayKey(clustered[i - 1].representative.published_at, clock.now)}
+        {#if sortMode === 'latest' && (i === 0 || dayKey(cluster.representative.published_at, clock.now) !== dayKey(clustered[i - 1].representative.published_at, clock.now))}
           <div class="px-4 py-1.5 text-[10px] uppercase tracking-widest text-gray-600">
             {dayLabel(cluster.representative.published_at, clock.now)}
           </div>
@@ -623,7 +663,7 @@
         {/if}
         <ClusterCard {cluster} onselect={openArticle} />
       {/each}
-      {#if hasMore}
+      {#if hasMore && sortMode === 'latest'}
         <div class="py-6 text-center">
           <button
             id="feed-load-older"
