@@ -202,7 +202,10 @@ function logFeedSummary(results: FeedFetchResult[]) {
 // assign_story_by_embedding RPC (star linkage against story representatives,
 // item-relative ±EMBED_WINDOW_HOURS window). Failure here never fails the run:
 // articles stay story_id NULL and the next run picks them up.
+// Runs twice on a run with head accepts (early, then in finalize), so its
+// counters accumulate rather than overwrite.
 async function embedAndAssignClusters(stats: RunStats): Promise<void> {
+  const bump = (key: string, n: number) => { stats[key] = (Number(stats[key]) || 0) + n }
   try {
     const since = new Date(Date.now() - ASSIGN_LOOKBACK_HOURS * 3600_000).toISOString()
     const { data: unassigned, error: qError } = await supabaseAdmin
@@ -216,13 +219,14 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
       .limit(ASSIGN_CAP)
     if (qError) throw new Error(`worklist query failed: ${JSON.stringify(qError)}`)
     if (!unassigned?.length) {
-      stats.embedded = 0
-      stats.clusters_assigned = 0
+      bump('embedded', 0)
+      bump('clusters_assigned', 0)
       return
     }
 
     const embeddable = unassigned.filter((a) => shouldEmbed(a.title))
-    stats.embed_skipped = unassigned.length - embeddable.length
+    const skipped = unassigned.length - embeddable.length
+    bump('embed_skipped', skipped)
 
     // Articles embedded by a previous run whose assignment failed: reuse the
     // stored vector instead of re-embedding.
@@ -243,7 +247,7 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
     const fresh = await embedTitles(toEmbed.map((a) => a.title))
     const vecById = new Map<string, number[]>(stored)
     toEmbed.forEach((a, i) => vecById.set(a.id, fresh[i]))
-    stats.embedded = fresh.length
+    bump('embedded', fresh.length)
 
     const items = embeddable
       .filter((a) => vecById.has(a.id))
@@ -263,10 +267,10 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
       assigned += rows.length
       newClusters += rows.filter((r) => r.r_is_new).length
     }
-    stats.clusters_assigned = assigned
-    stats.clusters_new = newClusters
+    bump('clusters_assigned', assigned)
+    bump('clusters_new', newClusters)
     console.log(
-      `[pipeline] clustering: embedded ${fresh.length} (reused ${stored.size}, skipped ${stats.embed_skipped}), ` +
+      `[pipeline] clustering: embedded ${fresh.length} (reused ${stored.size}, skipped ${skipped}), ` +
         `assigned ${assigned} -> ${newClusters} new clusters (threshold ${EMBED_SIM_THRESHOLD})`,
     )
   } catch (err) {
@@ -335,6 +339,20 @@ async function writeRejects(
       .upsert(batch, { onConflict: 'guid', ignoreDuplicates: true })
     if (error) console.error('[pipeline] reject record error:', error)
   }
+}
+
+async function upsertArticles<T extends { guid: string }>(articles: T[]): Promise<number> {
+  let inserted = 0
+  for (let i = 0; i < articles.length; i += UPSERT_BATCH) {
+    const batch = articles.slice(i, i + UPSERT_BATCH)
+    const { data, error } = await supabaseAdmin
+      .from('articles')
+      .upsert(batch, { onConflict: 'guid', ignoreDuplicates: true })
+      .select('id')
+    if (error) console.error(`[pipeline] upsert error (batch ${Math.floor(i / UPSERT_BATCH) + 1}):`, error)
+    else inserted += data?.length ?? 0
+  }
+  return inserted
 }
 
 async function finalize(stats: RunStats, startedAt: number): Promise<void> {
@@ -492,6 +510,25 @@ async function run(stats: RunStats): Promise<void> {
       `[pipeline] deferring ${deferred.length - stale.length} new articles to next run (classify cap)`,
     )
   }
+  // The head's verdicts land NOW, before the LLM is asked anything. The LLM
+  // stage routinely spends most of its budget asleep on the provider's daily
+  // token cap (429 + retry-after of 4-9 min); settled articles used to sit
+  // behind that sleep and reach the feed ~9 minutes late for no reason. Audit
+  // items are NOT in headAccept/headReject (they ride along to the LLM), so
+  // nothing here is judged twice.
+  let inserted = 0
+  if (headAccept.length > 0) {
+    inserted += await timed('head_upsert', () => upsertArticles(headAccept))
+    await timed('head_cluster', () => embedAndAssignClusters(stats))
+  }
+  if (headReject.length > 0) {
+    await writeRejects(
+      headReject.map((a) => ({
+        guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason: 'head' as const,
+      })),
+    )
+  }
+
   // Classify gets a share of the run's budget, measured from the START of the
   // run so a slow fetch eats into it rather than pushing past the job's kill.
   const classifyDeadline = startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS)
@@ -499,10 +536,9 @@ async function run(stats: RunStats): Promise<void> {
     'classify',
     () => classifyArticles(toClassify, classifyDeadline),
   )
-  // The head's confident accepts join the LLM's. Audit items are NOT in
-  // headAccept/headReject (they rode along to the LLM), so nothing is counted
-  // twice and the LLM's verdict is the one that lands for them.
-  const articles = [...toClassify.filter((a) => relevant.has(a.guid)), ...headAccept]
+  const llmAccept = toClassify.filter((a) => relevant.has(a.guid))
+  // For the stats: the head's confident accepts (already inserted) plus the LLM's.
+  const articles = [...llmAccept, ...headAccept]
   // `classified` counts articles that actually got a verdict, not articles we
   // set out to classify — with budget deferral those diverge, and reporting the
   // ambition rather than the outcome is how a degraded run looks healthy.
@@ -531,36 +567,23 @@ async function run(stats: RunStats): Promise<void> {
   }
 
   // 4. Upsert relevant articles + record rejects so they're never re-classified.
-  let inserted = 0
-  for (let i = 0; i < articles.length; i += UPSERT_BATCH) {
-    const batch = articles.slice(i, i + UPSERT_BATCH)
-    const { data, error } = await supabaseAdmin
-      .from('articles')
-      .upsert(batch, { onConflict: 'guid', ignoreDuplicates: true })
-      .select('id')
-    if (error) console.error(`[pipeline] upsert error (batch ${Math.floor(i / UPSERT_BATCH) + 1}):`, error)
-    else inserted += data?.length ?? 0
-  }
+  inserted += await upsertArticles(llmAccept)
   console.log(`[pipeline] inserted ${inserted} new articles`)
   stats.inserted = inserted
 
-  if (rejected.size > 0 || headReject.length > 0) {
+  if (rejected.size > 0) {
     // Project explicit, homogeneous columns (never spread the article objects —
     // PostgREST 400s on unknown columns, and a batch needs uniform keys).
     // source_id + lang give the curation pass accept-rate per source/language.
     // reason distinguishes a real LLM verdict from the head's — the trainer
     // loads only 'llm' rows as negatives (see 20260914000000_reject_reason_head).
     const byGuid = new Map(toClassify.map((a) => [a.guid, a]))
-    const rejectRows = [
-      ...[...rejected].map((guid) => {
+    await writeRejects(
+      [...rejected].map((guid) => {
         const a = byGuid.get(guid)
         return { guid, title: a?.title ?? null, source_id: a?.source_id ?? null, lang: a?.source_lang ?? null, reason: 'llm' as const }
       }),
-      ...headReject.map((a) => ({
-        guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason: 'head' as const,
-      })),
-    ]
-    await writeRejects(rejectRows)
+    )
   }
 
   // 5/6/7. Embed + assign stories (story_id IS NULL worklist self-heals),
