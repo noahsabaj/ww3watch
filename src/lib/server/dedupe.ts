@@ -44,7 +44,7 @@ export async function existingGuids(guids: string[]): Promise<Set<string>> {
           `refusing to treat ${chunk.length} already-judged articles as new: ${JSON.stringify(error)}`,
       )
     }
-    ;(data as Array<{ guid: string }> | null)?.forEach((r) => existing.add(r.guid))
+    data?.forEach((r) => existing.add(r.guid))
   }
   return existing
 }

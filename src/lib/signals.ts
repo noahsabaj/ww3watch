@@ -56,7 +56,9 @@ export const MAJOR_SEVERITY = 0.55
 /** A Noul at or above this reads as yes for badges and filters. */
 export const SIGNAL_YES = 0.7
 
-export interface ArticleSignals {
+// A `type`, not an `interface`, so it is assignable to the generated `Json` that
+// RPC arguments are declared as (interfaces lack the implicit index signature).
+export type ArticleSignals = {
   topic: Topic | null
   /** 0-1. */
   severity: number | null
