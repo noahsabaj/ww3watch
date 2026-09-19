@@ -362,6 +362,53 @@ export type Database = {
           },
         ]
       }
+      verdicts: {
+        Row: {
+          created_at: string
+          decision: string
+          guid: string
+          id: number
+          judge: string
+          lang: string | null
+          model: string | null
+          p: number | null
+          source_id: string | null
+          threshold: number | null
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          guid: string
+          id?: never
+          judge: string
+          lang?: string | null
+          model?: string | null
+          p?: number | null
+          source_id?: string | null
+          threshold?: number | null
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          guid?: string
+          id?: never
+          judge?: string
+          lang?: string | null
+          model?: string | null
+          p?: number | null
+          source_id?: string | null
+          threshold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verdicts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trending: {
         Row: {
           article_id: string
@@ -403,7 +450,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      verdict_daily: {
+        Row: {
+          accepted: number | null
+          borderline: number | null
+          day: string | null
+          judge: string | null
+          mean_p: number | null
+          n: number | null
+          would_accept_at_040: number | null
+          would_accept_at_060: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       actor_daily: {
@@ -440,6 +499,10 @@ export type Database = {
           guid: string
         }[]
       }
+      merge_stories: {
+        Args: { p_from: string; p_into: string }
+        Returns: number
+      }
       nearest_story_candidates: {
         Args: { p_items: Json; p_window_hours: number }
         Returns: {
@@ -465,6 +528,18 @@ export type Database = {
           r_name: string
           r_pct: number
           r_rejected: number
+        }[]
+      }
+      story_merge_candidates: {
+        Args: { p_hours: number; p_limit: number; p_min_sim: number }
+        Returns: {
+          r_a: string
+          r_a_count: number
+          r_a_title: string
+          r_b: string
+          r_b_count: number
+          r_b_title: string
+          r_sim: number
         }[]
       }
       story_join_sims: {

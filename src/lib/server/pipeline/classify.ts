@@ -7,7 +7,8 @@ import type { ArticleInsert } from '../rss'
 import { CLASSIFY_BUDGET_MS, HEAD_AUDIT_RATE, HEAD_POOL_CAP, JEV_POOL_CAP, JEV_THRESHOLD, RUN_BUDGET_MS, STALE_WRITEOFF_HOURS } from '../config'
 import { embedAndAssignClusters } from './clustering'
 import { enrichSignals } from './signals'
-import { writeRejects, upsertArticles } from './persist'
+import { writeRejects, upsertArticles, writeVerdicts, type VerdictRow } from './persist'
+import { JEV_MODEL } from '../jev'
 import { timed as timedStage, type RunStats } from './stats'
 
 export interface ClassifyOutcome {
@@ -31,6 +32,8 @@ export async function classifyFresh(fresh: ArticleInsert[], stats: RunStats, sta
   let headAccept: typeof ordered = []
   let headReject: typeof ordered = []
   let audit: Map<(typeof ordered)[number], 'accept' | 'reject' | 'uncertain'> = new Map()
+  // Every judgment made this run, with the probability behind it (→ verdicts).
+  const verdicts: VerdictRow[] = []
   if (head) {
     const pool = ordered.slice(0, HEAD_POOL_CAP)
     const embeddable = pool.filter((a) => shouldEmbed(a.title))
@@ -39,6 +42,12 @@ export async function classifyFresh(fresh: ArticleInsert[], stats: RunStats, sta
     headAccept = part.accept
     headReject = part.reject
     audit = part.audit
+    const headVerdict = (decision: 'accept' | 'reject') => (a: (typeof ordered)[number]): VerdictRow => ({
+      guid: a.guid, judge: 'head', decision, p: part.scores.get(a) ?? null,
+      threshold: decision === 'accept' ? head.accept_above : head.reject_below,
+      model: head.trained_at, lang: a.source_lang ?? null, source_id: a.source_id ?? null,
+    })
+    verdicts.push(...headAccept.map(headVerdict('accept')), ...headReject.map(headVerdict('reject')))
     // Titles too short to embed get no head opinion — they go straight to Jev.
     forJev = [...part.uncertain, ...pool.filter((a) => !shouldEmbed(a.title)), ...ordered.slice(HEAD_POOL_CAP)]
       .sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
@@ -97,6 +106,12 @@ export async function classifyFresh(fresh: ArticleInsert[], stats: RunStats, sta
   )
 
   inserted += await upsertArticles(part.accept)
+  for (const [decision, list] of [['accept', part.accept], ['reject', part.reject]] as const) {
+    verdicts.push(...list.map((a): VerdictRow => ({
+      guid: a.guid, judge: 'jev', decision, p: a.jev_relevant, threshold: JEV_THRESHOLD,
+      model: JEV_MODEL, lang: a.source_lang ?? null, source_id: a.source_id ?? null,
+    })))
+  }
   console.log(`[pipeline] inserted ${inserted} new articles`)
   stats.inserted = inserted
   if (part.reject.length > 0) await writeRejects(part.reject.map((a) => rejectRow(a, 'jev')))
@@ -109,6 +124,10 @@ export async function classifyFresh(fresh: ArticleInsert[], stats: RunStats, sta
   const stale = selectStaleWriteOffs(deferred, Date.now() - STALE_WRITEOFF_HOURS * 3_600_000)
   if (stale.length > 0) {
     await timed('stale_writeoff', () => writeRejects(stale.map(staleRejectRow)))
+    verdicts.push(...stale.map((a): VerdictRow => ({
+      guid: a.guid, judge: 'stale', decision: 'reject', p: null, threshold: null, model: null,
+      lang: a.source_lang ?? null, source_id: a.source_id ?? null,
+    })))
     console.log(
       `[pipeline] wrote off ${stale.length} unjudged articles older than ${STALE_WRITEOFF_HOURS}h (too old to display)`,
     )
@@ -117,6 +136,8 @@ export async function classifyFresh(fresh: ArticleInsert[], stats: RunStats, sta
   if (deferred.length > stale.length) {
     console.log(`[pipeline] ${deferred.length - stale.length} articles stay new for the next run`)
   }
+
+  stats.verdicts_recorded = await timed('verdicts', () => writeVerdicts(verdicts))
 
   Object.assign(stats, {
     // Articles that actually got a verdict this run, from either tier.

@@ -19,7 +19,9 @@ export interface JevPartition<T> {
   /** Accepted, each stamped with Jev's P(relevant) so the signals stage does
    *  not have to ask the same question again. */
   accept: Array<T & { jev_relevant: number }>
-  reject: T[]
+  /** Rejected, with the probability that rejected them — recorded as a verdict,
+   *  so the threshold can be questioned later without re-asking. */
+  reject: Array<T & { jev_relevant: number }>
   /** No verdict: the call failed or the run was out of time. The article stays
    *  "new" and is judged next run — never guessed at. */
   unjudged: T[]
@@ -38,7 +40,7 @@ export async function partitionByJev<T extends JevArticle>(
     out.inputTokens += value.inputTokens
     if (Math.abs(value.relevant - JEV_THRESHOLD) < BORDERLINE) out.borderline++
     if (value.relevant >= JEV_THRESHOLD) out.accept.push({ ...item, jev_relevant: value.relevant })
-    else out.reject.push(item)
+    else out.reject.push({ ...item, jev_relevant: value.relevant })
   }
   pool.failed.slice(0, 3).forEach(({ error }) =>
     console.error('[jev] call failed, article stays new for the next run:', String(error).slice(0, 200)),

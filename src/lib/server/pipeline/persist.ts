@@ -1,5 +1,6 @@
 // Writes of verdicts: accepted articles and recorded rejects.
 import type { AppDatabase } from '../../db'
+import type { TablesInsert } from '../../database.types'
 import { supabaseAdmin } from '../supabase'
 import { UPSERT_BATCH } from '../config'
 
@@ -35,4 +36,18 @@ export async function upsertArticles(articles: ArticleUpsert[]): Promise<number>
     else inserted += data?.length ?? 0
   }
   return inserted
+}
+
+export type VerdictRow = TablesInsert<'verdicts'>
+
+// The append-only record of every judgment (20260919150000_verdicts…). Strictly
+// best-effort: it is analysis data, and must never cost a run its articles.
+export async function writeVerdicts(rows: VerdictRow[]): Promise<number> {
+  let written = 0
+  for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
+    const { error } = await supabaseAdmin.from('verdicts').insert(rows.slice(i, i + UPSERT_BATCH))
+    if (error) console.error('[pipeline] verdict record error (non-fatal):', error)
+    else written += Math.min(UPSERT_BATCH, rows.length - i)
+  }
+  return written
 }
