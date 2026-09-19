@@ -148,6 +148,26 @@ jobs:
             gh issue create --title "Feed sources auto-disabled — re-curation needed" --label feed-health --body "$body"
           fi
 
+      # Feeds that fetch fine but yield ~nothing (source_yield RPC). One open
+      # feed-health issue at a time; it is only commented on when the list
+      # changes, so a standing list does not get a comment every 15 minutes.
+      - name: File feed-health issue for low-yield sources
+        if: ${{ !cancelled() && steps.run.outputs.low_yield_sources != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOW_YIELD: ${{ steps.run.outputs.low_yield_sources }}
+        run: |
+          gh label create feed-health --color FBCA04 --description "Feed sources needing re-curation" --force >/dev/null 2>&1 || true
+          names=$(echo "$LOW_YIELD" | cut -d: -f1 | sort | tr '\n' ',' )
+          marker="<!-- low-yield: $names -->"
+          body=$(printf '%s\nFetching fine, but almost nothing accepted over the last 7 days (≥100 items, ≤2%% accepted):\n\n%s\n\nSwap the URL for the outlet'"'"'s world/conflict section feed, or disable it, with SQL on the sources table.' "$marker" "$(echo "$LOW_YIELD" | sed 's/^/- /')")
+          existing=$(gh issue list --label feed-health --state open --search "low-yield in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -z "$existing" ]; then
+            gh issue create --title "Feed sources with low-yield — re-curation suggested" --label feed-health --body "$body"
+          elif ! gh issue view "$existing" --json body,comments --jq '.body, .comments[].body' | grep -qF -- "$marker"; then
+            gh issue comment "$existing" --body "$body"
+          fi
+
       - name: Resolve alert on success
         if: success()
         env:
