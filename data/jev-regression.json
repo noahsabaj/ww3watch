@@ -1,34 +1,34 @@
 {
  "model": "jev-1.13.0",
- "recorded_at": "2026-09-19T05:09:40.521Z",
+ "recorded_at": "2026-09-19T15:49:00.019Z",
  "rows": [
   {
    "title": "‘Escalation is becoming a fact’: Tusk says Russia may target Ukrainian border crossings after drones hit a Kyiv–Warsaw train and nearby gas station",
    "lang": "en",
-   "relevant": 0.98,
+   "relevant": 0.99,
    "topic": "armed_conflict",
-   "severity": 0.233
+   "severity": 0.263
   },
   {
    "title": "‘Iran has agreements with BRICS members for cooperation in various fields’",
    "lang": "en",
-   "relevant": 0.04,
+   "relevant": 0.27,
    "topic": "other",
    "severity": 0.007
   },
   {
    "title": "'That's why we fight': Trump links 9/11 to Iran conflict",
    "lang": "en",
-   "relevant": 0.67,
+   "relevant": 0.89,
    "topic": "armed_conflict",
    "severity": 0.003
   },
   {
    "title": "‘Totally new’: Nammo pursues rocket motor engine for latest IRIS-T air defense",
    "lang": "en",
-   "relevant": 0.07,
+   "relevant": 0.21,
    "topic": "military_posture",
-   "severity": 0.227
+   "severity": 0.217
   },
   {
    "title": "\"Настоящий воин\". Археолог описал телосложение Дмитрия Донского",
@@ -40,21 +40,21 @@
   {
    "title": "\"Они вопят\": в США выступили с резким предупреждением о России",
    "lang": "ru",
-   "relevant": 0.61,
+   "relevant": 0.75,
    "topic": "conflict_diplomacy",
    "severity": 0.003
   },
   {
    "title": "\"בגלל ציפור\": F-16 התרסק סמוך לבתים במישיגן",
    "lang": "he",
-   "relevant": 0.06,
+   "relevant": 0.08,
    "topic": "other",
    "severity": 0.37
   },
   {
    "title": "\"השמדה הדדית\": מושל קליפורניה מבטיח לפנות את הדרך לקמלה האריס ב-2028",
    "lang": "he",
-   "relevant": 0.03,
+   "relevant": 0.05,
    "topic": "other",
    "severity": 0.01
   },
@@ -68,9 +68,9 @@
   {
    "title": "«Медуза» нашла в открытом доступе план российских властей по борьбе с экстремизмом",
    "lang": "en",
-   "relevant": 0.14,
+   "relevant": 0.48,
    "topic": "other",
-   "severity": 0.02
+   "severity": 0.023
   },
   {
    "title": "🔴 Live: Israel demolition of Hezbollah tunnels in south Lebanon caused 4.1-magnitude quake",
@@ -82,16 +82,16 @@
   {
    "title": "۲ کشتی در تنگه هرمز هدف حمله قرار گرفتند",
    "lang": "fa",
-   "relevant": 0.91,
+   "relevant": 0.94,
    "topic": "armed_conflict",
-   "severity": 0.62
+   "severity": 0.617
   },
   {
    "title": "٣١ مورد ابتلای قطعی به تب کریمه کنگو در کشور/ یزد، سیستان و بلوچستان و کرمان دارای بیشترین موارد ابتلا",
    "lang": "fa",
-   "relevant": 0.01,
+   "relevant": 0.02,
    "topic": "other",
-   "severity": 0.347
+   "severity": 0.33
   },
   {
    "title": "9 Palestinians injured in Israeli drone strike in southern Gaza",
@@ -103,198 +103,198 @@
   {
    "title": "ABD'de haber takibi yapan helikopter düştü: 3 kişi hayatını kaybetti",
    "lang": "tr",
-   "relevant": 0.02,
+   "relevant": 0.03,
    "topic": "other",
-   "severity": 0.497
+   "severity": 0.5
   },
   {
    "title": "Acting Navy secretary says Iran ‘blew the hell out of’ US base in Bahrain",
    "lang": "en",
-   "relevant": 0.96,
+   "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.427
+   "severity": 0.453
   },
   {
    "title": "Al-Ahrar Movement: Continued Denial of Red Cross Access to Gaza Detainees Systematic Crime",
    "lang": "en",
-   "relevant": 0.93,
-   "topic": "terrorism_or_assassination",
-   "severity": 0.11
+   "relevant": 0.95,
+   "topic": "armed_conflict",
+   "severity": 0.12
   },
   {
    "title": "Al-Qadir Trust case: Bushra Bibi moves FCC for early hearing of sentence suspension plea",
    "lang": "en",
-   "relevant": 0.02,
+   "relevant": 0.03,
    "topic": "other",
    "severity": 0.16
   },
   {
    "title": "Algeria severs ties with UAE",
    "lang": "en",
-   "relevant": 0.41,
+   "relevant": 0.89,
    "topic": "conflict_diplomacy",
-   "severity": 0.47
+   "severity": 0.483
   },
   {
    "title": "Argentina revives plan for South Atlantic naval base amid Falklands tensions",
    "lang": "en",
-   "relevant": 0.81,
+   "relevant": 0.95,
    "topic": "military_posture",
    "severity": 0.223
   },
   {
    "title": "Bahrain rules out Hormuz talks with Iran",
    "lang": "en",
-   "relevant": 0.71,
+   "relevant": 0.92,
    "topic": "conflict_diplomacy",
    "severity": 0.01
   },
   {
    "title": "Bahrain won't attend meeting on Hormuz in Oman",
    "lang": "en",
-   "relevant": 0.63,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
-   "severity": 0.073
+   "severity": 0.077
   },
   {
    "title": "Belçika'nın kamu yayıncısı VRT, İsrail'e ilişkin endişeleri nedeniyle 2027 Eurovision kararını erteledi",
    "lang": "tr",
-   "relevant": 0.11,
+   "relevant": 0.4,
    "topic": "other",
-   "severity": 0.12
+   "severity": 0.127
   },
   {
    "title": "BRICS is challenging the US-led order but can’t replace it yet",
    "lang": "en",
-   "relevant": 0.06,
+   "relevant": 0.41,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "BRICS nations call for stepped-up efforts to de-escalate tensions in the Middle East",
    "lang": "en",
-   "relevant": 0.78,
+   "relevant": 0.96,
    "topic": "conflict_diplomacy",
    "severity": 0
   },
   {
    "title": "BRICS nations urge 'maximum restraint' in Middle East war",
    "lang": "en",
-   "relevant": 0.95,
+   "relevant": 0.98,
    "topic": "conflict_diplomacy",
    "severity": 0.003
   },
   {
    "title": "Brussels seeks 'credible' outcome in EU-China talks after key negotiators’ call",
    "lang": "en",
-   "relevant": 0.06,
+   "relevant": 0.41,
    "topic": "other",
-   "severity": 0.183
+   "severity": 0.203
   },
   {
    "title": "Child injured in Syria's Aleppo blast caused by leftover ammunition",
    "lang": "en",
-   "relevant": 0.93,
+   "relevant": 0.94,
    "topic": "armed_conflict",
    "severity": 0.37
   },
   {
    "title": "Cuba plunges into total blackout as electrical grid collapses again, US Embassy warns",
    "lang": "en",
-   "relevant": 0.03,
+   "relevant": 0.11,
    "topic": "other",
-   "severity": 0.487
+   "severity": 0.477
   },
   {
    "title": "Cuban Foreign Minister: we will not abandon our sovereignty, independence",
    "lang": "en",
-   "relevant": 0.23,
+   "relevant": 0.68,
    "topic": "conflict_diplomacy",
    "severity": 0
   },
   {
    "title": "Dozens of suspected illegal miners die in Nigerian custody",
    "lang": "en",
-   "relevant": 0.08,
+   "relevant": 0.15,
    "topic": "other",
-   "severity": 0.657
+   "severity": 0.653
   },
   {
    "title": "EU warns Turkey to clean up waste treatment or face trade ban",
    "lang": "en",
-   "relevant": 0.04,
+   "relevant": 0.12,
    "topic": "other",
-   "severity": 0.12
+   "severity": 0.127
   },
   {
    "title": "EXPLAINER – What is Saudi Arabia’s East-West pipeline, and what its ‘precautionary' shutdown means?",
    "lang": "en",
-   "relevant": 0.19,
+   "relevant": 0.37,
    "topic": "other",
-   "severity": 0.24
+   "severity": 0.253
   },
   {
    "title": "Fabrika kuracakları arazinin altından askeri kamp çıktı",
    "lang": "tr",
-   "relevant": 0.08,
+   "relevant": 0.12,
    "topic": "other",
-   "severity": 0.27
+   "severity": 0.26
   },
   {
    "title": "Filistin Esirler Cemiyeti: İsrail hapishanelerindeki Filistinli gazetecilerin sayısı 37'ye yükseldi",
    "lang": "tr",
-   "relevant": 0.81,
+   "relevant": 0.93,
    "topic": "other",
-   "severity": 0.263
+   "severity": 0.267
   },
   {
    "title": "Five children rescued after home staircase collapses in Al-Sabra, southern Gaza",
    "lang": "en",
-   "relevant": 0.17,
+   "relevant": 0.27,
    "topic": "other",
-   "severity": 0.35
+   "severity": 0.353
   },
   {
    "title": "French interior minister accused of drug-smearing pro-Palestinian MEP",
    "lang": "en",
-   "relevant": 0.09,
+   "relevant": 0.57,
    "topic": "other",
-   "severity": 0.023
+   "severity": 0.027
   },
   {
    "title": "Gaza's hospitals and homes struggle to keep generators running as oil shortages bite",
    "lang": "en",
-   "relevant": 0.5,
+   "relevant": 0.71,
    "topic": "other",
-   "severity": 0.297
+   "severity": 0.31
   },
   {
    "title": "Germany receives first F-35 jet from US as NATO boosts military spending",
    "lang": "en",
-   "relevant": 0.57,
+   "relevant": 0.87,
    "topic": "military_posture",
    "severity": 0.333
   },
   {
    "title": "Govt to stop anyone marching on Islamabad 'in every possible way', says Naqvi",
    "lang": "en",
-   "relevant": 0.07,
+   "relevant": 0.56,
    "topic": "other",
    "severity": 0.01
   },
   {
    "title": "Houthi advance in Yemen is about more than just the Red Sea",
    "lang": "en",
-   "relevant": 0.92,
+   "relevant": 0.94,
    "topic": "armed_conflict",
-   "severity": 0.247
+   "severity": 0.22
   },
   {
    "title": "Houthi projectile injures two, damages mosque and buildings in Jazan",
    "lang": "en",
    "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.373
+   "severity": 0.377
   },
   {
    "title": "Houthis Seize a Key Red Sea Island, Threatening Yet Another Global Oil Route",
@@ -306,91 +306,91 @@
   {
    "title": "Houthis seize key Yemeni island in Bab el-Mandeb, taking control of the strait",
    "lang": "en",
-   "relevant": 0.98,
+   "relevant": 0.99,
    "topic": "armed_conflict",
-   "severity": 0.747
+   "severity": 0.737
   },
   {
    "title": "Houthis seize Yemen’s entire Red Sea coast, strategic islands",
    "lang": "en",
-   "relevant": 0.98,
+   "relevant": 0.99,
    "topic": "armed_conflict",
    "severity": 0.7
   },
   {
    "title": "ICE agent pleads not guilty to lying to FBI about Minneapolis shooting",
    "lang": "en",
-   "relevant": 0.04,
+   "relevant": 0.06,
    "topic": "other",
    "severity": 0.307
   },
   {
    "title": "ICE to remain without Senate-confirmed chief after White House withdraws Trump’s pick",
    "lang": "en",
-   "relevant": 0.02,
+   "relevant": 0.06,
    "topic": "other",
-   "severity": 0.093
+   "severity": 0.107
   },
   {
    "title": "India and China pursue disaster diplomacy in flood-hit Nepal",
    "lang": "en",
-   "relevant": 0.03,
+   "relevant": 0.29,
    "topic": "other",
-   "severity": 0.13
+   "severity": 0.14
   },
   {
    "title": "Iran and US: Two countries and the pistachio between them",
    "lang": "en",
-   "relevant": 0.14,
+   "relevant": 0.29,
    "topic": "other",
    "severity": 0.003
   },
   {
    "title": "Iran Belongs to All Iranians, President Pezeshkian Says at National Gathering",
    "lang": "en",
-   "relevant": 0.04,
+   "relevant": 0.23,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "Iran reports commercial vessel struck in Strait of Hormuz",
    "lang": "en",
-   "relevant": 0.78,
+   "relevant": 0.86,
    "topic": "armed_conflict",
-   "severity": 0.5
+   "severity": 0.493
   },
   {
    "title": "Iranian arms and advice helped Yemen's Houthis seize key Red Sea city, sources say",
    "lang": "en",
    "relevant": 0.99,
-   "topic": "armed_conflict",
-   "severity": 0.597
+   "topic": "military_posture",
+   "severity": 0.593
   },
   {
    "title": "Iranian Defense Minister: ‘Any new war will see stronger response’",
    "lang": "en",
-   "relevant": 0.89,
+   "relevant": 0.96,
    "topic": "military_posture",
    "severity": 0.003
   },
   {
    "title": "Iraq removes Maysan operations commander after attacks on Saudi Arabia",
    "lang": "en",
-   "relevant": 0.94,
+   "relevant": 0.96,
    "topic": "armed_conflict",
-   "severity": 0.36
+   "severity": 0.353
   },
   {
    "title": "Iraqi Resistance rejects Saudi pipeline accusation as ‘an honor we do not claim’",
    "lang": "en",
-   "relevant": 0.72,
+   "relevant": 0.85,
    "topic": "other",
    "severity": 0.003
   },
   {
    "title": "Israeli Army \"Categorically Rejects\" Alleged AI Use In Targeting Gazans",
    "lang": "en",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
    "severity": 0.003
   },
@@ -399,68 +399,68 @@
    "lang": "en",
    "relevant": 0.98,
    "topic": "military_posture",
-   "severity": 0.243
+   "severity": 0.25
   },
   {
    "title": "Israeli forces abduct Syrian man during incursion into Al-Hamidiya town",
    "lang": "en",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
    "severity": 0.34
   },
   {
    "title": "İsrailli Bakan'dan 'NAZA' yönetmenlerine tehdit!",
    "lang": "tr",
-   "relevant": 0.33,
+   "relevant": 0.62,
    "topic": "conflict_diplomacy",
-   "severity": 0.02
+   "severity": 0.023
   },
   {
    "title": "Issa reaffirms US support for Lebanon sovereignty, framework agreement",
    "lang": "en",
-   "relevant": 0.33,
+   "relevant": 0.78,
    "topic": "conflict_diplomacy",
    "severity": 0
   },
   {
    "title": "Jon Stewart calls out politicians who praise first responders then discard them",
    "lang": "en",
-   "relevant": 0.02,
+   "relevant": 0.03,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "Katz: Whoever approaches strategic Lebanon ridge ‘will be destroyed’",
    "lang": "en",
-   "relevant": 0.91,
+   "relevant": 0.94,
    "topic": "military_posture",
    "severity": 0.01
   },
   {
    "title": "King Charles, Earl Spencer clash over Diana death once again",
    "lang": "en",
-   "relevant": 0.01,
+   "relevant": 0.02,
    "topic": "other",
-   "severity": 0.06
+   "severity": 0.067
   },
   {
    "title": "Kobani prison fire leaves seven dead, dozens injured",
    "lang": "en",
-   "relevant": 0.6,
+   "relevant": 0.71,
    "topic": "armed_conflict",
-   "severity": 0.637
+   "severity": 0.633
   },
   {
    "title": "Malaysia pardons board members at palace amid speculation of meeting on Najib clemency",
    "lang": "en",
-   "relevant": 0.02,
+   "relevant": 0.04,
    "topic": "other",
-   "severity": 0.227
+   "severity": 0.23
   },
   {
    "title": "Modi and Xi 'expressed commitment' to resolving border issue: India",
    "lang": "en",
-   "relevant": 0.69,
+   "relevant": 0.96,
    "topic": "conflict_diplomacy",
    "severity": 0.027
   },
@@ -469,119 +469,119 @@
    "lang": "en",
    "relevant": 0.99,
    "topic": "armed_conflict",
-   "severity": 0.647
+   "severity": 0.643
   },
   {
    "title": "Multiple explosions heard near US base at Erbil airport in northern Iraq",
    "lang": "en",
-   "relevant": 0.93,
+   "relevant": 0.95,
    "topic": "armed_conflict",
-   "severity": 0.48
+   "severity": 0.487
   },
   {
    "title": "Mural of Macklemore wrapped in Palestinian flag painted on Gaza ruins",
    "lang": "en",
-   "relevant": 0.19,
+   "relevant": 0.31,
    "topic": "other",
-   "severity": 0.04
+   "severity": 0.043
   },
   {
    "title": "Myanmar government revokes status and seeks action against UN envoy Kyaw Moe Tun",
    "lang": "en",
-   "relevant": 0.27,
+   "relevant": 0.85,
    "topic": "conflict_diplomacy",
-   "severity": 0.35
+   "severity": 0.337
   },
   {
    "title": "Nearly 86,000 people flee fighting in Yemen, UN says",
    "lang": "en",
    "relevant": 0.99,
    "topic": "armed_conflict",
-   "severity": 0.563
+   "severity": 0.533
   },
   {
    "title": "Niger govt cancels APC rally, suspends NSCDC commandant over deaths of detained illegal mining suspects",
    "lang": "en",
-   "relevant": 0.14,
+   "relevant": 0.27,
    "topic": "other",
-   "severity": 0.38
+   "severity": 0.373
   },
   {
    "title": "North Korea launches unidentified projectile toward East Sea",
    "lang": "en",
-   "relevant": 0.95,
+   "relevant": 0.97,
    "topic": "nuclear_or_missiles",
-   "severity": 0.437
+   "severity": 0.443
   },
   {
    "title": "Over 80,000 displaced in Yemen as fighting intensifies amid new Houthi push",
    "lang": "en",
    "relevant": 0.99,
    "topic": "armed_conflict",
-   "severity": 0.663
+   "severity": 0.667
   },
   {
    "title": "Pakistan pressing US and Iran to return to negotiating table amid renewed strikes, UN envoy says",
    "lang": "en",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "conflict_diplomacy",
-   "severity": 0.24
+   "severity": 0.25
   },
   {
    "title": "Palestinian American activist arrested and ‘charged for trespassing at a public hearing’",
    "lang": "en",
-   "relevant": 0.05,
+   "relevant": 0.23,
    "topic": "other",
    "severity": 0.333
   },
   {
    "title": "Palestinian man faints after being detained and handcuffed for hours by Israeli forces",
    "lang": "en",
-   "relevant": 0.75,
+   "relevant": 0.87,
    "topic": "armed_conflict",
    "severity": 0.333
   },
   {
    "title": "PEN America names author Phil Klay, critic of Israel’s actions in Gaza and West Bank, as president",
    "lang": "en",
-   "relevant": 0.06,
+   "relevant": 0.12,
    "topic": "other",
-   "severity": 0.047
+   "severity": 0.04
   },
   {
    "title": "Pentagon leadership churn in focus as NATO military chiefs meet",
    "lang": "en",
-   "relevant": 0.17,
+   "relevant": 0.72,
    "topic": "military_posture",
-   "severity": 0.09
+   "severity": 0.083
   },
   {
    "title": "PM calls for thorough readiness for security threats",
    "lang": "en",
-   "relevant": 0.24,
+   "relevant": 0.63,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "Prison riot fire in Kurdish-majority town kills at least seven in Syria",
    "lang": "en",
-   "relevant": 0.53,
+   "relevant": 0.69,
    "topic": "coup_or_unrest",
-   "severity": 0.633
+   "severity": 0.64
   },
   {
    "title": "Putin to choose head of Russian delegation to trilateral talks — Kremlin aide",
    "lang": "en",
-   "relevant": 0.45,
+   "relevant": 0.84,
    "topic": "conflict_diplomacy",
-   "severity": 0.02
+   "severity": 0.023
   },
   {
    "title": "Report: Two vessels attacked in Strait of Hormuz",
    "lang": "en",
-   "relevant": 0.91,
+   "relevant": 0.94,
    "topic": "armed_conflict",
-   "severity": 0.62
+   "severity": 0.617
   },
   {
    "title": "Russian drones strikes Ukrainian passenger train near Polish border",
@@ -593,42 +593,42 @@
   {
    "title": "Russian Weapons, Equipment Considered Among Most Reliable, Effective in World - Putin",
    "lang": "en",
-   "relevant": 0.18,
+   "relevant": 0.47,
    "topic": "military_posture",
    "severity": 0
   },
   {
    "title": "Russians vote for new parliament after campaign marked by near silence",
    "lang": "en",
-   "relevant": 0.02,
+   "relevant": 0.36,
    "topic": "other",
-   "severity": 0.283
+   "severity": 0.297
   },
   {
    "title": "Rusya: Ukrayna'nın batı bölgelerinde demir yolu altyapısına yönelik saldırıları sürdürdük",
    "lang": "tr",
-   "relevant": 0.98,
+   "relevant": 0.99,
    "topic": "armed_conflict",
-   "severity": 0.553
+   "severity": 0.55
   },
   {
    "title": "Saudi Arabia to halt crude supplies to European refiners in October",
    "lang": "en",
-   "relevant": 0.06,
+   "relevant": 0.15,
    "topic": "other",
-   "severity": 0.38
+   "severity": 0.403
   },
   {
    "title": "Saudi foreign minister says kingdom’s security ‘not open to compromise’",
    "lang": "en",
-   "relevant": 0.41,
+   "relevant": 0.83,
    "topic": "conflict_diplomacy",
    "severity": 0
   },
   {
    "title": "Seoul reaffirms to US its intent to contribute to restoring Strait of Hormuz free passage",
    "lang": "en",
-   "relevant": 0.82,
+   "relevant": 0.95,
    "topic": "conflict_diplomacy",
    "severity": 0.003
   },
@@ -637,84 +637,84 @@
    "lang": "en",
    "relevant": 0.02,
    "topic": "other",
-   "severity": 0.59
+   "severity": 0.587
   },
   {
    "title": "Sikh Driver Stabbed 17 Times In US Amid Row Over Team Trump's 'Mr Singh' Post",
    "lang": "en",
-   "relevant": 0.02,
-   "topic": "terrorism_or_assassination",
-   "severity": 0.63
+   "relevant": 0.03,
+   "topic": "other",
+   "severity": 0.64
   },
   {
    "title": "Sikh truck driver survives harrowing stabbing attack at Wyoming rest stop",
    "lang": "en",
    "relevant": 0.02,
    "topic": "other",
-   "severity": 0.46
+   "severity": 0.463
   },
   {
    "title": "Sudan’s war is now a regional crisis",
    "lang": "en",
    "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.177
+   "severity": 0.147
   },
   {
    "title": "Surendra Koli found dead. India still asks: Who killed Nithari's children?",
    "lang": "en",
    "relevant": 0.02,
    "topic": "other",
-   "severity": 0.337
+   "severity": 0.333
   },
   {
    "title": "Torrential rain and flooding slam Tunis, forcing schools to close",
    "lang": "en",
    "relevant": 0.01,
    "topic": "other",
-   "severity": 0.343
+   "severity": 0.347
   },
   {
    "title": "Trump bans media outlets CNN, MSNOW and Politico from the White House",
    "lang": "en",
-   "relevant": 0.01,
+   "relevant": 0.03,
    "topic": "other",
-   "severity": 0.29
+   "severity": 0.293
   },
   {
    "title": "Trump derides EU’s Canada pitch, eyes more tariffs on bloc",
    "lang": "en",
-   "relevant": 0.02,
+   "relevant": 0.11,
    "topic": "other",
-   "severity": 0.057
+   "severity": 0.05
   },
   {
    "title": "Trump says his son’s wedding party being bankrolled by a Russian oligarch is ‘totally allowed’",
    "lang": "en",
-   "relevant": 0.02,
+   "relevant": 0.05,
    "topic": "other",
    "severity": 0.003
   },
   {
    "title": "Trump: Seçimlerden sonra İran ile savaş bitmiş olacak",
    "lang": "tr",
-   "relevant": 0.6,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
    "severity": 0.007
   },
   {
    "title": "Trump’s pressure on NATO is reshaping Europe’s defenses. Will it break the alliance?",
    "lang": "en",
-   "relevant": 0.44,
+   "relevant": 0.91,
    "topic": "conflict_diplomacy",
-   "severity": 0.02
+   "severity": 0.017
   },
   {
    "title": "Türkiye, Yemeni Govt Condemn Attacks on East-West Oil Pipeline in Saudi Arabia",
    "lang": "en",
-   "relevant": 0.91,
+   "relevant": 0.96,
    "topic": "terrorism_or_assassination",
-   "severity": 0.14
+   "severity": 0.187
   },
   {
    "title": "UAE weather: Temperatures to reach 44°C on Friday, with fog risk overnight",
@@ -726,91 +726,91 @@
   {
    "title": "UN, African journalists to push for continental response to AI-driven disinformation in key Nairobi meet",
    "lang": "en",
-   "relevant": 0.03,
+   "relevant": 0.1,
    "topic": "other",
-   "severity": 0.23
+   "severity": 0.22
   },
   {
    "title": "Unknown projectiles strike 2 vessels off Oman, fire reported aboard one: UKMTO",
    "lang": "en",
-   "relevant": 0.85,
+   "relevant": 0.92,
    "topic": "armed_conflict",
-   "severity": 0.467
+   "severity": 0.477
   },
   {
    "title": "US and Denmark reach deal over Greenland's security",
    "lang": "en",
-   "relevant": 0.3,
+   "relevant": 0.84,
    "topic": "military_posture",
-   "severity": 0.207
+   "severity": 0.23
   },
   {
    "title": "US appeals court rejects Trump policy allowing swift deportations to third countries",
    "lang": "en",
-   "relevant": 0.03,
+   "relevant": 0.06,
    "topic": "other",
-   "severity": 0.333
+   "severity": 0.313
   },
   {
    "title": "US believes Russia, Ukraine want to find way to settle conflict — Kushner",
    "lang": "en",
-   "relevant": 0.95,
+   "relevant": 0.98,
    "topic": "conflict_diplomacy",
    "severity": 0
   },
   {
    "title": "US mercenary Matthew VanDyke gets bail 6 months after NIA arrest",
    "lang": "en",
-   "relevant": 0.44,
+   "relevant": 0.49,
    "topic": "other",
-   "severity": 0.327
+   "severity": 0.33
   },
   {
    "title": "US Sentences Ex-head of Syrian Prison to 60 Years on Torture Charges",
    "lang": "en",
-   "relevant": 0.11,
+   "relevant": 0.27,
    "topic": "other",
-   "severity": 0.357
+   "severity": 0.35
   },
   {
    "title": "Xi takes centre stage at Modi’s BRICS summit as Iran war deepens",
    "lang": "en",
-   "relevant": 0.59,
+   "relevant": 0.89,
    "topic": "conflict_diplomacy",
    "severity": 0.327
   },
   {
    "title": "Yemen army says it is ready as Houthis mass forces around Marib",
    "lang": "en",
-   "relevant": 0.98,
+   "relevant": 0.99,
    "topic": "military_posture",
-   "severity": 0.323
+   "severity": 0.34
   },
   {
    "title": "Yemen: Fighting escalates around the Bab el-Mandeb Strait",
    "lang": "en",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.58
+   "severity": 0.583
   },
   {
    "title": "Yunanistan’ın çıkarma tatbikatı fiyaskoya dönüştü: Bazı askerler botlardan atlayamadı, bir askerin üzerinden bot geçti",
    "lang": "tr",
-   "relevant": 0.28,
+   "relevant": 0.25,
    "topic": "military_posture",
    "severity": 0.333
   },
   {
    "title": "Адреса производителей дронов для ВСУ в Европе известны, заявил Медведчук",
    "lang": "ru",
-   "relevant": 0.93,
+   "relevant": 0.95,
    "topic": "military_posture",
    "severity": 0.003
   },
   {
    "title": "Аналитик рассказал, когда закон о санкциях против России потеряет силу",
    "lang": "ru",
-   "relevant": 0.74,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
    "severity": 0.01
   },
@@ -819,40 +819,40 @@
    "lang": "ru",
    "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.453
+   "severity": 0.45
   },
   {
    "title": "В Болгарии загорелись склады оружейного завода EMCO",
    "lang": "ru",
-   "relevant": 0.05,
+   "relevant": 0.08,
    "topic": "other",
    "severity": 0.353
   },
   {
    "title": "В Венгрии заявили, что у страны есть альтернативы импорту российской нефти",
    "lang": "ru",
-   "relevant": 0.15,
+   "relevant": 0.49,
    "topic": "other",
    "severity": 0.003
   },
   {
    "title": "В Житомире прогремел взрыв",
    "lang": "ru",
-   "relevant": 0.37,
-   "topic": "armed_conflict",
-   "severity": 0.453
+   "relevant": 0.47,
+   "topic": "other",
+   "severity": 0.46
   },
   {
    "title": "В КНДР назвали обладание ядерным оружием правильным выбором ради мира",
    "lang": "ru",
-   "relevant": 0.81,
+   "relevant": 0.93,
    "topic": "nuclear_or_missiles",
    "severity": 0.013
   },
   {
    "title": "В МВД назвали признаки заражения смартфона вирусами",
    "lang": "ru",
-   "relevant": 0.02,
+   "relevant": 0.05,
    "topic": "other",
    "severity": 0.003
   },
@@ -861,187 +861,187 @@
    "lang": "ru",
    "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.62
+   "severity": 0.613
   },
   {
    "title": "В Москве 1,8 миллиона избирателей проголосовали на выборах в Госдуму",
    "lang": "ru",
-   "relevant": 0.01,
+   "relevant": 0.12,
    "topic": "other",
    "severity": 0.083
   },
   {
    "title": "В Нижнекамске при атаке БПЛА погибли две девушки",
    "lang": "ru",
-   "relevant": 0.93,
+   "relevant": 0.95,
    "topic": "armed_conflict",
    "severity": 0.667
   },
   {
    "title": "В Новгородской области объявили опасность БПЛА",
    "lang": "ru",
-   "relevant": 0.59,
+   "relevant": 0.81,
    "topic": "armed_conflict",
-   "severity": 0.253
+   "severity": 0.267
   },
   {
    "title": "В Новороссийске семь человек госпитализировали после ДТП с маршрутками",
    "lang": "ru",
    "relevant": 0.01,
    "topic": "other",
-   "severity": 0.337
+   "severity": 0.34
   },
   {
    "title": "В Сумах прогремел новый взрыв",
    "lang": "ru",
-   "relevant": 0.78,
+   "relevant": 0.83,
    "topic": "armed_conflict",
-   "severity": 0.533
+   "severity": 0.53
   },
   {
    "title": "В США сообщили о неожиданной проблеме Украины из-за тяжелых потерь",
    "lang": "ru",
-   "relevant": 0.89,
+   "relevant": 0.91,
    "topic": "armed_conflict",
    "severity": 0.117
   },
   {
    "title": "В Тернополе прогремел взрыв",
    "lang": "ru",
-   "relevant": 0.45,
+   "relevant": 0.53,
    "topic": "armed_conflict",
-   "severity": 0.483
+   "severity": 0.493
   },
   {
    "title": "В Турции прошли массовые рейды против ЛГБТ-организаций",
    "lang": "ru",
-   "relevant": 0.04,
+   "relevant": 0.12,
    "topic": "other",
-   "severity": 0.383
+   "severity": 0.387
   },
   {
    "title": "В Чечне объявили беспилотную опасность",
    "lang": "ru",
-   "relevant": 0.71,
-   "topic": "other",
-   "severity": 0.18
+   "relevant": 0.83,
+   "topic": "armed_conflict",
+   "severity": 0.193
   },
   {
    "title": "Вантажопереробка портів Одеської агломерації з липня скоротилася у 15 разів - Калашник",
    "lang": "uk",
-   "relevant": 0.31,
+   "relevant": 0.52,
    "topic": "other",
-   "severity": 0.25
+   "severity": 0.253
   },
   {
    "title": "Генсек НАТО поїде до Британії з дводенним візитом",
    "lang": "uk",
-   "relevant": 0.14,
+   "relevant": 0.64,
    "topic": "conflict_diplomacy",
    "severity": 0.01
   },
   {
    "title": "Генсек ШОС призвал опираться на опыт ЕАЭС в экономическом сотрудничестве",
    "lang": "ru",
-   "relevant": 0.02,
+   "relevant": 0.08,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "Германия и Италия склоняются к тому, чтобы поддержать снятие санкций с Усманова — FT",
    "lang": "ru",
-   "relevant": 0.72,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
-   "severity": 0.153
+   "severity": 0.157
   },
   {
    "title": "Глава МИД Таиланда рассказал, что объеддиняет страны БРИКС",
    "lang": "ru",
-   "relevant": 0.04,
+   "relevant": 0.4,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "Гутерреш: кризисы на Украине и Ближнем Востоке грозят  миру взрывом",
    "lang": "ru",
-   "relevant": 0.93,
+   "relevant": 0.97,
    "topic": "conflict_diplomacy",
    "severity": 0.003
   },
   {
    "title": "Дмитриев назвал Мюнхенскую конференцию по безопасности вотчиной НАТО",
    "lang": "ru",
-   "relevant": 0.27,
+   "relevant": 0.85,
    "topic": "conflict_diplomacy",
    "severity": 0.003
   },
   {
    "title": "Ермолаев заявил, что при покушении на него использовалась редкая взрывчатка",
    "lang": "ru",
-   "relevant": 0.39,
+   "relevant": 0.51,
    "topic": "terrorism_or_assassination",
-   "severity": 0.193
+   "severity": 0.183
   },
   {
    "title": "Задержанный гражданин Молдавии не менее шести раз выстрелил в военного",
    "lang": "ru",
-   "relevant": 0.61,
+   "relevant": 0.64,
    "topic": "armed_conflict",
-   "severity": 0.437
+   "severity": 0.43
   },
   {
    "title": "Запад понял ущербность идеи изоляции России, заявила Захарова",
    "lang": "ru",
-   "relevant": 0.44,
+   "relevant": 0.89,
    "topic": "conflict_diplomacy",
    "severity": 0
   },
   {
    "title": "Зеленський після зустрічі з Туском: У нас один ворог, важливо зберегти єдність",
    "lang": "uk",
-   "relevant": 0.71,
+   "relevant": 0.94,
    "topic": "conflict_diplomacy",
-   "severity": 0.037
+   "severity": 0.03
   },
   {
    "title": "Источник рассказал о провале прорыва ВСУ из окружения в Харьковской области",
    "lang": "ru",
    "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.47
+   "severity": 0.487
   },
   {
    "title": "Карта спецоперации Вооруженных сил России на Украине на 31.08.2026",
    "lang": "ru",
    "relevant": 0.94,
    "topic": "armed_conflict",
-   "severity": 0.157
+   "severity": 0.163
   },
   {
    "title": "Киевский режим воюет с Россией ради самосохранения, заявил Володин",
    "lang": "ru",
-   "relevant": 0.88,
+   "relevant": 0.97,
    "topic": "armed_conflict",
    "severity": 0
   },
   {
    "title": "Киевский режим насквозь коррумпирован, заявил Путин",
    "lang": "ru",
-   "relevant": 0.32,
+   "relevant": 0.9,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "Лукашенко призвал создать новую архитектуру безопасности в Евразии",
    "lang": "ru",
-   "relevant": 0.22,
+   "relevant": 0.79,
    "topic": "conflict_diplomacy",
    "severity": 0
   },
   {
    "title": "МАГАТЭ уклоняется от признания Киева угрозой для ЗАЭС, заявила Захарова",
    "lang": "ru",
-   "relevant": 0.9,
+   "relevant": 0.97,
    "topic": "nuclear_or_missiles",
    "severity": 0.003
   },
@@ -1050,425 +1050,425 @@
    "lang": "ru",
    "relevant": 0.98,
    "topic": "nuclear_or_missiles",
-   "severity": 0.147
+   "severity": 0.16
   },
   {
    "title": "Минобороны получило в пользование участок реки Ока",
    "lang": "ru",
-   "relevant": 0.04,
+   "relevant": 0.08,
    "topic": "other",
-   "severity": 0.19
+   "severity": 0.18
   },
   {
    "title": "Минобороны рассказало о потерях ВСУ в зоне действий \"Севера\"",
    "lang": "ru",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.083
+   "severity": 0.07
   },
   {
    "title": "Минэнерго Венгрии считает Россию основным поставщиком газа и нефти в страну",
    "lang": "ru",
-   "relevant": 0.04,
+   "relevant": 0.16,
    "topic": "other",
    "severity": 0.003
   },
   {
    "title": "На границах России усилили санитарный контроль из-за Эболы",
    "lang": "ru",
-   "relevant": 0.02,
+   "relevant": 0.04,
    "topic": "other",
    "severity": 0.31
   },
   {
    "title": "На иранских участках 20 сентября пройдет голосование на выборах в Госдуму",
    "lang": "ru",
-   "relevant": 0.01,
+   "relevant": 0.09,
    "topic": "other",
-   "severity": 0.11
+   "severity": 0.087
   },
   {
    "title": "На Кубани вынесли приговор девушке, собиравшейся заключить контракт с ВСУ",
    "lang": "ru",
-   "relevant": 0.76,
+   "relevant": 0.89,
    "topic": "armed_conflict",
    "severity": 0.333
   },
   {
    "title": "На Украине нашли способ мобилизовывать \"забронированных\" граждан",
    "lang": "ru",
-   "relevant": 0.94,
+   "relevant": 0.95,
    "topic": "military_posture",
    "severity": 0.27
   },
   {
    "title": "Названы сроки полного воссоздания панорамы обороны Севастополя",
    "lang": "ru",
-   "relevant": 0.32,
+   "relevant": 0.51,
    "topic": "other",
-   "severity": 0.04
+   "severity": 0.043
   },
   {
    "title": "Новак заявил о введении в работу допустановок на нескольких НПЗ",
    "lang": "ru",
-   "relevant": 0.03,
+   "relevant": 0.05,
    "topic": "other",
-   "severity": 0.183
+   "severity": 0.18
   },
   {
    "title": "Новым генпрокурором Украины может стать Гетманцев, пишут СМИ",
    "lang": "ru",
-   "relevant": 0.04,
+   "relevant": 0.45,
    "topic": "other",
-   "severity": 0.067
+   "severity": 0.07
   },
   {
    "title": "Поддельные наблюдатели, очереди из бюджетников, атака дронов",
    "lang": "ru",
-   "relevant": 0.8,
+   "relevant": 0.85,
    "topic": "armed_conflict",
-   "severity": 0.503
+   "severity": 0.507
   },
   {
    "title": "Поддубный предложил масштабировать опыт Курской области по обороне от БПЛА",
    "lang": "ru",
-   "relevant": 0.8,
+   "relevant": 0.91,
    "topic": "military_posture",
-   "severity": 0.013
+   "severity": 0.017
   },
   {
    "title": "Польський уряд запустив сайт з місцями для укриттів",
    "lang": "uk",
-   "relevant": 0.56,
+   "relevant": 0.74,
    "topic": "other",
    "severity": 0.273
   },
   {
    "title": "Посол в Турции назвал дату открытия первого реактора АЭС \"Аккую\"",
    "lang": "ru",
-   "relevant": 0.02,
+   "relevant": 0.06,
    "topic": "nuclear_or_missiles",
    "severity": 0.053
   },
   {
    "title": "Путин вновь заговорил о мирных переговорах с Украиной",
    "lang": "ru",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "conflict_diplomacy",
    "severity": 0.007
   },
   {
    "title": "Путин сообщил о продвижении \"Востока\" и \"Днепра\" в направлении Запорожья",
    "lang": "ru",
-   "relevant": 0.96,
+   "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.367
+   "severity": 0.377
   },
   {
    "title": "Путин ценит готовность Моди и Си Цзиньпина помочь с вопросом Украины",
    "lang": "ru",
-   "relevant": 0.73,
+   "relevant": 0.95,
    "topic": "conflict_diplomacy",
    "severity": 0.007
   },
   {
    "title": "Росавиация ведет переговоры с Израилем о снятии ограничений на полеты",
    "lang": "ru",
-   "relevant": 0.16,
-   "topic": "conflict_diplomacy",
+   "relevant": 0.46,
+   "topic": "other",
    "severity": 0.26
   },
   {
    "title": "Россия добьется целей СВО, заявил Песков",
    "lang": "ru",
-   "relevant": 0.95,
+   "relevant": 0.98,
    "topic": "armed_conflict",
    "severity": 0
   },
   {
    "title": "Сибіга: ЄС має ухвалювати санкції після кожного масованого удару РФ, а не чекати пакетів",
    "lang": "uk",
-   "relevant": 0.95,
+   "relevant": 0.97,
    "topic": "conflict_diplomacy",
-   "severity": 0.01
+   "severity": 0.007
   },
   {
    "title": "Силы ПВО уничтожили три беспилотника, летевших на Москву",
    "lang": "ru",
-   "relevant": 0.95,
+   "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.41
+   "severity": 0.413
   },
   {
    "title": "СМИ предупредили о росте цен на зерно из-за атак на суда в Черном море",
    "lang": "ru",
-   "relevant": 0.74,
+   "relevant": 0.78,
    "topic": "armed_conflict",
-   "severity": 0.197
+   "severity": 0.213
   },
   {
    "title": "СМИ: КСИР атаковал базу США в Иордании в ответ на удары по танкерам Ирана",
    "lang": "ru",
    "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.61
+   "severity": 0.62
   },
   {
    "title": "Советник Даванкова находится в международном розыске Интерпола по делу о хакерской группировке Conti",
    "lang": "en",
-   "relevant": 0.06,
+   "relevant": 0.53,
    "topic": "other",
    "severity": 0.33
   },
   {
    "title": "Трамп заявил, что США могут попытаться взять под контроль нефть в Иране",
    "lang": "ru",
-   "relevant": 0.72,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
-   "severity": 0.047
+   "severity": 0.04
   },
   {
    "title": "Хуситы заявили, что захватили еще шесть округов на Красном море",
    "lang": "ru",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.457
+   "severity": 0.477
   },
   {
    "title": "Хуснуллин и Шуваев обсудили ситуацию в Белгородской области",
    "lang": "ru",
-   "relevant": 0.55,
+   "relevant": 0.68,
    "topic": "armed_conflict",
-   "severity": 0.09
+   "severity": 0.08
   },
   {
    "title": "ЦИК не стал использовать угрозы как предлог для сокращения выборов",
    "lang": "ru",
-   "relevant": 0.04,
+   "relevant": 0.31,
    "topic": "other",
-   "severity": 0.053
+   "severity": 0.047
   },
   {
    "title": "Як у Венесуелі: Трамп припустив, що США можуть «залишитися в Ірані» й контролювати продаж нафти",
    "lang": "uk",
-   "relevant": 0.65,
+   "relevant": 0.88,
    "topic": "military_posture",
-   "severity": 0.017
+   "severity": 0.013
   },
   {
    "title": "בגלל איראן וניקולס מדורו: במפלגה הרפובליקנית רוצים להדיח את פיט הגסת'",
    "lang": "he",
-   "relevant": 0.06,
+   "relevant": 0.31,
    "topic": "other",
-   "severity": 0.06
+   "severity": 0.077
   },
   {
    "title": "ברלין על סף נפילה? \"בירה אסלאמית שבה אנשים מאוימים במוות\"",
    "lang": "he",
-   "relevant": 0.21,
+   "relevant": 0.37,
    "topic": "other",
    "severity": 0.017
   },
   {
    "title": "המודיעין והקברניט",
    "lang": "he",
-   "relevant": 0.43,
+   "relevant": 0.53,
    "topic": "other",
-   "severity": 0.03
+   "severity": 0.027
   },
   {
    "title": "המחאה של משפחות החטופים  נגד הארגון האמריקני-ישראלי: אל תתנו לדרמר במה",
    "lang": "he",
-   "relevant": 0.55,
+   "relevant": 0.82,
    "topic": "other",
    "severity": 0.093
   },
   {
    "title": "הנשק, הסרטון - והמקור הגרמני: כך פעלה תשתית חמאס באירופה",
    "lang": "he",
-   "relevant": 0.88,
+   "relevant": 0.91,
    "topic": "terrorism_or_assassination",
-   "severity": 0.257
+   "severity": 0.26
   },
   {
    "title": "חי בהכחשה",
    "lang": "he",
-   "relevant": 0.13,
+   "relevant": 0.15,
    "topic": "other",
-   "severity": 0.007
+   "severity": 0.01
   },
   {
    "title": "חילופי האש במפרץ, החשש מעוד הסלמה איראנית - ושינוי מפת העולם | כותרות השבת",
    "lang": "he",
-   "relevant": 0.94,
+   "relevant": 0.95,
    "topic": "armed_conflict",
-   "severity": 0.467
+   "severity": 0.453
   },
   {
    "title": "חמישה קטינים נעצרו בחשד למעורבות באירוע דקירה בחולון",
    "lang": "he",
-   "relevant": 0.03,
+   "relevant": 0.05,
    "topic": "other",
-   "severity": 0.333
+   "severity": 0.337
   },
   {
    "title": "מאיפה בא הנזק באמת",
    "lang": "he",
-   "relevant": 0.16,
+   "relevant": 0.21,
    "topic": "other",
    "severity": 0.007
   },
   {
    "title": "נרצח רביעי תוך יממה בנצרת: \"היום אצלנו, מחר זה יכול להיות בכל מקום\"",
    "lang": "he",
-   "relevant": 0.71,
+   "relevant": 0.69,
    "topic": "terrorism_or_assassination",
-   "severity": 0.637
+   "severity": 0.633
   },
   {
    "title": "נתניהו מזהיר את חמאס: שיגורי העפיפונים יימשכו? נחסל את האחראים ונפנה אוכלוסייה",
    "lang": "he",
-   "relevant": 0.96,
+   "relevant": 0.97,
    "topic": "conflict_diplomacy",
-   "severity": 0.037
+   "severity": 0.033
   },
   {
    "title": "סער המריא בחשאי לניו יורק, הסיבה: שדרוג יחסים עם מרוקו | זו המשמעות",
    "lang": "he",
-   "relevant": 0.14,
+   "relevant": 0.55,
    "topic": "conflict_diplomacy",
-   "severity": 0.237
+   "severity": 0.147
   },
   {
    "title": "על הכוונת - ראש התארגנות טרור בג'נין: רכב מחבלים הופצץ מהאוויר",
    "lang": "he",
    "relevant": 0.98,
    "topic": "terrorism_or_assassination",
-   "severity": 0.643
+   "severity": 0.637
   },
   {
    "title": "קושנר: \"ניצלנו את כישלון התקיפה בקטאר - כדי לדחוף את ישראל להסכם בעזה\"",
    "lang": "he",
-   "relevant": 0.9,
+   "relevant": 0.95,
    "topic": "conflict_diplomacy",
-   "severity": 0.03
+   "severity": 0.027
   },
   {
    "title": "آمریکا  از شورای حقوق بشر سازمان ملل خارج شد",
    "lang": "fa",
-   "relevant": 0.1,
+   "relevant": 0.55,
    "topic": "conflict_diplomacy",
-   "severity": 0.23
+   "severity": 0.25
   },
   {
    "title": "آمریکا از ما عصبانی باش و از این عصبانیت بمیر!",
    "lang": "fa",
-   "relevant": 0.1,
+   "relevant": 0.23,
    "topic": "other",
    "severity": 0.01
   },
   {
    "title": "أوجاع اليمن بعد ربع قرن على 11 سبتمبر",
    "lang": "ar",
-   "relevant": 0.39,
+   "relevant": 0.48,
    "topic": "armed_conflict",
-   "severity": 0.023
+   "severity": 0.027
   },
   {
    "title": "إجراءات مصرية لحماية الأطفال من مخاطر منصات «التواصل»",
    "lang": "ar",
-   "relevant": 0.02,
+   "relevant": 0.03,
    "topic": "other",
-   "severity": 0.07
+   "severity": 0.083
   },
   {
    "title": "إسرائيل تغلق الحرم الإبراهيمي يومين أمام المصلين",
    "lang": "ar",
-   "relevant": 0.52,
+   "relevant": 0.75,
    "topic": "other",
    "severity": 0.337
   },
   {
    "title": "إعلام تركي: باكستان تدرس شن غارات جوية على الحوثيين في اليمن بطلب سعودي",
    "lang": "ar",
-   "relevant": 0.96,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.15
+   "severity": 0.133
   },
   {
    "title": "إيران مباشر.. تأجيل اجتماع صلالة بشأن هرمز وترمب يطلب \"اتفاقا مثاليا\"",
    "lang": "ar",
-   "relevant": 0.8,
+   "relevant": 0.93,
    "topic": "conflict_diplomacy",
-   "severity": 0.163
+   "severity": 0.153
   },
   {
    "title": "اتهامات سودانية لإثيوبيا بإنشاء (4) معسكرات لتدريب «الدعم السريع» ومرتزقة أجانب",
    "lang": "ar",
-   "relevant": 0.94,
+   "relevant": 0.97,
    "topic": "military_posture",
-   "severity": 0.18
+   "severity": 0.213
   },
   {
    "title": "ادعای ترامپ: جنگ علیه ایران بلافاصله پس از انتخابات میاندوره‌ای پایان خواهد یافت",
    "lang": "fa",
-   "relevant": 0.64,
+   "relevant": 0.9,
    "topic": "armed_conflict",
    "severity": 0.007
   },
   {
    "title": "ادعای وزیر خزانه‌داری آمریکا: «اظهارات صریح و بسیار رو به جلویی» از سوی امارات درباره قطع منابع مالی ایران مشاهده کرده‌ایم",
    "lang": "fa",
-   "relevant": 0.58,
+   "relevant": 0.86,
    "topic": "conflict_diplomacy",
-   "severity": 0.037
+   "severity": 0.03
   },
   {
    "title": "ارتش آمریکا به نفتکش ایرانی در نزدیکی آب‌های جاسک حمله کرد/ اصابت موشک‌های سپاه به پایگاه‌های آمریکا در اردن و بحرین +تصاویر",
    "lang": "fa",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.67
+   "severity": 0.677
   },
   {
    "title": "اروپا در آستانه ورود به مرحله جدیدی از بحران انرژی است",
    "lang": "fa",
-   "relevant": 0.08,
+   "relevant": 0.16,
    "topic": "other",
    "severity": 0.02
   },
   {
    "title": "استقلال تخریب‌شدنی نیست؛ بعضی‌ها چشم دیدن موفقیتش را ندارند",
    "lang": "fa",
-   "relevant": 0.06,
+   "relevant": 0.11,
    "topic": "other",
    "severity": 0.003
   },
   {
    "title": "اعلام آمادگی تشکیل کارگروه مشترک با پارلمان عراق در حوزه قوانین حمایت از زنان",
    "lang": "fa",
-   "relevant": 0.02,
+   "relevant": 0.08,
    "topic": "other",
    "severity": 0.057
   },
   {
    "title": "افزایش بی سابقه قیمت سوخت در فرانسه و تشدید نارضایتی فرانسوی ها",
    "lang": "fa",
-   "relevant": 0.02,
+   "relevant": 0.06,
    "topic": "other",
-   "severity": 0.3
+   "severity": 0.29
   },
   {
    "title": "الجزیره: پیشروی سریع انصارالله در یمن «قطعاً یک نقطه عطف» در جنگ منطقه‌ای است / حملات هوایی به رهبری عربستان به‌تنهایی احتمالاً برای بیرون راندن انصارالله کافی نیست",
    "lang": "fa",
    "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.3
+   "severity": 0.307
   },
   {
    "title": "الجمهوريون عالقون مع ترمب في انتخابات الكونغرس وإسرائيل تهبّ للإنقاذ",
    "lang": "ar",
-   "relevant": 0.06,
+   "relevant": 0.28,
    "topic": "other",
    "severity": 0.047
   },
@@ -1477,14 +1477,14 @@
    "lang": "ar",
    "relevant": 0.02,
    "topic": "other",
-   "severity": 0.027
+   "severity": 0.033
   },
   {
    "title": "الزمالك يسحق بطل جيبوتي وتقدم مولودية الجزائر والأفريقي بدوري أبطال أفريقيا",
    "lang": "ar",
    "relevant": 0.01,
    "topic": "other",
-   "severity": 0.26
+   "severity": 0.273
   },
   {
    "title": "السلطات التونسية تعلّق الدروس في العاصمة على أثر هطول أمطار غزيرة",
@@ -1496,9 +1496,9 @@
   {
    "title": "العفو الدولية تتهم السلطات الإيرانية بارتكاب \"جرائم ضد الإنسانية\" عقب مقتل مهسا أميني",
    "lang": "ar",
-   "relevant": 0.15,
+   "relevant": 0.72,
    "topic": "coup_or_unrest",
-   "severity": 0.073
+   "severity": 0.083
   },
   {
    "title": "اليمن.. 120 قتيلا ومئات النازحين جراء الاشتباكات في تعز والحديدة",
@@ -1510,140 +1510,140 @@
   {
    "title": "الیور استون: آمریکا تشنه جنگ است",
    "lang": "fa",
-   "relevant": 0.13,
+   "relevant": 0.23,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "انبارلویی: برخی بدون اینکه بدانند پیام‌های دشمن را پیام دوست تصور می‌کنند",
    "lang": "fa",
-   "relevant": 0.11,
+   "relevant": 0.24,
    "topic": "other",
-   "severity": 0.003
+   "severity": 0
   },
   {
    "title": "انصارالله: ادامه حملات عربستان، ما را به تغییر رویکرد دفاعی وادار می‌کند",
    "lang": "fa",
-   "relevant": 0.95,
+   "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.067
+   "severity": 0.077
   },
   {
    "title": "انهدام شمپاد ارتش آمریکا در تنگه هرمز",
    "lang": "fa",
-   "relevant": 0.89,
+   "relevant": 0.91,
    "topic": "armed_conflict",
-   "severity": 0.633
+   "severity": 0.647
   },
   {
    "title": "ایران و امارات موفق به حل اختلافاتشان شدند",
    "lang": "fa",
-   "relevant": 0.29,
+   "relevant": 0.83,
    "topic": "conflict_diplomacy",
-   "severity": 0.203
+   "severity": 0.207
   },
   {
    "title": "ببینید | انفجار انبار تسلیحات در ادلب سوریه ۳ کشته و ۱۰ زخمی برجای گذاشت",
    "lang": "fa",
-   "relevant": 0.89,
+   "relevant": 0.91,
    "topic": "armed_conflict",
-   "severity": 0.553
+   "severity": 0.563
   },
   {
    "title": "بعد 47 مباراة.. كاريوس يوقف سلسلة بايرن ميونخ التاريخية",
    "lang": "ar",
    "relevant": 0.01,
    "topic": "other",
-   "severity": 0.27
+   "severity": 0.257
   },
   {
    "title": "بيانات: 4 سفن عبرت مضيق هرمز أمس",
    "lang": "ar",
-   "relevant": 0.24,
+   "relevant": 0.41,
    "topic": "other",
-   "severity": 0.11
+   "severity": 0.113
   },
   {
    "title": "بيروت.. إصابات في احتجاجات مودعين وسائقون يعترضون على ارتفاع كلفة الوقود- (فيديو)",
    "lang": "ar",
-   "relevant": 0.05,
+   "relevant": 0.3,
    "topic": "other",
    "severity": 0.333
   },
   {
    "title": "پالایشگاه‌های چینی پالایش نفت را کاهش می‌دهند",
    "lang": "fa",
-   "relevant": 0.02,
+   "relevant": 0.03,
    "topic": "other",
-   "severity": 0.257
+   "severity": 0.24
   },
   {
    "title": "تأکید ایران و ترکیه بر توسعه حمل‌ونقل ریلی و تسهیل تبادلات تجاری",
    "lang": "fa",
-   "relevant": 0.02,
+   "relevant": 0.06,
    "topic": "other",
    "severity": 0.023
   },
   {
    "title": "تاوان جنگ‌افروزی آمریکا بر دوش مردم اروپا",
    "lang": "fa",
-   "relevant": 0.62,
+   "relevant": 0.77,
    "topic": "armed_conflict",
    "severity": 0.007
   },
   {
    "title": "تداوم پایداری شبکه مخابراتی با رفع خرابی و نوسازی زیرساخت‌های ارتباطی در دامغان و مهدیشهر",
    "lang": "fa",
-   "relevant": 0.01,
+   "relevant": 0.02,
    "topic": "other",
-   "severity": 0.163
+   "severity": 0.167
   },
   {
    "title": "تداوم تجاوز رژیم صهیونیستی به خاک لبنان",
    "lang": "fa",
-   "relevant": 0.94,
+   "relevant": 0.95,
    "topic": "armed_conflict",
-   "severity": 0.4
+   "severity": 0.41
   },
   {
    "title": "ترافیک سنگین در برخی محورهای مواصلاتی کشور/ محورهای شمالی فاقد مداخلات جوی",
    "lang": "fa",
-   "relevant": 0.01,
+   "relevant": 0.02,
    "topic": "other",
-   "severity": 0.113
+   "severity": 0.097
   },
   {
    "title": "تسلط مقاومت یمن بر تنگه باب‌المندب چه اهمیتی دارد؟",
    "lang": "fa",
-   "relevant": 0.59,
+   "relevant": 0.76,
    "topic": "military_posture",
    "severity": 0.053
   },
   {
    "title": "تسهیل صادرات ارمنستان به اروپا؛ بروکسل موانع تعرفه‌ای را برای ایروان موقتا لغو کرد",
    "lang": "fa",
-   "relevant": 0.03,
+   "relevant": 0.09,
    "topic": "other",
-   "severity": 0.3
+   "severity": 0.307
   },
   {
    "title": "تصريحات لبوتين وزيلينسكي عن السلام والدبلوماسية وسط تصعيد ميداني",
    "lang": "ar",
-   "relevant": 0.96,
+   "relevant": 0.98,
    "topic": "conflict_diplomacy",
-   "severity": 0.017
+   "severity": 0.023
   },
   {
    "title": "تلة علي الطاهر.. هل يرسخ التحول الميداني الإسرائيلي مأزق طهران؟",
    "lang": "ar",
-   "relevant": 0.8,
-   "topic": "military_posture",
-   "severity": 0.1
+   "relevant": 0.87,
+   "topic": "armed_conflict",
+   "severity": 0.113
   },
   {
    "title": "تماس تلفنی وانگ یی و روبیو درباره تحولات غرب آسیا",
    "lang": "fa",
-   "relevant": 0.62,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
    "severity": 0.047
   },
@@ -1652,21 +1652,21 @@
    "lang": "ar",
    "relevant": 0.99,
    "topic": "armed_conflict",
-   "severity": 0.64
+   "severity": 0.637
   },
   {
    "title": "حمله پهپادی به قطار مقامات اروپایی عازم کی‌یف",
    "lang": "fa",
-   "relevant": 0.95,
+   "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.643
+   "severity": 0.647
   },
   {
    "title": "حمله داعش به یک مرکز ارتش عراق در کرکوک",
    "lang": "fa",
    "relevant": 0.98,
    "topic": "terrorism_or_assassination",
-   "severity": 0.647
+   "severity": 0.637
   },
   {
    "title": "حمله موشکی آمریکا به نفتکش ایرانی در نزدیکی جزیره خارگ",
@@ -1680,364 +1680,364 @@
    "lang": "fa",
    "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.643
+   "severity": 0.64
   },
   {
    "title": "​​خروج رسمی آمریکا از شورای حقوق بشر سازمان ملل",
    "lang": "fa",
-   "relevant": 0.12,
+   "relevant": 0.64,
    "topic": "conflict_diplomacy",
-   "severity": 0.35
+   "severity": 0.333
   },
   {
    "title": "خطة \"صفر عبور للحدود\".. هل تنجح أوروبا في ما فشلت فيه بريطانيا؟",
    "lang": "ar",
-   "relevant": 0.28,
+   "relevant": 0.55,
    "topic": "other",
    "severity": 0.013
   },
   {
    "title": "درخواست جانسون از دولت انگلیس در خصوص عمران خان",
    "lang": "fa",
-   "relevant": 0.12,
+   "relevant": 0.38,
    "topic": "other",
-   "severity": 0.037
+   "severity": 0.03
   },
   {
    "title": "رئيس مؤتمر مأرب الجامع لـ”يمن مونيتور”: نراهن على حسم المعركة ولن نتوقف عند الدفاع",
    "lang": "ar",
-   "relevant": 0.94,
+   "relevant": 0.95,
    "topic": "armed_conflict",
    "severity": 0.007
   },
   {
    "title": "راز خط دفاعی استقلالِ سهراب!",
    "lang": "fa",
-   "relevant": 0.07,
+   "relevant": 0.08,
    "topic": "other",
    "severity": 0.04
   },
   {
    "title": "رای گیری برای استیضاح وزیر جنگ آمریکا به تعویق افتاد",
    "lang": "fa",
-   "relevant": 0.03,
+   "relevant": 0.29,
    "topic": "other",
-   "severity": 0.11
+   "severity": 0.127
   },
   {
    "title": "رويترز: مستشارو ترمب يضغطون لتهدئة حرب إيران",
    "lang": "ar",
-   "relevant": 0.9,
+   "relevant": 0.96,
    "topic": "conflict_diplomacy",
-   "severity": 0.017
+   "severity": 0.013
   },
   {
    "title": "زخم کاری چین به آمریکا به نفع ایران",
    "lang": "fa",
-   "relevant": 0.35,
+   "relevant": 0.66,
    "topic": "conflict_diplomacy",
-   "severity": 0.067
+   "severity": 0.057
   },
   {
    "title": "زلنسکی:  روسیه ماهانه ۱۴۰ موشک بالستیک تولید می‌کند",
    "lang": "fa",
-   "relevant": 0.96,
+   "relevant": 0.97,
    "topic": "nuclear_or_missiles",
    "severity": 0.023
   },
   {
    "title": "زلنسکی: ماهانه به ۲۸۰ موشک رهگیر برای سامانه‌های دفاع هوایی پاتریوت نیاز داریم",
    "lang": "fa",
-   "relevant": 0.96,
+   "relevant": 0.97,
    "topic": "military_posture",
-   "severity": 0.063
+   "severity": 0.073
   },
   {
    "title": "سپاه: ۲ فروند شناور آمریکایی، ۸ نفتکش و ۱۰ کشتی متخلف که قصد عبور از منطقه ممنوعه تنگه هرمز را داشتند، هدف قرار گرفتند و خسارت‌های زیادی به آن‌ها وارد شد",
    "lang": "fa",
-   "relevant": 0.96,
+   "relevant": 0.97,
    "topic": "armed_conflict",
-   "severity": 0.61
+   "severity": 0.607
   },
   {
    "title": "سخنگوی سپاه: هیچ فناوری پیشرفته‌ای توان عبور از لایه‌های رصدی ما در تنگه هرمز را ندارد / آمریکایی‌ها باید به خلیج خوک‌ها بازگردند",
    "lang": "fa",
-   "relevant": 0.84,
+   "relevant": 0.93,
    "topic": "military_posture",
    "severity": 0
   },
   {
    "title": "سخنگوی نیروهای مسلح یمن: حملات عربستان بی پاسخ نخواهد ماند",
    "lang": "fa",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.027
+   "severity": 0.023
   },
   {
    "title": "سخنگوی وزارت خارجه: جنایت جنگی که در لامرد اتفاق افتاد، منشأش از خاک یکی از کشور‌های حاشیه جنوبی خلیج فارس بود / کشور‌های منطقه باید درباره خسارات واردشده به ایران پاسخگو باشند / ما قرار نیست گذشته را فراموش کنیم",
    "lang": "fa",
-   "relevant": 0.9,
+   "relevant": 0.95,
    "topic": "armed_conflict",
-   "severity": 0.137
+   "severity": 0.143
   },
   {
    "title": "سرپرست وزارت دفاع: توان هدف قرار دادن ناوهای آمریکایی را داریم",
    "lang": "fa",
-   "relevant": 0.87,
+   "relevant": 0.94,
    "topic": "military_posture",
-   "severity": 0.02
+   "severity": 0.017
   },
   {
    "title": "سرلشکر عبداللهی، رئیس ستاد کل نیرو‌های مسلح: آمریکا به نفتکش‌های ایران اخطار تخلیه داده تا آنها را مورد اصابت قرار دهد؛ هرگونه تعرض به نفتکش‌های ایران موجب هدف قرار گرفتن پایگاه‌های آمریکا در منطقه خواهد شد",
    "lang": "fa",
-   "relevant": 0.96,
+   "relevant": 0.97,
    "topic": "conflict_diplomacy",
-   "severity": 0.103
+   "severity": 0.117
   },
   {
    "title": "سرلشگر محسن رضایی؛موشک‌های جدید ایران، هشدار واضح برای واشنگتن",
    "lang": "fa",
-   "relevant": 0.88,
+   "relevant": 0.91,
    "topic": "nuclear_or_missiles",
-   "severity": 0.113
+   "severity": 0.117
   },
   {
    "title": "سلطنة عُمان تعلن تأجيل اجتماع بشأن هرمز بين إيران والخليج",
    "lang": "ar",
-   "relevant": 0.64,
+   "relevant": 0.91,
    "topic": "conflict_diplomacy",
-   "severity": 0.067
+   "severity": 0.063
   },
   {
    "title": "شکست سنگین بسکتبال ایران مقابل کره؛ طلای ناگویا از دست رفت",
    "lang": "fa",
    "relevant": 0.01,
    "topic": "other",
-   "severity": 0.283
+   "severity": 0.267
   },
   {
    "title": "شمار جانباختگان سانحه روستای دهبار به ۷ نفر رسید",
    "lang": "fa",
    "relevant": 0.07,
    "topic": "other",
-   "severity": 0.557
+   "severity": 0.543
   },
   {
    "title": "شهباز شریف حملات به عربستان را محکوم کرد",
    "lang": "fa",
-   "relevant": 0.74,
+   "relevant": 0.84,
    "topic": "conflict_diplomacy",
    "severity": 0.007
   },
   {
    "title": "طهران تربط فتح هرمز بوفاء واشنطن بتعهداتها وتضارُب بشأن تدفق النفط",
    "lang": "ar",
-   "relevant": 0.81,
+   "relevant": 0.92,
    "topic": "conflict_diplomacy",
-   "severity": 0.073
+   "severity": 0.11
   },
   {
    "title": "ظریف: دانش و توانمندی هسته‌ای ایران با بمباران از بین نمی‌رود/ به جای مطالبه غنی‌سازی صفر، ایران را به همکاری منطقه‌ای تشویق کنید",
    "lang": "fa",
-   "relevant": 0.74,
+   "relevant": 0.91,
    "topic": "nuclear_or_missiles",
    "severity": 0.003
   },
   {
    "title": "عارف: دشمن سر عقل بیاید و به یادداشت تفاهم عمل کند",
    "lang": "fa",
-   "relevant": 0.48,
+   "relevant": 0.74,
    "topic": "conflict_diplomacy",
    "severity": 0.003
   },
   {
    "title": "عراقچی خواستار واکنش کشورهای اسلامی به تجاوز آمریکا و اسرائیل شد",
    "lang": "fa",
-   "relevant": 0.85,
+   "relevant": 0.95,
    "topic": "conflict_diplomacy",
-   "severity": 0.013
+   "severity": 0.017
   },
   {
    "title": "عضو الرئاسي اليمني الصبيحي يتفقد جبهات تعز ويشدد على تعزيز التنسيق العسكري",
    "lang": "ar",
-   "relevant": 0.92,
+   "relevant": 0.95,
    "topic": "military_posture",
-   "severity": 0.14
+   "severity": 0.157
   },
   {
    "title": "فوری؛ یک فروند جنگنده F-16 سقوط کرد",
    "lang": "fa",
-   "relevant": 0.45,
+   "relevant": 0.61,
    "topic": "armed_conflict",
-   "severity": 0.44
+   "severity": 0.433
   },
   {
    "title": "فوری/ هشدار قاطع قرارگاه خاتم: اگر آمریکا نفتکش‌های ما را بزند منافع آن‌ها در منطقه را منهدم می‌کنیم",
    "lang": "fa",
-   "relevant": 0.91,
+   "relevant": 0.95,
    "topic": "conflict_diplomacy",
-   "severity": 0.01
+   "severity": 0.013
   },
   {
    "title": "في ظل الأزمة.. نواب إيرانيون يدعون إلى \"دعم سبل العيش\"",
    "lang": "ar",
-   "relevant": 0.11,
+   "relevant": 0.29,
    "topic": "other",
    "severity": 0.01
   },
   {
    "title": "قالیباف: انتظارات تورمی آمریکا به تنگه هرمز و باب المندب وابسته شده /  این «ریسک تنگه هرمز» است که نرخ بهره را مشخص می‌کند و کنترل این ریسک اکنون دست ایران است",
    "lang": "fa",
-   "relevant": 0.28,
+   "relevant": 0.61,
    "topic": "other",
    "severity": 0
   },
   {
    "title": "قدردانی ایران از روسیه و چین برای وتوی قطعنامه ضد ایرانی",
    "lang": "fa",
-   "relevant": 0.52,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
-   "severity": 0.02
+   "severity": 0.023
   },
   {
    "title": "كندا تتقدم بطلب للانضمام إلى تحالف عسكري بقيادة بريطانيا",
    "lang": "ar",
-   "relevant": 0.5,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
-   "severity": 0.21
+   "severity": 0.217
   },
   {
    "title": "لحظه رهگیری و انهدام پهپاد MQ۱ آمریکا + فیلم",
    "lang": "fa",
-   "relevant": 0.93,
+   "relevant": 0.94,
    "topic": "armed_conflict",
-   "severity": 0.603
+   "severity": 0.583
   },
   {
    "title": "للعام الثاني.. واشنطن تحرم عباس من تأشيرة حضور اجتماعات الأمم المتحدة",
    "lang": "ar",
-   "relevant": 0.32,
+   "relevant": 0.82,
    "topic": "conflict_diplomacy",
-   "severity": 0.307
+   "severity": 0.31
   },
   {
    "title": "لماذا تنقل دول أوروبية احتياطيات الذهب من نيويورك؟",
    "lang": "ar",
-   "relevant": 0.07,
+   "relevant": 0.19,
    "topic": "other",
-   "severity": 0.133
+   "severity": 0.127
   },
   {
    "title": "محافظ تعز: استهداف ميناء المخا عطّل النشاط التجاري والسمكي وألحق خسائر بشرية ومادية كبيرة",
    "lang": "ar",
-   "relevant": 0.9,
+   "relevant": 0.93,
    "topic": "armed_conflict",
-   "severity": 0.63
+   "severity": 0.633
   },
   {
    "title": "مخاوف لبنانية من تداعيات زلزالية للتفجيرات الإسرائيلية في الجنوب",
    "lang": "ar",
    "relevant": 0.9,
    "topic": "armed_conflict",
-   "severity": 0.123
+   "severity": 0.127
   },
   {
    "title": "مركز دراسات: سيطرة الحوثيين على المخا وحنيش توسّع شبكات تهريب السلاح وتهدد باب المندب",
    "lang": "ar",
-   "relevant": 0.95,
+   "relevant": 0.97,
    "topic": "military_posture",
-   "severity": 0.277
+   "severity": 0.313
   },
   {
    "title": "مستقبل الأمن الخليجي بين دول مجلس التعاون وأمريكا!",
    "lang": "ar",
-   "relevant": 0.22,
+   "relevant": 0.68,
    "topic": "conflict_diplomacy",
    "severity": 0.003
   },
   {
    "title": "مستندی از پشت پرده جنگ غزه که ونیز را تحت تأثیر قرار داد",
    "lang": "fa",
-   "relevant": 0.79,
+   "relevant": 0.78,
    "topic": "armed_conflict",
-   "severity": 0.077
+   "severity": 0.067
   },
   {
    "title": "معرفی وزرای اطلاعات و دفاع تا نیمه مهرماه",
    "lang": "fa",
-   "relevant": 0.06,
+   "relevant": 0.26,
    "topic": "other",
-   "severity": 0.043
+   "severity": 0.05
   },
   {
    "title": "من خطوط التماس إلى المطبخ.. كيف تحولت أسطوانة الغاز إلى أزمة بتعز؟",
    "lang": "ar",
-   "relevant": 0.19,
+   "relevant": 0.31,
    "topic": "other",
-   "severity": 0.213
+   "severity": 0.207
   },
   {
    "title": "منع الرئيس الفلسطيني من المشاركه في اجتماعات الامم المتحدة",
    "lang": "ar",
-   "relevant": 0.34,
+   "relevant": 0.84,
    "topic": "conflict_diplomacy",
-   "severity": 0.3
+   "severity": 0.287
   },
   {
    "title": "ناوشکن‌های رزمی دشمن حامل موشک‌های کروز و ایجیس هدف‌ حمله قرار گرفت",
    "lang": "fa",
-   "relevant": 0.95,
+   "relevant": 0.96,
    "topic": "armed_conflict",
-   "severity": 0.57
+   "severity": 0.567
   },
   {
    "title": "نقش تیم سعید جلیلی در توقف دور دوم مذاکرات اسلام‌آباد/ چاینا نیوزویک: انتقادات آن‌ها از تیم مذاکره‌کننده، بهانه‌ای برای بهره‌برداری سیاسی به ترامپ داد",
    "lang": "fa",
-   "relevant": 0.56,
+   "relevant": 0.84,
    "topic": "conflict_diplomacy",
-   "severity": 0.147
+   "severity": 0.17
   },
   {
    "title": "نمایش پهپادهای پیشرفته هوافضا سپاه در تجمع شبانه مردم آمل",
    "lang": "fa",
-   "relevant": 0.2,
+   "relevant": 0.39,
    "topic": "military_posture",
    "severity": 0.327
   },
   {
    "title": "نیرو‌های مسلح یمن: اسقاط پهپاد جاسوسی عربستان در آسمان استان حجه یمن",
    "lang": "fa",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.397
+   "severity": 0.413
   },
   {
    "title": "هشدار نیروی دریایی سپاه به کویت و بحرین",
    "lang": "fa",
-   "relevant": 0.85,
+   "relevant": 0.9,
    "topic": "conflict_diplomacy",
-   "severity": 0.05
+   "severity": 0.053
   },
   {
    "title": "هل تصبح أصوات إسرائيليي الخارج بيضة قبان الانتخابات؟",
    "lang": "ar",
-   "relevant": 0.07,
+   "relevant": 0.65,
    "topic": "other",
    "severity": 0.01
   },
   {
    "title": "هل تكون «سداسية التعاون» محطة انطلاقة حقيقية لهلال إنزاغي؟",
    "lang": "ar",
-   "relevant": 0.03,
+   "relevant": 0.04,
    "topic": "other",
-   "severity": 0.053
+   "severity": 0.05
   },
   {
    "title": "هلع في غزة من تصعيد الاغتيالات بموازاة استئناف الدراسة",
    "lang": "ar",
-   "relevant": 0.95,
+   "relevant": 0.96,
    "topic": "terrorism_or_assassination",
-   "severity": 0.503
+   "severity": 0.53
   },
   {
    "title": "هوميروس حسب ولسون: كلاسيكيات الحديث",
@@ -2049,56 +2049,56 @@
   {
    "title": "هیس؛ سازمان ملل حقیقت را فریاد نمی زند!",
    "lang": "fa",
-   "relevant": 0.09,
+   "relevant": 0.19,
    "topic": "other",
-   "severity": 0.003
+   "severity": 0
   },
   {
    "title": "واکنش ایران به اظهارات گروسی در شورای حکام درباره بازرسی از سایت های هسته ای",
    "lang": "fa",
-   "relevant": 0.69,
+   "relevant": 0.91,
    "topic": "nuclear_or_missiles",
    "severity": 0.03
   },
   {
    "title": "واکنش جالب دیگر هم‌پیمان عربستان به درگیری‌ها!",
    "lang": "fa",
-   "relevant": 0.75,
+   "relevant": 0.84,
    "topic": "conflict_diplomacy",
    "severity": 0.037
   },
   {
    "title": "واکنش سخنگوی وزارت خارجه به ادعای ممانعت آمریکا از خرید نمایندگان ایران از فروشگاه‌های آمریکایی در جریان اجلاس آتی مجمع عمومی سازمان ملل: حاکمان واشنگتن هنوز ملت‌ها را فاقد حافظه و شعور تحلیلی فرض می‌کند /  این روش تبلیغاتی آن‌قدر ساده‌لوحانه و نخ‌نماست که حالا بهتر می‌توان فهمید چه نوع ذهنیت ساده‌انگارانه‌ای جنگ علیه ایران را آغاز کرد",
    "lang": "fa",
-   "relevant": 0.27,
+   "relevant": 0.82,
    "topic": "conflict_diplomacy",
    "severity": 0.007
   },
   {
    "title": "واکنش عضو کمیسیون امنیت به سامانه «علاج» / نباید مردم را به جاسوسی علیه هم دعوت کرد/ شرکت در تظاهرات علیه جمهوری اسلامی در خارج، به خودی خود جرم نیست",
    "lang": "fa",
-   "relevant": 0.09,
+   "relevant": 0.53,
    "topic": "other",
    "severity": 0.003
   },
   {
    "title": "واکنش یمن به ادعاهای مطرح شده درباره تنگه باب المندب",
    "lang": "fa",
-   "relevant": 0.74,
+   "relevant": 0.85,
    "topic": "conflict_diplomacy",
    "severity": 0.03
   },
   {
    "title": "وزارة الدفاع اليمنية: قرار تحرير صنعاء حُسم ومفاجآت عسكرية ميدانية بانتظار الحوثيين",
    "lang": "ar",
-   "relevant": 0.97,
+   "relevant": 0.98,
    "topic": "armed_conflict",
-   "severity": 0.257
+   "severity": 0.233
   },
   {
    "title": "یک فعال ایرانی-آمریکایی جلسه شهادت بسنت در کنگره را مختل کرد+ فیلم",
    "lang": "fa",
-   "relevant": 0.06,
+   "relevant": 0.21,
    "topic": "other",
    "severity": 0.3
   }
