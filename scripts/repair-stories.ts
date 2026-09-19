@@ -6,13 +6,10 @@
 // pair judge — on its next runs. SAME / unsure / failed → left alone.
 //
 //   node --import tsx --env-file=.env scripts/repair-stories.ts [hours=24] [--dry]
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin as supabase } from '../src/lib/server/supabase'
 import { judgeSameEvent, PAIR_BAND } from '../src/lib/server/jev-pairs'
+import { mapPool } from '../src/lib/server/pool'
 
-const url = process.env.SUPABASE_URL
-const key = process.env.SUPABASE_SECRET_KEY
-if (!url || !key) throw new Error('need SUPABASE_URL + SUPABASE_SECRET_KEY')
-const supabase = createClient(url, key, { auth: { persistSession: false } })
 
 const HOURS = Number(process.argv.find((a) => /^\d+$/.test(a))) || 24
 const DRY = process.argv.includes('--dry')
@@ -36,24 +33,15 @@ async function main() {
   const detach: string[] = []
   const tally = { same: 0, different: 0, unsure: 0, failed: 0 }
   const samples: string[] = []
-  let next = 0
-  await Promise.all(
-    Array.from({ length: CONCURRENCY }, async () => {
-      while (next < joins.length) {
-        const j = joins[next++]
-        try {
-          const { verdict, p } = await judgeSameEvent(j.r_title, j.r_rep_title)
-          tally[verdict]++
-          if (verdict === 'different') {
-            detach.push(j.r_article_id)
-            if (samples.length < 12) samples.push(`  ${p.toFixed(2)} sim ${j.r_sim.toFixed(3)} | ${j.r_title.slice(0, 70)} ≠ ${j.r_rep_title.slice(0, 70)}`)
-          }
-        } catch {
-          tally.failed++
-        }
-      }
-    }),
-  )
+  const judged = await mapPool(joins, CONCURRENCY, (j) => judgeSameEvent(j.r_title, j.r_rep_title))
+  tally.failed = judged.failed.length
+  for (const { item: j, value: { verdict, p } } of judged.done) {
+    tally[verdict]++
+    if (verdict === 'different') {
+      detach.push(j.r_article_id)
+      if (samples.length < 12) samples.push(`  ${p.toFixed(2)} sim ${j.r_sim.toFixed(3)} | ${j.r_title.slice(0, 70)} ≠ ${j.r_rep_title.slice(0, 70)}`)
+    }
+  }
   console.log(tally)
   console.log('sample of DIFFERENT verdicts:\n' + samples.join('\n'))
   if (DRY) return console.log(`dry run — would detach ${detach.length}`)

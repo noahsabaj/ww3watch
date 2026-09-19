@@ -5,13 +5,10 @@
 //
 //   node --import tsx --env-file=.env scripts/backfill-signals.ts [hours=48]
 //   gh workflow run run-script.yml -f script=scripts/backfill-signals.ts
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin as supabase } from '../src/lib/server/supabase'
 import { askSignals } from '../src/lib/server/jev-signals'
+import { mapPool } from '../src/lib/server/pool'
 
-const url = process.env.SUPABASE_URL
-const key = process.env.SUPABASE_SECRET_KEY
-if (!url || !key) throw new Error('need SUPABASE_URL + SUPABASE_SECRET_KEY')
-const supabase = createClient(url, key, { auth: { persistSession: false } })
 
 const HOURS = Number(process.argv[2]) || 48
 const PAGE = 500
@@ -33,24 +30,13 @@ async function main() {
     if (error) throw new Error(JSON.stringify(error))
     if (!pending?.length) break
 
-    const items: Array<Record<string, unknown>> = []
-    let pageFailed = 0
-    let next = 0
-    await Promise.all(
-      Array.from({ length: CONCURRENCY }, async () => {
-        while (next < pending.length) {
-          const a = pending[next++]
-          try {
-            const { inputTokens, ...signals } = await askSignals(a, undefined, a.jev_relevant ?? null)
-            tokens += inputTokens
-            items.push({ id: a.id, ...signals })
-          } catch (err) {
-            pageFailed++
-            if (failed + pageFailed <= 3) console.error('jev call failed:', String(err).slice(0, 200))
-          }
-        }
-      }),
-    )
+    const asked = await mapPool(pending, CONCURRENCY, (a) => askSignals(a, undefined, a.jev_relevant ?? null))
+    const items = asked.done.map(({ item, value: { inputTokens, ...signals } }) => {
+      tokens += inputTokens
+      return { id: item.id, ...signals }
+    })
+    const pageFailed = asked.failed.length
+    if (failed < 3) asked.failed.slice(0, 3 - failed).forEach(({ error }) => console.error('jev call failed:', String(error).slice(0, 200)))
     for (let i = 0; i < items.length; i += 100) {
       const { data, error: rpcError } = await supabase.rpc('apply_article_signals', { p_items: items.slice(i, i + 100) })
       if (rpcError) throw new Error(JSON.stringify(rpcError))

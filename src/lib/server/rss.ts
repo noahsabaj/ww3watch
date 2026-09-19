@@ -3,7 +3,7 @@ import { XMLParser } from 'fast-xml-parser'
 import { bodyHash } from './wire'
 import type { Feed, SourceRegion } from '../types'
 
-type ArticleInsert = {
+export type ArticleInsert = {
   guid: string
   title: string
   url: string
