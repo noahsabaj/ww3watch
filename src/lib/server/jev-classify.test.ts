@@ -48,6 +48,25 @@ describe('partitionByJev', () => {
     expect(part.audit.get(part.uncertain[0])).toBe('accept')
   })
 
+  it('settles its own uncertain band at 0.5 when final, still escalating failures', async () => {
+    vi.resetModules()
+    vi.stubEnv('TYPESAFE_API_KEY', 'test')
+    const { partitionByJev } = await import('./jev-classify')
+    const byTitle: Record<string, () => Response> = {
+      leanYes: () => answer(0.55),
+      leanNo: () => answer(0.45),
+      broken: () => new Response('nope', { status: 500 }),
+    }
+    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) =>
+      Promise.resolve(byTitle[JSON.parse(String(init.body)).state.article.title as string]())))
+
+    const part = await partitionByJev(['leanYes', 'leanNo', 'broken'].map(art), { auditRate: 0, final: true })
+
+    expect(part.accept.map((a) => a.title)).toEqual(['leanYes'])
+    expect(part.reject.map((a) => a.title)).toEqual(['leanNo'])
+    expect(part.uncertain.map((a) => a.title)).toEqual(['broken'])
+  })
+
   it('sends only the article to Jev — title, trimmed summary, language', async () => {
     vi.resetModules()
     const { jevState } = await import('./jev')

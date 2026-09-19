@@ -2,9 +2,11 @@ import { callLLM, LLMDeadlineError } from './llm'
 import { groupByStoryId, wireDuplicateIds } from '../cluster'
 import type { Cluster } from '../cluster'
 import { supabaseAdmin } from './supabase'
+import { jevEnabled } from './jev-classify'
+import { rankWithJev } from './trending-jev'
 
 const TRENDING_WINDOW_HOURS = 4
-const CANDIDATE_LIMIT = 20                      // max clusters to send to LLM
+const CANDIDATE_LIMIT = 20                      // max clusters to judge
 const PICK_COUNT = 3                            // stories to select
 // Don't re-curate a selection younger than this. The pipeline now chains itself
 // every ~15 min (pipeline.yml); a curation call per run would be ~100 LLM
@@ -99,7 +101,7 @@ export async function updateTrending(deadlineMs?: number): Promise<string> {
       ).size
       const regions = new Set(c.articles.map((a) => a.source_region)).size
       const langs = new Set(c.articles.map((a) => a.source_lang)).size
-      return { c, independent, regions, langs }
+      return { c, independent, regions, langs, wire }
     })
     .sort((a, b) => b.independent - a.independent)
     .slice(0, CANDIDATE_LIMIT)
@@ -131,6 +133,33 @@ export async function updateTrending(deadlineMs?: number): Promise<string> {
   if (clusters.length <= PICK_COUNT) {
     console.log(`[trending] ${clusters.length} candidate(s) — selection is forced, skipping the LLM`)
     return await writeTrending(clusters, clusters.map((_, i) => i))
+  }
+
+  // Jev first: three narrow judgments per story, weighed in code
+  // (trending-jev.ts). No daily token cap, ~1s for all candidates — so trending
+  // no longer queues behind the LLM's rate limit. The LLM curator below is the
+  // fallback when Jev is off or could not judge enough candidates.
+  if (jevEnabled()) {
+    const ranked = await rankWithJev(
+      scored.map((s) => ({
+        headline: s.c.representative.title,
+        otherHeadlines: s.c.articles
+          .filter((a) => a.id !== s.c.representative.id && !s.wire.has(a.id))
+          .map((a) => a.title),
+        independent: s.independent,
+        regions: s.regions,
+        langs: s.langs,
+      })),
+      PICK_COUNT,
+      deadlineMs,
+    ).catch((err) => {
+      console.error('[trending] jev ranking failed, falling back to the LLM:', err)
+      return null
+    })
+    if (ranked) {
+      console.log(`[trending] jev picks (score): ${ranked.indices.map((i, r) => `${i}=${ranked.scores[r]}`).join(', ')}`)
+      return await writeTrending(clusters, ranked.indices)
+    }
   }
 
   let indices: number[]

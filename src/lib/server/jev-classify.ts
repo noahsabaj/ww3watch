@@ -13,6 +13,13 @@ export const JEV_REJECT_BELOW = Number(process.env.JEV_REJECT_BELOW || '') || 0.
 export const JEV_ACCEPT_ABOVE = Number(process.env.JEV_ACCEPT_ABOVE || '') || 0.8
 const CONCURRENCY = Math.max(1, Number(process.env.JEV_CONCURRENCY || '') || 16)
 
+// JEV_FINAL=1 retires the LLM as a classifier: Jev's own uncertain band is
+// settled at 0.5 instead of being escalated. Only failed calls and the audit
+// slice still reach the LLM, so agreement keeps being measured. OFF by default
+// — flip it (a repo variable, no deploy) once stats.cls_jev.audit_agreement has
+// held up over enough runs to trust.
+export const jevFinal = (): boolean => process.env.JEV_FINAL === '1'
+
 export const jevEnabled = (): boolean => Boolean(process.env.TYPESAFE_API_KEY)
 
 export type JevTier = 'accept' | 'reject' | 'uncertain'
@@ -40,7 +47,7 @@ export interface JevPartition<T> {
  */
 export async function partitionByJev<T extends JevArticle>(
   articles: T[],
-  opts: { auditRate: number; deadlineMs?: number; random?: () => number },
+  opts: { auditRate: number; deadlineMs?: number; random?: () => number; final?: boolean },
 ): Promise<JevPartition<T>> {
   const random = opts.random ?? Math.random
   const out: JevPartition<T> = { accept: [], reject: [], uncertain: [], audit: new Map(), failed: 0, inputTokens: 0 }
@@ -57,7 +64,10 @@ export async function partitionByJev<T extends JevArticle>(
           const v = await askJev(article, undefined, opts.deadlineMs)
           out.inputTokens += v.inputTokens
           const tier = jevTier(v.relevant)
-          if (tier === 'uncertain') out.uncertain.push(article)
+          if (tier === 'uncertain') {
+            if (opts.final) out[v.relevant >= 0.5 ? 'accept' : 'reject'].push(article)
+            else out.uncertain.push(article)
+          }
           else if (random() < opts.auditRate) {
             out.audit.set(article, tier)
             out.uncertain.push(article)
