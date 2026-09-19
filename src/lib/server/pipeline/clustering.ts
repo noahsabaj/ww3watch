@@ -185,7 +185,7 @@ export async function mergeStories(stats: RunStats): Promise<void> {
     const touched = new Set<string>()
     let merged = 0
     const same = judged.done
-      .filter((j) => j.value.verdict === 'same')
+      .filter((j) => j.value.verdict === 'same' && j.value.p >= STORY_MERGE.minP)
       .sort((x, y) => y.item.r_sim - x.item.r_sim)
     for (const { item: p } of same) {
       if (merged >= STORY_MERGE.maxPerRun) break

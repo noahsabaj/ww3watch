@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
   verdicts: {} as Record<string, 'same' | 'different' | 'unsure'>,
   merges: [] as Array<{ p_from: string; p_into: string }>,
   reelected: [] as string[][],
+  p: {} as Record<string, number>,
 }))
 
 vi.mock('../supabase', () => ({
@@ -27,7 +28,7 @@ vi.mock('../jev-pairs', () => ({
   judgeSameEvent: (a: string, b: string) => {
     const verdict = state.verdicts[`${a}|${b}`] ?? 'unsure'
     if (a === 'boom') return Promise.reject(new Error('jev down'))
-    return Promise.resolve({ verdict, p: verdict === 'same' ? 0.95 : 0.05 })
+    return Promise.resolve({ verdict, p: state.p[`${a}|${b}`] ?? (verdict === 'same' ? 0.95 : 0.05) })
   },
 }))
 
@@ -43,6 +44,7 @@ beforeEach(() => {
   state.verdicts = {}
   state.merges = []
   state.reelected = []
+  state.p = {}
 })
 
 describe('mergeStories', () => {
@@ -54,6 +56,14 @@ describe('mergeStories', () => {
     expect(state.merges).toEqual([{ p_from: 'small', p_into: 'big' }])
     expect(stats.stories_merged).toBe(1)
     expect(state.reelected[0].sort()).toEqual(['big', 'small'])
+  })
+
+  it('holds merges to a stricter bar than joins: a 0.75 "same" is not enough', async () => {
+    state.candidates = [pair('a', 'b', 3, 3, 0.9)]
+    state.verdicts = { 'a|b': 'same' }
+    state.p = { 'a|b': 0.75 }
+    await mergeStories({})
+    expect(state.merges).toEqual([])
   })
 
   it('does nothing for different or unsure pairs', async () => {
