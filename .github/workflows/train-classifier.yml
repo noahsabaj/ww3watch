@@ -56,8 +56,12 @@ jobs:
           git commit -m "chore: retrain relevance head"
           git push --force origin retrain-head
           body=$(sed -n '/^## Relevance head/,$p' train.log)
-          if gh pr view retrain-head --json number >/dev/null 2>&1; then
-            gh pr edit retrain-head --body "$body"
+          # OPEN PRs only. `gh pr view <branch>` also matches a MERGED PR from the
+          # same branch name, so the second retrain ever run edited the first
+          # one's closed PR and never opened its own.
+          open=$(gh pr list --head retrain-head --state open --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh pr edit "$open" --body "$body"
           else
             gh pr create --base main --head retrain-head --title "chore: retrain relevance head" --body "$body"
           fi
