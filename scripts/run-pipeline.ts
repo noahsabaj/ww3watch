@@ -15,6 +15,7 @@ import { fetchFeed, FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind }
 import type { Feed } from '../src/lib/types'
 import { classifyArticles } from '../src/lib/server/classify'
 import { askSignals } from '../src/lib/server/jev-signals'
+import { judgeSameEvent, PAIR_BAND } from '../src/lib/server/jev-pairs'
 import { jevEnabled, jevFinal, partitionByJev, JEV_ACCEPT_ABOVE, JEV_REJECT_BELOW } from '../src/lib/server/jev-classify'
 import {
   embedTitles,
@@ -216,22 +217,88 @@ function logFeedSummary(results: FeedFetchResult[]) {
 // assign_story_by_embedding RPC (star linkage against story representatives,
 // item-relative ±EMBED_WINDOW_HOURS window). Failure here never fails the run:
 // articles stay story_id NULL and the next run picks them up.
+interface AssignItem {
+  id: string
+  published_at: string | null
+  embedding: number[]
+  join_story?: string
+  avoid_story?: string
+  min_sim?: number
+}
+
+// Similarity says "same subject"; only a judgment says "same event". For every
+// item whose nearest story sits in the grey band, ask Jev and pass the verdict
+// to assign_story_by_embedding as a hint (20260919020000_story_pair_judge.sql).
+// Outside the band, and on any failure, the plain threshold decides as before.
+//
+// Limit: candidates are stories that exist BEFORE this batch. Two grey-band
+// articles arriving in the same batch still meet by threshold alone.
+async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>, stats: RunStats): Promise<void> {
+  const bump = (key: string, n: number) => { stats[key] = (Number(stats[key]) || 0) + n }
+  try {
+    const grey: Array<{ item: AssignItem; storyId: string; repTitle: string }> = []
+    for (let i = 0; i < items.length; i += ASSIGN_RPC_CHUNK) {
+      const { data, error } = await supabaseAdmin.rpc('nearest_story_candidates', {
+        p_items: items.slice(i, i + ASSIGN_RPC_CHUNK).map(({ id, published_at, embedding }) => ({ id, published_at, embedding })),
+        p_window_hours: EMBED_WINDOW_HOURS,
+      })
+      if (error) throw new Error(`nearest_story_candidates failed: ${JSON.stringify(error)}`)
+      const byId = new Map(items.map((it) => [it.id, it]))
+      for (const r of (data ?? []) as Array<{ r_article_id: string; r_story_id: string | null; r_rep_title: string | null; r_sim: number | null }>) {
+        const item = byId.get(r.r_article_id)
+        if (!item || !r.r_story_id || !r.r_rep_title || r.r_sim === null) continue
+        if (r.r_sim >= PAIR_BAND.lo && r.r_sim < PAIR_BAND.hi) grey.push({ item, storyId: r.r_story_id, repTitle: r.r_rep_title })
+      }
+    }
+    let same = 0, different = 0, unsure = 0, failed = 0
+    let next = 0
+    await Promise.all(
+      Array.from({ length: Math.min(16, grey.length) }, async () => {
+        while (next < grey.length) {
+          const g = grey[next++]
+          try {
+            const { verdict } = await judgeSameEvent(titleById.get(g.item.id) ?? '', g.repTitle)
+            if (verdict === 'same') { g.item.join_story = g.storyId; same++ }
+            else if (verdict === 'different') { g.item.avoid_story = g.storyId; g.item.min_sim = PAIR_BAND.hi; different++ }
+            else unsure++
+          } catch {
+            failed++
+          }
+        }
+      }),
+    )
+    bump('pairs_judged', grey.length)
+    bump('pairs_same', same)
+    bump('pairs_different', different)
+    if (grey.length > 0) {
+      console.log(`[pipeline] pair judge: ${grey.length} grey-band candidates → ${same} same, ${different} different, ${unsure} unsure, ${failed} failed`)
+    }
+  } catch (err) {
+    console.error('[pipeline] pair judge FAILED (threshold decides, as before):', err)
+    stats.pairs_error = String(err).slice(0, 300)
+  }
+}
+
 // Runs twice on a run with head accepts (early, then in finalize), so its
 // counters accumulate rather than overwrite.
 async function embedAndAssignClusters(stats: RunStats): Promise<void> {
   const bump = (key: string, n: number) => { stats[key] = (Number(stats[key]) || 0) + n }
   try {
     const since = new Date(Date.now() - ASSIGN_LOOKBACK_HOURS * 3600_000).toISOString()
-    const { data: unassigned, error: qError } = await supabaseAdmin
+    const { data: newestFirst, error: qError } = await supabaseAdmin
       .from('articles')
       .select('id, title, published_at')
       .is('story_id', null)
       .gte('fetched_at', since)
-      // Chronological ASC so the RPC lets later items join clusters started by
-      // earlier ones in the same call; null published_at last (anchors to now()).
-      .order('published_at', { ascending: true, nullsFirst: false })
+      // Take the NEWEST when the worklist exceeds the cap: a backlog (a failed
+      // run, or scripts/repair-stories.ts detaching wrong merges) must never make
+      // a just-published article wait behind it. The backlog drains afterwards.
+      .order('published_at', { ascending: false, nullsFirst: true })
       .limit(ASSIGN_CAP)
     if (qError) throw new Error(`worklist query failed: ${JSON.stringify(qError)}`)
+    // Chronological ASC for the RPC, so later items can join clusters started by
+    // earlier ones in the same call; null published_at last (anchors to now()).
+    const unassigned = newestFirst ? [...newestFirst].reverse() : newestFirst
     if (!unassigned?.length) {
       bump('embedded', 0)
       bump('clusters_assigned', 0)
@@ -263,9 +330,10 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
     toEmbed.forEach((a, i) => vecById.set(a.id, fresh[i]))
     bump('embedded', fresh.length)
 
-    const items = embeddable
+    const items: AssignItem[] = embeddable
       .filter((a) => vecById.has(a.id))
       .map((a) => ({ id: a.id, published_at: a.published_at, embedding: vecById.get(a.id)! }))
+    if (jevEnabled()) await judgeGreyBand(items, new Map(embeddable.map((a) => [a.id, a.title])), stats)
 
     let assigned = 0
     let newClusters = 0
