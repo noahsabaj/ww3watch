@@ -54,7 +54,7 @@ test('region filter: None empties the feed, All restores it', async ({ page }) =
 
 test('language filter excludes a language and clearing restores it', async ({ page }) => {
   const before = await page.locator('article').count()
-  await page.getByLabel('Filter by region and language').click()
+  await page.getByLabel('Filter by region').click()
   const dropdown = page.locator('#region-filter-dropdown')
   const english = dropdown.getByRole('button', { name: 'English', exact: true })
   await expect(english).toHaveAttribute('aria-pressed', 'true')
