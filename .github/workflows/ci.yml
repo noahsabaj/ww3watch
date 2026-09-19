@@ -42,26 +42,17 @@ jobs:
         with:
           version: latest
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      # `supabase start` also applies supabase/migrations on a fresh database,
-      # and the current CLI (`latest`, Sept 2026) now REFUSES this repo's
-      # duplicate 8-digit versions ("duplicate key value violates unique
-      # constraint schema_migrations_pkey ... 20260609") where earlier releases
-      # skipped them silently. The next step applies every file itself, in
-      # filename order, so hide the directory from the CLI's own pass rather
-      # than pin a CLI version and wait for the next behaviour change.
+      # `supabase start` would apply supabase/migrations itself. The next step does
+      # that explicitly instead — file by file with ON_ERROR_STOP, so a failure
+      # names the file — so the directory is hidden from the CLI's own pass.
       - name: Start the local Supabase stack
         run: |
           mv supabase/migrations /tmp/ww3watch-migrations
           supabase start
           mv /tmp/ww3watch-migrations supabase/migrations
 
-      # Migrations are applied with psql in filename order rather than via
-      # `supabase db reset`. The CLI derives a migration's version from the
-      # leading digits of its filename, and this repo's files are dated
-      # YYYYMMDD, so nine of them collapse to the version "20260611" — on
-      # duplicates the CLI applies NOTHING and still reports success. Filename
-      # order is the contract these migrations were written and applied under
-      # (docs/CONVENTIONS.md), so CI follows it exactly and loudly.
+      # Filename order is the contract migrations are written and applied under
+      # (docs/CONVENTIONS.md): one baseline, then 14-digit versions.
       - name: Apply migrations in filename order, then the fixture seed
         run: |
           set -euo pipefail
@@ -93,7 +84,7 @@ jobs:
         run: |
           set -euo pipefail
           head -n 9 src/lib/database.types.ts > /tmp/header.ts
-          supabase gen types typescript --local > /tmp/generated.ts
+          supabase gen types typescript --local --schema public > /tmp/generated.ts
           cat /tmp/header.ts /tmp/generated.ts > src/lib/database.types.ts
           npm run check
           if ! git diff --quiet -- src/lib/database.types.ts; then
