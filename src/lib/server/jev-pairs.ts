@@ -1,4 +1,5 @@
 import { callJev } from './jev'
+import { PAIR_BAND, PAIR_NO, PAIR_YES } from './config'
 
 // Story grouping's grey zone. Embedding similarity measures "about the same
 // SUBJECT": at the 0.83 threshold, two different events in the same war land
@@ -37,17 +38,7 @@ export const sameEventQuestions = {
   },
 } as const
 
-// Nearest-story similarity band that gets a judgment. Below `lo` the embedding
-// is trusted to say "different", at or above `hi` to say "same" (every sampled
-// prod join above 0.88 was right; most between the 0.83 threshold and 0.88 were
-// not).
-export const PAIR_BAND = {
-  lo: Number(process.env.JEV_PAIR_LO || '') || 0.78,
-  hi: Number(process.env.JEV_PAIR_HI || '') || 0.9,
-}
-
-export const PAIR_YES = Number(process.env.JEV_PAIR_YES || '') || 0.7
-export const PAIR_NO = Number(process.env.JEV_PAIR_NO || '') || 0.3
+export { PAIR_BAND, PAIR_NO, PAIR_YES }
 
 export type PairVerdict = 'same' | 'different' | 'unsure'
 

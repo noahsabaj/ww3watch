@@ -11,6 +11,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { JEV_MODEL } from '../src/lib/server/jev'
 import { askSignals } from '../src/lib/server/jev-signals'
+import { mapPool } from '../src/lib/server/pool'
 import { JEV_THRESHOLD } from '../src/lib/server/jev-classify'
 import { compareRuns, LIMITS, type RegressionRow } from '../src/lib/server/jev-regression'
 
@@ -21,24 +22,14 @@ const CONCURRENCY = 16
 interface Baseline { model: string; recorded_at: string; rows: RegressionRow[] }
 
 async function ask(rows: Array<{ title: string; lang: string }>): Promise<RegressionRow[]> {
-  const out: RegressionRow[] = []
-  let next = 0
-  let failed = 0
-  await Promise.all(
-    Array.from({ length: CONCURRENCY }, async () => {
-      while (next < rows.length) {
-        const r = rows[next++]
-        try {
-          const s = await askSignals({ title: r.title, summary: null, source_lang: r.lang })
-          if (s.jev_relevant === null) throw new Error('no relevance answer')
-          out.push({ title: r.title, lang: r.lang, relevant: +s.jev_relevant.toFixed(3), topic: s.topic, severity: s.severity === null ? null : +s.severity.toFixed(3) })
-        } catch (err) {
-          failed++
-          if (failed <= 3) console.error('jev call failed:', String(err).slice(0, 160))
-        }
-      }
-    }),
-  )
+  const asked = await mapPool(rows, CONCURRENCY, async (r) => {
+    const s = await askSignals({ title: r.title, summary: null, source_lang: r.lang })
+    if (s.jev_relevant === null) throw new Error('no relevance answer')
+    return { title: r.title, lang: r.lang, relevant: +s.jev_relevant.toFixed(3), topic: s.topic, severity: s.severity === null ? null : +s.severity.toFixed(3) }
+  })
+  const out: RegressionRow[] = asked.done.map((d) => d.value)
+  const failed = asked.failed.length
+  asked.failed.slice(0, 3).forEach(({ error }) => console.error('jev call failed:', String(error).slice(0, 160)))
   if (failed > 0) console.warn(`${failed} of ${rows.length} calls failed`)
   // Stable order so a re-record diffs cleanly.
   return out.sort((a, b) => a.title.localeCompare(b.title))
