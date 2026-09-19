@@ -102,6 +102,41 @@ front of users by default is out of scope by design.
   (`classified_rejects.reason` keeps 'jev' — plus historical 'llm' — apart
   from 'head' and 'stale' for exactly this).
 
+## Code layout
+
+- **The pipeline is stages, not a script.** `scripts/run-pipeline.ts` is only an
+  entry point. `src/lib/server/pipeline/run.ts` is the order of stages and what
+  flows between them; each stage is its own module beside it. A stage takes
+  `stats`, never fails the run for a recoverable problem, and is a *worklist*
+  wherever it can be (`story_id IS NULL`, `signals_at IS NULL`) so an outage
+  drains over later runs instead of losing work.
+- **A judge is a value.** Relevance tiers implement `RelevanceTier`
+  (`src/lib/server/judges.ts`) and the pipeline runs a list of them. The repo
+  went through three judgment systems threaded in by hand; the fourth is an
+  edit to `defaultTiers()`.
+- **Every judgment is recorded** with its probability, threshold and model
+  version (`verdicts`), not just its outcome. A threshold question should be a
+  query (`verdict_daily`), not an experiment.
+- **One place for numbers.** Tunables live in `src/lib/server/config.ts`; every
+  run records the values it used (`stats.config`); the README table is
+  generated from it and CI fails when stale. A constant that must exist in
+  another runtime (Deno, SQL) gets a test that reads all the copies
+  (`src/lib/cross-runtime.test.ts`).
+- **One pool.** Bounded concurrency is `mapPool` (`src/lib/server/pool.ts`); it
+  never rejects, because every caller's policy is the same — a failed call is
+  not a verdict.
+- **Typed at the database boundary.** Both Supabase clients are typed with the
+  generated schema (`src/lib/database.types.ts`, narrowed once in
+  `src/lib/db.ts`). No `as` on query or RPC results.
+- **Boundaries are where the bugs were** — SQL↔TS, YAML↔shell, CRLF↔LF, a
+  constant in two runtimes — so each has a machine check: the RPC smoke test,
+  `scripts/ci/*` with injected `gh`, `.gitattributes`, the cross-runtime test.
+  When adding a boundary, add its check.
+- **Workflow logic lives in `scripts/ci/`**, tested, with `gh` injected as an
+  argv-array runner. Workflows keep triggers, conditions and env. The
+  exception is anything that must run when `npm ci` itself failed (failure
+  alerts, the chain's fallback): that stays in bash, and says why.
+
 ## Deploy skew (PWA)
 
 `registerType: 'autoUpdate'` keeps N-1 bundles alive for roughly a session
