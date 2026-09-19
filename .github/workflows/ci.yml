@@ -92,7 +92,7 @@ jobs:
           # a warning here always means a real schema difference.
           strip() { sed '/__InternalSupabase: {/,/^  }$/d; /Allows to automatically instantiate createClient/d; /instead of createClient<Database/d' "$1"; }
           git show HEAD:src/lib/database.types.ts > /tmp/committed.ts
-          if ! diff <(strip /tmp/committed.ts) <(strip src/lib/database.types.ts) > /tmp/types.diff; then
+          if ! diff -B <(strip /tmp/committed.ts) <(strip src/lib/database.types.ts) > /tmp/types.diff; then
             echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
             cat /tmp/types.diff
           fi
