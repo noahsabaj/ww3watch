@@ -125,19 +125,31 @@
       <h2 class="text-xl font-bold text-white mb-3">The rule the system is built on</h2>
       <p class="text-gray-300 leading-relaxed mb-3">
         <span class="text-white font-semibold">Machine intelligence routes stories; it never rewrites them.</span>
-        Language models and embedding models decide <em>where</em> things go — whether an article is
-        conflict-relevant, which story it belongs to, what is trending. They never touch what a
+        Classifier and embedding models decide <em>where</em> things go — whether an article is
+        conflict-relevant, which story it belongs to, what is trending, which tags it carries. Most
+        of those judgments come from a model that <em>cannot</em> generate text at all: it answers
+        narrow typed questions with a probability. None of them touch what a
         journalist wrote. The single exception, translation — into whatever language you read in,
         set once — is opt-in, clearly labeled, and one click away from the original.
       </p>
       <ul class="text-gray-400 leading-relaxed space-y-2 list-disc pl-5">
-        <li><span class="text-gray-300">Relevance</span> — a language model filters each new article for conflict/geopolitics relevance.</li>
+        <li><span class="text-gray-300">Relevance</span> — three tiers, cheapest first: a small local classifier settles the
+          obvious cases, a decision model (TypeSafe's Jev) gives the rest a calibrated probability, and only what it
+          is unsure about goes to a language model. A random slice of every confident verdict is re-checked by the
+          tier above, every run.</li>
         <li><span class="text-gray-300">Story grouping</span> — a multilingual embedding model maps every headline into a shared
           semantic space; articles within a tight similarity threshold and time window join the same
           story, which is how a Persian headline and a Norwegian one about the same strike end up grouped.
-          Deterministic, no prompts involved.</li>
-        <li><span class="text-gray-300">Trending</span> — a language model picks the most significant developing stories from the
-          biggest clusters of the last few hours. It chooses among stories; it writes nothing.</li>
+          Similarity means "same subject", not "same event" — so when a match is close but not certain, the
+          decision model is asked one question: are these two headlines the same news story?</li>
+        <li><span class="text-gray-300">Trending</span> — for each of the biggest stories of the last few hours the decision model
+          judges three things: how consequential the event is, whether it is a new development, and whether it is
+          only talk. Code weighs those against how many independent sources, regions and languages carry the
+          story. The weights are in the source, not in a prompt.</li>
+        <li><span class="text-gray-300">Tags and filters</span> — "major", "statement", "analysis", "unconfirmed", the topic and
+          the parties involved are the same kind of judgment, made once per article from its headline and
+          summary. They are a classifier's reading, not an editor's — they let you filter; they change nothing
+          you read.</li>
         <li><span class="text-gray-300">Wire detection</span> — articles whose text is near-identical to an earlier article in the
           same story are marked "wire", so "12 sources covered this" doesn't overstate independent
           confirmation when most are reprinting one agency's copy.</li>

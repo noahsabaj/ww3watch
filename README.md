@@ -15,9 +15,11 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 ## Features
 
 - **Real-time feed** — new articles, story regroupings, and trending changes push live via Supabase Realtime
-- **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event; deterministic, quota-free
+- **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event. Similarity means *same subject*, not *same event*, so nearest-story matches in the grey band (0.78–0.90) get one Jev judgment — "same news story?" — before joining
 - **Local relevance head** — a logistic-regression layer over those same embeddings, distilled monthly from the LLM's own verdicts, settles the confident mass of new articles on the runner; only the uncertain band spends LLM budget, and a random audit slice keeps checking the head against the LLM every run
-- **Trending Now** — LLM-picked top stories, updating live
+- **Jev routing tier** — between the local head and the LLM sits [TypeSafe's Jev](https://docs.typesafe.ai), a decision model that returns calibrated probabilities for typed questions and cannot generate text. It settles most of the head's uncertain band in seconds with no daily token cap; only what Jev is unsure about (plus a 5% audit slice) reaches the LLM
+- **Per-article signals** — one Jev request per accepted article: topic, severity, statement-vs-event, unconfirmed, analysis, and the parties involved. They drive the *Major only* / topic / *Involving* filters and the card badges
+- **Trending Now** — Jev judges each candidate story's severity, novelty and talk-only-ness; code weighs those against exact corroboration counts (`src/lib/server/trending-jev.ts`). Updating live
 - **Wire detection** — near-identical copies inside a story are marked, so "12 sources" doesn't overstate independent confirmation
 - **In-app reader + translation** — cached extraction (survives link rot), on-demand translation into your reading language (set once; defaults from your browser locale), the original one click away
 - **Source roster with live health** — every feed and its fetch health, public on [/about](https://noahsabaj.github.io/ww3watch/about); a feed that fails for ~2 days straight is switched off and a feed-health issue is filed for re-curation
@@ -32,7 +34,8 @@ All free-tier, no provider that pauses idle hobby projects:
 - [GitHub Pages](https://pages.github.com/) — hosting · [GitHub Actions](https://docs.github.com/actions) — scheduled ingestion (also runs as a container, see `Dockerfile`)
 - [Supabase](https://supabase.com/) — Postgres (+pgvector, pg_cron retention) + Realtime + two Deno Edge Functions (`reader`, `translate`)
 - [Transformers.js](https://huggingface.co/docs/transformers.js) — multilingual-e5-base embeddings, locally on the runner (story grouping)
-- [Groq](https://groq.com/) — relevance classification, trending picks, and on-demand translation (any OpenAI-compatible endpoint works; translation can run on its own provider via `TRANSLATE_LLM_*` secrets)
+- [TypeSafe Jev](https://docs.typesafe.ai) — relevance routing, per-article signals, trending judgments, story-pair judgments (optional: without `TYPESAFE_API_KEY` every one of these falls back to the previous behaviour)
+- [Groq](https://groq.com/) — the LLM tier: relevance for what Jev is unsure about, the audit slices, and on-demand translation (any OpenAI-compatible endpoint works; translation can run on its own provider via `TRANSLATE_LLM_*` secrets)
 - [Tailwind CSS v4](https://tailwindcss.com/)
 
 ## Architecture
@@ -43,16 +46,18 @@ GitHub Actions (self-chained, ~every 15 min) Browser (static SPA on GitHub Pages
     roster ◄── sources table (health ──►)       realtime ◄── INSERT/UPDATE events
     fetch feeds (direct → CF proxy)             ArticlePanel ──► Edge Functions
     de-dup vs DB ∪ rejects                        reader (extract, cached)
-    classify: local head → LLM (uncertain)        translate (LLM, cached)
+    classify: local head → Jev → LLM (unsure)     translate (LLM, cached)
     upsert articles (+body_hash wire marks)
     embed titles (local e5-base)
+    judge grey-band story pairs (Jev)
     assign stories (pgvector RPC) ──► stories
-    recompute trending (LLM picks)
+    annotate signals (Jev, worklist)
+    recompute trending (Jev judgments, code-weighed)
   pg_cron (daily): retention prune
 ```
 
 - **Ingestion** is a Node script run by GitHub Actions ([.github/workflows/pipeline.yml](.github/workflows/pipeline.yml)) — or anywhere, via the `Dockerfile`. The feed roster lives in the `sources` table (health written back every run); curation is SQL, not commits.
-- **Story grouping** is deterministic: titles embed through a pinned multilingual model on the runner, and a pgvector RPC assigns each article to the nearest story representative within a time window. No LLM in the loop.
+- **Story grouping**: titles embed through a pinned multilingual model on the runner, and a pgvector RPC assigns each article to the nearest story representative within a time window. Clear matches (≥ 0.90) and clear non-matches (< 0.78) are decided by the number alone; in between, Jev answers "same news story?" and the RPC takes the verdict as a hint (`join_story` / `avoid_story`). No generative model in the loop; with Jev off, the 0.83 threshold decides as before. `scripts/repair-stories.ts` re-judges existing joins.
 - **Frontend** is a static SPA. The initial load ([src/routes/+page.ts](src/routes/+page.ts)) reads with the anon key; [Realtime](src/routes/+page.svelte) keeps articles, story regroupings, trending, and the freshness readout live.
 - **`reader` / `translate`** run as Supabase Edge Functions ([supabase/functions](supabase/functions)) — they need a server (SSRF-guarded fetch, the LLM key). Content is cached raw and sanitized on the client with DOMPurify at `{@html}`, so sanitizer upgrades apply retroactively.
 
