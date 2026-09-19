@@ -1,14 +1,13 @@
-// Relevance: the local head first, then Jev for everything it leaves uncertain.
+// Relevance: run the tiers (src/lib/server/judges.ts) in order. Each settles what
+// it can; what it passes on is the next tier's; what the last tier passes on
+// stays "new" for the next run.
 import { selectStaleWriteOffs, staleRejectRow } from '../backlog'
-import { loadHead, headScore, partitionByHead, auditAgreement } from '../prefilter'
-import { embedTitles, shouldEmbed } from '../embeddings'
-import { partitionByJev } from '../jev-classify'
+import { headTier, jevTier, type Decision, type RelevanceTier } from '../judges'
 import type { ArticleInsert } from '../rss'
-import { CLASSIFY_BUDGET_MS, HEAD_AUDIT_RATE, HEAD_POOL_CAP, JEV_POOL_CAP, JEV_THRESHOLD, RUN_BUDGET_MS, STALE_WRITEOFF_HOURS } from '../config'
+import { CLASSIFY_BUDGET_MS, RUN_BUDGET_MS, STALE_WRITEOFF_HOURS } from '../config'
 import { embedAndAssignClusters } from './clustering'
 import { enrichSignals } from './signals'
 import { writeRejects, upsertArticles, writeVerdicts, type VerdictRow } from './persist'
-import { JEV_MODEL } from '../jev'
 import { timed as timedStage, type RunStats } from './stats'
 
 export interface ClassifyOutcome {
@@ -17,110 +16,93 @@ export interface ClassifyOutcome {
   jevFailed: number
 }
 
-export async function classifyFresh(fresh: ArticleInsert[], stats: RunStats, startedAt: number): Promise<ClassifyOutcome> {
+const newestFirst = <T extends { published_at?: string | null }>(items: T[]): T[] =>
+  [...items].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
+
+/** Today's tiers, cheapest first. No generative model anywhere:
+ *    head — a local logistic layer over the title embedding settles the obvious
+ *           mass for free;
+ *    jev  — TypeSafe's decision model gives everything else a calibrated
+ *           P(relevant), and its verdict is final. */
+export function defaultTiers(): Array<RelevanceTier<ArticleInsert>> {
+  return [headTier<ArticleInsert>(), jevTier<ArticleInsert>()].filter((t): t is RelevanceTier<ArticleInsert> => t !== null)
+}
+
+export async function classifyFresh(
+  fresh: ArticleInsert[],
+  stats: RunStats,
+  startedAt: number,
+  tiers: Array<RelevanceTier<ArticleInsert>> = defaultTiers(),
+): Promise<ClassifyOutcome> {
   const timed = <T>(stage: string, fn: () => Promise<T>) => timedStage(stats, stage, fn)
-  // 3. Classify. Newest first, two tiers, no generative model anywhere:
-  //      head — a local logistic layer over the title embedding settles the
-  //             obvious mass for free (src/lib/server/prefilter.ts);
-  //      Jev  — TypeSafe's decision model gives everything else a calibrated
-  //             P(relevant) and the verdict is final (jev-classify.ts).
-  //    An article Jev could not be asked about (call failed, run out of time)
-  //    gets NO verdict: it stays "new" and is judged next run.
-  const ordered = [...fresh].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
-  const head = loadHead()
-  let forJev: typeof ordered = ordered
-  let headAccept: typeof ordered = []
-  let headReject: typeof ordered = []
-  let audit: Map<(typeof ordered)[number], 'accept' | 'reject' | 'uncertain'> = new Map()
+  // Classification gets a share of the run's budget, measured from the START of
+  // the run so a slow fetch eats into it rather than pushing past the job's kill.
+  const deadlineMs = startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS)
+
   // Every judgment made this run, with the probability behind it (→ verdicts).
   const verdicts: VerdictRow[] = []
-  if (head) {
-    const pool = ordered.slice(0, HEAD_POOL_CAP)
-    const embeddable = pool.filter((a) => shouldEmbed(a.title))
-    const vecs = await timed('head', () => embedTitles(embeddable.map((a) => a.title)))
-    const part = partitionByHead(embeddable, vecs.map((v) => headScore(head, v)), head, { auditRate: HEAD_AUDIT_RATE })
-    headAccept = part.accept
-    headReject = part.reject
-    audit = part.audit
-    const headVerdict = (decision: 'accept' | 'reject') => (a: (typeof ordered)[number]): VerdictRow => ({
-      guid: a.guid, judge: 'head', decision, p: part.scores.get(a) ?? null,
-      threshold: decision === 'accept' ? head.accept_above : head.reject_below,
-      model: head.trained_at, lang: a.source_lang ?? null, source_id: a.source_id ?? null,
-    })
-    verdicts.push(...headAccept.map(headVerdict('accept')), ...headReject.map(headVerdict('reject')))
-    // Titles too short to embed get no head opinion — they go straight to Jev.
-    forJev = [...part.uncertain, ...pool.filter((a) => !shouldEmbed(a.title)), ...ordered.slice(HEAD_POOL_CAP)]
-      .sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
-    stats.cls_head = {
-      trained_at: head.trained_at,
-      pool: pool.length,
-      accept: headAccept.length,
-      reject: headReject.length,
-      uncertain: part.uncertain.length,
-      audit: part.audit.size,
-    }
-    console.log(
-      `[pipeline] head: ${pool.length} scored → accept ${headAccept.length}, reject ${headReject.length}, ` +
-        `uncertain ${part.uncertain.length} (+${part.audit.size} audit) → Jev gets ${Math.min(forJev.length, JEV_POOL_CAP)}`,
-    )
-  }
-
-  // The head's verdicts land first: they need nothing from the network.
+  // What each tier decided, by guid — for the audit of the tiers before it.
+  const decided = new Map<string, Decision>()
+  const audits: Array<{ tier: string; audit: Map<ArticleInsert, Decision> }> = []
+  const counts = { accept: 0, reject: 0 }
+  const outcome: ClassifyOutcome = { jevPool: 0, jevFailed: 0 }
   let inserted = 0
-  if (headAccept.length > 0) {
-    inserted += await timed('head_upsert', () => upsertArticles(headAccept))
-    await timed('head_cluster', () => embedAndAssignClusters(stats))
-    await timed('head_signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
-  }
-  // Project explicit, homogeneous columns (never spread the article objects —
-  // PostgREST 400s on unknown columns, and a batch needs uniform keys).
-  // source_id + lang give the curation pass accept-rate per source/language;
-  // reason keeps who said no on the record (the trainer never learns from 'head').
-  const rejectRow = (a: (typeof ordered)[number], reason: 'head' | 'jev') => ({
-    guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason,
-  })
-  if (headReject.length > 0) await writeRejects(headReject.map((a) => rejectRow(a, 'head')))
+  let remaining = newestFirst(fresh)
 
-  // Jev gets a share of the run's budget, measured from the START of the run so
-  // a slow fetch eats into it rather than pushing past the job's kill.
-  const jevPool = forJev.slice(0, JEV_POOL_CAP)
-  const part = await timed('jev', () =>
-    partitionByJev(jevPool, { deadlineMs: startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS) }),
-  )
-  const deferred = [...part.unjudged, ...forJev.slice(JEV_POOL_CAP)]
-  stats.cls_jev = {
-    pool: jevPool.length,
-    accept: part.accept.length,
-    reject: part.reject.length,
-    // Verdicts that landed near the cut — the number to watch if the feed ever
-    // looks too loose or too tight. They are still verdicts.
-    borderline: part.borderline,
-    unjudged: part.unjudged.length,
-    failed: part.failed,
-    input_tokens: part.inputTokens,
-    threshold: JEV_THRESHOLD,
-  }
-  console.log(
-    `[pipeline] jev: ${jevPool.length} sent → accept ${part.accept.length}, reject ${part.reject.length} ` +
-      `(${part.borderline} borderline), ${part.unjudged.length} unjudged (${part.failed} failed)`,
-  )
+  for (const [i, tier] of tiers.entries()) {
+    const isLast = i === tiers.length - 1
+    const pool = remaining.slice(0, tier.cap)
+    const overflow = remaining.slice(tier.cap)
+    const res = await timed(tier.name, () => tier.judge(pool, { deadlineMs }))
+    stats[`cls_${tier.name}`] = res.stats
+    console.log(`[pipeline] ${tier.name}: ${res.summary}`)
+    if (tier.name === 'jev') Object.assign(outcome, { jevPool: pool.length, jevFailed: res.failed })
+    if (res.audit.size > 0) audits.push({ tier: tier.name, audit: res.audit })
 
-  inserted += await upsertArticles(part.accept)
-  for (const [decision, list] of [['accept', part.accept], ['reject', part.reject]] as const) {
-    verdicts.push(...list.map((a): VerdictRow => ({
-      guid: a.guid, judge: 'jev', decision, p: a.jev_relevant, threshold: JEV_THRESHOLD,
-      model: JEV_MODEL, lang: a.source_lang ?? null, source_id: a.source_id ?? null,
-    })))
+    // Verdicts land as soon as the tier has them. A tier that is not the last is
+    // followed by network calls, so its accepts are also clustered and annotated
+    // NOW rather than after them — the local head's accepts used to reach the
+    // feed minutes late for no reason.
+    if (res.accept.length > 0) {
+      const rows = res.accept.map((j) => ({ ...j.item, ...(tier.stamp?.(j) ?? {}) }))
+      inserted += await timed(`${tier.name}_upsert`, () => upsertArticles(rows))
+      if (!isLast) {
+        await timed(`${tier.name}_cluster`, () => embedAndAssignClusters(stats))
+        await timed(`${tier.name}_signals`, () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
+      }
+    }
+    // Project explicit, homogeneous columns (never spread the article objects —
+    // PostgREST 400s on unknown columns, and a batch needs uniform keys).
+    // source_id + lang give the curation pass accept-rate per source/language;
+    // reason keeps who said no on the record (the trainer never learns from 'head').
+    if (res.reject.length > 0) {
+      await writeRejects(
+        res.reject.map(({ item: a }) => ({
+          guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason: tier.name,
+        })),
+      )
+    }
+    for (const decision of ['accept', 'reject'] as const) {
+      for (const { item: a, p } of res[decision]) {
+        decided.set(a.guid, decision)
+        verdicts.push({
+          guid: a.guid, judge: tier.name, decision, p, threshold: tier.threshold(decision),
+          model: tier.model, lang: a.source_lang ?? null, source_id: a.source_id ?? null,
+        })
+      }
+      counts[decision] += res[decision].length
+    }
+    remaining = newestFirst([...res.pass, ...overflow])
   }
   console.log(`[pipeline] inserted ${inserted} new articles`)
   stats.inserted = inserted
-  if (part.reject.length > 0) await writeRejects(part.reject.map((a) => rejectRow(a, 'jev')))
 
   // Anything still unjudged that is already too old to display is written off.
   // "Deferred to next run" was a lie for nine days once: the deferred remainder
   // grew to 6,007 — permanently re-fetched, re-deduped and never reconsidered. A
   // verdict on a two-day-old article cannot change what anyone sees; the feed
   // serves the newest 500. Keeps `new` meaning "actually new".
+  const deferred = remaining
   const stale = selectStaleWriteOffs(deferred, Date.now() - STALE_WRITEOFF_HOURS * 3_600_000)
   if (stale.length > 0) {
     await timed('stale_writeoff', () => writeRejects(stale.map(staleRejectRow)))
@@ -140,25 +122,30 @@ export async function classifyFresh(fresh: ArticleInsert[], stats: RunStats, sta
   stats.verdicts_recorded = await timed('verdicts', () => writeVerdicts(verdicts))
 
   Object.assign(stats, {
-    // Articles that actually got a verdict this run, from either tier.
-    classified: headAccept.length + headReject.length + part.accept.length + part.reject.length,
+    // Articles that actually got a verdict this run, from any tier.
+    classified: counts.accept + counts.reject,
     deferred: deferred.length,
-    relevant: headAccept.length + part.accept.length,
-    rejected: headReject.length + part.reject.length,
+    relevant: counts.accept,
+    rejected: counts.reject,
   })
-  if (head && audit.size > 0) {
-    // The head's audit slice rode along to Jev; this is how often Jev agreed.
-    const agreement = auditAgreement(
-      audit,
-      (a) => a.guid,
-      new Set(part.accept.map((a) => a.guid)),
-      new Set(part.reject.map((a) => a.guid)),
-    )
-    ;(stats.cls_head as Record<string, unknown>).audit_agreement = agreement
+
+  // A tier's audit slice rode along to the tiers after it; this is how often
+  // they agreed with what it would have decided. Items nobody settled (failed
+  // call, out of time) are excluded, not counted against.
+  for (const { tier, audit } of audits) {
+    const agreement = { accept: { n: 0, agree: 0 }, reject: { n: 0, agree: 0 } }
+    for (const [a, wouldHave] of audit) {
+      const actual = decided.get(a.guid)
+      if (!actual) continue
+      agreement[wouldHave].n++
+      if (actual === wouldHave) agreement[wouldHave].agree++
+    }
+    const tierStats = stats[`cls_${tier}` as 'cls_head']
+    if (tierStats) tierStats.audit_agreement = agreement
     console.log(
-      `[pipeline] head audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed with Jev`,
+      `[pipeline] ${tier} audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed downstream`,
     )
   }
 
-  return { jevPool: jevPool.length, jevFailed: part.failed }
+  return outcome
 }
