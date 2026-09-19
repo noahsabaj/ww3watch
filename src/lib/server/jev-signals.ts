@@ -1,13 +1,18 @@
 import { callJev, jevState, jevQuestions, type JevArticle } from './jev'
 import { ACTORS, ALL_ACTORS, ALL_TOPICS, SEVERITY_LEVELS, SIGNAL_YES, TOPICS, type Actor, type ArticleSignals, type Topic } from '../signals'
 
+// What this costs is almost entirely the QUESTIONS (the state is one headline):
+// ~2,550 input tokens with everything, ~1,800 without the relevance question.
+// So the relevance question is only asked when nobody has asked it yet — the
+// local head's accepts. For an article Jev itself accepted minutes earlier, the
+// same question over the same state would buy the same number again.
+//
 // Every signal for one article in ONE request. Jev answers each question
 // independently and in parallel against the same state, so the ~25 questions
 // cost tokens but no extra latency and cannot contaminate each other
 // (https://docs.typesafe.ai/patterns/fan-out). Each is narrow and literal on
 // purpose: Jev answers the question as written, not the one that was meant.
-export const signalQuestions: Record<string, unknown> = {
-  relevant: jevQuestions.relevant,
+const annotationQuestions: Record<string, unknown> = {
   topic: {
     type: 'choice',
     instructions: 'Which one subject best describes what `article` reports?',
@@ -43,19 +48,35 @@ export const signalQuestions: Record<string, unknown> = {
   ...Object.fromEntries(
     ALL_ACTORS.map((k) => [
       `actor_${k}`,
+      // No `criteria`: on a side-by-side over real headlines the actor sets came
+      // out the same (one better) without it, and 20 copies of it were ~500
+      // tokens per article. The wording of the instruction is what matters — a
+      // shorter one ("directly involved in the event") lost parties and
+      // invented one.
       {
         type: 'noul',
         instructions: `Is ${ACTORS[k].who} directly involved in what \`article\` reports — as a party acting or acted upon, or as the place where it happens?`,
-        criteria: { false: 'Not mentioned, or mentioned only in passing as background' },
       },
     ]),
   ),
 }
 
+/** The full set: annotations plus the relevance question. */
+export const signalQuestions: Record<string, unknown> = { relevant: jevQuestions.relevant, ...annotationQuestions }
+
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
-export async function askSignals(article: JevArticle, deadlineMs?: number): Promise<ArticleSignals & { inputTokens: number }> {
-  const { answers, inputTokens } = await callJev(jevState(article), signalQuestions, deadlineMs)
+/**
+ * @param knownRelevant Jev's P(relevant) if the classify stage already asked —
+ *   the relevance question is then left out and this value is passed through.
+ */
+export async function askSignals(
+  article: JevArticle,
+  deadlineMs?: number,
+  knownRelevant: number | null = null,
+): Promise<ArticleSignals & { inputTokens: number }> {
+  const questions = knownRelevant === null ? signalQuestions : annotationQuestions
+  const { answers, inputTokens } = await callJev(jevState(article), questions, deadlineMs)
   const topic = answers.topic?.choice
   const score = num(answers.severity?.score)
   const actors: Actor[] = ALL_ACTORS.filter((k) => (num(answers[`actor_${k}`]?.noul) ?? 0) >= SIGNAL_YES)
@@ -66,7 +87,7 @@ export async function askSignals(article: JevArticle, deadlineMs?: number): Prom
     unverified: num(answers.unverified?.noul),
     opinion: num(answers.opinion?.noul),
     actors,
-    jev_relevant: num(answers.relevant?.noul),
+    jev_relevant: knownRelevant ?? num(answers.relevant?.noul),
     inputTokens,
   }
 }
