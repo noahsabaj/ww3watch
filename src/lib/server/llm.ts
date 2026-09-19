@@ -1,4 +1,4 @@
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_MAX_RPM, LLM_REASONING_EFFORT } from './env'
+import { DEFAULT_LLM, type LlmProfile } from './env'
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant'
@@ -11,9 +11,21 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 // Serialize LLM call *starts* to at least MIN_INTERVAL apart so the pipeline's
 // many classify batches don't burst past the provider's requests/minute limit.
 // A promise chain acts as an async mutex; each acquirer waits for the previous.
-const MIN_INTERVAL_MS = Math.ceil(60_000 / LLM_MAX_RPM)
-let gate: Promise<void> = Promise.resolve()
-let lastStart = 0
+// One limiter per profile: two providers have two independent limits. When
+// CLASSIFY_LLM_* is unset both names point at the same profile object, so they
+// share one limiter, exactly as before.
+interface Limiter {
+  gate: Promise<void>
+  lastStart: number
+  /** Set once the provider says the DAILY token cap is spent. */
+  dailyCapHit: boolean
+}
+const limiters = new Map<LlmProfile, Limiter>()
+function limiterFor(profile: LlmProfile): Limiter {
+  let l = limiters.get(profile)
+  if (!l) limiters.set(profile, (l = { gate: Promise.resolve(), lastStart: 0, dailyCapHit: false }))
+  return l
+}
 
 // Where the run's wall-clock actually goes. None of this was observable before,
 // which is why 19 minutes of rate-limit backoff looked like a silent hang: the
@@ -27,6 +39,9 @@ export interface LlmStats {
   backoffMs: number // time spent in 429 backoff
   requestMs: number // time spent awaiting the provider
   deadlineSkips: number // calls refused because the run was out of budget
+  dailyCapSkips: number // calls refused because the daily token cap is spent
+  promptTokens: number // provider-reported usage, successful calls only
+  completionTokens: number
   /**
    * The first 429 of the run, verbatim: which limit, which window, how much
    * headroom. The counters alone cannot distinguish a requests-per-minute cap
@@ -48,6 +63,9 @@ const EMPTY_STATS: LlmStats = {
   backoffMs: 0,
   requestMs: 0,
   deadlineSkips: 0,
+  dailyCapSkips: 0,
+  promptTokens: 0,
+  completionTokens: 0,
   rateLimitNote: null,
   maxRetryAfterMs: 0,
 }
@@ -90,10 +108,39 @@ export class LLMDeadlineError extends Error {
   }
 }
 
-function acquireSlot(deadlineMs?: number): Promise<void> {
-  const prev = gate
+/**
+ * Thrown when the provider's DAILY token cap is spent and the caller asked not
+ * to wait for it. A subclass of LLMDeadlineError on purpose: to a caller both
+ * mean "no verdict this run, not broken" — the articles stay new.
+ */
+export class LLMDailyCapError extends LLMDeadlineError {
+  constructor() {
+    super()
+    this.message = 'llm_daily_cap'
+    this.name = 'LLMDailyCapError'
+  }
+}
+
+// Groq: "...on tokens per day (TPD): Limit X". Others: "daily token quota".
+const DAILY_CAP_RE = /per day|\bTPD\b|daily/i
+
+export interface CallOptions {
+  /** Provider + limiter to use. Defaults to LLM_*. */
+  profile?: LlmProfile
+  /**
+   * On a daily-cap 429, throw LLMDailyCapError at once — and refuse every later
+   * call on this profile — instead of sleeping out retry-after. A daily cap is a
+   * rolling window that frees about one batch per run; sleeping 4-9 minutes per
+   * batch to collect it bought the same throughput at ~12 minutes of dead
+   * wall-clock per run, with every later stage queued behind it.
+   */
+  failFastOnDailyCap?: boolean
+}
+
+function acquireSlot(limiter: Limiter, minIntervalMs: number, deadlineMs?: number, skipIfCapped = false): Promise<void> {
+  const prev = limiter.gate
   let release!: () => void
-  gate = new Promise<void>((r) => (release = r))
+  limiter.gate = new Promise<void>((r) => (release = r))
   return prev.then(async () => {
     try {
       // Never pay the rate-limit interval for a caller that will be refused the
@@ -103,12 +150,14 @@ function acquireSlot(deadlineMs?: number): Promise<void> {
       // which would put the run back on course for the job timeout this whole
       // deadline exists to avoid. Releasing immediately drains the queue at once.
       if (deadlineMs !== undefined && Date.now() >= deadlineMs) return
-      const wait = lastStart + MIN_INTERVAL_MS - Date.now()
+      // Same reasoning for a caller that will be refused for a spent daily cap.
+      if (skipIfCapped && limiter.dailyCapHit) return
+      const wait = limiter.lastStart + minIntervalMs - Date.now()
       if (wait > 0) {
         llmStats.limiterWaitMs += wait
         await sleep(wait)
       }
-      lastStart = Date.now()
+      limiter.lastStart = Date.now()
     } finally {
       release()
     }
@@ -132,14 +181,28 @@ export async function callLLM(
   messages: LLMMessage[],
   maxTokens: number,
   deadlineMs?: number,
+  opts: CallOptions = {},
 ): Promise<string> {
+  const profile = opts.profile ?? DEFAULT_LLM
+  const limiter = limiterFor(profile)
+  const minIntervalMs = Math.ceil(60_000 / profile.maxRpm)
+  const failFast = opts.failFastOnDailyCap === true
   const outOfTime = () => deadlineMs !== undefined && Date.now() >= deadlineMs
+  const refuseIfCapSpent = () => {
+    if (!(failFast && limiter.dailyCapHit)) return
+    llmStats.dailyCapSkips++
+    throw new LLMDailyCapError()
+  }
   for (let attempt = 0; ; attempt++) {
+    refuseIfCapSpent()
     if (outOfTime()) {
       llmStats.deadlineSkips++
       throw new LLMDeadlineError()
     }
-    await acquireSlot(deadlineMs)
+    await acquireSlot(limiter, minIntervalMs, deadlineMs, failFast)
+    // Batches queue on the limiter together; the first to learn the cap is
+    // spent settles it for everything queued behind.
+    refuseIfCapSpent()
     // The slot wait itself can be minutes — re-check rather than starting a
     // request the run has no time left to use.
     if (outOfTime()) {
@@ -149,18 +212,18 @@ export async function callLLM(
 
     llmStats.attempts++
     const startedAt = Date.now()
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+    const res = await fetch(`${profile.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${LLM_API_KEY}`,
+        Authorization: `Bearer ${profile.apiKey}`,
       },
       body: JSON.stringify({
-        model: LLM_MODEL,
+        model: profile.model,
         messages,
         temperature: 0,
         max_tokens: maxTokens,
-        ...(LLM_REASONING_EFFORT ? { reasoning_effort: LLM_REASONING_EFFORT } : {}),
+        ...(profile.reasoningEffort ? { reasoning_effort: profile.reasoningEffort } : {}),
       }),
       signal: AbortSignal.timeout(15000),
     })
@@ -177,10 +240,16 @@ export async function callLLM(
           ? retryAfter * 1000
           : Math.min(30_000, 1000 * 2 ** attempt)
       llmStats.maxRetryAfterMs = Math.max(llmStats.maxRetryAfterMs, backoff)
-      // Capture once per run. Reading the body consumes it, and nothing below
-      // this point uses it on the 429 path.
-      if (llmStats.rateLimitNote === null) {
-        llmStats.rateLimitNote = describeRateLimit(res, await res.text().catch(() => ''))
+      // The body names the limit; no header does. The note is kept once per run.
+      const body = await res.text().catch(() => '')
+      if (llmStats.rateLimitNote === null) llmStats.rateLimitNote = describeRateLimit(res, body)
+      if (DAILY_CAP_RE.test(body)) {
+        limiter.dailyCapHit = true
+        if (failFast) {
+          console.warn(`[llm] 429: daily token cap spent on ${profile.model} — not waiting ${backoff}ms for it`)
+          llmStats.dailyCapSkips++
+          throw new LLMDailyCapError()
+        }
       }
       // Don't sleep past the run's budget just to start a call that will then be
       // refused — give the time back to the stages that still have work to do.
@@ -198,6 +267,8 @@ export async function callLLM(
 
     llmStats.calls++
     const data = await res.json()
+    llmStats.promptTokens += Number(data.usage?.prompt_tokens) || 0
+    llmStats.completionTokens += Number(data.usage?.completion_tokens) || 0
     const text: string = data.choices?.[0]?.message?.content?.trim() ?? ''
     return text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim()
   }

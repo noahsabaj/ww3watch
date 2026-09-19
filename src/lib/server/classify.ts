@@ -1,7 +1,12 @@
 import { callLLM, LLMDeadlineError } from './llm'
+import { CLASSIFY_LLM } from './env'
 import { isRelevant } from '../relevance'
 
 const BATCH_SIZE = 30
+// The title carries the verdict; the summary disambiguates. Every character is
+// paid for out of a daily token cap (and non-Latin scripts cost several tokens
+// per word), so the summary is a lede, not the paragraph.
+const SUMMARY_CHARS = 140
 
 const SYSTEM_PROMPT = `You are the relevance filter for WW3Watch — a real-time feed tracking escalating global conflicts: wars, military strikes, assassinations, regime changes, nuclear threats, coups, and major geopolitical crises.
 
@@ -25,7 +30,10 @@ function parseVerdict(val: unknown): boolean | null {
 
 async function classifyBatch(articles: ArticleInput[], deadlineMs?: number): Promise<Array<boolean | null>> {
   const userContent = articles
-    .map((a, i) => `${i + 1}. "${a.title}" | ${(a.summary ?? '').slice(0, 200)}`)
+    .map((a, i) => {
+      const summary = (a.summary ?? '').replace(/\s+/g, ' ').trim().slice(0, SUMMARY_CHARS)
+      return summary ? `${i + 1}. "${a.title}" | ${summary}` : `${i + 1}. "${a.title}"`
+    })
     .join('\n')
 
   // callLLM handles rate-limiting, 429 retry/backoff, and fence stripping.
@@ -38,6 +46,7 @@ async function classifyBatch(articles: ArticleInput[], deadlineMs?: number): Pro
     ],
     1024 + BATCH_SIZE * 10,
     deadlineMs,
+    { profile: CLASSIFY_LLM, failFastOnDailyCap: true },
   )
   const parsed: unknown = JSON.parse(clean)
 
@@ -150,7 +159,7 @@ export async function classifyArticles(
 
   if (skippedBatches > 0) {
     console.warn(
-      `[classify] ${skippedBatches}/${batches.length} batches deferred — out of run budget (${skippedBatches * BATCH_SIZE} articles stay new)`,
+      `[classify] ${skippedBatches}/${batches.length} batches deferred — out of run budget or daily token cap (${skippedBatches * BATCH_SIZE} articles stay new)`,
     )
   }
 

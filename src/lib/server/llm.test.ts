@@ -92,6 +92,54 @@ describe('callLLM on a 429', () => {
   })
 })
 
+describe('callLLM on a spent daily cap', () => {
+  const ok = () =>
+    new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }], usage: { prompt_tokens: 40, completion_tokens: 2 } }))
+
+  it('fails fast instead of sleeping, and refuses later calls without a request', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_MAX_RPM', '600')
+    const llm = await import('./llm')
+    const fetchMock = vi.fn(() => Promise.resolve(rateLimited()))
+    vi.stubGlobal('fetch', fetchMock)
+
+    // A 600s retry-after fits this deadline: without fail-fast this would sleep.
+    const deadline = Date.now() + 3_600_000
+    const t0 = Date.now()
+    const opts = { failFastOnDailyCap: true }
+    await expect(llm.callLLM([{ role: 'user', content: 'x' }], 16, deadline, opts)).rejects.toBeInstanceOf(llm.LLMDailyCapError)
+    await expect(llm.callLLM([{ role: 'user', content: 'y' }], 16, deadline, opts)).rejects.toBeInstanceOf(llm.LLMDailyCapError)
+
+    expect(Date.now() - t0).toBeLessThan(2_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(llm.llmStats.dailyCapSkips).toBe(2)
+    expect(llm.llmStats.backoffMs).toBe(0)
+  })
+
+  it('is a deadline error to callers, so classify defers rather than falling back', async () => {
+    vi.resetModules()
+    const llm = await import('./llm')
+    expect(new llm.LLMDailyCapError()).toBeInstanceOf(llm.LLMDeadlineError)
+  })
+
+  it('keeps a separate limiter and cap per profile', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_MAX_RPM', '600')
+    const llm = await import('./llm')
+    const other = { baseUrl: 'https://other.example/v1', apiKey: 'k', model: 'm', maxRpm: 600, reasoningEffort: undefined }
+    const fetchMock = vi.fn((url: string) => Promise.resolve(url.startsWith(other.baseUrl) ? rateLimited() : ok()))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      llm.callLLM([{ role: 'user', content: 'x' }], 16, undefined, { profile: other, failFastOnDailyCap: true }),
+    ).rejects.toBeInstanceOf(llm.LLMDailyCapError)
+    // The default profile is untouched by the other provider's cap.
+    await expect(llm.callLLM([{ role: 'user', content: 'x' }], 16)).resolves.toBe('ok')
+    expect(llm.llmStats.promptTokens).toBe(40)
+    expect(llm.llmStats.completionTokens).toBe(2)
+  })
+})
+
 describe('resetLlmStats', () => {
   it('resets the note to null rather than zero', () => {
     // The previous implementation zeroed every key via Object.keys, which would
