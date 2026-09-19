@@ -19,7 +19,9 @@ export const jevEnabled = (): boolean => Boolean(process.env.TYPESAFE_API_KEY)
 const BORDERLINE = 0.3
 
 export interface JevPartition<T> {
-  accept: T[]
+  /** Accepted, each stamped with Jev's P(relevant) so the signals stage does
+   *  not have to ask the same question again. */
+  accept: Array<T & { jev_relevant: number }>
   reject: T[]
   /** No verdict: the call failed or the run was out of time. The article stays
    *  "new" and is judged next run — never guessed at. */
@@ -47,7 +49,8 @@ export async function partitionByJev<T extends JevArticle>(
           const v = await askJev(article, undefined, opts.deadlineMs)
           out.inputTokens += v.inputTokens
           if (Math.abs(v.relevant - JEV_THRESHOLD) < BORDERLINE) out.borderline++
-          out[v.relevant >= JEV_THRESHOLD ? 'accept' : 'reject'].push(article)
+          if (v.relevant >= JEV_THRESHOLD) out.accept.push({ ...article, jev_relevant: v.relevant })
+          else out.reject.push(article)
         } catch (err) {
           out.failed++
           if (out.failed <= 3) console.error('[jev] call failed, article stays new for the next run:', String(err).slice(0, 200))

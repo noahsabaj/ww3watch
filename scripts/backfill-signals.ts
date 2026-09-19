@@ -25,7 +25,7 @@ async function main() {
   for (;;) {
     const { data: pending, error } = await supabase
       .from('articles')
-      .select('id, title, summary, source_lang')
+      .select('id, title, summary, source_lang, jev_relevant')
       .is('signals_at', null)
       .gte('fetched_at', since)
       .order('fetched_at', { ascending: false })
@@ -41,7 +41,7 @@ async function main() {
         while (next < pending.length) {
           const a = pending[next++]
           try {
-            const { inputTokens, ...signals } = await askSignals(a)
+            const { inputTokens, ...signals } = await askSignals(a, undefined, a.jev_relevant ?? null)
             tokens += inputTokens
             items.push({ id: a.id, ...signals })
           } catch (err) {

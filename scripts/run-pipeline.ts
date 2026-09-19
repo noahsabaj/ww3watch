@@ -391,7 +391,7 @@ async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void>
     const since = new Date(Date.now() - SIGNALS_LOOKBACK_HOURS * 3600_000).toISOString()
     const { data: pending, error } = await supabaseAdmin
       .from('articles')
-      .select('id, title, summary, source_lang')
+      .select('id, title, summary, source_lang, jev_relevant')
       .is('signals_at', null)
       .gte('fetched_at', since)
       .order('fetched_at', { ascending: false })
@@ -409,10 +409,12 @@ async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void>
         while (next < pending.length && Date.now() < deadlineMs) {
           const a = pending[next++]
           try {
-            const { inputTokens, ...signals } = await askSignals(a, deadlineMs)
+            // jev_relevant is already set for articles Jev itself accepted; only
+            // the head's accepts still need the relevance question.
+            const { inputTokens, ...signals } = await askSignals(a, deadlineMs, a.jev_relevant ?? null)
             tokens += inputTokens
             items.push({ id: a.id, ...signals })
-            if (signals.jev_relevant !== null && signals.jev_relevant < PURGE_BELOW) irrelevant.push(a.id)
+            if (a.jev_relevant == null && signals.jev_relevant !== null && signals.jev_relevant < PURGE_BELOW) irrelevant.push(a.id)
           } catch (err) {
             failed++
             if (failed <= 3) console.error('[signals] jev call failed (article stays on the worklist):', String(err).slice(0, 200))
