@@ -4,12 +4,17 @@
   import { timeAgo, LANG_NAMES } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import { base } from '$app/paths'
+  import SignalFilters from '$lib/components/SignalFilters.svelte'
+  import { signalFilterActive, type Actor, type SignalFilter, type Topic } from '$lib/signals'
 
   let {
     searchQuery = $bindable(),
     activeRegions = $bindable(),
     excludedLangs = $bindable(),
     availableLangs,
+    signalFilter = $bindable(),
+    availableTopics,
+    availableActors,
     filterDropdownOpen = $bindable(),
     storyCount,
     totalCount,
@@ -22,6 +27,9 @@
     activeRegions: Set<SourceRegion>
     excludedLangs: Set<string>
     availableLangs: { lang: string; count: number }[]
+    signalFilter: SignalFilter
+    availableTopics: { key: Topic; count: number }[]
+    availableActors: { key: Actor; count: number }[]
     filterDropdownOpen: boolean
     storyCount: number
     totalCount: number
@@ -45,7 +53,7 @@
     else next.add(lang)
     excludedLangs = next
   }
-  const filterActive = $derived(activeRegions.size < ALL_REGIONS.length || excludedLangs.size > 0)
+  const filterActive = $derived(activeRegions.size < ALL_REGIONS.length || excludedLangs.size > 0 || signalFilterActive(signalFilter))
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && filterDropdownOpen) filterDropdownOpen = false
@@ -103,7 +111,7 @@
       <div class="relative hidden md:block">
         <button
           onclick={() => filterDropdownOpen = !filterDropdownOpen}
-          aria-label="Filter by region and language"
+          aria-label="Filter by region, language, topic and parties involved"
           aria-haspopup="true"
           aria-expanded={filterDropdownOpen}
           aria-controls="region-filter-dropdown"
@@ -121,7 +129,7 @@
 
         {#if filterDropdownOpen}
           <div class="fixed inset-0 z-40" onclick={() => filterDropdownOpen = false} role="presentation"></div>
-          <div id="region-filter-dropdown" class="absolute right-0 top-full mt-2 z-50 bg-[#111113] border border-gray-700 rounded-lg p-3 w-80 shadow-xl">
+          <div id="region-filter-dropdown" class="absolute right-0 top-full mt-2 z-50 bg-[#111113] border border-gray-700 rounded-lg p-3 w-80 shadow-xl max-h-[80vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-2.5">
               <span class="text-[10px] text-gray-600 uppercase tracking-widest">Regions</span>
               <div class="flex gap-1">
@@ -154,6 +162,7 @@
                 </button>
               {/each}
             </div>
+            <SignalFilters bind:filter={signalFilter} {availableTopics} {availableActors} />
           </div>
         {/if}
       </div>
