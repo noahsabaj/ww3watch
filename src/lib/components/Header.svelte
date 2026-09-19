@@ -168,6 +168,13 @@
       </div>
 
       <a
+        href="{base}/trends"
+        class="text-xs text-gray-600 hover:text-gray-300 transition-colors"
+      >
+        Trends
+      </a>
+
+      <a
         href="{base}/about"
         class="text-xs text-gray-600 hover:text-gray-300 transition-colors"
       >

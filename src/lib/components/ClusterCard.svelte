@@ -14,6 +14,7 @@
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
+  import { bySide, memberKind, storySignals } from '$lib/story'
 
   let { cluster, onselect }: { cluster: Cluster; onselect?: (a: Article) => void } = $props()
   let expanded = $state(false)
@@ -102,6 +103,26 @@
   // with trending's independent-source count so the two never drift).
   const wireIds = $derived(wireDuplicateIds(cluster.articles))
 
+  // Badges describe the STORY, not whichever member happens to represent it:
+  // major if any independent source reports a significant event, unconfirmed
+  // only if every one of them hedges, statement/analysis only if nobody reports
+  // something that happened. A single article is its own story.
+  const story = $derived(storySignals(cluster.articles))
+  const badgeSignals = $derived(
+    isSingle
+      ? rep
+      : {
+          severity: story.topSeverity,
+          unverified: story.unconfirmed ? 1 : 0,
+          claim: story.talkOnly ? (rep.claim ?? 1) : 0,
+          opinion: story.talkOnly ? (rep.opinion ?? 0) : 0,
+        },
+  )
+  // Expanded section: the chronology, or the same story as each bloc tells it.
+  let view = $state<'timeline' | 'sides'>('timeline')
+  const sides = $derived(bySide(cluster.articles))
+  const KIND_LABEL = { statement: 'statement', analysis: 'analysis' } as const
+
   // Chronological "who reported first" view for the expanded section.
   const timeline = $derived(storyTimeline(cluster.articles))
 
@@ -143,7 +164,7 @@
       {#if repLang}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{repLang}</span>{/if}
       <span class="truncate">{rep.source_name}</span>
       <AffiliationBadge affiliation={rep.source_affiliation} />
-      <SignalBadges article={rep} />
+      <SignalBadges article={badgeSignals} />
     </span>
     {#if !isSingle}
       <div class="flex items-center gap-1 shrink-0">
@@ -213,41 +234,71 @@
             {timeline.regionCount === 1 ? 'region' : 'regions'}
           </p>
         {/if}
-        <!-- Chronological timeline: oldest first, the original report tagged. -->
-        <div class="space-y-1">
-          {#each timeline.ordered as entry (entry.article.id)}
-            <div class="flex items-center gap-2 py-0.5">
-              <span class="text-[9px] font-mono shrink-0 w-12 text-right {entry.isFirst ? 'text-amber-400 font-bold' : 'text-gray-600'}">
-                {entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : ''}
-              </span>
-              <RegionBadge region={entry.article.source_region} size="sm" />
-              <span class="flex items-center gap-1 text-xs text-gray-400 shrink-0">
-                {#if langTag(entry.article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(entry.article.source_lang)}</span>{/if}
-                {entry.article.source_name}
-              </span>
-              <AffiliationBadge affiliation={entry.article.source_affiliation} />
-              {#if entry.isWire}
-                <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
-              {/if}
-              <a
-                href={entry.article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                dir="auto"
-                class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0"
-                onclick={(e) => {
-                  // Plain left-click opens the reader; modified clicks fall through.
-                  if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-                    e.preventDefault()
-                    onselect(entry.article)
-                  }
-                }}
-              >
-                {entry.article.title}
-              </a>
-            </div>
+        <div class="flex items-center gap-1 mb-2" role="group" aria-label="Story view">
+          {#each [['timeline', 'Timeline'], ['sides', 'By side']] as [v, label] (v)}
+            <button
+              onclick={() => (view = v as 'timeline' | 'sides')}
+              aria-pressed={view === v}
+              title={v === 'sides' ? 'The same story as each region’s outlets tell it; state media shown separately' : 'Who reported first, and how coverage unfolded'}
+              class="text-[10px] px-2 py-0.5 rounded-full border transition-colors {view === v ? 'border-gray-500 text-gray-200' : 'border-gray-800 text-gray-500 hover:text-gray-300'}"
+            >{label}</button>
           {/each}
         </div>
+        {#snippet row(article: Article, lead: string, leadStrong: boolean, isWire: boolean)}
+          <div class="flex items-center gap-2 py-0.5">
+            <span class="text-[9px] font-mono shrink-0 w-12 text-right {leadStrong ? 'text-amber-400 font-bold' : 'text-gray-600'}">{lead}</span>
+            <RegionBadge region={article.source_region} size="sm" />
+            <span class="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+              {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(article.source_lang)}</span>{/if}
+              {article.source_name}
+            </span>
+            <AffiliationBadge affiliation={article.source_affiliation} />
+            {#if isWire}
+              <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
+            {/if}
+            {#if memberKind(article) === 'statement' || memberKind(article) === 'analysis'}
+              <span class="text-[9px] uppercase tracking-wider text-gray-500 border border-gray-700/60 rounded px-1 shrink-0" title={memberKind(article) === 'statement' ? 'Reports what someone said, not an event' : 'Opinion, analysis or an explainer'}>{KIND_LABEL[memberKind(article) as 'statement' | 'analysis']}</span>
+            {/if}
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              dir="auto"
+              class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0"
+              onclick={(e) => {
+                // Plain left-click opens the reader; modified clicks fall through.
+                if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                  e.preventDefault()
+                  onselect(article)
+                }
+              }}
+            >
+              {article.title}
+            </a>
+          </div>
+        {/snippet}
+        {#if view === 'timeline'}
+          <!-- Chronological timeline: oldest first, the original report tagged. -->
+          <div class="space-y-1">
+            {#each timeline.ordered as entry (entry.article.id)}
+              {@render row(entry.article, entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : '', entry.isFirst, entry.isWire)}
+            {/each}
+          </div>
+        {:else}
+          <!-- The same story as each bloc tells it. -->
+          <div class="space-y-2">
+            {#each sides as side (side.region + (side.affiliation ?? ''))}
+              <div>
+                <div class="text-[10px] uppercase tracking-widest text-gray-600 mb-0.5">
+                  {side.region}{side.affiliation === 'state' ? ' · state media' : ''} <span class="text-gray-700">· {side.articles.length}</span>
+                </div>
+                {#each side.articles as article (article.id)}
+                  {@render row(article, '', false, wireIds.has(article.id))}
+                {/each}
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
   {/if}

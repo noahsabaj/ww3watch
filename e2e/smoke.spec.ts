@@ -208,3 +208,18 @@ test('feed cards offer translation only for headlines outside the reading langua
   await expect(ruCard.getByRole('button', { name: 'Translate', exact: true })).toHaveCount(0)
   await expect(enCard.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
 })
+
+test('Top ranks the last 24h and always leaves a way back to Latest', async ({ page }) => {
+  const order = page.getByRole('group', { name: 'Feed order' })
+  const latest = order.getByRole('button', { name: 'Latest' })
+  const top = order.getByRole('button', { name: /^Top/ })
+  await expect(latest).toHaveAttribute('aria-pressed', 'true')
+  await top.click()
+  await expect(top).toHaveAttribute('aria-pressed', 'true')
+  // Whatever the fixture's dates, the toggle survives — an empty Top window must
+  // never strand the reader.
+  await expect(latest).toBeVisible()
+  await latest.click()
+  await expect(latest).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('article').first()).toBeVisible()
+})

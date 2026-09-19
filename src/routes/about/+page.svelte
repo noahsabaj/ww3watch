@@ -241,6 +241,18 @@
     </section>
 
     <section>
+      <h2 class="text-xl font-bold text-white mb-3">Follow it elsewhere</h2>
+      <p class="text-gray-300 leading-relaxed">
+        Two RSS feeds, one item per story, opening in the reader here:
+        <a href="https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss" class="text-blue-400 hover:text-blue-300 underline">everything</a>,
+        and
+        <a href="https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss?major=1" class="text-blue-400 hover:text-blue-300 underline">major events only</a>
+        — the low-volume one to point a phone's notifications at. How each party's activity has moved
+        over the last month is on <a href="{base}/trends" class="text-blue-400 hover:text-blue-300 underline">Trends</a>.
+      </p>
+    </section>
+
+    <section>
       <h2 class="text-xl font-bold text-white mb-3">Built in the open</h2>
       <p class="text-gray-300 leading-relaxed">
         The entire system — pipeline, clustering, this page — is

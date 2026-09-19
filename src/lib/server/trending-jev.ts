@@ -1,5 +1,8 @@
 import { callJev } from './jev'
 import { SEVERITY_LEVELS } from '../signals'
+import { corroboration } from '../story'
+
+export { corroboration }
 
 // Trending without a generative model. Jev makes the three judgments that need
 // language (how consequential, is it new, is it only talk) once per candidate
@@ -48,16 +51,6 @@ const questions = {
 }
 
 export const WEIGHTS = { severity: 0.45, corroboration: 0.3, fresh: 0.25, talkPenalty: 0.15 }
-
-// Counting is code's job, not the model's. Log-scaled: the step from 1 source to
-// 3 is worth more than from 9 to 11. Breadth across regions and languages is
-// the strongest sign a story is real and not one bloc's echo.
-export function corroboration(c: Pick<TrendingCandidate, 'independent' | 'regions' | 'langs'>): number {
-  const sources = Math.min(1, Math.log2(1 + c.independent) / Math.log2(1 + 8))
-  const regions = Math.min(1, (c.regions - 1) / 3)
-  const langs = Math.min(1, (c.langs - 1) / 2)
-  return 0.6 * sources + 0.25 * regions + 0.15 * langs
-}
 
 export function trendingScore(c: TrendingCandidate, j: StoryJudgment): number {
   return (
