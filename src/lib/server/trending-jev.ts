@@ -1,14 +1,12 @@
 import { callJev } from './jev'
 import { SEVERITY_LEVELS } from '../signals'
 
-// Trending without a generative model. The LLM curator was handed 20 headlines
-// and asked to reason its way to three indices — one slow, rate-limited call
-// whose weighing of significance vs. corroboration vs. novelty lived inside a
-// prompt. Here Jev makes the three judgments that need language (how
-// consequential, is it new, is it only talk) once per candidate story, in
-// parallel, and CODE does the weighing — with the corroboration counts it
-// already computes exactly. Changing what "trending" means is now a coefficient,
-// not a prompt rewrite.
+// Trending without a generative model. Jev makes the three judgments that need
+// language (how consequential, is it new, is it only talk) once per candidate
+// story, in parallel, and CODE does the weighing — with the corroboration counts
+// it already computes exactly. Changing what "trending" means is a coefficient
+// here, not a prompt rewrite. (This replaced an LLM curator that was handed 20
+// headlines and asked to reason its way to three indices.)
 
 export interface TrendingCandidate {
   headline: string
@@ -83,7 +81,7 @@ async function judge(c: TrendingCandidate, deadlineMs?: number): Promise<StoryJu
 /**
  * Rank candidates; returns the indices of the top `pick`, best first — or null
  * when too few candidates could be judged to trust the ranking (the caller
- * falls back to the LLM, or keeps the previous selection).
+ * keeps the previous selection).
  */
 export async function rankWithJev(
   candidates: TrendingCandidate[],

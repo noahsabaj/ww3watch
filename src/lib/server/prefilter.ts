@@ -1,15 +1,16 @@
 // Local relevance head: a logistic-regression layer over the same e5 title
-// embeddings the clusterer computes, trained on the LLM's own verdicts
-// (scripts/train-classifier.ts, weights committed at HEAD_PATH).
+// embeddings the clusterer computes, trained on Jev's verdicts (plus the
+// retired LLM tier's historical ones — scripts/train-classifier.ts, weights
+// committed at HEAD_PATH).
 //
-// Three tiers. Confident accepts and rejects never reach the LLM; the uncertain
-// band between the two thresholds does. A small random slice of the confident
-// tiers is still sent to the LLM as an audit so the head's live agreement is
-// measured every run (pipeline_runs.stats.cls_head) rather than assumed from
-// the training holdout.
+// Three tiers. Confident accepts and rejects never reach Jev; the uncertain
+// band between the two thresholds does (src/lib/server/jev-classify.ts, whose
+// verdict is final). A small random slice of the confident tiers is still sent
+// to Jev as an audit so the head's live agreement is measured every run
+// (pipeline_runs.stats.cls_head) rather than assumed from the training holdout.
 //
 // The head only ROUTES — it decides whether an article is judged locally or by
-// the LLM, and for the confident tiers what that judgment is. It never touches
+// Jev, and for the confident tiers what that judgment is. It never touches
 // what a journalist wrote (docs/CONVENTIONS.md).
 import { readFileSync } from 'node:fs'
 import { EMBEDDING_DIM, EMBEDDING_MODEL_TAG } from './embeddings'
@@ -23,9 +24,9 @@ export interface ClassifierHead {
   n_neg: number
   weights: number[]
   bias: number
-  /** score < reject_below → confident reject (skips the LLM). */
+  /** score < reject_below → confident reject (skips Jev). */
   reject_below: number
-  /** score > accept_above → confident accept (skips the LLM). */
+  /** score > accept_above → confident accept (skips Jev). */
   accept_above: number
   holdout?: Record<string, unknown>
 }
@@ -35,25 +36,26 @@ export type Tier = 'accept' | 'reject' | 'uncertain'
 // Weights are only meaningful for the exact embedding vintage they were trained
 // on. A model_tag mismatch (re-quantized model, new revision) disables the head
 // rather than silently scoring foreign vectors: the pipeline falls back to
-// LLM-only, which is what it did before the head existed.
+// Jev-only: every new article goes to Jev instead of the easy mass being
+// settled here for free.
 export function loadHead(path = HEAD_PATH): ClassifierHead | null {
   let raw: string
   try {
     raw = readFileSync(path, 'utf8')
   } catch {
-    console.log(`[prefilter] no head at ${path} — LLM-only classification`)
+    console.log(`[prefilter] no head at ${path} — Jev-only classification`)
     return null
   }
   let head: ClassifierHead
   try {
     head = JSON.parse(raw)
   } catch (err) {
-    console.error(`[prefilter] head at ${path} is not valid JSON — LLM-only classification:`, err)
+    console.error(`[prefilter] head at ${path} is not valid JSON — Jev-only classification:`, err)
     return null
   }
   const problems = validateHead(head)
   if (problems.length > 0) {
-    console.error(`[prefilter] head at ${path} rejected (${problems.join('; ')}) — LLM-only classification`)
+    console.error(`[prefilter] head at ${path} rejected (${problems.join('; ')}) — Jev-only classification`)
     return null
   }
   return head
@@ -90,10 +92,10 @@ export function tierOf(head: ClassifierHead, score: number): Tier {
 export interface Partition<T> {
   accept: T[]
   reject: T[]
-  /** Everything the LLM must judge: the uncertain band plus the audit sample. */
+  /** Everything Jev must judge: the uncertain band plus the audit sample. */
   uncertain: T[]
   /** Audit items (a random slice of the confident tiers) and the tier the head
-   *  gave them; they ride along in `uncertain` and get a real LLM verdict. */
+   *  gave them; they ride along in `uncertain` and get a real Jev verdict. */
   audit: Map<T, Tier>
   scores: Map<T, number>
 }
@@ -130,8 +132,8 @@ export interface AuditStats {
   reject: { n: number; agree: number }
 }
 
-// How often the LLM agreed with the head on the audit slice. Items the LLM
-// gave no verdict (failed/deferred batch) are excluded, not counted against.
+// How often Jev agreed with the head on the audit slice. Items Jev gave no
+// verdict (failed call / out of time) are excluded, not counted against.
 export function auditAgreement<T>(
   audit: Map<T, Tier>,
   keyOf: (item: T) => string,

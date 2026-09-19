@@ -9,13 +9,7 @@ const state = vi.hoisted(() => ({
   selectedAt: null as string | null,
 }))
 
-// importOriginal, not a bare object: trending.ts narrows failures with
-// `err instanceof LLMDeadlineError`, and a mock that omits the class makes that
-// check throw TypeError instead of matching.
-vi.mock('./llm', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./llm')>()),
-  callLLM: vi.fn(),
-}))
+vi.mock('./trending-jev', () => ({ rankWithJev: vi.fn() }))
 vi.mock('./supabase', () => ({
   supabaseAdmin: {
     from: (table: string) => {
@@ -51,10 +45,11 @@ vi.mock('./supabase', () => ({
   },
 }))
 
-import { callLLM, LLMDeadlineError } from './llm'
+import { rankWithJev } from './trending-jev'
 import { updateTrending, trendingStuck, TRENDING_MIN_INTERVAL_MS, TRENDING_STUCK_MS } from './trending'
 
-const mockedCallLLM = vi.mocked(callLLM)
+const mockedRank = vi.mocked(rankWithJev)
+const picks = (...indices: number[]) => ({ indices, scores: indices.map(() => 0.5) })
 
 function article(id: string, title: string, source: string, storyId: string | null) {
   return {
@@ -77,7 +72,7 @@ function article(id: string, title: string, source: string, storyId: string | nu
 }
 
 beforeEach(() => {
-  mockedCallLLM.mockReset()
+  mockedRank.mockReset()
   state.articlesResult = { data: [], error: null }
   state.rpcResult = { error: null }
   state.rpcCalled = false
@@ -86,7 +81,7 @@ beforeEach(() => {
 })
 
 describe('updateTrending', () => {
-  // 4 clusters: one LLM-assigned cluster (2 articles, 2 distinct sources) + 3 singles.
+  // 4 clusters: one pipeline-assigned cluster (2 articles, 2 distinct sources) + 3 singles.
   const recent = [
     article('a1', 'Strike on Haifa port reported', 'Reuters', 's-haifa'),
     article('a2', 'Haifa port hit in strike', 'AP', 's-haifa'),
@@ -97,12 +92,13 @@ describe('updateTrending', () => {
 
   it('groups by story_id (distinct sources) and atomically replaces trending picks via RPC', async () => {
     state.articlesResult = { data: recent, error: null }
-    mockedCallLLM.mockResolvedValue('[0,1,2]')
+    mockedRank.mockResolvedValue(picks(0, 1, 2))
     const result = await updateTrending()
 
     expect(result).toBe('updated:3')
-    const prompt = mockedCallLLM.mock.calls[0][0][1].content
-    expect(prompt).toContain('[2 independent sources')
+    const candidates = mockedRank.mock.calls[0][0]
+    expect(candidates[0].independent).toBe(2)
+    expect(candidates[0].otherHeadlines).toHaveLength(1)
     expect(state.rpcCalled).toBe(true)
     expect(state.rpcParams?.p_rows).toHaveLength(3)
     const first = state.rpcParams!.p_rows[0] as { rank: number; article_id: string; story_id: string | null }
@@ -120,7 +116,16 @@ describe('updateTrending', () => {
     expect(firstLog.source_name).toBeTruthy()
   })
 
-  it('collapses wire reprints in the independent-source count shown to the curator', async () => {
+  it('writes the picks in the order the ranking returned them', async () => {
+    state.articlesResult = { data: recent, error: null }
+    mockedRank.mockResolvedValue(picks(2, 0, 1))
+    await updateTrending()
+    const rows = state.rpcParams!.p_rows as Array<{ rank: number; story_id: string | null }>
+    expect(rows.map((r) => r.rank)).toEqual([0, 1, 2])
+    expect(rows[1].story_id).toBe('s-haifa')
+  })
+
+  it('collapses wire reprints in the independent-source count, and keeps them out of the headlines Jev sees', async () => {
     const wireA = { ...article('w1', 'Wire copy', 'Reuters', 's-wire'), body_hash: 'h1', published_at: '2026-06-10T10:00:00Z' }
     const wireB = { ...article('w2', 'Wire copy', 'AP', 's-wire'), body_hash: 'h1', published_at: '2026-06-10T10:05:00Z' }
     const indep = { ...article('w3', 'Original reporting', 'BBC', 's-wire'), body_hash: null, published_at: '2026-06-10T10:03:00Z' }
@@ -128,18 +133,18 @@ describe('updateTrending', () => {
       data: [wireA, wireB, indep, article('p1', 'Padding one', 'DW', null), article('p2', 'Padding two', 'CNN', null), article('p3', 'Padding three', 'NPR', null)],
       error: null,
     }
-    mockedCallLLM.mockResolvedValue('[0,0,0]') // duplicate indices → rejected, no RPC call
+    mockedRank.mockResolvedValue(picks(0, 1, 2))
     await updateTrending()
-    const prompt = mockedCallLLM.mock.calls[0][0][1].content
-    expect(prompt).toContain('[2 independent sources')
-    expect(state.rpcCalled).toBe(false)
+    const story = mockedRank.mock.calls[0][0][0]
+    expect(story.independent).toBe(2)
+    expect([story.headline, ...story.otherHeadlines].filter((h) => h === 'Wire copy').length).toBeLessThanOrEqual(1)
   })
 
-  it('writes all candidates without an LLM call when there are fewer than PICK_COUNT', async () => {
+  it('writes all candidates without asking Jev when there are fewer than PICK_COUNT', async () => {
     state.articlesResult = { data: [article('only', 'The one story in the window', 'Reuters', null)], error: null }
     const result = await updateTrending()
 
-    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(mockedRank).not.toHaveBeenCalled()
     expect(result).toBe('updated:1')
     expect(state.rpcCalled).toBe(true)
     expect(state.rpcParams?.p_rows).toHaveLength(1)
@@ -157,7 +162,7 @@ describe('updateTrending', () => {
     }
     const result = await updateTrending()
 
-    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(mockedRank).not.toHaveBeenCalled()
     expect(result).toBe('updated:2')
     const rows = state.rpcParams!.p_rows as Array<{ rank: number; story_id: string | null }>
     expect(rows[0].rank).toBe(0)
@@ -165,17 +170,24 @@ describe('updateTrending', () => {
     expect(rows[1].story_id).toBeNull()
   })
 
-  it('rejects duplicate indices and keeps the previous selection (no RPC call)', async () => {
+  it('keeps the previous selection when too few candidates could be judged', async () => {
     state.articlesResult = { data: recent, error: null }
-    mockedCallLLM.mockResolvedValue('[1,1,0]')
-    await updateTrending()
+    mockedRank.mockResolvedValue(null)
+    expect(await updateTrending()).toBe('error:jev')
+    expect(state.rpcCalled).toBe(false)
+  })
+
+  it('keeps the previous selection when the ranking throws', async () => {
+    state.articlesResult = { data: recent, error: null }
+    mockedRank.mockRejectedValue(new Error('network'))
+    expect(await updateTrending()).toBe('error:jev')
     expect(state.rpcCalled).toBe(false)
   })
 
   it('handles replace_trending RPC errors gracefully', async () => {
     state.articlesResult = { data: recent, error: null }
     state.rpcResult = { error: { message: 'RPC boom' } }
-    mockedCallLLM.mockResolvedValue('[0,1,2]')
+    mockedRank.mockResolvedValue(picks(0, 1, 2))
     const result = await updateTrending()
     expect(state.rpcCalled).toBe(true)
     expect(result).toBe('error:rpc')
@@ -184,23 +196,23 @@ describe('updateTrending', () => {
   it('does nothing when there are no recent articles', async () => {
     state.articlesResult = { data: [], error: null }
     await updateTrending()
-    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(mockedRank).not.toHaveBeenCalled()
     expect(state.rpcCalled).toBe(false)
   })
 
-  it('passes the run deadline through to callLLM', async () => {
+  it('passes the run deadline through to the ranking', async () => {
     state.articlesResult = { data: recent, error: null }
-    mockedCallLLM.mockResolvedValue('[0,1,2]')
+    mockedRank.mockResolvedValue(picks(0, 1, 2))
     const deadline = Date.now() + 60_000
     await updateTrending(deadline)
-    expect(mockedCallLLM).toHaveBeenCalledWith(expect.anything(), expect.any(Number), deadline)
+    expect(mockedRank).toHaveBeenCalledWith(expect.anything(), 3, deadline)
   })
 
-  it('reports a budget deferral as deferred:budget, not error:llm', async () => {
+  it('reports an exhausted run budget as deferred:budget, without asking Jev', async () => {
     state.articlesResult = { data: recent, error: null }
-    mockedCallLLM.mockRejectedValue(new LLMDeadlineError())
     const result = await updateTrending(Date.now() - 1)
     expect(result).toBe('deferred:budget')
+    expect(mockedRank).not.toHaveBeenCalled()
     expect(state.rpcCalled).toBe(false)
   })
 
@@ -209,14 +221,14 @@ describe('updateTrending', () => {
     state.selectedAt = new Date(Date.now() - TRENDING_MIN_INTERVAL_MS / 2).toISOString()
     const result = await updateTrending()
     expect(result).toBe('fresh:skipped')
-    expect(mockedCallLLM).not.toHaveBeenCalled()
+    expect(mockedRank).not.toHaveBeenCalled()
     expect(state.rpcCalled).toBe(false)
   })
 
   it('re-curates once the live selection is older than the minimum interval', async () => {
     state.articlesResult = { data: recent, error: null }
     state.selectedAt = new Date(Date.now() - TRENDING_MIN_INTERVAL_MS - 1000).toISOString()
-    mockedCallLLM.mockResolvedValue('[0,1,2]')
+    mockedRank.mockResolvedValue(picks(0, 1, 2))
     expect(await updateTrending()).toBe('updated:3')
   })
 })
@@ -237,6 +249,6 @@ describe('trendingStuck', () => {
   })
   it('fires when the failure sits on a selection nobody has replaced for hours, or none at all', () => {
     expect(trendingStuck('error:rpc', old, now)).toBe(true)
-    expect(trendingStuck('error:llm', null, now)).toBe(true)
+    expect(trendingStuck('error:jev', null, now)).toBe(true)
   })
 })

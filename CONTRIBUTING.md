@@ -2,13 +2,17 @@
 
 Thanks for your interest. WW3Watch is a real-time global-conflict news aggregator:
 a SvelteKit 2 / Svelte 5 static SPA on GitHub Pages, backed by Supabase (Postgres +
-Realtime + Edge Functions) and an LLM-assisted ingestion pipeline. It runs on a
-strict $0 budget, which shapes most of the engineering rules below.
+Realtime + Edge Functions) and a model-assisted ingestion pipeline (a local
+classifier, local embeddings, and TypeSafe's Jev decision model — no generative
+LLM). It runs on free tiers everywhere except Jev (pay-per-token, well under a
+dollar a day), which shapes most of the engineering rules below.
 
 ## The one rule that matters most
 
-**LLMs route, translate, and classify — they never emit load-bearing structure or
-user-facing prose.** Story grouping, ordering, counts, badges, and the timeline are
+**Models route and classify — they never emit load-bearing structure or
+user-facing prose.** The pipeline's judgments come from a local classifier and a
+decision model that cannot generate text; the one generative LLM in the project
+does opt-in translation and nothing else. Story grouping, ordering, counts, badges, and the timeline are
 all computed from data the client already holds. If a change would have a model
 generate something the UI depends on for correctness, it's the wrong shape. The full
 rationale and the rest of the house rules live in

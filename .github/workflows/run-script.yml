@@ -30,9 +30,5 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          LLM_REASONING_EFFORT: low # match pipeline.yml — see comment there
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}

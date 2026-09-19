@@ -54,29 +54,11 @@ export const jevQuestions = {
       },
     },
   },
-  // Speculative: costs a few tokens, answered in parallel, ignored by routing
-  // today. Recorded so the eval can show whether it separates the classes.
-  topic: {
-    type: 'choice',
-    instructions: 'Which one subject best describes what `article` reports?',
-    criteria: {
-      armed_conflict: 'War, battles, strikes, shelling, military operations, or casualties of fighting',
-      terrorism_or_assassination: 'Terror attacks, targeted killings, hostage-taking',
-      coup_or_unrest: 'Coups, violent regime change, armed uprisings, violently suppressed protests',
-      nuclear_or_missiles: 'Nuclear programmes or threats, missile tests, weapons of mass destruction',
-      military_posture: 'Mobilisation, deployments, exercises, arms deals and weapons deliveries, defence budgets',
-      conflict_diplomacy: 'Sanctions, ultimatums, ceasefire or peace talks, alliances, UN action about a conflict',
-      other_politics: 'Domestic politics, elections, courts, or diplomacy with no conflict or security dimension',
-      not_politics: 'Economy, business, technology, science, health, sports, culture, weather, crime, accidents',
-    },
-  },
 } as const
 
 export interface JevVerdict {
   /** P(relevant), calibrated, 0-1. */
   relevant: number
-  topic: string
-  topicConfidence: number
   inputTokens: number
 }
 
@@ -128,10 +110,5 @@ export async function askJev(
   const { answers, inputTokens } = await callJev(jevState(article), questions, deadlineMs)
   const relevant = Number(answers.relevant?.noul)
   if (!Number.isFinite(relevant)) throw new Error(`jev: no relevant.noul in ${JSON.stringify(answers).slice(0, 200)}`)
-  return {
-    relevant,
-    topic: String(answers.topic?.choice ?? ''),
-    topicConfidence: Number(answers.topic?.confidence) || 0,
-    inputTokens,
-  }
+  return { relevant, inputTokens }
 }

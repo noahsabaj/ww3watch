@@ -83,7 +83,7 @@ Anon-readable tables:
 | Table       | What it holds                                                        |
 |-------------|----------------------------------------------------------------------|
 | `articles`  | ingested articles (title, url, summary, published/fetched, source\_\*, `story_id`, `body_hash`) |
-| `trending`  | the current LLM-curated trending picks (`article_id`, `rank`, `story_id`) |
+| `trending`  | the current trending picks — Jev-judged, code-ranked (`article_id`, `rank`, `story_id`) |
 | `sources`   | the feed roster + health (`name`, `region`, `lang`, `enabled`, `last_ok_at`, `consecutive_failures`) |
 
 RPCs:

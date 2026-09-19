@@ -5,12 +5,13 @@
 //
 // WHAT: logistic regression over the pipeline's own e5 title embeddings,
 // positives = accepted articles, negatives = rejects by an independent model
-// (reason 'llm' or 'jev' — never 'stale' rows nobody judged, never the head's
-// own 'head' rejects, which would teach it its own mistakes). 'jev' counts
-// because once Jev settles most of the uncertain band, the LLM only sees what
-// Jev found borderline: 'llm' alone would train on the hardest cases only. The LLM's verdicts are the label source,
-// so this is a distillation: the head learns to reproduce the LLM on the easy
-// mass of the distribution and hands the rest back to it.
+// (reason 'jev', or historical 'llm' — never 'stale' rows nobody judged, never
+// the head's own 'head' rejects, which would teach it its own mistakes). Jev is
+// the pipeline's relevance judge and writes every new judged reject; 'llm' rows
+// are left over from the retired LLM tier and age out of classified_rejects
+// after 14 days. Jev's verdicts are the label source, so this is a
+// distillation: the head learns to reproduce Jev on the easy mass of the
+// distribution and hands the rest back to it.
 //
 // THRESHOLDS are chosen on a held-out split, never on training data:
 //   reject_below — the highest score at which the false-reject rate on held-out
@@ -55,7 +56,7 @@ const MAX_LANG_FALSE_REJECT = 0.05
 const MIN_LANG_N = 50
 const MIN_CLASS_N = 2000
 // Below this share of the holdout leaving the uncertain band, the head isn't
-// buying enough LLM budget to be worth the routing complexity.
+// saving enough Jev calls to be worth the routing complexity.
 const MIN_RESOLVED_FRACTION = 0.3
 
 type Row = { title: string; lang: string; y: 0 | 1 }
@@ -260,7 +261,7 @@ async function main() {
     `accuracy@0.5 ${fmt(accuracy)}`,
     `reject_below **${rejectBelow}** → false-reject ${fmt(holdout.false_reject_at_floor)}, auto-rejects ${fmt(autoRejected)} of negatives`,
     `accept_above **${acceptAbove}** → false-accept ${fmt(holdout.false_accept_at_ceiling)}, auto-accepts ${fmt(autoAccepted)} of positives`,
-    `resolved without the LLM: **${fmt(resolved)}** of holdout`,
+    `resolved without Jev: **${fmt(resolved)}** of holdout`,
     '',
     '| lang | holdout pos | false-reject @ floor |',
     '|---|---|---|',
@@ -272,7 +273,7 @@ async function main() {
   // Guardrails — a fit that can't buy its keep is not shipped.
   if (rejectBelow >= acceptAbove) throw new Error(`bands overlap: reject_below ${rejectBelow} >= accept_above ${acceptAbove}`)
   if (resolved < MIN_RESOLVED_FRACTION) {
-    throw new Error(`only ${fmt(resolved)} of holdout resolved without the LLM (need ≥ ${fmt(MIN_RESOLVED_FRACTION)}) — not shipping`)
+    throw new Error(`only ${fmt(resolved)} of holdout resolved without Jev (need ≥ ${fmt(MIN_RESOLVED_FRACTION)}) — not shipping`)
   }
 
   const head: ClassifierHead = {

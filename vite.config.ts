@@ -60,9 +60,6 @@ export default defineConfig({
     env: {
       SUPABASE_URL: 'http://localhost',
       SUPABASE_SECRET_KEY: 'test-secret',
-      LLM_BASE_URL: 'http://localhost/v1',
-      LLM_API_KEY: 'test-key',
-      LLM_MODEL: 'test-model',
     },
   }
 })

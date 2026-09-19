@@ -126,17 +126,18 @@
       <p class="text-gray-300 leading-relaxed mb-3">
         <span class="text-white font-semibold">Machine intelligence routes stories; it never rewrites them.</span>
         Classifier and embedding models decide <em>where</em> things go — whether an article is
-        conflict-relevant, which story it belongs to, what is trending, which tags it carries. Most
-        of those judgments come from a model that <em>cannot</em> generate text at all: it answers
-        narrow typed questions with a probability. None of them touch what a
+        conflict-relevant, which story it belongs to, what is trending, which tags it carries. Every
+        one of those judgments comes from a model that <em>cannot</em> generate text at all: it scores, or it
+        answers narrow typed questions with a probability. None of them touch what a
         journalist wrote. The single exception, translation — into whatever language you read in,
-        set once — is opt-in, clearly labeled, and one click away from the original.
+        set once — is the only place a text-generating model is used: opt-in, clearly labeled, and one
+        click away from the original.
       </p>
       <ul class="text-gray-400 leading-relaxed space-y-2 list-disc pl-5">
-        <li><span class="text-gray-300">Relevance</span> — three tiers, cheapest first: a small local classifier settles the
-          obvious cases, a decision model (TypeSafe's Jev) gives the rest a calibrated probability, and only what it
-          is unsure about goes to a language model. A random slice of every confident verdict is re-checked by the
-          tier above, every run.</li>
+        <li><span class="text-gray-300">Relevance</span> — two tiers, cheapest first: a small local classifier settles the
+          obvious cases, and a decision model (TypeSafe's Jev) gives the rest a calibrated probability — its verdict
+          is final. A random slice of the local classifier's confident verdicts is re-checked by the decision
+          model, every run.</li>
         <li><span class="text-gray-300">Story grouping</span> — a multilingual embedding model maps every headline into a shared
           semantic space; articles within a tight similarity threshold and time window join the same
           story, which is how a Persian headline and a Norwegian one about the same strike end up grouped.
