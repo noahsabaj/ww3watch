@@ -113,6 +113,10 @@ jobs:
       # and none of them said anything. The freshness readout went red and the
       # push alert, which exists precisely because "the pipeline once died
       # silently for three months", could not fire.
+      # DELIBERATELY still inline bash, unlike the steps below (scripts/ci/):
+      # this must fire when checkout, setup-node or `npm ci` is what broke, and
+      # a script run through tsx needs all three. The alert must not depend on
+      # the thing that might be broken.
       - name: Alert on failure
         if: failure() || cancelled()
         env:
@@ -132,52 +136,34 @@ jobs:
       # failures) needs a person: a moved feed URL, a WAF that now blocks the
       # runner and proxy alike, or a dead outlet. One feed-health issue collects
       # them; curation is SQL against the sources table, then close it.
+      # Title, body and the create-or-comment logic: scripts/ci/issues.ts. The
+      # `if:` means the run step produced output, so `npm ci` succeeded and tsx
+      # is there. The list travels by env (multi-line), not argv.
       - name: File feed-health issue for auto-disabled sources
         if: ${{ !cancelled() && steps.run.outputs.disabled_sources != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           DISABLED: ${{ steps.run.outputs.disabled_sources }}
-        run: |
-          gh label create feed-health --color FBCA04 --description "Feed sources needing re-curation" --force >/dev/null 2>&1 || true
-          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          body=$(printf 'Auto-disabled after %s consecutive failed fetches (run %s):\n\n%s\n\nFix the feed URL or leave it disabled; re-enable with SQL on the sources table.' "200" "$run_url" "$(echo "$DISABLED" | sed 's/^/- /')")
-          existing=$(gh issue list --label feed-health --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "$body"
-          else
-            gh issue create --title "Feed sources auto-disabled — re-curation needed" --label feed-health --body "$body"
-          fi
+        run: node --import tsx scripts/ci/issues.ts disabled-sources
 
       # Feeds that fetch fine but yield ~nothing (source_yield RPC). One open
       # feed-health issue at a time; it is only commented on when the list
       # changes, so a standing list does not get a comment every 15 minutes.
+      # (The "changed" test — a marker of the sorted source names — is in
+      # scripts/ci/issues.ts.)
       - name: File feed-health issue for low-yield sources
         if: ${{ !cancelled() && steps.run.outputs.low_yield_sources != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           LOW_YIELD: ${{ steps.run.outputs.low_yield_sources }}
-        run: |
-          gh label create feed-health --color FBCA04 --description "Feed sources needing re-curation" --force >/dev/null 2>&1 || true
-          names=$(echo "$LOW_YIELD" | cut -d: -f1 | sort | tr '\n' ',' )
-          marker="<!-- low-yield: $names -->"
-          body=$(printf '%s\nFetching fine, but almost nothing accepted over the last 7 days (≥100 items, ≤2%% accepted):\n\n%s\n\nSwap the URL for the outlet'"'"'s world/conflict section feed, or disable it, with SQL on the sources table.' "$marker" "$(echo "$LOW_YIELD" | sed 's/^/- /')")
-          existing=$(gh issue list --label feed-health --state open --search "low-yield in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -z "$existing" ]; then
-            gh issue create --title "Feed sources with low-yield — re-curation suggested" --label feed-health --body "$body"
-          elif ! gh issue view "$existing" --json body,comments --jq '.body, .comments[].body' | grep -qF -- "$marker"; then
-            gh issue comment "$existing" --body "$body"
-          fi
+        run: node --import tsx scripts/ci/issues.ts low-yield
 
+      # success() ⇒ every earlier step passed, `npm ci` included.
       - name: Resolve alert on success
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          existing=$(gh issue list --label pipeline-failure --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$existing" ]; then
-            run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            gh issue close "$existing" --comment "Pipeline run succeeded: $run_url. Auto-closing issue." --reason "completed"
-          fi
+        run: node --import tsx scripts/ci/issues.ts close --label pipeline-failure --message "Pipeline run succeeded"
 
 
       # Self-chain: dispatch the next run, paced to CADENCE_SECONDS from THIS
@@ -191,7 +177,20 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
+        # The pacing arithmetic and the dispatch are scripts/ci/chain.ts (tested).
+        # The bash below it is a FALLBACK, kept on purpose: this step runs on
+        # failure too, and one of the failures it must survive is `npm ci` (or
+        # checkout) itself, in which case there is no tsx to run the script
+        # with. Without it a registry blip would break the chain and leave
+        # ingestion to the throttled backstop cron for hours. It also covers a
+        # dispatch that failed inside the script, with one immediate retry (by
+        # then the pacing sleep has already happened, so `wait` is <= 0).
         run: |
+          if node --import tsx scripts/ci/chain.ts --start "${{ steps.clock.outputs.start }}" \
+               --workflow pipeline.yml --ref "${{ github.ref_name }}"; then
+            exit 0
+          fi
+          echo "::warning::scripts/ci/chain.ts did not complete — chaining from the bash fallback"
           elapsed=$(( $(date +%s) - ${{ steps.clock.outputs.start }} ))
           wait=$(( CADENCE_SECONDS - elapsed ))
           if [ "$wait" -gt 0 ]; then

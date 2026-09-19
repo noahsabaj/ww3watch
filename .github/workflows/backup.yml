@@ -37,6 +37,7 @@ jobs:
       - name: Open or update the backup PR
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_BODY: "Automated dump of the curated sources roster (data/sources-backup.json). Merge to keep the committed backup current."
         run: |
           git add data/sources-backup.json
           if git diff --cached --quiet; then
@@ -48,9 +49,10 @@ jobs:
           git checkout -B sources-backup
           git commit -m "chore: weekly sources roster backup"
           git push --force origin sources-backup
-          # OPEN PRs only: `gh pr view <branch>` also matches a MERGED PR from the
-          # same branch name, which would stop every backup after the first
-          # merged one from ever opening a PR.
-          if [ -z "$(gh pr list --head sources-backup --state open --json number --jq '.[0].number')" ]; then
-            gh pr create --base main --head sources-backup --title "chore: weekly sources roster backup"               --body "Automated dump of the curated sources roster (data/sources-backup.json). Merge to keep the committed backup current."
-          fi
+          # Create the PR unless one is already OPEN (the force-push above has
+          # updated it; its body is static, so `--if-open leave`). The lookup
+          # lives in scripts/ci/bot-pr.ts, under test: `gh pr view <branch>` also
+          # matches a MERGED PR from the same branch name, which would stop every
+          # backup after the first merged one from ever opening a PR.
+          node --import tsx scripts/ci/bot-pr.ts ensure --branch sources-backup \
+            --title "chore: weekly sources roster backup" --if-open leave
