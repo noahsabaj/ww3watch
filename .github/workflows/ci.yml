@@ -85,6 +85,11 @@ jobs:
       # src/lib/database.types.ts was not regenerated. The header comment is
       # re-attached so the file stays self-describing if someone copies it out.
       - name: Type-check against the migrated schema
+        # svelte-check resolves $env/static/public, so it needs the same two
+        # PUBLIC_ values the build step below is given.
+        env:
+          PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
         run: |
           set -euo pipefail
           head -n 9 src/lib/database.types.ts > /tmp/header.ts
