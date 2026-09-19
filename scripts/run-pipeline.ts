@@ -57,6 +57,20 @@ const HEAD_POOL_CAP = Number(process.env.HEAD_POOL_CAP || '') || 2000
 const SIGNALS_CAP = Number(process.env.SIGNALS_CAP || '') || 600
 const SIGNALS_LOOKBACK_HOURS = 48
 const SIGNALS_CONCURRENCY = 16
+// The signals request also returns Jev's P(relevant) for the article. The local
+// head's accepts never passed Jev's relevance gate, so this is their second
+// opinion, for free: below this, the article is removed again (its guid goes to
+// classified_rejects). Deliberately far below the 0.5 accept cut — two judges
+// disagreeing mildly is not grounds to delete — and capped per run, so a bad
+// question edit cannot empty the feed before someone notices.
+const PURGE_BELOW = Number(process.env.PURGE_BELOW || '') || 0.2
+const PURGE_CAP_PER_RUN = 25
+// Grey-band judging + assignment happen in chronological chunks this size, so an
+// article can be JUDGED against a story created moments earlier in the same run
+// (within one chunk, items still meet by threshold alone).
+const PAIR_CHUNK = 20
+// Feeds that fetch fine but almost never yield an accepted article.
+const LOW_YIELD = { days: 7, minItems: 100, maxPct: 2 }
 // Jev (TypeSafe) judges up to this many of the still-unsettled articles per run.
 // No daily cap and ~150ms a call, so the bound is wall-clock, not quota.
 const JEV_POOL_CAP = Number(process.env.JEV_POOL_CAP || '') || 2000
@@ -222,8 +236,9 @@ interface AssignItem {
 // to assign_story_by_embedding as a hint (20260919020000_story_pair_judge.sql).
 // Outside the band, and on any failure, the plain threshold decides as before.
 //
-// Limit: candidates are stories that exist BEFORE this batch. Two grey-band
-// articles arriving in the same batch still meet by threshold alone.
+// Called per chronological chunk (PAIR_CHUNK), so candidates include stories
+// created earlier in the same run; only items inside one chunk still meet by
+// threshold alone.
 async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>, stats: RunStats): Promise<void> {
   const bump = (key: string, n: number) => { stats[key] = (Number(stats[key]) || 0) + n }
   try {
@@ -261,9 +276,8 @@ async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>
     bump('pairs_judged', grey.length)
     bump('pairs_same', same)
     bump('pairs_different', different)
-    if (grey.length > 0) {
-      console.log(`[pipeline] pair judge: ${grey.length} grey-band candidates → ${same} same, ${different} different, ${unsure} unsure, ${failed} failed`)
-    }
+    bump('pairs_unsure', unsure)
+    bump('pairs_failed', failed)
   } catch (err) {
     console.error('[pipeline] pair judge FAILED (threshold decides, as before):', err)
     stats.pairs_error = String(err).slice(0, 300)
@@ -324,27 +338,41 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
     const items: AssignItem[] = embeddable
       .filter((a) => vecById.has(a.id))
       .map((a) => ({ id: a.id, published_at: a.published_at, embedding: vecById.get(a.id)! }))
-    if (jevEnabled()) await judgeGreyBand(items, new Map(embeddable.map((a) => [a.id, a.title])), stats)
-
+    const titleById = new Map(embeddable.map((a) => [a.id, a.title]))
     let assigned = 0
     let newClusters = 0
-    for (let i = 0; i < items.length; i += ASSIGN_RPC_CHUNK) {
+    const joined = new Set<string>()
+    // Judge, then assign, one chronological chunk at a time: the stories chunk N
+    // creates are judged candidates for chunk N+1.
+    for (let i = 0; i < items.length; i += PAIR_CHUNK) {
+      const chunk = items.slice(i, i + PAIR_CHUNK)
+      await judgeGreyBand(chunk, titleById, stats)
       const { data, error } = await supabaseAdmin.rpc('assign_story_by_embedding', {
-        p_items: items.slice(i, i + ASSIGN_RPC_CHUNK),
+        p_items: chunk,
         p_model: EMBEDDING_MODEL_TAG,
         p_threshold: EMBED_SIM_THRESHOLD,
         p_window_hours: EMBED_WINDOW_HOURS,
       })
       if (error) throw new Error(`assign RPC failed: ${JSON.stringify(error)}`)
-      const rows = (data ?? []) as Array<{ r_is_new: boolean }>
+      const rows = (data ?? []) as Array<{ r_story_id: string; r_is_new: boolean }>
       assigned += rows.length
       newClusters += rows.filter((r) => r.r_is_new).length
+      for (const r of rows) if (!r.r_is_new) joined.add(r.r_story_id)
+    }
+    // A story that grew gets its representative re-elected (the medoid), so what
+    // later articles are compared against is the story's centre, not whichever
+    // article happened to arrive first. Best-effort.
+    if (joined.size > 0) {
+      const { data, error } = await supabaseAdmin.rpc('reelect_story_reps', { p_story_ids: [...joined] })
+      if (error) console.error('[pipeline] rep re-election failed (non-fatal):', error)
+      else bump('reps_reelected', Number(data) || 0)
     }
     bump('clusters_assigned', assigned)
     bump('clusters_new', newClusters)
     console.log(
       `[pipeline] clustering: embedded ${fresh.length} (reused ${stored.size}, skipped ${skipped}), ` +
-        `assigned ${assigned} -> ${newClusters} new clusters (threshold ${EMBED_SIM_THRESHOLD})`,
+        `assigned ${assigned} -> ${newClusters} new clusters (threshold ${EMBED_SIM_THRESHOLD}) | ` +
+        `pairs judged ${stats.pairs_judged ?? 0}: ${stats.pairs_same ?? 0} same, ${stats.pairs_different ?? 0} different`,
     )
   } catch (err) {
     // Degradation contract: a failed clustering pass never fails the run.
@@ -372,6 +400,7 @@ async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void>
     if (!pending?.length) return
 
     const items: Array<Record<string, unknown>> = []
+    const irrelevant: string[] = []
     let failed = 0
     let tokens = 0
     let next = 0
@@ -383,6 +412,7 @@ async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void>
             const { inputTokens, ...signals } = await askSignals(a, deadlineMs)
             tokens += inputTokens
             items.push({ id: a.id, ...signals })
+            if (signals.jev_relevant !== null && signals.jev_relevant < PURGE_BELOW) irrelevant.push(a.id)
           } catch (err) {
             failed++
             if (failed <= 3) console.error('[signals] jev call failed (article stays on the worklist):', String(err).slice(0, 200))
@@ -396,6 +426,18 @@ async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void>
       if (rpcError) throw new Error(`apply_article_signals failed: ${JSON.stringify(rpcError)}`)
       applied += Number(data) || 0
     }
+    // Annotated FIRST, purged second: anything over the cap keeps its signals
+    // (and its low jev_relevant on the record) instead of being re-asked forever.
+    if (irrelevant.length > 0) {
+      const { data, error: purgeError } = await supabaseAdmin.rpc('purge_irrelevant_articles', {
+        p_ids: irrelevant.slice(0, PURGE_CAP_PER_RUN),
+      })
+      if (purgeError) console.error('[signals] purge failed (articles stay):', purgeError)
+      else {
+        bump('signals_purged', Number(data) || 0)
+        console.log(`[pipeline] signals: removed ${Number(data) || 0} of ${irrelevant.length} accepted articles Jev puts below P(relevant) ${PURGE_BELOW}`)
+      }
+    }
     bump('signals_applied', applied)
     bump('signals_failed', failed)
     bump('signals_tokens', tokens)
@@ -403,6 +445,26 @@ async function enrichSignals(stats: RunStats, deadlineMs: number): Promise<void>
   } catch (err) {
     console.error('[pipeline] signals FAILED (articles stay un-annotated; next run self-heals):', err)
     stats.signals_error = String(err).slice(0, 300)
+  }
+}
+
+// Feeds that fetch fine but almost never yield an accepted article. Fetch health
+// cannot see these. Reported in stats every run; the workflow files a
+// feed-health issue from the step output (at most one open issue, commented on).
+async function reportLowYield(stats: RunStats): Promise<void> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('source_yield', {
+      p_days: LOW_YIELD.days, p_min_items: LOW_YIELD.minItems, p_max_pct: LOW_YIELD.maxPct,
+    })
+    if (error) throw new Error(JSON.stringify(error))
+    const rows = (data ?? []) as Array<{ r_name: string; r_accepted: number; r_rejected: number; r_pct: number }>
+    stats.low_yield_sources = rows.map((r) => ({ name: r.r_name, accepted: r.r_accepted, rejected: r.r_rejected }))
+    if (rows.length > 0 && process.env.GITHUB_OUTPUT) {
+      const lines = rows.map((r) => `${r.r_name}: ${r.r_accepted} accepted / ${r.r_rejected} rejected in ${LOW_YIELD.days}d (${Number(r.r_pct).toFixed(1)}%)`)
+      appendFileSync(process.env.GITHUB_OUTPUT, `low_yield_sources<<EOF\n${lines.join('\n')}\nEOF\n`)
+    }
+  } catch (err) {
+    console.error('[pipeline] low-yield report failed (non-fatal):', err)
   }
 }
 
@@ -496,6 +558,7 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await timed('signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
   stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
+  await reportLowYield(stats)
   stats.total_ms = Date.now() - startedAt
   console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(timings)}`)
 
