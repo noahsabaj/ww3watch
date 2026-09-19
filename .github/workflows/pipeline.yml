@@ -79,6 +79,9 @@ jobs:
           # Groq free tier is ~6K tokens/min — keep call starts sparse so heavy
           # runs don't live in 429 backoff (which leaks junk through the keyword path).
           LLM_MAX_RPM: '2'
+          # Optional: TypeSafe Jev as a routing tier between the local head and
+          # the LLM (src/lib/server/jev-classify.ts). Unset → tier is skipped.
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
           # Optional: classification on its own provider, so its token spend
           # (~all of the pipeline's) stops competing with trending for one daily
           # cap. Unset secrets arrive as empty strings and fall back to LLM_*.

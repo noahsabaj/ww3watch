@@ -4,9 +4,11 @@
 //   node --import tsx scripts/train-classifier.ts   (needs SUPABASE_SECRET_KEY)
 //
 // WHAT: logistic regression over the pipeline's own e5 title embeddings,
-// positives = accepted articles, negatives = LLM rejects (reason='llm' ONLY —
-// never 'stale' rows nobody judged, never the head's own 'head' rejects, which
-// would teach it its own mistakes). The LLM's verdicts are the label source,
+// positives = accepted articles, negatives = rejects by an independent model
+// (reason 'llm' or 'jev' — never 'stale' rows nobody judged, never the head's
+// own 'head' rejects, which would teach it its own mistakes). 'jev' counts
+// because once Jev settles most of the uncertain band, the LLM only sees what
+// Jev found borderline: 'llm' alone would train on the hardest cases only. The LLM's verdicts are the label source,
 // so this is a distillation: the head learns to reproduce the LLM on the easy
 // mass of the distribution and hands the rest back to it.
 //
@@ -162,7 +164,7 @@ async function main() {
     supabase.from('articles').select('title, source_lang').order('id').range(f, t),
   )
   const negatives = await pageAll<{ title: string | null; lang: string | null }>((f, t) =>
-    supabase.from('classified_rejects').select('title, lang').eq('reason', 'llm').order('rejected_at').order('guid').range(f, t),
+    supabase.from('classified_rejects').select('title, lang').in('reason', ['llm', 'jev']).order('rejected_at').order('guid').range(f, t),
   )
   // Dedupe by title: wire copies would otherwise let one headline vote many times.
   const seen = new Set<string>()
