@@ -87,9 +87,14 @@ jobs:
           supabase gen types typescript --local --schema public > /tmp/generated.ts
           cat /tmp/header.ts /tmp/generated.ts > src/lib/database.types.ts
           npm run check
-          if ! git diff --quiet -- src/lib/database.types.ts; then
+          # The hosted generator adds an `__InternalSupabase` block (PostgREST
+          # version) that the local one omits. Compare everything except that, so
+          # a warning here always means a real schema difference.
+          strip() { sed '/__InternalSupabase: {/,/^  }$/d; /Allows to automatically instantiate createClient/d; /instead of createClient<Database/d' "$1"; }
+          git show HEAD:src/lib/database.types.ts > /tmp/committed.ts
+          if ! diff <(strip /tmp/committed.ts) <(strip src/lib/database.types.ts) > /tmp/types.diff; then
             echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
-            git --no-pager diff -- src/lib/database.types.ts
+            cat /tmp/types.diff
           fi
 
       # The schema these migrations actually build, as an artifact: the canonical
