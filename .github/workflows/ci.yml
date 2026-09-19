@@ -98,8 +98,25 @@ jobs:
           npm run check
           if ! git diff --quiet -- src/lib/database.types.ts; then
             echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
-            git --no-pager diff --stat -- src/lib/database.types.ts
+            git --no-pager diff -- src/lib/database.types.ts
           fi
+
+      # The schema these migrations actually build, as an artifact: the canonical
+      # answer to "what does a fresh database look like?", diffable across PRs.
+      - name: Dump the migrated schema
+        run: |
+          docker exec supabase_db_ww3watch pg_dump -U postgres --schema-only --no-owner --schema=public --schema=cron > /tmp/schema.sql || docker exec supabase_db_ww3watch pg_dump -U postgres --schema-only --no-owner --schema=public > /tmp/schema.sql
+          docker exec supabase_db_ww3watch psql -U postgres -At -c "select 'publication: '||pubname||' <- '||schemaname||'.'||tablename from pg_publication_tables order by 1" > /tmp/publications.txt
+          docker exec supabase_db_ww3watch psql -U postgres -At -c "select jobname||' | '||schedule||' | '||command from cron.job order by 1" > /tmp/cron.txt || true
+          wc -l /tmp/schema.sql /tmp/publications.txt /tmp/cron.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: migrated-schema
+          path: |
+            /tmp/schema.sql
+            /tmp/publications.txt
+            /tmp/cron.txt
+          retention-days: 14
 
       # The local stack's publishable key is a fixed, well-known constant —
       # every `supabase start` anywhere produces this same value, because the
