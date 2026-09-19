@@ -27,9 +27,19 @@ front of users by default is out of scope by design.
   `stories`, `article_embeddings`, …). Public tables get explicit
   `for select using (true)` policies.
 - **Migrations**: applied via the Supabase MCP AND committed to
-  `supabase/migrations/` in the same PR. Backfills that need app logic run as
-  repo scripts through the `run-script.yml` workflow (never reimplement a TS
-  normalization/hash in SQL — drift silently breaks equality).
+  `supabase/migrations/` in the same PR. One file per change, **14-digit**
+  version (`YYYYMMDDHHMMSS_name.sql`), never edited once applied; a function is
+  changed by a NEW migration that replaces it. `20260919140000_baseline.sql` is
+  the schema as of that date — a `pg_dump` of what the previous 38 files built
+  (nine of them shared an 8-digit version, which current CLIs refuse; their
+  history is in git before the commit that added the baseline). Every migration
+  is proven in CI three ways: it applies to an empty database, every public
+  function is then CALLED (`supabase/tests/rpc_smoke.sql` — plpgsql bodies are
+  not checked at CREATE time, and generated types cannot see a text/uuid
+  mismatch), and the repo type-checks against types generated from the result.
+  Backfills that need app logic run as repo scripts through the
+  `run-script.yml` workflow (never reimplement a TS normalization/hash in SQL —
+  drift silently breaks equality).
 - **Scheduling**: pg_cron for anything that doesn't need a runner
   (`run_retention`, daily). Retention derives: child tables orphan-prune
   against articles rather than carrying second time horizons.
