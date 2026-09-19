@@ -126,28 +126,3 @@ export function partitionByHead<T>(
   })
   return out
 }
-
-export interface AuditStats {
-  accept: { n: number; agree: number }
-  reject: { n: number; agree: number }
-}
-
-// How often Jev agreed with the head on the audit slice. Items Jev gave no
-// verdict (failed call / out of time) are excluded, not counted against.
-export function auditAgreement<T>(
-  audit: Map<T, Tier>,
-  keyOf: (item: T) => string,
-  relevant: Set<string>,
-  rejected: Set<string>,
-): AuditStats {
-  const stats: AuditStats = { accept: { n: 0, agree: 0 }, reject: { n: 0, agree: 0 } }
-  for (const [item, tier] of audit) {
-    const k = keyOf(item)
-    const verdict = relevant.has(k) ? 'accept' : rejected.has(k) ? 'reject' : null
-    if (!verdict || tier === 'uncertain') continue
-    const bucket = stats[tier]
-    bucket.n++
-    if (verdict === tier) bucket.agree++
-  }
-  return stats
-}

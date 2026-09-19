@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { EMBEDDING_DIM, EMBEDDING_MODEL_TAG } from './embeddings'
 import {
-  validateHead, headScore, tierOf, partitionByHead, auditAgreement, type ClassifierHead,
+  validateHead, headScore, tierOf, partitionByHead, type ClassifierHead,
 } from './prefilter'
 
 function head(over: Partial<ClassifierHead> = {}): ClassifierHead {
@@ -76,17 +76,5 @@ describe('partitionByHead', () => {
     expect(p.uncertain).toEqual(['a', 'b', 'c'])
     expect(p.accept).toEqual(['d'])
     expect(p.reject).toEqual(['e'])
-  })
-})
-
-describe('auditAgreement', () => {
-  it('scores agreement per tier and skips items Jev never judged', () => {
-    const audit = new Map<string, 'accept' | 'reject' | 'uncertain'>([
-      ['a', 'accept'], ['b', 'accept'], ['c', 'reject'], ['d', 'reject'], ['e', 'reject'],
-    ])
-    const stats = auditAgreement(audit, (x) => x, new Set(['a', 'c']), new Set(['b', 'd']))
-    // a: head accept, Jev accept ✓ · b: head accept, Jev reject ✗
-    // c: head reject, Jev accept ✗ · d: head reject, Jev reject ✓ · e: no verdict → skipped
-    expect(stats).toEqual({ accept: { n: 2, agree: 1 }, reject: { n: 2, agree: 1 } })
   })
 })
