@@ -4,6 +4,10 @@
 // positives = accepted articles, negatives = classified_rejects reason='llm'.
 // Titles only, because that is all classified_rejects keeps.
 //
+// HISTORICAL: this measured Jev against the retired LLM tier's labels, before
+// Jev became the final relevance judge. reason='llm' rows age out of
+// classified_rejects after 14 days, after which it can no longer be re-run as-is.
+//
 //   node --import tsx --env-file=.env scripts/eval-jev.ts [outfile.json]
 //
 // Writes nothing to the database.

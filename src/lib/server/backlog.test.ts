@@ -69,7 +69,7 @@ describe('selectStaleWriteOffs', () => {
 
 describe('staleRejectRow', () => {
   it('carries reason=stale so calibration can exclude it', () => {
-    // train-classifier.ts loads reason='llm' as its NEGATIVES class. A stale
+    // train-classifier.ts loads reason='jev' (and historical 'llm') as its NEGATIVES class. A stale
     // row leaking in would tune the pre-filter floor against an age filter's
     // output instead of a model verdict.
     const row = staleRejectRow({

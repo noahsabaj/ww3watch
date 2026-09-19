@@ -10,61 +10,53 @@ const answer = (p: number) =>
 
 const art = (title: string) => ({ guid: title, title, summary: null, source_lang: 'en' })
 
+function stubJev(byTitle: Record<string, () => Response>) {
+  vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) =>
+    Promise.resolve(byTitle[JSON.parse(String(init.body)).state.article.title as string]())))
+}
+
 describe('partitionByJev', () => {
-  it('routes by band, and sends failures and the uncertain band on to the LLM', async () => {
+  it('gives every article a final verdict at the threshold, counting the borderline ones', async () => {
     vi.resetModules()
     vi.stubEnv('TYPESAFE_API_KEY', 'test')
     const { partitionByJev } = await import('./jev-classify')
-    const byTitle: Record<string, () => Response> = {
-      yes: () => answer(0.97),
-      no: () => answer(0.03),
-      maybe: () => answer(0.55),
-      broken: () => new Response('nope', { status: 500 }),
-    }
-    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => {
-      const title = JSON.parse(String(init.body)).state.article.title as string
-      return Promise.resolve(byTitle[title]())
-    }))
+    stubJev({ yes: () => answer(0.97), no: () => answer(0.03), leanYes: () => answer(0.55), leanNo: () => answer(0.45) })
 
-    const part = await partitionByJev(['yes', 'no', 'maybe', 'broken'].map(art), { auditRate: 0, random: () => 0.99 })
+    const part = await partitionByJev(['yes', 'no', 'leanYes', 'leanNo'].map(art))
+
+    expect(part.accept.map((a) => a.title).sort()).toEqual(['leanYes', 'yes'])
+    expect(part.reject.map((a) => a.title).sort()).toEqual(['leanNo', 'no'])
+    expect(part.borderline).toBe(2)
+    expect(part.unjudged).toEqual([])
+    expect(part.inputTokens).toBe(3600)
+  })
+
+  it('never guesses: a failed call leaves the article unjudged, for the next run', async () => {
+    vi.resetModules()
+    vi.stubEnv('TYPESAFE_API_KEY', 'test')
+    const { partitionByJev } = await import('./jev-classify')
+    stubJev({ yes: () => answer(0.9), broken: () => new Response('nope', { status: 500 }) })
+
+    const part = await partitionByJev(['yes', 'broken'].map(art))
 
     expect(part.accept.map((a) => a.title)).toEqual(['yes'])
-    expect(part.reject.map((a) => a.title)).toEqual(['no'])
-    expect(part.uncertain.map((a) => a.title).sort()).toEqual(['broken', 'maybe'])
+    expect(part.reject).toEqual([])
+    expect(part.unjudged.map((a) => a.title)).toEqual(['broken'])
     expect(part.failed).toBe(1)
-    expect(part.inputTokens).toBe(2700)
   })
 
-  it('audits confident verdicts by handing them to the LLM, never the uncertain ones', async () => {
+  it('stops asking once the run is out of time, without a request', async () => {
     vi.resetModules()
     vi.stubEnv('TYPESAFE_API_KEY', 'test')
     const { partitionByJev } = await import('./jev-classify')
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(answer(0.99))))
+    const fetchMock = vi.fn(() => Promise.resolve(answer(0.9)))
+    vi.stubGlobal('fetch', fetchMock)
 
-    const part = await partitionByJev([art('a')], { auditRate: 1, random: () => 0 })
+    const part = await partitionByJev(['a', 'b'].map(art), { deadlineMs: Date.now() - 1 })
 
-    expect(part.accept).toEqual([])
-    expect(part.uncertain.map((a) => a.title)).toEqual(['a'])
-    expect(part.audit.get(part.uncertain[0])).toBe('accept')
-  })
-
-  it('settles its own uncertain band at 0.5 when final, still escalating failures', async () => {
-    vi.resetModules()
-    vi.stubEnv('TYPESAFE_API_KEY', 'test')
-    const { partitionByJev } = await import('./jev-classify')
-    const byTitle: Record<string, () => Response> = {
-      leanYes: () => answer(0.55),
-      leanNo: () => answer(0.45),
-      broken: () => new Response('nope', { status: 500 }),
-    }
-    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) =>
-      Promise.resolve(byTitle[JSON.parse(String(init.body)).state.article.title as string]())))
-
-    const part = await partitionByJev(['leanYes', 'leanNo', 'broken'].map(art), { auditRate: 0, final: true })
-
-    expect(part.accept.map((a) => a.title)).toEqual(['leanYes'])
-    expect(part.reject.map((a) => a.title)).toEqual(['leanNo'])
-    expect(part.uncertain.map((a) => a.title)).toEqual(['broken'])
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(part.unjudged).toHaveLength(2)
+    expect(part.failed).toBe(0)
   })
 
   it('sends only the article to Jev — title, trimmed summary, language', async () => {

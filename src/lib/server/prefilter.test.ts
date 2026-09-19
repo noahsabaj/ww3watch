@@ -57,7 +57,7 @@ describe('partitionByHead', () => {
   const items = ['a', 'b', 'c', 'd', 'e']
   const scores = [0.99, 0.01, 0.5, 0.97, 0.02]
 
-  it('routes confident tiers away from the LLM and keeps the band', () => {
+  it('routes confident tiers away from Jev and keeps the band', () => {
     const p = partitionByHead(items, scores, head(), { auditRate: 0, random: () => 1 })
     expect(p.accept).toEqual(['a', 'd'])
     expect(p.reject).toEqual(['b', 'e'])
@@ -66,7 +66,7 @@ describe('partitionByHead', () => {
     expect(p.scores.get('a')).toBe(0.99)
   })
 
-  it('moves an audit slice of the confident tiers into the LLM set, remembering the tier', () => {
+  it('moves an audit slice of the confident tiers into the set Jev judges, remembering the tier', () => {
     // random() < auditRate picks the item: pick a and b (first two confident draws).
     const draws = [0.0, 0.0, 0.9, 0.9]
     let i = 0
@@ -80,13 +80,13 @@ describe('partitionByHead', () => {
 })
 
 describe('auditAgreement', () => {
-  it('scores agreement per tier and skips items the LLM never judged', () => {
+  it('scores agreement per tier and skips items Jev never judged', () => {
     const audit = new Map<string, 'accept' | 'reject' | 'uncertain'>([
       ['a', 'accept'], ['b', 'accept'], ['c', 'reject'], ['d', 'reject'], ['e', 'reject'],
     ])
     const stats = auditAgreement(audit, (x) => x, new Set(['a', 'c']), new Set(['b', 'd']))
-    // a: head accept, LLM accept ✓ · b: head accept, LLM reject ✗
-    // c: head reject, LLM accept ✗ · d: head reject, LLM reject ✓ · e: no verdict → skipped
+    // a: head accept, Jev accept ✓ · b: head accept, Jev reject ✗
+    // c: head reject, Jev accept ✗ · d: head reject, Jev reject ✓ · e: no verdict → skipped
     expect(stats).toEqual({ accept: { n: 2, agree: 1 }, reject: { n: 2, agree: 1 } })
   })
 })

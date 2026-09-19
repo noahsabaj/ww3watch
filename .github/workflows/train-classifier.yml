@@ -1,6 +1,6 @@
 name: Train relevance head
 
-# Retrains the local relevance head (data/classifier-me5b.json) from the LLM's
+# Retrains the local relevance head (data/classifier-me5b.json) from Jev's
 # accumulated verdicts and commits the weights when they change. Monthly, plus
 # on demand — the label pool turns over (rejects are retained 14 days,
 # articles 30), so a monthly fit tracks the news cycle without chasing it.

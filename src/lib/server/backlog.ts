@@ -1,5 +1,5 @@
 /**
- * Writing off feed items that will never be worth an LLM verdict.
+ * Writing off feed items that will never be worth a Jev verdict.
  *
  * The pipeline classifies the newest MAX_CLASSIFY_PER_RUN candidates and defers
  * the rest "to next run". For nine days that sentence was false: judged_total
@@ -9,9 +9,9 @@
  *
  * Those articles cost real money to keep looking at: every run re-fetches them,
  * re-dedupes them, and re-sorts them, and the only thing standing between them
- * and the LLM is a cap. But an article published days ago cannot surface in a
+ * and Jev is a cap. But an article published days ago cannot surface in a
  * live conflict feed even if a model called it relevant — the feed serves the
- * newest 500. Spending a token budget to discover that is pure waste.
+ * newest 500. Spending Jev calls to discover that is pure waste.
  *
  * So: past a cutoff, deferred items are recorded as rejects with reason='stale'
  * and stop being "new". This is deliberately age-based rather than a one-off
@@ -49,7 +49,7 @@ export function selectStaleWriteOffs<T extends BacklogItem>(deferred: T[], cutof
   })
 }
 
-/** Reject-table row for an unjudged write-off. Mirrors the LLM reject shape. */
+/** Reject-table row for an unjudged write-off. Mirrors the Jev reject shape. */
 export function staleRejectRow(a: BacklogItem): {
   guid: string
   title: string | null

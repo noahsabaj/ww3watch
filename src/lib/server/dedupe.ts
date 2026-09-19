@@ -1,5 +1,5 @@
 // De-dup new feed items against what the DB has already judged — kept articles
-// UNION recorded rejects — so the run only spends LLM tokens on genuinely
+// UNION recorded rejects — so the run only spends Jev tokens on genuinely
 // unseen articles.
 //
 // Lives here rather than inline in scripts/run-pipeline.ts because that script

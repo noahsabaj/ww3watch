@@ -5,7 +5,7 @@
 #   docker build -t ww3watch-pipeline .
 #   docker run --rm \
 #     -e SUPABASE_URL -e SUPABASE_SECRET_KEY \
-#     -e LLM_BASE_URL -e LLM_API_KEY -e LLM_MODEL -e LLM_MAX_RPM=2 \
+#     -e TYPESAFE_API_KEY \
 #     -e FEED_PROXY_URL -e FEED_PROXY_SECRET \
 #     -v ww3watch-models:/root/.cache/ww3watch-transformers \
 #     ww3watch-pipeline

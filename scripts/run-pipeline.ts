@@ -5,7 +5,7 @@
 // src/lib/server/*, which now reads config from process.env (see env.ts).
 //
 // Pipeline: fetch all feeds -> de-dup (within run + against DB+rejects) ->
-// classify only NEW articles (local relevance head first, LLM for the uncertain
+// classify only NEW articles (local relevance head first, Jev for the uncertain
 // band) -> upsert + record rejects -> embed titles + assign clusters
 // (multilingual embeddings, assign_clusters_by_embedding RPC) -> recompute
 // trending. Every run writes one pipeline_runs row (stats jsonb
@@ -13,10 +13,9 @@
 
 import { fetchFeed, FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind } from '../src/lib/server/rss'
 import type { Feed } from '../src/lib/types'
-import { classifyArticles } from '../src/lib/server/classify'
 import { askSignals } from '../src/lib/server/jev-signals'
 import { judgeSameEvent, PAIR_BAND } from '../src/lib/server/jev-pairs'
-import { jevEnabled, jevFinal, partitionByJev, JEV_ACCEPT_ABOVE, JEV_REJECT_BELOW } from '../src/lib/server/jev-classify'
+import { jevEnabled, partitionByJev, JEV_THRESHOLD } from '../src/lib/server/jev-classify'
 import {
   embedTitles,
   shouldEmbed,
@@ -28,7 +27,6 @@ import { updateTrending, lastTrendingSelectedAt, trendingStuck } from '../src/li
 import { existingGuids } from '../src/lib/server/dedupe'
 import { selectStaleWriteOffs, staleRejectRow } from '../src/lib/server/backlog'
 import { loadHead, headScore, partitionByHead, auditAgreement } from '../src/lib/server/prefilter'
-import { llmStats } from '../src/lib/server/llm'
 import { supabaseAdmin } from '../src/lib/server/supabase'
 import { appendFileSync } from 'node:fs'
 
@@ -48,18 +46,11 @@ const UPSERT_BATCH = 200
 // the run's work.
 const RUN_BUDGET_MS = Number(process.env.RUN_BUDGET_MS || '') || 15 * 60_000
 const CLASSIFY_BUDGET_MS = Number(process.env.CLASSIFY_BUDGET_MS || '') || 9 * 60_000
-// Cap LLM classify volume per run so a backlog can't blow the Action's time
-// budget under the rate limiter. Deferred articles stay "new" and are picked
-// next run.
-const MAX_CLASSIFY_PER_RUN = 300
 // The local relevance head (src/lib/server/prefilter.ts) scores up to this
 // many new articles per run — embedding is local and cheap (~25/s on the
 // runner), so the pool is sized for draining a backlog, not for a quiet run.
-// Only the uncertain band goes on to the LLM cap above.
+// Only the uncertain band goes on to Jev.
 const HEAD_POOL_CAP = Number(process.env.HEAD_POOL_CAP || '') || 2000
-// Share of confident head verdicts that still get an LLM verdict, so the head's
-// live agreement is measured every run (stats.cls_head.audit) instead of
-// trusted from its training holdout. 3% of ~2000 is ~60 titles: one batch.
 // Accepted articles Jev annotates per run (topic, severity, claim status, actors
 // — src/lib/signals.ts). A worklist, so a backlog or an outage drains over the
 // following runs instead of being lost.
@@ -69,9 +60,9 @@ const SIGNALS_CONCURRENCY = 16
 // Jev (TypeSafe) judges up to this many of the still-unsettled articles per run.
 // No daily cap and ~150ms a call, so the bound is wall-clock, not quota.
 const JEV_POOL_CAP = Number(process.env.JEV_POOL_CAP || '') || 2000
-// Share of Jev's confident verdicts that still go to the LLM, so its live
-// agreement is measured every run (stats.cls_jev.audit_agreement).
-const JEV_AUDIT_RATE = Number(process.env.JEV_AUDIT_RATE || '') || 0.05
+// Share of confident head verdicts that Jev judges anyway, so the head's live
+// agreement is measured every run (stats.cls_head.audit_agreement) instead of
+// trusted from its training holdout.
 const HEAD_AUDIT_RATE = Number(process.env.HEAD_AUDIT_RATE || '') || 0.03
 // Consecutive failed fetches after which a source is switched off. With a run
 // every ~15 min this is roughly two days of solid failure — a moved feed URL or
@@ -356,7 +347,7 @@ async function embedAndAssignClusters(stats: RunStats): Promise<void> {
         `assigned ${assigned} -> ${newClusters} new clusters (threshold ${EMBED_SIM_THRESHOLD})`,
     )
   } catch (err) {
-    // Same degradation contract as the old LLM clusterer's empty-map fallback.
+    // Degradation contract: a failed clustering pass never fails the run.
     console.error('[pipeline] clustering FAILED (articles stay unassigned; next run self-heals):', err)
     stats.cluster_error = String(err).slice(0, 300)
   }
@@ -458,14 +449,14 @@ async function checkOpsHealth(stats: RunStats): Promise<void> {
 // Local-model clustering + trending + the ops-health gate. Shared by the
 // no-new-articles path and the main path so every run captures trending status
 // and DB health (and self-heals clustering).
-// Every reject path — LLM verdicts, the head's confident rejects, and unjudged
+// Every reject path — Jev's verdicts, the head's confident rejects, and unjudged
 // stale write-offs — goes through here so they can never drift in what they
 // write. `reason` is the only thing that distinguishes them, and
-// train-classifier.ts depends on it being accurate: it loads reason='llm' as
+// train-classifier.ts depends on it being accurate: it loads reason='jev' (and historical 'llm') as
 // the negatives class, so a mislabelled row would train the head against a
 // verdict no model ever gave (or against its own).
 async function writeRejects(
-  rows: Array<{ guid: string; title: string | null; source_id: string | null; lang: string | null; reason: 'llm' | 'stale' | 'head' | 'jev' }>,
+  rows: Array<{ guid: string; title: string | null; source_id: string | null; lang: string | null; reason: 'stale' | 'head' | 'jev' }>,
 ): Promise<void> {
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const batch = rows.slice(i, i + UPSERT_BATCH)
@@ -505,11 +496,6 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await timed('signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
   stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
-  // Snapshot LAST, not after classify. Taken mid-run it excluded trending
-  // entirely: run 474 recorded backoffMs 0 while the log showed a 149,000ms
-  // backoff, and calls:1 while two calls had succeeded. A stat named `llm` that
-  // silently covers one stage is worse than no stat — it reads as whole-run.
-  stats.llm = { ...llmStats }
   stats.total_ms = Date.now() - startedAt
   console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(timings)}`)
 
@@ -571,7 +557,7 @@ async function run(stats: RunStats): Promise<void> {
   const uniqueByGuid = [...new Map(candidates.map((a) => [a.guid, a])).values()]
 
   // 2. De-dup against the DB (kept articles UNION recorded rejects) so we only
-  //    spend LLM tokens on genuinely-unseen articles.
+  //    spend Jev tokens on genuinely-unseen articles.
   const existing = await timed('dedupe', () => existingGuids(uniqueByGuid.map((a) => a.guid)))
   const fresh = uniqueByGuid.filter((a) => !existing.has(a.guid))
   console.log(`[pipeline] ${candidates.length} items -> ${uniqueByGuid.length} unique -> ${fresh.length} new`)
@@ -585,16 +571,16 @@ async function run(stats: RunStats): Promise<void> {
     return
   }
 
-  // 3. Classify. Newest first. When the local relevance head is available, it
-  //    scores a large pool locally: confident accepts and rejects are settled
-  //    on the spot, and only the uncertain band (plus a small audit slice of
-  //    the confident tiers) spends LLM budget. Without a head, the LLM judges
-  //    the newest MAX_CLASSIFY_PER_RUN as before. Either way whatever doesn't
-  //    fit stays "new" for the next run.
+  // 3. Classify. Newest first, two tiers, no generative model anywhere:
+  //      head — a local logistic layer over the title embedding settles the
+  //             obvious mass for free (src/lib/server/prefilter.ts);
+  //      Jev  — TypeSafe's decision model gives everything else a calibrated
+  //             P(relevant) and the verdict is final (jev-classify.ts).
+  //    An article Jev could not be asked about (call failed, run out of time)
+  //    gets NO verdict: it stays "new" and is judged next run.
   const ordered = [...fresh].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
   const head = loadHead()
-  let toClassify: typeof ordered
-  let deferred: typeof ordered
+  let forJev: typeof ordered = ordered
   let headAccept: typeof ordered = []
   let headReject: typeof ordered = []
   let audit: Map<(typeof ordered)[number], 'accept' | 'reject' | 'uncertain'> = new Map()
@@ -606,11 +592,9 @@ async function run(stats: RunStats): Promise<void> {
     headAccept = part.accept
     headReject = part.reject
     audit = part.audit
-    // Titles too short to embed get no head opinion — they go to the LLM.
-    const uncertain = [...part.uncertain, ...pool.filter((a) => !shouldEmbed(a.title))]
+    // Titles too short to embed get no head opinion — they go straight to Jev.
+    forJev = [...part.uncertain, ...pool.filter((a) => !shouldEmbed(a.title)), ...ordered.slice(HEAD_POOL_CAP)]
       .sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
-    toClassify = uncertain.slice(0, MAX_CLASSIFY_PER_RUN)
-    deferred = [...uncertain.slice(MAX_CLASSIFY_PER_RUN), ...ordered.slice(HEAD_POOL_CAP)]
     stats.cls_head = {
       trained_at: head.trained_at,
       pool: pool.length,
@@ -621,55 +605,60 @@ async function run(stats: RunStats): Promise<void> {
     }
     console.log(
       `[pipeline] head: ${pool.length} scored → accept ${headAccept.length}, reject ${headReject.length}, ` +
-        `uncertain ${part.uncertain.length} (+${part.audit.size} audit) → LLM gets ${toClassify.length}`,
-    )
-  } else {
-    toClassify = ordered.slice(0, MAX_CLASSIFY_PER_RUN)
-    deferred = ordered.slice(MAX_CLASSIFY_PER_RUN)
-  }
-
-  // 3b. Jev: a second routing tier over everything still unsettled. It has no
-  //     daily token cap, so it takes the whole uncertain band (not just the
-  //     LLM's per-run cap) and only what Jev is itself unsure about — plus a
-  //     small audit slice — goes on to the LLM. Off without TYPESAFE_API_KEY.
-  let jevAccept: typeof ordered = []
-  let jevReject: typeof ordered = []
-  let jevAudit: Map<(typeof ordered)[number], 'accept' | 'reject' | 'uncertain'> = new Map()
-  if (jevEnabled()) {
-    const unsettled = [...toClassify, ...deferred]
-    const pool = unsettled.slice(0, JEV_POOL_CAP)
-    const part = await timed('jev', () =>
-      partitionByJev(pool, { final: jevFinal(), auditRate: JEV_AUDIT_RATE, deadlineMs: startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS) }),
-    )
-    jevAccept = part.accept
-    jevReject = part.reject
-    jevAudit = part.audit
-    const forLlm = [...part.uncertain].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
-    toClassify = forLlm.slice(0, MAX_CLASSIFY_PER_RUN)
-    deferred = [...forLlm.slice(MAX_CLASSIFY_PER_RUN), ...unsettled.slice(JEV_POOL_CAP)]
-    stats.cls_jev = {
-      pool: pool.length,
-      accept: jevAccept.length,
-      reject: jevReject.length,
-      uncertain: part.uncertain.length - part.audit.size,
-      audit: part.audit.size,
-      failed: part.failed,
-      input_tokens: part.inputTokens,
-      bands: [JEV_REJECT_BELOW, JEV_ACCEPT_ABOVE],
-      final: jevFinal(),
-    }
-    console.log(
-      `[pipeline] jev: ${pool.length} judged → accept ${jevAccept.length}, reject ${jevReject.length}, ` +
-        `uncertain ${part.uncertain.length - part.audit.size} (+${part.audit.size} audit, ${part.failed} failed) → LLM gets ${toClassify.length}`,
+        `uncertain ${part.uncertain.length} (+${part.audit.size} audit) → Jev gets ${Math.min(forJev.length, JEV_POOL_CAP)}`,
     )
   }
 
-  // Anything deferred that is already too old to display is written off
-  // unjudged. "Deferred to next run" was a lie for nine days: judged_total sat
-  // at exactly 300/day (one run in ~96) while the deferred remainder grew to
-  // 6,007 — permanently re-fetched, re-deduped and never reconsidered. A verdict
-  // on a two-day-old article cannot change what anyone sees; the feed serves the
-  // newest 500. Costs zero tokens and keeps `new` meaning "actually new".
+  // The head's verdicts land first: they need nothing from the network.
+  let inserted = 0
+  if (headAccept.length > 0) {
+    inserted += await timed('head_upsert', () => upsertArticles(headAccept))
+    await timed('head_cluster', () => embedAndAssignClusters(stats))
+    await timed('head_signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
+  }
+  // Project explicit, homogeneous columns (never spread the article objects —
+  // PostgREST 400s on unknown columns, and a batch needs uniform keys).
+  // source_id + lang give the curation pass accept-rate per source/language;
+  // reason keeps who said no on the record (the trainer never learns from 'head').
+  const rejectRow = (a: (typeof ordered)[number], reason: 'head' | 'jev') => ({
+    guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason,
+  })
+  if (headReject.length > 0) await writeRejects(headReject.map((a) => rejectRow(a, 'head')))
+
+  // Jev gets a share of the run's budget, measured from the START of the run so
+  // a slow fetch eats into it rather than pushing past the job's kill.
+  const jevPool = forJev.slice(0, JEV_POOL_CAP)
+  const part = await timed('jev', () =>
+    partitionByJev(jevPool, { deadlineMs: startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS) }),
+  )
+  const deferred = [...part.unjudged, ...forJev.slice(JEV_POOL_CAP)]
+  stats.cls_jev = {
+    pool: jevPool.length,
+    accept: part.accept.length,
+    reject: part.reject.length,
+    // Verdicts that landed near the cut — the number to watch if the feed ever
+    // looks too loose or too tight. They are still verdicts.
+    borderline: part.borderline,
+    unjudged: part.unjudged.length,
+    failed: part.failed,
+    input_tokens: part.inputTokens,
+    threshold: JEV_THRESHOLD,
+  }
+  console.log(
+    `[pipeline] jev: ${jevPool.length} sent → accept ${part.accept.length}, reject ${part.reject.length} ` +
+      `(${part.borderline} borderline), ${part.unjudged.length} unjudged (${part.failed} failed)`,
+  )
+
+  inserted += await upsertArticles(part.accept)
+  console.log(`[pipeline] inserted ${inserted} new articles`)
+  stats.inserted = inserted
+  if (part.reject.length > 0) await writeRejects(part.reject.map((a) => rejectRow(a, 'jev')))
+
+  // Anything still unjudged that is already too old to display is written off.
+  // "Deferred to next run" was a lie for nine days once: the deferred remainder
+  // grew to 6,007 — permanently re-fetched, re-deduped and never reconsidered. A
+  // verdict on a two-day-old article cannot change what anyone sees; the feed
+  // serves the newest 500. Keeps `new` meaning "actually new".
   const stale = selectStaleWriteOffs(deferred, Date.now() - STALE_WRITEOFF_HOURS * 3_600_000)
   if (stale.length > 0) {
     await timed('stale_writeoff', () => writeRejects(stale.map(staleRejectRow)))
@@ -678,138 +667,53 @@ async function run(stats: RunStats): Promise<void> {
     )
   }
   stats.stale_written_off = stale.length
-  if (deferred.length > 0) {
-    console.log(
-      `[pipeline] deferring ${deferred.length - stale.length} new articles to next run (classify cap)`,
-    )
-  }
-  // The head's verdicts land NOW, before the LLM is asked anything. The LLM
-  // stage routinely spends most of its budget asleep on the provider's daily
-  // token cap (429 + retry-after of 4-9 min); settled articles used to sit
-  // behind that sleep and reach the feed ~9 minutes late for no reason. Audit
-  // items are NOT in headAccept/headReject (they ride along to the LLM), so
-  // nothing here is judged twice.
-  let inserted = 0
-  const settledAccept = [...headAccept, ...jevAccept]
-  if (settledAccept.length > 0) {
-    inserted += await timed('head_upsert', () => upsertArticles(settledAccept))
-    await timed('head_cluster', () => embedAndAssignClusters(stats))
-    await timed('head_signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
-  }
-  // 'jev' is its own reason, like 'head': who said no stays on the record.
-  const settledReject = [
-    ...headReject.map((a) => ({ a, reason: 'head' as const })),
-    ...jevReject.map((a) => ({ a, reason: 'jev' as const })),
-  ]
-  if (settledReject.length > 0) {
-    await writeRejects(
-      settledReject.map(({ a, reason }) => ({
-        guid: a.guid, title: a.title, source_id: a.source_id ?? null, lang: a.source_lang ?? null, reason,
-      })),
-    )
+  if (deferred.length > stale.length) {
+    console.log(`[pipeline] ${deferred.length - stale.length} articles stay new for the next run`)
   }
 
-  // Classify gets a share of the run's budget, measured from the START of the
-  // run so a slow fetch eats into it rather than pushing past the job's kill.
-  const classifyDeadline = startedAt + Math.min(CLASSIFY_BUDGET_MS, RUN_BUDGET_MS)
-  const { relevant, rejected, failedBatches, skippedBatches, totalBatches } = await timed(
-    'classify',
-    () => classifyArticles(toClassify, classifyDeadline),
-  )
-  const llmAccept = toClassify.filter((a) => relevant.has(a.guid))
-  // For the stats: the head's and Jev's confident accepts (already inserted) plus the LLM's.
-  const articles = [...llmAccept, ...settledAccept]
-  // `classified` counts articles that actually got a verdict, not articles we
-  // set out to classify — with budget deferral those diverge, and reporting the
-  // ambition rather than the outcome is how a degraded run looks healthy.
-  const classified = relevant.size + rejected.size
-  const budgetDeferred = toClassify.length - classified
-  console.log(
-    `[pipeline] LLM: ${relevant.size} relevant, ${rejected.size} rejected of ${classified} classified` +
-      (budgetDeferred > 0 ? ` (${budgetDeferred} deferred for budget)` : '') +
-      (head ? ` | head: +${headAccept.length} accepted, ${headReject.length} rejected` : '') +
-      (jevEnabled() ? ` | jev: +${jevAccept.length} accepted, ${jevReject.length} rejected` : ''),
-  )
   Object.assign(stats, {
-    classified,
-    deferred: deferred.length + budgetDeferred,
-    relevant: articles.length,
-    rejected: rejected.size + settledReject.length,
-    cls_batches_failed: failedBatches,
-    cls_batches_skipped: skippedBatches,
-    cls_batches_total: totalBatches,
+    // Articles that actually got a verdict this run, from either tier.
+    classified: headAccept.length + headReject.length + part.accept.length + part.reject.length,
+    deferred: deferred.length,
+    relevant: headAccept.length + part.accept.length,
+    rejected: headReject.length + part.reject.length,
   })
-  if (jevAudit.size > 0) {
-    const agreement = auditAgreement(jevAudit, (a) => a.guid, relevant, rejected)
-    ;(stats.cls_jev as Record<string, unknown>).audit_agreement = agreement
-    console.log(
-      `[pipeline] jev audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed with the LLM`,
-    )
-  }
   if (head && audit.size > 0) {
-    // The head's audit slice is judged by whoever settles it downstream — Jev
-    // when it is confident, the LLM otherwise.
-    const downstreamYes = new Set([...relevant, ...jevAccept.map((a) => a.guid)])
-    const downstreamNo = new Set([...rejected, ...jevReject.map((a) => a.guid)])
-    const agreement = auditAgreement(audit, (a) => a.guid, downstreamYes, downstreamNo)
+    // The head's audit slice rode along to Jev; this is how often Jev agreed.
+    const agreement = auditAgreement(
+      audit,
+      (a) => a.guid,
+      new Set(part.accept.map((a) => a.guid)),
+      new Set(part.reject.map((a) => a.guid)),
+    )
     ;(stats.cls_head as Record<string, unknown>).audit_agreement = agreement
     console.log(
-      `[pipeline] head audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed downstream`,
+      `[pipeline] head audit: accept ${agreement.accept.agree}/${agreement.accept.n}, reject ${agreement.reject.agree}/${agreement.reject.n} agreed with Jev`,
     )
   }
 
-  // 4. Upsert relevant articles + record rejects so they're never re-classified.
-  inserted += await upsertArticles(llmAccept)
-  console.log(`[pipeline] inserted ${inserted} new articles`)
-  stats.inserted = inserted
-
-  if (rejected.size > 0) {
-    // Project explicit, homogeneous columns (never spread the article objects —
-    // PostgREST 400s on unknown columns, and a batch needs uniform keys).
-    // source_id + lang give the curation pass accept-rate per source/language.
-    // reason distinguishes a real LLM verdict from the head's — the trainer
-    // loads only 'llm' rows as negatives (see 20260914000000_reject_reason_head).
-    const byGuid = new Map(toClassify.map((a) => [a.guid, a]))
-    await writeRejects(
-      [...rejected].map((guid) => {
-        const a = byGuid.get(guid)
-        return { guid, title: a?.title ?? null, source_id: a?.source_id ?? null, lang: a?.source_lang ?? null, reason: 'llm' as const }
-      }),
-    )
-  }
-
-  // 5/6/7. Embed + assign stories (story_id IS NULL worklist self-heals),
-  //         recompute trending, and read the ops-health gate.
+  // 4/5/6. Embed + assign stories (story_id IS NULL worklist self-heals),
+  //         annotate signals, recompute trending, read the ops-health gate.
   await finalize(stats, startedAt)
 
-  // 8. Loud failure for a TOTAL LLM outage (e.g. model deprecation) — AFTER the
-  //    inserts (keyword-fallback survivors still ingested) and the clustering
-  //    self-heal, so a Groq outage degrades rather than dropping everything, but
-  //    the run still FAILS (freshness amber + GitHub issue) instead of laundering
-  //    a near-empty result into a green run.
-  // Judged against batches ATTEMPTED, not all batches. Ones deferred for budget
-  // were never sent, so counting them as failures would declare the LLM down on
-  // exactly the busy runs where it is merely slow.
-  //
-  // One failed batch is not an outage. With the relevance head most runs send a
-  // single batch, so "all attempted batches failed" became "one 5xx from the
-  // provider", which filed a failure issue every time. A single-batch run only
-  // counts as down when the PREVIOUS run's batches all failed too — a real
-  // outage shows up on the second 15-minute run, a hiccup never does. Runs
-  // that attempted two or more batches still fail on their own evidence.
-  const attemptedBatches = totalBatches - skippedBatches
-  const allFailed = attemptedBatches > 0 && failedBatches === attemptedBatches
-  stats.cls_all_failed = allFailed
-  if (allFailed && (attemptedBatches >= 2 || (await previousRunAllBatchesFailed()))) {
-    throw new Error(`all ${attemptedBatches} attempted classify batches failed — LLM appears down (relevant=${articles.length})`)
+  // 7. Loud failure when Jev is DOWN — after the head's inserts and the
+  //    clustering self-heal have persisted, so an outage degrades the run rather
+  //    than dropping it, but the run still FAILS (freshness amber + GitHub issue)
+  //    instead of laundering a near-empty result into a green one. A handful of
+  //    failed calls is a hiccup; most of a real pool failing is an outage — and
+  //    only on the second run in a row, so one bad minute never files an issue.
+  const jevDown = jevPool.length >= 5 && part.failed > jevPool.length / 2
+  stats.cls_all_failed = jevDown
+  if (jevDown && (await previousRunJevDown())) {
+    throw new Error(`jev failed ${part.failed}/${jevPool.length} calls on two consecutive runs — TypeSafe appears down`)
   }
 }
 
-// Did the last recorded run also lose every classify batch it attempted?
-// Read from pipeline_runs.stats so the guard has memory across runs. Unknown
-// (no prior row, query error) reads as false: the guard errs toward not alerting
-// on one run's evidence, which is the whole point of consulting it.
-async function previousRunAllBatchesFailed(): Promise<boolean> {
+// Did the last recorded run also lose most of its Jev calls? Read from
+// pipeline_runs.stats so the guard has memory across runs. Unknown (no prior
+// row, query error) reads as false: the guard errs toward not alerting on one
+// run's evidence, which is the whole point of consulting it.
+async function previousRunJevDown(): Promise<boolean> {
   const { data, error } = await supabaseAdmin
     .from('pipeline_runs')
     .select('stats')
@@ -821,6 +725,7 @@ async function previousRunAllBatchesFailed(): Promise<boolean> {
 }
 
 async function main() {
+  if (!jevEnabled()) throw new Error('Missing required environment variable: TYPESAFE_API_KEY (relevance, signals, trending and story pairs all run on Jev)')
   const startedAt = new Date()
   const stats: RunStats = {}
   let runError: unknown = null

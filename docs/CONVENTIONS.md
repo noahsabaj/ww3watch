@@ -5,11 +5,12 @@ git history. New code follows them or argues in a PR why it shouldn't.
 
 ## The constitution
 
-**Machine intelligence routes stories; it never rewrites them.** LLMs and
-embedding models decide *whether* an article appears (relevance), *where* it
-belongs (story grouping), and *how prominently* (trending). They never touch
-what a journalist wrote. Translation is the lone exception: opt-in, labeled,
-one click from the original. Any feature that would put model-written prose in
+**Machine intelligence routes stories; it never rewrites them.** A local
+classifier, an embedding model and a decision model (TypeSafe's Jev, which
+cannot generate text) decide *whether* an article appears (relevance), *where*
+it belongs (story grouping), and *how prominently* (trending). They never touch
+what a journalist wrote. Translation is the lone exception — and the only
+generative LLM in the project: opt-in, labeled, one click from the original. Any feature that would put model-written prose in
 front of users by default is out of scope by design.
 
 ## Supabase
@@ -40,32 +41,56 @@ front of users by default is out of scope by design.
   prod. Write `where true` when you mean all rows (`replace_trending` shipped
   without it and trending was stuck for four weeks).
 
-## LLMs and models
+## Models
 
-- **Never make an LLM emit load-bearing structure.** Exactly-N arrays failed
-  twice; "preserve the HTML" broke translate in production. Batch verdicts use
-  index-keyed JSON objects parsed tolerantly; translation sends plain text and
-  uses `response_format: json_object` with a `finish_reason` check.
-- **All LLM calls** go through `callLLM` (rate limiter + 429/Retry-After
-  backoff). Free-tier RPM shapes architecture; assume the limiter is load-bearing.
+- **Never make a model emit load-bearing structure.** Exactly-N arrays failed
+  twice; "preserve the HTML" broke translate in production. The pipeline now
+  satisfies this by construction: Jev cannot generate text — it returns a
+  probability or a choice per typed question, and code does the rest. The rule
+  still binds the one generative call left, translation: plain text in,
+  `response_format: json_object` out, with a `finish_reason` check.
+- **All pipeline judgments** go through `callJev` (`src/lib/server/jev.ts`:
+  429/529 + Retry-After backoff, bounded by the run deadline). No generative
+  LLM runs in ingestion; the only one in the project is the `translate` edge
+  function, whose `LLM_*` secrets `deploy-functions.yml` syncs from GitHub.
+- **Ask Jev narrow, literal questions — one judgment each.** It reads the
+  question as written and will not infer intent, so the condition goes in the
+  question and the boundary cases go in the criteria. Send only the state the
+  question needs; irrelevant state costs accuracy.
+- **Never ask Jev to count, compare dates, or do arithmetic.** Code does that,
+  exactly. Trending is the pattern: Jev judges severity / new-development /
+  talk-only per story, and code weighs those against exact corroboration
+  counts (`src/lib/server/trending-jev.ts`). The weights live in source, where
+  a diff can change them — not in a prompt.
+- **A failed Jev call is never a verdict.** No fallback guesses: an unjudged
+  article stays "new" for the next run, an un-annotated one stays on the
+  signals worklist, an unjudged story pair gets no hint, and a failed trending
+  pass keeps the previous selection (`error:jev`, which `trendingStuck`
+  eventually turns into a failed run).
 - **Pin model artifacts.** Embeddings carry a `(model, revision, dtype)` tag;
   HF repos are mutable, and an unpinned re-quantization silently invalidates
   every stored vector plus the calibrated threshold. Changing any of it means
-  re-backfill + re-calibration.
+  re-backfill + re-calibration. Same for Jev: the model is pinned
+  (`jev-1.13.0`, never `jev-latest`) because `JEV_THRESHOLD` and the pair band
+  are tuned to that version's probabilities, and an alias moves without a
+  change on our side.
 - **Calibrate against audited examples, not raw metrics.** When ground-truth
   labels come from a weaker system, your improvements show up as "errors" —
   the clustering threshold was chosen from a hand-audited boundary band, not
   the false-merge sweep. Measure before enabling: the relevance head picks its
   thresholds on a held-out split with per-language false-reject caps, refuses
   to ship a fit that fails them, and keeps auditing itself in production
-  (`stats.cls_head.audit_agreement` — a random slice of its confident verdicts
-  still goes to the LLM every run).
-- Prefer deterministic local models on the runner over API LLMs wherever
-  judgment isn't required — quota-free, uncapped, reproducible. The relevance
-  head (`src/lib/server/prefilter.ts`, trained by `train-classifier.yml`) is
-  the pattern: distil the LLM's verdicts into a local model, keep the LLM for
-  the uncertain band, and never train on the local model's own output
-  (`classified_rejects.reason` keeps 'llm' and 'head' apart for exactly this).
+  (`stats.cls_head.audit_agreement` — a random ~3% slice of its confident
+  verdicts is judged by Jev anyway, every run). Jev itself was measured before
+  it became the final judge (`scripts/eval-jev.ts`: AUC 0.956 on 1,475
+  LLM-labelled titles in 7 languages).
+- Prefer deterministic local models on the runner over API calls wherever
+  they suffice — free, uncapped, reproducible. The relevance head
+  (`src/lib/server/prefilter.ts`, trained by `train-classifier.yml`) is the
+  pattern: distil Jev's verdicts into a local model, keep Jev for the
+  uncertain band, and never train on the local model's own output
+  (`classified_rejects.reason` keeps 'jev' — plus historical 'llm' — apart
+  from 'head' and 'stale' for exactly this).
 
 ## Deploy skew (PWA)
 
@@ -112,6 +137,7 @@ fields from SW-cached REST rows (`story_id ?? id`).
 - **Cadence is self-chained.** GitHub throttles a `*/15` cron to ~7 runs a
   day; `pipeline.yml`'s last step dispatches the next run, paced by
   `CADENCE_SECONDS`, and the cron is only the backstop. Cancelling a run
-  stops the chain until the cron restarts it. Stages that call the LLM per
+  stops the chain until the cron restarts it. Stages that call Jev per
   run must pace themselves (`TRENDING_MIN_INTERVAL_MS`) or the chain
-  multiplies their daily cost.
+  multiplies their daily cost — and a top-three re-ranked every run reads
+  as noise.
