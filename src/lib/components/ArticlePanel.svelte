@@ -10,6 +10,7 @@
   import { failureLabel, failureReason, type TranslateFailure } from '$lib/translate'
   import { cleanHtml } from '$lib/sanitize-html'
   import { base } from '$app/paths'
+  import ShareControls from '$lib/components/ShareControls.svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
@@ -143,8 +144,6 @@
       previouslyFocused = document.activeElement
       closeBtn?.focus()
     } else if (!open && wasOpen) {
-      copied = false
-      clearTimeout(copiedTimer)
       const el = previouslyFocused as HTMLElement | null
       // Realtime churn can unmount the originating button — only restore if alive.
       if (el?.isConnected && typeof el.focus === 'function') el.focus()
@@ -210,34 +209,6 @@
     }
   }
 
-  let copied = $state(false)
-  let copiedTimer: ReturnType<typeof setTimeout> | undefined
-
-  async function share() {
-    if (!article) return
-    // Story-first: a multi-source story gets a durable ?story= link (the recipient
-    // lands on the full cluster, and a story_id outlives any single pruned member).
-    // Singletons share the article directly.
-    const shareUrl =
-      cluster?.storyId && cluster.sourceCount > 1
-        ? `${window.location.origin}${base}/?story=${cluster.storyId}`
-        : `${window.location.origin}${base}/?article=${article.id}`
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: article.title, url: shareUrl })
-      } else {
-        await navigator.clipboard.writeText(shareUrl)
-        copied = true
-        clearTimeout(copiedTimer)
-        copiedTimer = setTimeout(() => (copied = false), 2000)
-      }
-    } catch (err) {
-      // Cancelling the share sheet rejects with AbortError — that's normal.
-      if (!(err instanceof DOMException && err.name === 'AbortError')) {
-        console.error('[share] failed:', err)
-      }
-    }
-  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -312,23 +283,6 @@
       >
         Read original ↗
       </a>
-      <button
-        onclick={share}
-        aria-label={copied ? 'Link copied' : 'Share article'}
-        class="min-h-11 min-w-11 md:hidden shrink-0 ml-1 transition-colors {copied ? 'text-green-400' : 'text-gray-500 hover:text-gray-200'}"
-      >
-        {#if copied}
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        {:else}
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-            <polyline points="16 6 12 2 8 6"/>
-            <line x1="12" y1="2" x2="12" y2="15"/>
-          </svg>
-        {/if}
-      </button>
       <a href="{base}/feedback?article={article.id}" class="min-h-11 inline-flex items-center text-xs text-blue-400">Report</a>
       <button
         bind:this={closeBtn}
@@ -338,6 +292,10 @@
       >
         ✕
       </button>
+    </div>
+
+    <div class="px-4 border-b border-gray-800 shrink-0">
+      <ShareControls {article} {cluster} />
     </div>
 
     <!-- Content area -->
