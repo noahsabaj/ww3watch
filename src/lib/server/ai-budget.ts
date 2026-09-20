@@ -1,4 +1,8 @@
 /** All provider attempts reserve spend before transmission, including retries. */
+let denied = false
+export function assertBudgetHealthy() {
+  if (denied) throw new Error('AI budget unavailable during this run; pending judgments were deferred')
+}
 export async function reserveClassification(model: string, request: string) {
   const { supabaseAdmin: db } = await import('./supabase')
   const { data, error } = await db.rpc('reserve_ai', {
@@ -6,6 +10,7 @@ export async function reserveClassification(model: string, request: string) {
     p_input_tokens:Buffer.byteLength(request,'utf8')*4+65536, p_output_tokens:0,
   })
   if (error || !data || typeof data!=='object' || Array.isArray(data) || typeof data.id!=='string') {
+    denied = true
     throw new Error('AI budget unavailable; judgment deferred')
   }
   const id = data.id
