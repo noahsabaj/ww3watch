@@ -1,12 +1,12 @@
-// GENERATED — do not edit by hand. Regenerate after any migration:
-//   npx supabase gen types typescript --project-id qusjbpknlduuklnfciws > src/lib/database.types.ts
-// CI regenerates this file from a database built from supabase/migrations and
-// type-checks the whole repo against THAT, so a migration that breaks a caller
-// fails the build even if this committed copy is stale.
+// Generated from the live schema through Supabase MCP.
+// Regenerate after every migration; CI also checks against an isolated database.
+// Do not hand-edit schema definitions.
 //
-// What this does NOT catch: uuid and text are both `string` here. A function
-// body that compares them only fails when it runs — supabase/tests/rpc_smoke.sql
-// is the check for that.
+// Project: qusjbpknlduuklnfciws
+// Schema: public
+// Application narrowing lives in db.ts.
+//
+// Generated 2026-09-20.
 export type Json =
   | string
   | number
@@ -23,6 +23,109 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_budgets: {
+        Row: {
+          input_per_million: number | null
+          max_concurrent: number
+          model: string | null
+          monthly_usd: number
+          output_per_million: number | null
+          pricing_verified_at: string | null
+          service: string
+        }
+        Insert: {
+          input_per_million?: number | null
+          max_concurrent: number
+          model?: string | null
+          monthly_usd: number
+          output_per_million?: number | null
+          pricing_verified_at?: string | null
+          service: string
+        }
+        Update: {
+          input_per_million?: number | null
+          max_concurrent?: number
+          model?: string | null
+          monthly_usd?: number
+          output_per_million?: number | null
+          pricing_verified_at?: string | null
+          service?: string
+        }
+        Relationships: []
+      }
+      ai_months: {
+        Row: {
+          charged_usd: number
+          month: string
+          opening_verified_at: string | null
+          service: string
+        }
+        Insert: {
+          charged_usd?: number
+          month: string
+          opening_verified_at?: string | null
+          service: string
+        }
+        Update: {
+          charged_usd?: number
+          month?: string
+          opening_verified_at?: string | null
+          service?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_months_service_fkey"
+            columns: ["service"]
+            isOneToOne: false
+            referencedRelation: "ai_budgets"
+            referencedColumns: ["service"]
+          },
+        ]
+      }
+      ai_reservations: {
+        Row: {
+          charged_usd: number
+          created_at: string
+          id: string
+          input_rate: number
+          lease_until: string
+          month: string
+          output_rate: number
+          service: string
+          settled: boolean
+        }
+        Insert: {
+          charged_usd: number
+          created_at?: string
+          id?: string
+          input_rate: number
+          lease_until?: string
+          month: string
+          output_rate: number
+          service: string
+          settled?: boolean
+        }
+        Update: {
+          charged_usd?: number
+          created_at?: string
+          id?: string
+          input_rate?: number
+          lease_until?: string
+          month?: string
+          output_rate?: number
+          service?: string
+          settled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_reservations_service_month_fkey"
+            columns: ["service", "month"]
+            isOneToOne: false
+            referencedRelation: "ai_months"
+            referencedColumns: ["service", "month"]
+          },
+        ]
+      }
       article_content: {
         Row: {
           byline: string | null
@@ -231,6 +334,24 @@ export type Database = {
           },
         ]
       }
+      ops_events: {
+        Row: {
+          details: Json
+          name: string
+          occurred_at: string
+        }
+        Insert: {
+          details?: Json
+          name: string
+          occurred_at?: string
+        }
+        Update: {
+          details?: Json
+          name?: string
+          occurred_at?: string
+        }
+        Relationships: []
+      }
       pipeline_runs: {
         Row: {
           error: string | null
@@ -362,6 +483,45 @@ export type Database = {
           },
         ]
       }
+      trending: {
+        Row: {
+          article_id: string
+          rank: number
+          selected_at: string
+          story_id: string | null
+        }
+        Insert: {
+          article_id: string
+          rank: number
+          selected_at?: string
+          story_id?: string | null
+        }
+        Update: {
+          article_id?: string
+          rank?: number
+          selected_at?: string
+          story_id?: string | null
+        }
+        Relationships: []
+      }
+      trending_log: {
+        Row: {
+          id: number
+          logged_at: string
+          picks: Json
+        }
+        Insert: {
+          id?: never
+          logged_at?: string
+          picks: Json
+        }
+        Update: {
+          id?: never
+          logged_at?: string
+          picks?: Json
+        }
+        Relationships: []
+      }
       verdicts: {
         Row: {
           created_at: string
@@ -409,44 +569,46 @@ export type Database = {
           },
         ]
       }
-      trending: {
+      visitor_reports: {
         Row: {
-          article_id: string
-          rank: number
-          selected_at: string
-          story_id: string | null
+          article_id: string | null
+          category: string
+          created_at: string
+          email: string | null
+          fingerprint: string
+          id: string
+          message: string
+          status: string
         }
         Insert: {
-          article_id: string
-          rank: number
-          selected_at?: string
-          story_id?: string | null
+          article_id?: string | null
+          category: string
+          created_at?: string
+          email?: string | null
+          fingerprint: string
+          id?: string
+          message: string
+          status?: string
         }
         Update: {
-          article_id?: string
-          rank?: number
-          selected_at?: string
-          story_id?: string | null
+          article_id?: string | null
+          category?: string
+          created_at?: string
+          email?: string | null
+          fingerprint?: string
+          id?: string
+          message?: string
+          status?: string
         }
-        Relationships: []
-      }
-      trending_log: {
-        Row: {
-          id: number
-          logged_at: string
-          picks: Json
-        }
-        Insert: {
-          id?: never
-          logged_at?: string
-          picks: Json
-        }
-        Update: {
-          id?: never
-          logged_at?: string
-          picks?: Json
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "visitor_reports_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -520,7 +682,25 @@ export type Database = {
         Args: { p_log_picks: Json; p_rows: Json }
         Returns: undefined
       }
+      reserve_ai: {
+        Args: {
+          p_input_tokens: number
+          p_model: string
+          p_output_tokens: number
+          p_service: string
+        }
+        Returns: Json
+      }
+      run_private_retention: { Args: never; Returns: undefined }
       run_retention: { Args: never; Returns: string }
+      settle_ai: {
+        Args: {
+          p_id: string
+          p_input_tokens?: number
+          p_output_tokens?: number
+        }
+        Returns: undefined
+      }
       source_yield: {
         Args: { p_days: number; p_max_pct: number; p_min_items: number }
         Returns: {
@@ -528,6 +708,15 @@ export type Database = {
           r_name: string
           r_pct: number
           r_rejected: number
+        }[]
+      }
+      story_join_sims: {
+        Args: { p_below: number; p_since: string }
+        Returns: {
+          r_article_id: string
+          r_rep_title: string
+          r_sim: number
+          r_title: string
         }[]
       }
       story_merge_candidates: {
@@ -542,14 +731,15 @@ export type Database = {
           r_sim: number
         }[]
       }
-      story_join_sims: {
-        Args: { p_below: number; p_since: string }
-        Returns: {
-          r_article_id: string
-          r_rep_title: string
-          r_sim: number
-          r_title: string
-        }[]
+      submit_report: {
+        Args: {
+          p_article: string
+          p_category: string
+          p_email: string
+          p_fingerprint: string
+          p_message: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
@@ -683,3 +873,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
