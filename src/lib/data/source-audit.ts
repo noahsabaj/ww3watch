@@ -904,6 +904,425 @@ export const sourceAudit = {
         }
       ],
       "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "hamshahri",
+      "name": "Hamshahri",
+      "ownership": "The reviewed material identifies the Hamshahri publisher. Its current legal ownership and municipal relationship were not verified in accessible corporate evidence.",
+      "funding": "Current funding proportions were not established.",
+      "purpose": "Persian Iranian news and commentary, including Tehran municipal affairs.",
+      "sourcing": "The five sampled articles rely heavily on official statements and relayed reporting. Two separate entries concern the same bus-shipment allegation, so they are not independent confirmation.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Iran and regional affairs",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.hamshahrionline.ir/",
+          "title": "Publisher identity and current coverage",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "ht-media",
+      "name": "Hindustan Times / HT Media",
+      "ownership": "HT Media’s corporate site identifies Hindustan Times as a group publication. Current beneficial shareholdings were not reviewed.",
+      "funding": "Commercial subscriptions, advertising, syndication and events; current proportions were not established.",
+      "purpose": "Indian general news with international reporting and licensed partner content.",
+      "sourcing": "The sample credits Fox, Iranian official communication, the Wall Street Journal and the Economist. Syndicated reports and opinion are not additional independent confirmation.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "India and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.htmedia.in/hindustan-times",
+          "title": "Corporate brand information",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.htmedia.in/investor-relations",
+          "title": "Corporate reporting access",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "demiroren",
+      "name": "Hürriyet / Demirören",
+      "ownership": "The newsroom disclosure identifies Hürriyet Gazetecilik ve Matbaacılık A.Ş. and Demirören Holding. Turkish and English feeds are grouped together.",
+      "funding": "Commercial media operations including advertising; current outlet-level funding proportions were not established.",
+      "purpose": "Turkish and English news covering Türkiye and international affairs.",
+      "sourcing": "Samples rely on official statements, credited wire reporting and broadcaster interviews. Militant allegations and capability claims require attribution rather than endorsement.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Türkiye, Middle East and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.hurriyetdailynews.com/about-the-newsroom",
+          "title": "Legal publisher, group and newsroom disclosure",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "i24",
+      "name": "i24NEWS",
+      "ownership": "i24NEWS publishes a transparency statement identifying the Drahi family as the group’s owner. The current legal ownership chain was not independently examined.",
+      "funding": "Current revenue and funding proportions were not established.",
+      "purpose": "Israel-based multilingual broadcast and digital international news.",
+      "sourcing": "The sample uses official statements, unnamed sources and credited secondary reports. One assassination-plot account relies on a source cited by Newsmax; neither that claim nor unpublished casualty records was independently verified here.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Israel, Middle East and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.i24news.tv/fr/actu/israel/artc-le-talmud-traduit-integralement-en-francais-pour-la-premiere-fois",
+          "title": "Publisher ownership transparency note",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.i24news.tv/en/executive-committee",
+          "title": "International channel management",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "india-today",
+      "name": "India Today",
+      "ownership": "A 2012 publisher disclosure identifies Living Media as India Today Group’s holding company. Current beneficial shareholdings were not established.",
+      "funding": "The reviewed historical disclosure records outside investment; it is not evidence of current funding proportions.",
+      "purpose": "Indian news, international coverage and video reports.",
+      "sourcing": "The sample uses military and police accounts and includes video synopses. The video pages’ metadata matched their headlines; unrelated suggested-video text was excluded from this review.",
+      "corrections": "Publishes a correction policy specifically for India Today Fact Check. Its stated deadlines should not be assumed to apply to all newsroom output.",
+      "coverage": "India, regional security and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.indiatoday.in/business/india/story/aditya-birla-group-india-today-group-living-media-india-102649-2012-05-18",
+          "title": "Dated ownership and investment disclosure",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.indiatoday.in/correction-policy",
+          "title": "Fact Check correction policy",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "volant",
+      "name": "Iran International / Volant Media",
+      "ownership": "The current privacy disclosure names Volant Media as the parent. A 2022 company statement described private Saudi/British ownership; current beneficial proportions were not established.",
+      "funding": "The company denies state backing. A current independently verified funding breakdown was not established; the denial is not treated as financial proof.",
+      "purpose": "London-based Iranian and diaspora news, in Persian and other languages.",
+      "sourcing": "The sample combines officials’ statements, analysis, named secondary publications and unnamed sources on repression. Alleged intelligence operations and unpublished documents were not independently authenticated.",
+      "corrections": "Its editorial guidelines require acknowledging serious factual errors, correcting transparently and normally seeking replies to significant allegations.",
+      "coverage": "Iran, diaspora and regional affairs",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim.",
+        "Ofcom’s 2022 decision concerned informed consent and fairness in a specific interview, and did not uphold that complaint. It is not a general certification of accuracy."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.iranintl.com/privacyfa",
+          "title": "Current parent-company identification",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.iranintl.com/en/202210266792",
+          "title": "Dated company statement about ownership and funding",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.iranintl.com/ar/guidelinesar",
+          "title": "Editorial standards and corrections",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.ofcom.org.uk/siteassets/resources/documents/about-ofcom/bulletins/broadcast-bulletins/2022/issue-453/complaint-by-the-national-iranian-american-council-14-august-2021?v=328126",
+          "title": "2022 fairness complaint: not upheld",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "iraqi-news",
+      "name": "Iraqi News",
+      "ownership": "The publisher describes itself as a private online newspaper founded in 2000. Beneficial ownership was not established from its About page.",
+      "funding": "Current revenue and donor proportions were not established.",
+      "purpose": "English-language Iraqi news with an explicitly stated democracy, rights and business-development remit.",
+      "sourcing": "The sample identifies wire agencies, government statements and an outside policy institute. Syndication and think-tank recommendations do not create additional independent confirmation.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Iraq and Middle East",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.iraqinews.com/about/",
+          "title": "Publisher mission and history",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "irna",
+      "name": "IRNA",
+      "ownership": "Iran’s official news agency operates under the Ministry of Culture and Islamic Guidance, which appoints its managing director. Its language and provincial editions share this institution.",
+      "funding": "State Media Monitor’s June 2026 research describes state allocations and commercial income. Its subsidy-share estimate is not an audited budget; current proportions remain unverified.",
+      "purpose": "Iranian government news, domestic reporting and international coverage.",
+      "sourcing": "The sample largely transmits named officials’ statements. Accusations of foreign sponsorship and military success should remain attributed to the issuing party, not treated as independent verification.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Iran and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://statemediamonitor.com/2026/06/islamic-republic-news-agency-irna/",
+          "title": "MJRC original research on institutional ownership and funding, June 2026",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "isna",
+      "name": "ISNA",
+      "ownership": "MJRC’s June 2026 research identifies the Academic Center for Education, Culture and Research (Jahad Daneshgahi) as ISNA’s institutional anchor. English and Persian editions share the agency.",
+      "funding": "MJRC describes state subsidies, advertising and institutional support based on expert interviews. A current audited funding breakdown was not established.",
+      "purpose": "University-affiliated Iranian news agency covering domestic and international affairs.",
+      "sourcing": "The sample is dominated by official statements. Military achievements, threats and disputed legal characterizations need explicit attribution; the English edition does not independently corroborate the Persian edition.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Iran and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim.",
+        "Expanded English review found one erroneous election label and one unverified broadcaster attribution. No conclusion about intent or a repeated pattern is drawn."
+      ],
+      "evidence": [
+        {
+          "url": "https://statemediamonitor.com/2026/06/iranian-students-news-agency-isna/",
+          "title": "MJRC original research on institutional structure and funding, June 2026",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://t.me/s/cikrossii/5472",
+          "title": "Election commission: September 2026 State Duma election",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "istories",
+      "name": "IStories",
+      "ownership": "The publisher’s September 2024 announcement identifies founder Roman Anin as publisher and separates that role from editorial management. Current legal ownership was not established.",
+      "funding": "Solicits reader donations; the publisher is responsible for fundraising. Current donor proportions were not established.",
+      "purpose": "Russian investigations, data journalism and selected news, with an English edition.",
+      "sourcing": "The sampled articles identify official statements, a rights advocate and an outside satellite analyst. A secondary account of satellite analysis is not an independent image verification.",
+      "corrections": "The English page identifies AI translation and offers an error-reporting control. A complete editorial correction policy was not established.",
+      "coverage": "Russia, Ukraine and Russian diaspora",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://istories.media/en/news/2024/09/13/new-editor-in-chief/",
+          "title": "Publisher announcement, fundraising and error-reporting disclosure",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "news2u",
+      "name": "The Japan Times",
+      "ownership": "A June 2017 disclosure records acquisition by News2u Holdings. Current beneficial ownership was not independently checked.",
+      "funding": "Commercial subscriptions and publishing; current revenue proportions were not established.",
+      "purpose": "English-language Japanese and international news.",
+      "sourcing": "The five short excerpts include named military authorities and an unspecified intelligence-agency warning. Limited page access prevented checking the full sourcing chain.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Japan, East Asia and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.japantimes.co.jp/2017/06/20/press-release/corporate-trends/notice-change-shareholder-board-members-2/",
+          "title": "Dated ownership transfer",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.japantimes.co.jp/about-us/privacy/",
+          "title": "Publisher identity and related companies",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "nyu-just-security",
+      "name": "Just Security",
+      "ownership": "Based at the Reiss Center on Law and Security at NYU School of Law; describes editorial independence and attributes views to individual authors.",
+      "funding": "Discloses NYU, foundations including Craig Newmark Philanthropies and Open Society Foundations, and individual donors. Current proportions were not established.",
+      "purpose": "Legal and policy analysis, court reporting and curated national-security news.",
+      "sourcing": "Samples distinguish legal argument, direct court reporting and aggregation. A party-authored congressional report is identified as such; its allegations are not judicial findings.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "International law, United States and global security",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.justsecurity.org/about-us/",
+          "title": "Institutional home, mission and donor disclosure",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "khabar",
+      "name": "Khabar Online",
+      "ownership": "The publisher identifies its editorial team; current legal and beneficial ownership were not established.",
+      "funding": "A current funding breakdown was not established.",
+      "purpose": "Persian news and analysis with an expressly stated commitment to the Islamic Republic’s constitutional framework and criticism of official performance.",
+      "sourcing": "The sample attributes political opinions and official statements and credits ISNA. A flight-tracking inference does not by itself confirm a passenger’s itinerary.",
+      "corrections": "Its professional charter calls for prompt correction, visible acknowledgment of mistakes and credit for republished work.",
+      "coverage": "Iran and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.khabaronline.ir/news/822035",
+          "title": "Publisher mission and professional ethics charter",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "dongwha",
+      "name": "The Korea Times",
+      "ownership": "Dongwha Group’s corporate brochure includes The Korea Times in its media business. Current beneficial shareholder proportions were not established.",
+      "funding": "Commercial newspaper operations; current revenue proportions were not established.",
+      "purpose": "English-language Korean reporting, analysis and international wire news.",
+      "sourcing": "The sample credits South Korean military statements, North Korean state media and wire witnesses. Several stored URLs were revisions of one missile story and were counted only once.",
+      "corrections": "A Code of Ethics link is public, but its content could not be retrieved in this review; the correction procedure remains unverified.",
+      "coverage": "Korean Peninsula, East Asia and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.dongwha.com/resource/data/2023brochure_e.pdf",
+          "title": "Corporate media portfolio",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.koreatimes.co.kr/codeofethics",
+          "title": "Publisher ethics page: content unavailable during review",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "kurdistan24",
+      "name": "Kurdistan 24",
+      "ownership": "The About page identifies the multilingual Kurdistan 24 network. Its legal ownership and controlling interests were not established from that disclosure.",
+      "funding": "A current funding breakdown was not established.",
+      "purpose": "Kurdish regional and international news with an expressly stated democracy and human-rights remit.",
+      "sourcing": "The sample includes local security reporting and attributed international statements. Claims of secret meetings and military intentions need corroboration beyond a party’s statement.",
+      "corrections": "The Erbil explosion report was visibly updated from unknown cause to a security source’s explanation. A formal corrections policy was not established.",
+      "coverage": "Kurdistan Region, Iraq and neighbouring states",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.kurdistan24.net/en/page/about",
+          "title": "Publisher mission and language editions",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "herald-corp",
+      "name": "The Korea Herald",
+      "ownership": "Published by Herald Corporation. Its corporate history records Jungheung Group’s 47.8% acquisition in June 2019; current share proportions were not independently verified.",
+      "funding": "Commercial media, education and cultural businesses; current newsroom revenue proportions were not established.",
+      "purpose": "English-language Korean and international reporting, with international wire content.",
+      "sourcing": "The five sampled excerpts include credited wire reports, officials and a defence-company founder. Corporate interests and political predictions remain attributed assessments.",
+      "corrections": "Publishes an ethics charter and an ombudsman process accepting complaints within 60 days, with powers to recommend corrections and replies.",
+      "coverage": "Korea, East Asia and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://company.heraldcorp.com/history.php?lang=eng",
+          "title": "Corporate ownership history",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://company.heraldcorp.com/intro.php?lang=eng",
+          "title": "Corporate operations",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.koreaherald.com/ethics",
+          "title": "Editorial ethics",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://members.heraldcorp.com/html/custom/ombuds.php?lang=en",
+          "title": "Ombudsman and correction process",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "libya-herald",
+      "name": "Libya Herald",
+      "ownership": "The publisher’s About page identifies Libya Herald and its publishing history. Current beneficial ownership was not established.",
+      "funding": "The publisher describes business publications and digital operations; a current funding breakdown was not established.",
+      "purpose": "English-language Libyan news with substantial business, economy and political coverage.",
+      "sourcing": "All five sampled openings identify institutional statements or armed groups. A request to the ICC is not an ICC finding; threatened closures are not confirmed shutdowns.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Libya",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://libyaherald.com/about-us",
+          "title": "Publisher history and coverage",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
     }
   ],
   "sources": [
@@ -3829,6 +4248,1135 @@ export const sourceAudit = {
           "publishedAt": "2026-09-20T04:01:47+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Remembrance of a Druze soldier relies on family and comrades, overlapping the English edition’s report.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "0bd07b3f-7d3e-484f-983c-40beabac911a",
+      "publisherId": "hamshahri",
+      "name": "Hamshahri",
+      "feedUrl": "https://www.hamshahrionline.ir/rss",
+      "decision": "retain with limitations",
+      "rationale": "The five sampled articles rely heavily on official statements and relayed reporting. Two separate entries concern the same bus-shipment allegation, so they are not independent confirmation.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.hamshahrionline.ir/news/1070417/%DB%8C%D8%A7%D8%AF%D8%AF%D8%A7%D8%B4%D8%AA-%D9%BE%D8%B4%D8%AA-%D9%BE%D8%B1%D8%AF%D9%87-%D8%A7%D8%AF%D8%A8%DB%8C%D8%A7%D8%AA-%D8%AA%D9%86%D8%AF-%D8%AA%D8%B1%D8%A7%D9%85%D9%BE",
+          "title": "یادداشت | پشت پرده ادبیات تند ترامپ",
+          "publishedAt": "2026-09-20T17:30:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly labelled commentary interprets Trump’s rhetoric and possible negotiations.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hamshahrionline.ir/news/1070405/%D8%A7%D9%88%D9%84%DB%8C%D9%86-%D8%AA%D8%B5%D8%A7%D9%88%D8%B1%DB%8C%D8%B1-%D8%AA%D8%B9%D8%B1%D8%B6-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%A8%D9%87-%D8%A7%D8%AA%D9%88%D8%A8%D9%88%D8%B3-%D9%87%D8%A7%DB%8C-%D8%B4%D9%87%D8%B1%D8%AF%D8%A7%D8%B1%DB%8C-%D8%AA%D9%87%D8%B1%D8%A7%D9%86",
+          "title": "اولین تصاوریر تعرض آمریکا به اتوبوس های شهرداری تهران",
+          "publishedAt": "2026-09-20T17:00:57+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Photo report repeats Tehran municipality’s accusation about damage to buses; images were not independently authenticated here.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hamshahrionline.ir/news/1070200/%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%A8%D8%A7-%D8%AA%D8%B9%D8%B1%D8%B6-%D8%A8%D9%87-%DA%A9%D8%B4%D8%AA%DB%8C-%D8%AD%D8%A7%D9%85%D9%84-%D8%A7%D8%AA%D9%88%D8%A8%D9%88%D8%B3-%D9%87%D8%A7%DB%8C-%D8%AF%D9%88%DA%A9%D8%A7%D8%A8%DB%8C%D9%86-%D8%B4%D9%87%D8%B1%D8%AF%D8%A7%D8%B1%DB%8C-%D8%AA%D9%87%D8%B1%D8%A7%D9%86",
+          "title": "آمریکا با تعرض به کشتی حامل اتوبوس‌های دوکابین شهرداری تهران، به ۱۷دستگاه آسیب جدی زد",
+          "publishedAt": "2026-09-20T16:56:04+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separate statement report carries the same municipal accusation; it is not a second witness.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hamshahrionline.ir/news/1070445/%D9%BE%DB%8C%D8%B4%D9%86%D9%87%D8%A7%D8%AF-%D8%AA%D9%87%D8%B1%D8%A7%D9%86-%D8%A8%D8%B1%D8%A7%DB%8C-%D9%87%D8%B1%D9%85%D8%B2-%D9%88-%D8%BA%D9%86%DB%8C-%D8%B3%D8%A7%D8%B2%DB%8C-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%AF%D8%B1-%D8%AD%D8%A7%D9%84-%D8%A8%D9%87-%D8%B1%D9%88%D8%B2%D8%B1%D8%B3%D8%A7%D9%86%DB%8C",
+          "title": "پیشنهاد تهران برای هرمز و غنی‌سازی | آمریکا در حال به‌روزرسانی بانک اهداف نظامی خود در ایران است",
+          "publishedAt": "2026-09-20T16:50:51+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Emirati Erem News and unnamed Western sources for alleged proposals; the package was not independently verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hamshahrionline.ir/news/1070440/%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%AA%D8%B1%D8%AF%D8%AF-%DA%A9%D8%A7%D8%B1%DA%A9%D9%86%D8%A7%D9%86%D8%B4-%D8%AF%D8%B1-%D8%B9%D8%B1%D8%A8%D8%B3%D8%AA%D8%A7%D9%86-%D8%B1%D8%A7-%D9%85%D8%AD%D8%AF%D9%88%D8%AF-%DA%A9%D8%B1%D8%AF-%D9%85%D8%AC%D9%88%D8%B2-%D9%88%DB%8C%DA%98%D9%87-%D8%A8%D8%B1%D8%A7%DB%8C",
+          "title": "آمریکا تردد کارکنانش در عربستان را محدود کرد؛ مجوز ویژه برای سفر به ۲ شهر",
+          "publishedAt": "2026-09-20T16:30:35+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes travel restrictions for US staff in Saudi Arabia to a State Department security warning.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "8c2945df-6b2d-47bc-a227-bc6a54d73fb8",
+      "publisherId": "ht-media",
+      "name": "Hindustan Times",
+      "feedUrl": "https://www.hindustantimes.com/feeds/rss/world/rssfeed.xml",
+      "decision": "retain with limitations",
+      "rationale": "The sample credits Fox, Iranian official communication, the Wall Street Journal and the Economist. Syndicated reports and opinion are not additional independent confirmation.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.hindustantimes.com/world-news/very-big-things-going-to-happen-trump-in-deciding-mode-on-iran-war-outlines-3-options-amid-deadlock-101789920061070.html",
+          "title": "‘Big things going to happen’: Trump outlines 3 options amid Iran war deadlock",
+          "publishedAt": "2026-09-20T22:04:05+05:30",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits a reported Fox conversation for Trump’s warning; the threatened action remains prospective.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hindustantimes.com/world-news/iran-warns-us-ships-in-indian-ocean-will-be-attacked-if-war-resumes-totally-prepared-for-naval-confrontation-101789918479189.html",
+          "title": "Iran warns US ships in Indian Ocean will be attacked if war resumes",
+          "publishedAt": "2026-09-20T22:27:39+05:30",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly attributes naval and missile capability claims to Rezaei through Iran’s embassy.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hindustantimes.com/entertainment/defiant-ed-sheeran-fans-show-up-for-the-music-not-controversy-as-tour-resumes-with-no-billed-openers-101789901887221.html",
+          "title": "Defiant Ed Sheeran fans show up for the music—not controversy—as tour resumes with no billed openers",
+          "publishedAt": "2026-09-20T17:30:22+05:30",
+          "reviewedAt": "2026-09-20",
+          "observation": "Clearly credited Wall Street Journal report includes named concertgoer interviews amid a Gaza-related protest.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hindustantimes.com/world-news/deep-mutual-distrust-will-scupper-us-china-co-operation-on-ai-101789899499753.html",
+          "title": "Deep mutual distrust will scupper US-China co-operation on AI",
+          "publishedAt": "2026-09-20T15:57:13+05:30",
+          "reviewedAt": "2026-09-20",
+          "observation": "Clearly credited Economist analysis of US–China AI diplomacy, including military-control risks.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hindustantimes.com/world-news/donald-trump-drops-demands-to-own-greenland-but-the-harm-has-been-done-101789889751105.html",
+          "title": "Donald Trump drops demands to own Greenland, but the harm has been done",
+          "publishedAt": "2026-09-20T13:07:08+05:30",
+          "reviewedAt": "2026-09-20",
+          "observation": "Clearly credited Economist commentary assesses the Greenland agreement; its judgment about harm is opinion.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Five current publisher article openings were reviewed because the catalogued feed has no stored samples. The feed remains disabled until a supported endpoint passes production-path testing."
+    },
+    {
+      "sourceId": "b0a239b3-4f8f-4e9a-858d-c37b1a1f1a9f",
+      "publisherId": "demiroren",
+      "name": "Hürriyet",
+      "feedUrl": "https://www.hurriyet.com.tr/rss/dunya",
+      "decision": "retain with limitations",
+      "rationale": "Samples rely on official statements, credited wire reporting and broadcaster interviews. Militant allegations and capability claims require attribution rather than endorsement.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.hurriyet.com.tr/dunya/abd-baskani-trumptan-yeni-askeri-kompleks-duyurusu-43313584",
+          "title": "ABD Başkanı Trump'tan yeni askeri kompleks duyurusu",
+          "publishedAt": "2026-09-20T14:54:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a proposed military complex to Trump; the plan is not a completed installation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyet.com.tr/dunya/trump-iran-konusunda-karar-asamasinda-buyuk-gelismeler-yasanacak-43313555",
+          "title": "Trump, İran konusunda karar aşamasında: 'Büyük gelişmeler yaşanacak'",
+          "publishedAt": "2026-09-20T14:08:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes Trump’s stated options on Iran; threats do not establish future actions.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyet.com.tr/dunya/israilli-bakan-ben-gvirden-mescid-i-aksaya-baskin-43313542",
+          "title": "İsrailli Bakan Ben-Gvir'den Mescid-i Aksa'ya baskın",
+          "publishedAt": "2026-09-20T13:55:44+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Ben-Gvir’s visit to Al-Aqsa with strongly evaluative terminology; the framing is the publisher’s.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyet.com.tr/dunya/irandan-teror-sebekelerine-operasyon-43313419",
+          "title": "İran'dan terör şebekelerine operasyon",
+          "publishedAt": "2026-09-20T11:07:33+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes claims about US/Israeli-linked networks to Tehran; the alleged links are not independently established.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyet.com.tr/dunya/ukraynadan-rusyanin-baskenti-moskovaya-yogun-saldiri-43313383",
+          "title": "Ukrayna'dan Rusya'nın başkenti Moskova'ya yoğun saldırı",
+          "publishedAt": "2026-09-20T10:43:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports strikes on Russian facilities; the brief excerpt does not establish every target or outcome.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "57ff2adf-7a0a-4c1e-b91a-bac7787c7e95",
+      "publisherId": "demiroren",
+      "name": "Hurriyet Daily",
+      "feedUrl": "https://www.hurriyetdailynews.com/rss",
+      "decision": "retain with limitations",
+      "rationale": "Samples rely on official statements, credited wire reporting and broadcaster interviews. Militant allegations and capability claims require attribution rather than endorsement.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.hurriyetdailynews.com/mass-drone-barrage-on-moscow-kills-two-on-election-day-227088",
+          "title": "World Mass drone barrage on Moscow kills two on election day",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes drone and casualty totals to Moscow’s mayor and includes Zelensky’s response.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyetdailynews.com/saudi-led-coalition-says-houthis-fired-ballistic-missile-at-riyadh-227101",
+          "title": "World Saudi-led coalition says Houthis fired ballistic missile at Riyadh",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Separates a coalition missile claim from AFP’s observed fire and its stated video verification.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyetdailynews.com/fidan-says-turkiye-can-meet-saudi-needs-under-defense-pact-227103",
+          "title": "Türkiye Fidan says Türkiye can meet Saudi needs under defense pact",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Names NTV as the venue for Fidan’s comments; promised assistance is not confirmed delivery.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyetdailynews.com/cia-chief-meets-egypts-sisi-in-rare-cairo-talks-227106",
+          "title": "CIA chief meets Egypt’s Sisi in rare Cairo talks",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the Cairo meeting’s substance to Egypt’s presidency.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.hurriyetdailynews.com/french-isil-suspects-stand-trial-in-iraq-227097",
+          "title": "WORLD French ISIL suspects stand trial in Iraq",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits AFP’s judicial source and correspondent observation; trial defendants remain suspects.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Five current English publisher-page openings were reviewed; no samples were stored from the disabled English RSS endpoint. The working Turkish feed is operationally separate."
+    },
+    {
+      "sourceId": "78bcc160-1fb3-46bf-bce4-e7822045287e",
+      "publisherId": "i24",
+      "name": "i24 News",
+      "feedUrl": "https://www.i24news.tv/en/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample uses official statements, unnamed sources and credited secondary reports. One assassination-plot account relies on a source cited by Newsmax; neither that claim nor unpublished casualty records was independently verified here.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": "Disabled before this review. The earlier curation rationale has not been established; fetch failures are not an editorial exclusion.",
+      "samples": [
+        {
+          "url": "https://www.i24news.tv/en/news/middle-east/artc-us-issues-middle-east-alerts-after-houthi-attacks-trump-cuts-short-camp-david-stay-live-blog",
+          "title": "Trump tells Fox News he's in a 'deciding mode' and 'very big things' will happen soon regarding the Iran war",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Live coverage explicitly says Trump’s early return was not officially linked to escalation; its headline changed during review.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.i24news.tv/en/news/israel/politics/artc-netanyahu-cuts-us-visit-short-will-fly-in-for-un-speech-and-leave-immediately",
+          "title": "Netanyahu shortens US visit, flying to New York for his UN address and departing immediately afterward, i24NEWS learns Read more...",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Cites two sources familiar with travel plans and states uncertainty about meetings.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.i24news.tv/en/news/middle-east/iran-eastern-states/artc-iran-executes-man-accused-of-sharing-missile-site-intelligence-with-israel",
+          "title": "Iran executes a man accused of approaching Mossad and passing sensitive information about Isfahan missile infrastructure Read more...",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes espionage allegations to Iran’s judiciary and notes concerns about fairness in similar closed cases.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.i24news.tv/en/news/israel/defense/artc-new-details-revealed-yair-netanyahu-s-dramatic-escape-from-an-iranian-assassination-plot-in-miami",
+          "title": "Surveillance, urgent warnings and a dramatic escape: New details emerge about the Iranian plot to kill Yair Netanyahu in Miami Read more...",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits a US law-enforcement source cited by Newsmax and Netanyahu’s remarks for an alleged assassination plot; independent evidence remains unavailable.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.i24news.tv/en/news/international/artc-report-us-military-deaths-in-middle-east-exceed-pentagon-s-public-tally",
+          "title": "Report: US military deaths in Middle East exceed Pentagon’s public tally Read more...",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits the Washington Post and unnamed officials, and notes that not all additional deaths were combat-related.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Five current publisher-page openings were reviewed. The disabled RSS endpoint has no stored samples and remains operationally unresolved."
+    },
+    {
+      "sourceId": "4595765a-90e6-4e0f-b608-bb95c8ca4a00",
+      "publisherId": "india-today",
+      "name": "India Today",
+      "feedUrl": "https://www.indiatoday.in/rss/1206578",
+      "decision": "retain with limitations",
+      "rationale": "The sample uses military and police accounts and includes video synopses. The video pages’ metadata matched their headlines; unrelated suggested-video text was excluded from this review.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": " https://www.indiatoday.in/india/video/ied-detected-under-bridge-in-shopian-security-forces-avert-attack-via-controlled-explosion-ytvd-2999056-2026-09-20?utm_source=rss ",
+          "title": "IED Detected Under Bridge in Shopian; Security Forces Avert Attack via Controlled Explosion",
+          "publishedAt": "2026-09-20T15:07:56+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Video synopsis attributes discovery and controlled destruction of an IED to security forces; the video itself was not reviewed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": " https://www.indiatoday.in/india/story/india-japan-veer-guardian-2026-japanese-fighters-fly-from-indian-soil-first-time-ptag-2998841-2026-09-20?utm_source=rss ",
+          "title": "Japanese F-2 fighters fly alongside Tejas, Rafale in India-Japan drill",
+          "publishedAt": "2026-09-20T11:37:59+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Describes a joint Indian–Japanese military exercise and participating aircraft.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": " https://www.indiatoday.in/india/story/jharkhand-naxal-commander-brijesh-ganjhu-rs-30-lakh-bounty-killed-encounter-varanasi-2998646-2026-09-20?utm_source=rss ",
+          "title": "Naxal commander carrying Rs 30 lakh bounty gunned down in Varanasi encounter",
+          "publishedAt": "2026-09-20T02:53:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a commander’s killing and circumstances to police officials; the account was not independently reconstructed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": " https://www.indiatoday.in/india/video/us-russia-sanctions-law-up-to-100-tariffs-may-hit-top-oil-buyers-india-china-ytvd-2998575-2026-09-19?utm_source=rss ",
+          "title": "US Russia Sanctions Law: Up To 100% Tariffs May Hit Top Oil Buyers India, China",
+          "publishedAt": "2026-09-19T17:07:51+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Video synopsis distinguishes tariff authority from naming particular countries; the video itself was not reviewed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": " https://www.indiatoday.in/india/story/punjab-police-constable-harjit-singh-shot-dead-bike-borne-assailants-fresh-targeted-attack-amritsar-pakistan-border-2998484-2026-09-19?utm_source=rss ",
+          "title": "Punjab cop shot dead by bike-borne men in fresh targeted attack close to Pak border",
+          "publishedAt": "2026-09-19T14:41:48+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a police officer’s killing and attributes a suspected wider conspiracy to police and security agencies.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Three article openings and two publisher video synopses were examined. The videos were not watched and their imagery was not authenticated."
+    },
+    {
+      "sourceId": "3cc48716-7d21-4072-9144-278b0018be4b",
+      "publisherId": "volant",
+      "name": "Iran International",
+      "feedUrl": "https://www.iranintl.com/en/feed",
+      "decision": "retain with limitations",
+      "rationale": "The sample combines officials’ statements, analysis, named secondary publications and unnamed sources on repression. Alleged intelligence operations and unpublished documents were not independently authenticated.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.iranintl.com/en/202609201491",
+          "title": "Iran threatens regional strikes as MPs question nuclear policy",
+          "publishedAt": "2026-09-20T11:12:51+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes threatened regional strikes and negotiation positions to Iran’s military and speaker.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/en/202609206316",
+          "title": "Iran mobilisation drive extends to children under 15",
+          "publishedAt": "2026-09-20T01:56:20+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Includes the mobilization spokesman’s statement about under-15s and his denial of weapons training; distinguish those claims.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/en/202609190748",
+          "title": "Will shutdowns forced by US blockade damage Iran’s oil wells?",
+          "publishedAt": "2026-09-19T21:15:30+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Economic analysis asks about possible damage to oil wells; the excerpt is not a technical reservoir assessment.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/en/202609195823",
+          "title": "How a Basij-linked cultural network helped identify Iran protesters",
+          "publishedAt": "2026-09-19T20:15:19+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Relies on sources familiar with an alleged surveillance network; identities and underlying footage were not verified here.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/en/202609192233",
+          "title": "Iran sets terms for renewed US talks, says ready for escalation",
+          "publishedAt": "2026-09-19T18:30:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes conditions for talks to Rezaei. The opening changed from three conditions to seven during review; the article is developing.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "eff4e4db-95cc-4a4b-864b-d9bc6bc7b776",
+      "publisherId": "volant",
+      "name": "Iran International (FA)",
+      "feedUrl": "https://www.iranintl.com/feed",
+      "decision": "retain with limitations",
+      "rationale": "The sample combines officials’ statements, analysis, named secondary publications and unnamed sources on repression. Alleged intelligence operations and unpublished documents were not independently authenticated.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.iranintl.com/202609206896",
+          "title": "سند روسی از برنامه مسکو برای گسترش همکاری راهبردی با تهران خبر می‌دهد",
+          "publishedAt": "2026-09-20T15:50:05+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Fox’s review of a nonpublic Russian plan; this republication is not independent authentication.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/202609200398",
+          "title": "ترامپ: ممکن است به‌زودی درباره ایران اتفاق‌های بزرگی رخ دهد",
+          "publishedAt": "2026-09-20T14:20:46+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Trump’s threatened options on Iran; threats are not events.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/202609204722",
+          "title": "قرارگاه خاتم‌الانبیا: آمریکا قصد دارد با همکاری کشورهای منطقه علیه جمهوری اسلامی اقدام کند",
+          "publishedAt": "2026-09-20T11:48:22+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes alleged US preparations to a Khatam al-Anbiya headquarters statement.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/202609205581",
+          "title": "ادامه حملات متقابل روسیه و اوکراین؛ چهار نفر در کی یف و دو نفر در مسکو کشته شدند",
+          "publishedAt": "2026-09-20T08:26:46+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports developing casualty figures from Russian and Ukrainian strikes; the totals require time and source context.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iranintl.com/202609208707",
+          "title": "ترامپ زودتر به کاخ سفید بازگشت؛ عربستان از رهگیری موشک حوثی‌ها خبر داد",
+          "publishedAt": "2026-09-20T03:22:33+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separates Saudi interception claims and Iran’s negotiating position from Trump’s early return.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "178fbd0d-7c09-4b90-8baf-0aba8d6326d0",
+      "publisherId": "iraqi-news",
+      "name": "Iraqi News",
+      "feedUrl": "https://www.iraqinews.com/feed/",
+      "decision": "retain with limitations",
+      "rationale": "The sample identifies wire agencies, government statements and an outside policy institute. Syndication and think-tank recommendations do not create additional independent confirmation.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.iraqinews.com/iraq/six-french-isis-suspects-face-trial-in-iraq/",
+          "title": "Six French ISIS suspects face trial in Iraq",
+          "publishedAt": "2026-09-20T12:30:40+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a trial with court-source and Reuters attribution; allegations remain unproven unless adjudicated.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iraqinews.com/iraq/washington-institute-advises-sanctions-maliki-ameri-disarmament-obstruction-2026/",
+          "title": "Washington Institute urges sanctions on Maliki, and Ameri over disarmament delays",
+          "publishedAt": "2026-09-20T05:14:10+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies a Washington Institute recommendation relayed through 964 Network; recommendation is not an adopted sanctions policy.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iraqinews.com/iraq/us-redirects-millions-in-security-assistance-away-from-iraq/",
+          "title": "US redirects millions in security assistance away from Iraq",
+          "publishedAt": "2026-09-17T15:47:18+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes redirected assistance to State Department statements and Representative Wilson.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iraqinews.com/arab-world-news/yemeni-forces-clash-with-houthis-near-saudi-border/",
+          "title": "Yemeni forces clash with Houthis near Saudi border",
+          "publishedAt": "2026-09-16T19:40:09+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes AFP footage from Houthi footage purporting to show a downed aircraft.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.iraqinews.com/arab-world-news/gaza-apartment-block-collapse-kills-21-including-12-children/",
+          "title": "Gaza apartment block collapse kills 21, including 12 children",
+          "publishedAt": "2026-09-16T19:21:41+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes collapse casualties to Gaza civil defence and separately describes AFP journalists’ observations.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "71923b4d-8d72-47ee-8fdf-57a644512ab3",
+      "publisherId": "irna",
+      "name": "IRNA",
+      "feedUrl": "https://en.irna.ir/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample largely transmits named officials’ statements. Accusations of foreign sponsorship and military success should remain attributed to the issuing party, not treated as independent verification.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://en.irna.ir/news/86269342/Saddam-s-fate-awaits-Trump-and-Netanyahu-IRGC-commander",
+          "title": "Saddam’s fate awaits Trump and Netanyahu: IRGC commander",
+          "publishedAt": "2026-09-20T16:22:18+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes threats about US and Israeli leaders to an IRGC adviser.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.irna.ir/news/86269356/Parliamentary-commission-approves-mandatory-use-of-full-Persian",
+          "title": "Parliamentary commission approves mandatory use of full ‘Persian Gulf’ name",
+          "publishedAt": "2026-09-20T16:20:55+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports committee approval of a naming provision; this is not enactment by the full legislature.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.irna.ir/news/86269254/Iran-warns-US-regional-states-of-painful-attacks-if-they-act",
+          "title": "Iran warns US, regional states of ‘painful’ attacks if they act against Tehran",
+          "publishedAt": "2026-09-20T14:10:41+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes regional strike threats to Iran’s central military command.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.irna.ir/news/86269165/Defeated-enemy-must-leave-the-region-in-disgrace-Iranian-commander",
+          "title": "Defeated enemy must leave the region in disgrace: Iranian commander",
+          "publishedAt": "2026-09-20T12:32:48+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Sayyari’s characterization of military success; the claim is not independently established.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.irna.ir/news/86269194/Iran-dismantles-three-terrorist-operational-cells",
+          "title": "Iran dismantles three terrorist operational cells",
+          "publishedAt": "2026-09-20T12:22:56+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports an official accusation of foreign-backed cells; alleged sponsorship and guilt were not independently established.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "7ba11bc9-52ea-4bf2-9a10-3ed829ad5378",
+      "publisherId": "irna",
+      "name": "IRNA Persian",
+      "feedUrl": "https://www.irna.ir/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample largely transmits named officials’ statements. Accusations of foreign sponsorship and military success should remain attributed to the issuing party, not treated as independent verification.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.irna.ir/news/86269411/%D8%A7%D9%86%D9%87%D8%AF%D8%A7%D9%85-%DB%8C%DA%A9-%D9%81%D8%B1%D9%88%D9%86%D8%AF-%D9%BE%D9%87%D9%BE%D8%A7%D8%AF-%D8%B4%D9%86%D8%A7%D8%B3%D8%A7%DB%8C%DB%8C-%D9%BE%DB%8C%D8%B4%D8%B1%D9%81%D8%AA%D9%87-%D8%A7%D9%88%D8%B1%D8%A8%DB%8C%D8%AA%D8%B1-%D8%A8%D8%B1-%D9%81%D8%B1%D8%A7%D8%B2-%D8%AA%D9%86%DA%AF%D9%87",
+          "title": "انهدام یک فروند پهپاد شناسایی پیشرفته «اوربیتر» بر فراز تنگه هرمز",
+          "publishedAt": "2026-09-20T17:27:14+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the claimed interception of an Orbiter drone to Iran’s army.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.irna.ir/news/86269404/%D8%A7%D9%84%D9%85%D8%B4%D8%A7%D8%B7-%D9%85%D8%AD%D8%A7%D8%B5%D8%B1%D9%87-%D8%B8%D8%A7%D9%84%D9%85%D8%A7%D9%86%D9%87-%D8%B9%D8%B1%D8%A8%D8%B3%D8%AA%D8%A7%D9%86-%D8%AF%D8%B1%D8%A8%D8%B1%D8%A7%D8%A8%D8%B1-%D8%A7%D8%B1%D8%A7%D8%AF%D9%87-%D9%85%D9%84%D8%AA-%DB%8C%D9%85%D9%86-%D9%86%D8%A7%DA%A9%D8%A7%D8%B1%D8%A2%D9%85%D8%AF",
+          "title": "المشاط: محاصره ظالمانه عربستان دربرابر اراده ملت یمن ناکارآمد است/ در صلح باز است",
+          "publishedAt": "2026-09-20T17:21:55+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Mashat’s position on Yemen’s resilience, blockade and conditions for peace.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.irna.ir/news/86269403/%D8%AD%D9%85%D9%84%D9%87-%D8%A8%D9%87-%D9%86%DB%8C%D8%B1%D9%88%D9%87%D8%A7%DB%8C-%D8%A7%D8%B1%D8%AA%D8%B4-%D9%BE%D8%A7%DA%A9%D8%B3%D8%AA%D8%A7%D9%86-%DB%B6-%DA%A9%D8%B4%D8%AA%D9%87-%D8%A8%D8%B1%D8%AC%D8%A7%DB%8C-%DA%AF%D8%B0%D8%A7%D8%B4%D8%AA",
+          "title": "حمله به نیروهای ارتش پاکستان ۶ کشته برجای گذاشت",
+          "publishedAt": "2026-09-20T17:19:53+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the Hangu death toll to Pakistan’s military.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.irna.ir/news/86269394/%D9%85%D9%82%D8%A7%D9%85-%DB%8C%D9%85%D9%86%DB%8C-%D9%87%D8%AF%D9%81-%D9%82%D8%B1%D8%A7%D8%B1-%D8%AF%D8%A7%D8%AF%D9%86-%D8%B1%DB%8C%D8%A7%D8%B6-%D9%BE%DB%8C%D8%A7%D9%85-%D8%AA%D9%88%D8%A7%D9%86%D8%A7%DB%8C%DB%8C-%D9%85%D8%A7-%D8%A8%D8%B1%D8%A7%DB%8C-%D8%B1%D8%B3%DB%8C%D8%AF%D9%86-%D8%A8%D9%87-%D8%B3%D8%B1%D8%A7%D8%B3%D8%B1",
+          "title": "مقام یمنی: هدف قرار دادن ریاض پیام توانایی ما برای رسیدن به سراسر عربستان بود",
+          "publishedAt": "2026-09-20T17:16:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a Yemeni official’s claim about missile reach; this is not independent testing of capability.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.irna.ir/news/86269393/%D9%85%D9%82%D8%AA%D8%AF%DB%8C-%D8%B5%D8%AF%D8%B1-%DB%B3%DB%B0-%D8%B3%D9%BE%D8%AA%D8%A7%D9%85%D8%A8%D8%B1-%D9%85%DB%8C-%D8%AA%D9%88%D8%A7%D9%86%D8%AF-%D8%A2%D8%BA%D8%A7%D8%B2-%D8%B4%DA%A9%D9%88%D9%81%D8%A7%DB%8C%DB%8C-%D8%B9%D8%B1%D8%A7%D9%82-%D8%A8%D8%A7%D8%B4%D8%AF-%D8%B2%D9%85%D8%A7%D9%86-%D8%AE%D8%B1%D9%88%D8%AC",
+          "title": "مقتدی صدر: ۳۰ سپتامبر می‌تواند آغاز شکوفایی عراق باشد/ زمان خروج آمریکا",
+          "publishedAt": "2026-09-20T17:10:07+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Sadr’s response to a planned September 30 withdrawal, not a completed withdrawal.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "db33195a-5373-4b33-bfc8-03d347ea9360",
+      "publisherId": "isna",
+      "name": "ISNA English",
+      "feedUrl": "https://en.isna.ir/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample is dominated by official statements. Military achievements, threats and disputed legal characterizations need explicit attribution; the English edition does not independently corroborate the Persian edition.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://en.isna.ir/news/1405062919795/US-seeks-agreement-with-Iran-Qatar-says-amid-renewed-mediation",
+          "title": "US seeks agreement with Iran, Qatar says amid renewed mediation efforts",
+          "publishedAt": "2026-09-20T16:38:25+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the US negotiating position to Qatar’s foreign ministry spokesperson.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.isna.ir/news/1405062919758/Iran-s-president-If-we-enter-into-a-pact-we-will-stand-by-it",
+          "title": "Iran's president: If we enter into a pact, we will stand by it honorably",
+          "publishedAt": "2026-09-20T15:07:20+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes Pezeshkian’s conditional commitment to an agreement; no new pact is established.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.isna.ir/news/1405062919596/Iran-army-deputy-Enemy-must-leave-region-with-failure-and-disgrace",
+          "title": "Iran army deputy: Enemy must leave region with 'failure and disgrace'",
+          "publishedAt": "2026-09-20T11:15:52+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes claims of an enemy defeat to Sayyari.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.isna.ir/news/1405062919577/Khatam-al-Anbiya-warns-US-regional-states-Any-mistake-will",
+          "title": "Khatam al-Anbiya warns US, regional states: Any mistake will bring 'painful' strikes",
+          "publishedAt": "2026-09-20T10:58:43+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports threatened strikes as a military-command statement.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.isna.ir/news/1405062919812/Yemen-blockade-unrelated-to-Iran-Sana-a-official-says",
+          "title": "Yemen blockade unrelated to Iran, Sana'a official says",
+          "publishedAt": "2026-09-20T17:41:08+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the claimed separation of the Yemen and Iran blockades to a Sana’a official.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.isna.ir/news/1405062919453/Moscow-intercepts-massive-Ukrainian-drone-swarm-during-elections",
+          "title": "Moscow intercepts massive Ukrainian drone swarm during elections",
+          "publishedAt": "2026-09-20T09:20:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "The English RSS excerpt calls the September 2026 vote presidential. The election commission identifies it as a State Duma election; this is a specific factual error, not evidence of deliberate fabrication.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.isna.ir/news/1405062919448/Israeli-TV-reports-emergency-war-preparedness-warnings-in-European",
+          "title": "Israeli TV reports emergency, war-preparedness warnings in European countries",
+          "publishedAt": "2026-09-20T09:18:01+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "The excerpt credits an Israeli Channel 15 without a link to the original broadcast. The original report and asserted new European warnings could not be verified in this review.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Seven English excerpts examined after concerns arose. Full article access was blocked. One election-label error is substantiated; the origin of a separate broadcaster claim remains unresolved. These findings do not establish repeated fabrication."
+    },
+    {
+      "sourceId": "e66fca63-ac48-4929-bfd0-6797805d81f1",
+      "publisherId": "isna",
+      "name": "ISNA Persian",
+      "feedUrl": "https://isna.ir/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample is dominated by official statements. Military achievements, threats and disputed legal characterizations need explicit attribution; the English edition does not independently corroborate the Persian edition.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.isna.ir/news/1405062919800/%D8%A7%D8%B3%D8%AA%D9%82%D8%A8%D8%A7%D9%84-%D8%B5%D8%AF%D8%B1-%D8%A7%D8%B2-%D8%AE%D8%B1%D9%88%D8%AC-%D9%86%DB%8C%D8%B1%D9%88%D9%87%D8%A7%DB%8C-%D8%A7%D8%A6%D8%AA%D9%84%D8%A7%D9%81-%D8%A8%DB%8C%D9%86-%D8%A7%D9%84%D9%85%D9%84%D9%84%DB%8C-%D8%A7%D8%B2-%D8%B9%D8%B1%D8%A7%D9%82",
+          "title": "استقبال صدر از خروج نیروهای ائتلاف بین‌المللی از عراق",
+          "publishedAt": "2026-09-20T16:47:24+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Sadr’s welcome for a future coalition withdrawal.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.isna.ir/news/1405062919793/%DB%8C%D9%85%D9%86-%D9%85%DB%8C%D8%A7%D9%86-%D9%85%D9%88%D8%B6%D9%88%D8%B9-%D9%85%D8%AD%D8%A7%D8%B5%D8%B1%D9%87-%DB%8C%D9%85%D9%86-%D9%88-%D8%A7%DB%8C%D8%B1%D8%A7%D9%86-%D8%A7%D8%B1%D8%AA%D8%A8%D8%A7%D8%B7%DB%8C-%D9%88%D8%AC%D9%88%D8%AF-%D9%86%D8%AF%D8%A7%D8%B1%D8%AF",
+          "title": "یمن: میان موضوع محاصره یمن و ایران ارتباطی وجود ندارد",
+          "publishedAt": "2026-09-20T16:37:05+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a denial of linkage between blockades to a Yemeni media official.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.isna.ir/news/1405062919790/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D9%88-%D9%BE%D8%B1%D9%88%D8%B1%D8%B4-%D8%AF%D8%B1-%D8%AC%D9%86%DA%AF-%D8%A7%D8%AE%DB%8C%D8%B1-%D8%AF%D8%B1-%D9%85%DB%8C%D8%AF%D8%A7%D9%86-%D8%AE%D8%AF%D9%85%D8%AA-%D9%88-%D9%87%D9%85%D8%B1%D8%A7%D9%87-%D9%85%D8%B1%D8%AF%D9%85-%D8%A8%D9%88%D8%AF",
+          "title": "آموزش و پرورش در جنگ اخیر در میدان خدمت و همراه مردم بود",
+          "publishedAt": "2026-09-20T16:33:31+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a clerical representative’s praise for wartime education services.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.isna.ir/news/1405062919785/%D8%A8%D9%86-%DA%AF%D9%88%DB%8C%D8%B1-%D8%B9%D8%A7%D9%85%D9%84-%D8%AA%DB%8C%D8%B1%D8%A7%D9%86%D8%AF%D8%A7%D8%B2%DB%8C-%D8%AF%D8%B1-%D9%86%D8%B2%D8%AF%DB%8C%DA%A9%DB%8C-%D8%B1%D8%A7%D9%85-%D8%A7%D9%84%D9%84%D9%87-%D8%B1%D8%A7-%D8%A7%D8%B9%D8%AF%D8%A7%D9%85-%DA%A9%D9%86%DB%8C%D8%AF",
+          "title": "بن‌گویر: عامل تیراندازی در نزدیکی رام‌الله را اعدام کنید!",
+          "publishedAt": "2026-09-20T16:23:20+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Ben-Gvir’s execution demand; a demand is not a judicial decision.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.isna.ir/news/1405062919781/%D9%88%D8%A7%DA%A9%D9%86%D8%B4-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%A8%D9%87-%D8%AD%D9%85%D9%84%D9%87-%D9%85%D9%88%D8%B4%DA%A9%DB%8C-%DB%8C%D9%85%D9%86%DB%8C-%D9%87%D8%A7-%D8%A8%D9%87-%D8%B1%DB%8C%D8%A7%D8%B6",
+          "title": "واکنش آمریکا به حمله موشکی یمنی‌ها به ریاض",
+          "publishedAt": "2026-09-20T16:18:54+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Describes a US response to the Riyadh missile attack; its comparative characterization was not independently established.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "3355bd96-4763-449a-add8-619af4bd37d9",
+      "publisherId": "istories",
+      "name": "iStories",
+      "feedUrl": "https://istories.media/rss/all.xml",
+      "decision": "retain with limitations",
+      "rationale": "The sampled articles identify official statements, a rights advocate and an outside satellite analyst. A secondary account of satellite analysis is not an independent image verification.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://istories.media/news/2026/09/20/zelenskii-zayavil-o-primenenii-pelikana-pri-obstrele-moskvi/",
+          "title": "Зеленский заявил о применении «Пеликана» при обстреле Москвы",
+          "publishedAt": "2026-09-20T11:41:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Names Zelensky’s Telegram statement and explicitly says the weapon’s identity is unknown; trademark evidence is an inference.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://istories.media/news/2026/09/20/pamfilova-soobshchila-o-gibeli-chlena-uik-pri-atake-drona-v-okkupirovannoi-chasti-khersonskoi-oblasti/",
+          "title": "Памфилова сообщила о гибели члена УИК при атаке дрона в оккупированной части Херсонской области",
+          "publishedAt": "2026-09-20T08:51:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes election-worker deaths and injuries to Pamfilova.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://istories.media/news/2026/09/20/2-cheloveka-pogibli-20-poluchili-raneniya-v-rezultate-naleta-bpla-na-moskovskuyu-oblast/",
+          "title": "2 человека погибли, 20 получили ранения в результате налета БПЛА на Московскую область",
+          "publishedAt": "2026-09-20T08:41:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes developing casualties to Governor Vorobyov; the quoted totals are not an independently reconciled count.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://istories.media/news/2026/09/19/v-alabuge-stroyat-podzemnie-tsekha-chtobi-ukrit-proizvodstvo-dronov-ot-naletov-ukrainskikh-bpla/",
+          "title": "В «Алабуге» строят подземные цеха, чтобы укрыть производство дронов от налетов украинских БПЛА",
+          "publishedAt": "2026-09-19T13:35:13+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Dnipro Osint’s satellite analysis and distinguishes a pro-war blogger’s interpretation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://istories.media/news/2026/09/19/v-chechne-siloviki-provodyat-reidi-protiv-neblagonadezhnikh-grazhdan/",
+          "title": "В Чечне силовики проводят рейды против «неблагонадежных» граждан",
+          "publishedAt": "2026-09-19T11:56:08+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits rights advocate Maxim Rudnev for raids and detentions; his account was not independently reconstructed.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "2e851a32-ff28-45e1-a76a-3f408c76a660",
+      "publisherId": "news2u",
+      "name": "Japan Times",
+      "feedUrl": "https://www.japantimes.co.jp/feed/",
+      "decision": "retain with limitations",
+      "rationale": "The five short excerpts include named military authorities and an unspecified intelligence-agency warning. Limited page access prevented checking the full sourcing chain.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.japantimes.co.jp/news/2026/09/20/world/politics/drones-moscow-russians-polls/",
+          "title": "Drones hit Moscow as Russians go to the polls",
+          "publishedAt": "2026-09-20T09:19:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Connects attacks with the parliamentary election; the short excerpt does not establish all attack details.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.japantimes.co.jp/news/2026/09/20/japan/north-korea-missile-september-20/",
+          "title": "North Korea fires off apparent ballistic missile",
+          "publishedAt": "2026-09-20T06:14:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the apparent missile’s trajectory to Japan’s defence ministry.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.japantimes.co.jp/news/2026/09/20/asia-pacific/politics/china-ai-security-risks/",
+          "title": "AI ‘warning shots’ focus Beijing on national security risks",
+          "publishedAt": "2026-09-20T03:05:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Describes an intelligence-agency warning about AI security; underlying evidence was not accessible.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.japantimes.co.jp/news/2026/09/20/japan/foreign-ministry-costumes-drill/",
+          "title": "Japan foreign ministry draws flak over costumes used in anti-terror drill",
+          "publishedAt": "2026-09-20T02:59:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports criticism of an anti-terror exercise; the brief summary does not include the full response.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.japantimes.co.jp/business/2026/09/20/economy/hormuz-oil-shipments-six-month-high/",
+          "title": "Hormuz oil shipments hit six-month high, U.S. military commander says",
+          "publishedAt": "2026-09-19T22:48:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly attributes the shipping-volume claim to a US military commander while noting Iran’s contrary position.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "b6ce1d43-00ca-4ad7-af7d-400c9f5500d8",
+      "publisherId": "nyu-just-security",
+      "name": "Just Security",
+      "feedUrl": "https://www.justsecurity.org/feed/",
+      "decision": "retain with limitations",
+      "rationale": "Samples distinguish legal argument, direct court reporting and aggregation. A party-authored congressional report is identified as such; its allegations are not judicial findings.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": "Disabled before this review. The earlier curation rationale has not been established; fetch failures are not an editorial exclusion.",
+      "samples": [
+        {
+          "url": "https://www.justsecurity.org/157637/trump-bosnia-deal-us-house-report/?utm_source=rss&utm_medium=rss&utm_campaign=trump-bosnia-deal-us-house-report",
+          "title": "“Pay for Play?” Trump’s Bosnia Moves Highlighted in U.S. House Probe",
+          "publishedAt": "Fri, 18 Sep 2026 13:04:15 +0000",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies the Bosnia report as produced by House Democrats and distinguishes its corruption allegations from proven facts.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.justsecurity.org/157396/guantanamo-dispatch-the-uss-cole-case-edges-toward-trial/?utm_source=rss&utm_medium=rss&utm_campaign=guantanamo-dispatch-the-uss-cole-case-edges-toward-trial",
+          "title": "Guantánamo Dispatch: The USS Cole Case Edges Toward Trial",
+          "publishedAt": "Fri, 18 Sep 2026 12:49:05 +0000",
+          "reviewedAt": "2026-09-20",
+          "observation": "Links the military judge’s docketing order and describes the reporter’s long-term courtroom beat; trial dates remain conditional.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.justsecurity.org/157793/early-edition-september-18-2026/?utm_source=rss&utm_medium=rss&utm_campaign=early-edition-september-18-2026",
+          "title": "Early Edition: September 18, 2026",
+          "publishedAt": "Fri, 18 Sep 2026 12:13:26 +0000",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits the New York Times, Axios and Reuters for aggregated reports; this is not additional independent confirmation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.justsecurity.org/156883/limits-law-armed-conflict-discourse-accountability/?utm_source=rss&utm_medium=rss&utm_campaign=limits-law-armed-conflict-discourse-accountability",
+          "title": "The Limits of the Law of Armed Conflict: Individual Accountability Should Not Obscure State Responsibility for U.S. Strikes on Iran School",
+          "publishedAt": "2026-09-15T13:14:34+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Legal analysis separates potential individual war crimes from state responsibility and includes conditional language about evidence.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.justsecurity.org/155798/syrias-recovery-collateral-damage-iran-us-war/?utm_source=rss&utm_medium=rss&utm_campaign=syrias-recovery-collateral-damage-iran-us-war",
+          "title": "Don’t Let Syria’s Recovery Become Collateral Damage in the Iran-U.S. War",
+          "publishedAt": "2026-09-15T13:04:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Policy argument assesses Syria’s recovery and advocates US action; its recommendations are not adopted policy.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Five recent article openings reviewed, including current RSS material beyond the three stored samples. Fetch restrictions remain a separate unresolved operational issue."
+    },
+    {
+      "sourceId": "556e23b5-a09f-412d-bca5-33d9e195656f",
+      "publisherId": "khabar",
+      "name": "Khabar Online",
+      "feedUrl": "https://www.khabaronline.ir/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample attributes political opinions and official statements and credits ISNA. A flight-tracking inference does not by itself confirm a passenger’s itinerary.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.khabaronline.ir/news/2277315/%D8%B3%D9%81%DB%8C%D8%B1-%D9%BE%DB%8C%D8%B4%DB%8C%D9%86-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%AE%D8%B7%D8%A7%D8%A8-%D8%A8%D9%87-%D8%B1%D8%A7%DB%8C-%D8%AF%D9%87%D9%86%D8%AF%DA%AF%D8%A7%D9%86-%D8%A7%D8%B3%D8%B1%D8%A7%D8%A6%DB%8C%D9%84%DB%8C-%D9%88%D9%82%D8%AA%DB%8C-%D8%AF%D8%B1-%DA%86%D8%A7%D9%87-%D8%A7%D9%81%D8%AA%D8%A7%D8%AF%DB%8C%D8%AF",
+          "title": "سفیر پیشین آمریکا خطاب به رای‌دهندگان اسرائیلی: وقتی در چاه افتادید بهتر است از کندن دست بکشید /سقوط جایگاه اسرائیل بدون برکناری نتانیاهو مهار نمی‌شود",
+          "publishedAt": "2026-09-20T17:30:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes an electoral and diplomatic argument to a former US ambassador.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.khabaronline.ir/news/2277351/%D9%88%D8%A7%DA%A9%D9%86%D8%B4-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%A8%D9%87-%D8%AD%D9%85%D9%84%D9%87-%D9%85%D9%88%D8%B4%DA%A9%DB%8C-%DB%8C%D9%85%D9%86%DB%8C-%D9%87%D8%A7-%D8%A8%D9%87-%D8%B1%DB%8C%D8%A7%D8%B6",
+          "title": "واکنش آمریکا به حمله موشکی یمنی‌ها به ریاض",
+          "publishedAt": "2026-09-20T17:20:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits ISNA for the report of a US response; this is not a separate firsthand account.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.khabaronline.ir/news/2277350/%D8%B3%D9%81%D8%B1-%D8%B9%D8%B1%D8%A7%D9%82%DA%86%DB%8C-%D8%A8%D9%87-%D9%82%D8%B7%D8%B1-%D9%BE%DB%8C%D8%B4-%D8%A7%D8%B2-%D8%AD%D8%B6%D9%88%D8%B1-%D8%AF%D8%B1-%D9%86%DB%8C%D9%88%DB%8C%D9%88%D8%B1%DA%A9",
+          "title": "سفر عراقچی به قطر پیش از حضور در نیویورک",
+          "publishedAt": "2026-09-20T17:18:26+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Presents a flight-tracking claim about Araghchi’s travel; the passenger’s presence is not independently verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.khabaronline.ir/news/2277348/%D8%AF%D9%88%D8%AD%D9%87-%D9%85%D8%AF%D8%B9%DB%8C-%D8%B4%D8%AF-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%A8%D9%87-%D8%AF%D9%86%D8%A8%D8%A7%D9%84-%D8%AF%D8%B3%D8%AA%DB%8C%D8%A7%D8%A8%DB%8C-%D8%A8%D9%87-%D8%AA%D9%88%D8%A7%D9%81%D9%82-%D8%A8%D8%A7-%D8%A7%DB%8C%D8%B1%D8%A7%D9%86-%D8%A7%D8%B3%D8%AA",
+          "title": "دوحه مدعی شد: آمریکا به دنبال دستیابی به توافق با ایران است!",
+          "publishedAt": "2026-09-20T17:15:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes Washington’s reported negotiating position to Qatar’s spokesperson.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.khabaronline.ir/news/2277346/%D8%AA%D8%B1%D8%A7%D9%85%D9%BE-%D8%B7%D8%A7%D9%82-%D9%86%D8%B5%D8%B1%D8%AA-%D9%88%D8%A7%D8%B4%D9%86%DA%AF%D8%AA%D9%86-%D8%A8%D9%87-%D9%BE%D8%A7%DB%8C%DA%AF%D8%A7%D9%87-%D9%86%D8%B8%D8%A7%D9%85%DB%8C-%D9%85%D8%AC%D9%87%D8%B2-%D8%A8%D9%87-%D9%BE%D9%87%D9%BE%D8%A7%D8%AF-%D9%88-%D8%AA%DA%A9-%D8%AA%DB%8C%D8%B1%D8%A7%D9%86%D8%AF%D8%A7%D8%B2",
+          "title": "ترامپ: طاق نصرت واشنگتن به پایگاه نظامی مجهز به پهپاد و تک‌تیرانداز تبدیل می‌شود",
+          "publishedAt": "2026-09-20T17:11:12+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies Trump’s social-media proposal; the proposed military facility is not completed construction.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "db792d14-856d-47ea-9239-9651b2baf0ef",
+      "publisherId": "dongwha",
+      "name": "Korea Times",
+      "feedUrl": "https://www.koreatimes.co.kr/www/rss/rss.xml",
+      "decision": "retain with limitations",
+      "rationale": "The sample credits South Korean military statements, North Korean state media and wire witnesses. Several stored URLs were revisions of one missile story and were counted only once.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.koreatimes.co.kr/foreignaffairs/northkorea/20260920/n-korea-fires-2-short-range-ballistic-missiles-hours-apart-ahead-of-trump-xi-summit?utm_source=rss",
+          "title": "N. Korea fires 2 short-range ballistic missiles hours apart ahead of Trump-Xi summit",
+          "publishedAt": "2026-09-20T12:07:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the two missile launches to South Korea’s Joint Chiefs; earlier one-missile and unidentified-projectile URLs update to this report.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreatimes.co.kr/world/20260920/russian-election-enters-final-day-after-ukraine-targets-moscow-in-massive-drone-attack?utm_source=rss",
+          "title": "Russian election enters final day after Ukraine targets Moscow in massive drone attack",
+          "publishedAt": "2026-09-20T08:17:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes Moscow officials’ claims from Reuters witnesses hearing blasts.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreatimes.co.kr/world/20260920/saudi-arabia-confirms-yemens-houthi-rebels-tried-to-attack-its-capital-with-ballistic-missile?utm_source=rss",
+          "title": "Saudi Arabia confirms Yemen's Houthi rebels tried to attack its capital with ballistic missile",
+          "publishedAt": "2026-09-20T00:57:04+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes an interception claim to the Saudi-led coalition and separately mentions residents’ observations.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreatimes.co.kr/foreignaffairs/northkorea/20260919/nk-leader-calls-for-most-concentrated-and-destructive-artillery-capability?utm_source=rss",
+          "title": "NK leader calls for 'most concentrated and destructive' artillery capability",
+          "publishedAt": "2026-09-19T01:47:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly credits KCNA for Kim Jong-un’s military-factory visit and capability demands.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreatimes.co.kr/southkorea/defense/20260919/s-korea-us-vow-to-strengthen-cooperation-to-accelerate-wartime-opcon-transition-in-defense-talks?utm_source=rss",
+          "title": "S. Korea, US vow to strengthen cooperation to accelerate wartime OPCON transition in defense talks",
+          "publishedAt": "2026-09-19T01:17:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies a joint statement on wartime command arrangements; accelerating a process does not mean the transfer is complete.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "58021a85-fd54-4cc1-aa4b-2d245bc7c1ac",
+      "publisherId": "kurdistan24",
+      "name": "Kurdistan 24",
+      "feedUrl": "https://www.kurdistan24.net/en/rss.xml",
+      "decision": "retain with limitations",
+      "rationale": "The sample includes local security reporting and attributed international statements. Claims of secret meetings and military intentions need corroboration beyond a party’s statement.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "\n                https://www.kurdistan24.net/en/story/940713/trump-says-houthis-agree-not-to-fight-us-as-saudi-arabia-faces-escalating-attacks\n                ",
+          "title": "Trump Says Houthis Agree Not to Fight US as Saudi Arabia Faces Escalating Attacks",
+          "publishedAt": "2026-09-20T15:07:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits a Fox correspondent’s report of Trump’s remarks about the Houthis; the agreement is Trump’s account.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "\n                https://www.kurdistan24.net/en/story/940704/explosion-reported-in-erbil-cause-remains-unknown\n                ",
+          "title": "Explosion Reported in Erbil, Cause Remains Unknown",
+          "publishedAt": "2026-09-20T14:33:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly updates the original uncertainty and attributes the ordnance explanation to a security source.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "\n                https://www.kurdistan24.net/en/story/940679/john-ratcliffe-meets-sisi-in-cairo-amid-iran-war-and-saudi-houthi-fighting\n                ",
+          "title": "John Ratcliffe Meets Sisi in Cairo Amid Iran War and Saudi-Houthi Fighting",
+          "publishedAt": "2026-09-20T12:35:53+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports the Cairo meeting; broader regional context should be distinguished from the meeting’s confirmed agenda.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "\n                https://www.kurdistan24.net/en/story/940671/irans-parliament-speaker-says-tehran-is-ready-for-both-war-and-negotiations\n                ",
+          "title": "Iran’s Parliament Speaker Says Tehran Is Ready for Both War and Negotiations",
+          "publishedAt": "2026-09-20T12:04:25+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes negotiating and military positions to Ghalibaf.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "\n                https://www.kurdistan24.net/en/story/940655/irans-military-command-warns-us-of-limitless-attacks-on-all-regional-bases-if-it-strikes-again\n                ",
+          "title": "Iran's Military Command Warns All US Regional Bases",
+          "publishedAt": "2026-09-20T11:03:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reproduces military-command allegations about a European meeting; independent evidence of that meeting is not established.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "42b90e78-e489-4197-87c6-8e3b6bf531b0",
+      "publisherId": "herald-corp",
+      "name": "Korea Herald",
+      "feedUrl": "https://www.koreaherald.com/rss/kh_World",
+      "decision": "retain with limitations",
+      "rationale": "The five sampled excerpts include credited wire reports, officials and a defence-company founder. Corporate interests and political predictions remain attributed assessments.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.koreaherald.com/article/10879531",
+          "title": "US defense firm Anduril says Taiwan arms sale delay affects business",
+          "publishedAt": "2026-09-20T03:20:36+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the commercial impact of delayed arms sales to Anduril’s founder; his company has a direct interest.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreaherald.com/article/10879530",
+          "title": "Russia holds parliamentary vote in areas it seized from Ukraine in war",
+          "publishedAt": "2026-09-20T03:20:31+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes the Russian vote from Ukrainian objections and a rights advocate’s coercion allegation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreaherald.com/article/10879528",
+          "title": "Slovak PM Fico says some in West seek war between Russia and NATO",
+          "publishedAt": "2026-09-20T03:17:57+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a prediction about NATO conflict to Fico; the prediction is not an established plan.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreaherald.com/article/10879223",
+          "title": "Saudi Arabia issues alerts across the country for aerial threat, and other Mideast developments",
+          "publishedAt": "2026-09-19T07:50:20+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes Saudi alerts to authorities and the execution account to Iranian state television.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.koreaherald.com/article/10877048",
+          "title": "House approves sweeping Russia sanctions bill, sending it to Trump",
+          "publishedAt": "2026-09-17T04:07:20+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly credits AP and reports a congressional vote; passage at that stage is not presidential signing.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "980d06a6-7683-4aa2-be8a-fc7cb3221cb6",
+      "publisherId": "libya-herald",
+      "name": "Libya Herald",
+      "feedUrl": "https://libyaherald.com/rss.xml",
+      "decision": "retain with limitations",
+      "rationale": "All five sampled openings identify institutional statements or armed groups. A request to the ICC is not an ICC finding; threatened closures are not confirmed shutdowns.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://libyaherald.com/2026/09/libya-request-technical-legal-support-from-international-criminal-court-for-investigations-into-drone-attacks-cell/",
+          "title": "Libya request technical & legal support from International Criminal Court for investigations into drone attacks cell",
+          "publishedAt": "2026-09-20T10:37:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a request for ICC assistance to Menfi; the accused cell has not been adjudicated in this account.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://libyaherald.com/2026/09/spanish-ambassador-meets-nda-head-in-benghazi-extends-invitation-to-visit-madrid/",
+          "title": "Spanish Ambassador meets NDA head in Benghazi – extends invitation to visit Madrid",
+          "publishedAt": "2026-09-20T08:49:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separately identifies Spanish embassy and National Development Agency accounts of the meeting.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://libyaherald.com/2026/09/tripoli-libyan-government-denies-intention-to-suppress-identity-and-nationality-of-so-called-drone-sabotage-cell/",
+          "title": "Tripoli Libyan government denies intention to suppress identity and nationality of so-called drone sabotage cell",
+          "publishedAt": "2026-09-19T12:20:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports the Tripoli defence ministry’s denial while investigations remain ongoing.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://libyaherald.com/2026/09/pfg-threaten-complete-closure-of-seven-oil-fields-including-sharara-and-el-feel-in-a-weeks-time-if-demands-are-not-met/",
+          "title": "PFG threaten complete closure of seven oil fields including Sharara and El-feel in a week’s time if demands are not met",
+          "publishedAt": "2026-09-16T09:20:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes the PFG’s announced partial reduction from a threatened complete closure.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://libyaherald.com/2026/09/fezzan-revolutionary-force-announce-closure-of-libyas-southern-borders-in-response-to-hafters-siege-of-qatrun/",
+          "title": "\"Fezzan Revolutionary Force\" announce closure of Libya's southern borders in response to Hafter’s siege of Qatrun",
+          "publishedAt": "2026-09-13T18:01:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a border-closure announcement to the self-described Fezzan Revolutionary Force; its constituency is explicitly uncertain.",
           "access": "publisher excerpt"
         }
       ],

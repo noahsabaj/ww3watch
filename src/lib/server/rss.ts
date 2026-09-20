@@ -166,14 +166,16 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
     let clamped = 0
     const articles = parsed.items
       .map((item) => {
-        if (isClampedDate(item.pubDate, now)) clamped++
+        // RDF feeds such as DW expose dc:date as isoDate, without pubDate.
+        const published = item.pubDate ?? item.isoDate
+        if (isClampedDate(published, now)) clamped++
         const summary = item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null
         return {
           guid: buildGuid(item),
           title: item.title?.trim() ?? '(no title)',
           url: articleUrl(item.link, feed.url),
           summary,
-          published_at: parseDate(item.pubDate, now),
+          published_at: parseDate(published, now),
           source_name: feed.name,
           source_region: feed.region as SourceRegion,
           source_lang: feed.lang,
