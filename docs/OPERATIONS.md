@@ -108,8 +108,9 @@ logs, or upload it with an archive. Loss of the key means loss of recovery.
 Reader and translation caches, embeddings, rejected-item/verdict caches and
 abuse buckets are excluded. Recent pipeline runs and trending history are kept
 so freshness and historical highlights survive. Reader content rebuilds on demand; translations
-rebuild under quotas and budgets. Re-run the embedding/backfill pipeline before
-restoring normal clustering throughput. Restore retention schedules and Realtime
+rebuild under quotas and budgets. Normal ingestion regenerates embeddings for
+recent unassigned articles; existing stories remain readable without cached
+vectors. Similarity matching fills back in as new stories arrive. Restore retention schedules and Realtime
 publication membership from the migration runbook before a production cutover.
 
 To prove restoration, temporarily provide `BACKUP_RECOVERY_KEY` as an Actions
@@ -120,6 +121,12 @@ access restrictions, and renders the restored feed. Only timestamps/counts are
 uploaded as proof. Remove the temporary recovery secret after the drill. The
 target is a 24-hour recovery point and basic service within two hours; a passing
 crypto unit test alone does not establish either target.
+
+Verified September 20, 2026: encrypted backup run `35521790915` restored in
+isolated run `35522026497`. The drill loaded 22,804 articles, 223 sources and
+8,485 stories, validated foreign keys and private-report access, and rendered
+the restored feed in **92 seconds**. The archive was four minutes old. The
+temporary GitHub recovery-key secret was removed after this successful drill.
 
 For a real outage, select the newest successful encrypted archive, restore into
 an isolated replacement first, run retention, recreate scheduled jobs and
