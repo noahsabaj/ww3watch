@@ -1,14 +1,14 @@
 # WW3Watch
 
 <p align="center">
-  <a href="https://noahsabaj.github.io/ww3watch/">
+  <a href="https://ww3watch.org/">
     <img src="docs/demo.gif" alt="WW3Watch — real-time global conflict news, grouped across languages" width="100%">
   </a>
 </p>
 
 A real-time global news aggregator focused on geopolitical conflict and world events. 200 sources across every major region and perspective; related stories grouped across languages by multilingual embeddings; trending surfaced as it breaks. Headlines appear exactly as their newsrooms wrote them.
 
-**Live at [noahsabaj.github.io/ww3watch](https://noahsabaj.github.io/ww3watch/)** · [How it works](https://noahsabaj.github.io/ww3watch/about)
+**Live at [ww3watch.org](https://ww3watch.org/)** · [How it works](https://ww3watch.org/about)
 
 > **The rule the system is built on:** machine intelligence routes stories — relevance, grouping, trending — but never rewrites them. The only model-touched content is opt-in translation, one click from the original. See [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 
@@ -21,10 +21,10 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 - **Per-article signals** — one Jev request per accepted article: topic, severity, statement-vs-event, unconfirmed, analysis, and the parties involved. They drive the *Major only* / topic / *Involving* filters and the card badges
 - **Trending Now** — Jev judges each candidate story's severity, novelty and talk-only-ness; code weighs those against exact corroboration counts (`src/lib/server/trending-jev.ts`). Updating live
 - **Top view, story badges, "By side"** — the feed can be ranked by importance (severity × independent corroboration × recency, `src/lib/story.ts`) instead of time; a story is badged *major* if any independent source reports a significant event and *unconfirmed* only if every one of them hedges; an expanded story can be read as a timeline or grouped by region, state media split out
-- **Trends + major-events feed** — [/trends](https://noahsabaj.github.io/ww3watch/trends): stories per day involving each party over 30 days, and how many were major; the RSS feed takes `?major=1` for significant events only
+- **Trends + major-events feed** — [/trends](https://ww3watch.org/trends): stories per day involving each party over 30 days, and how many were major; the RSS feed takes `?major=1` for significant events only
 - **Wire detection** — near-identical copies inside a story are marked, so "12 sources" doesn't overstate independent confirmation
 - **In-app reader + translation** — cached extraction (survives link rot), on-demand translation into your reading language (set once; defaults from your browser locale), the original one click away
-- **Source roster with live health** — every feed and its fetch health, public on [/about](https://noahsabaj.github.io/ww3watch/about); a feed that fails for ~2 days straight is switched off and a feed-health issue is filed for re-curation
+- **Source roster with live health** — every feed and its fetch health, public on [/about](https://ww3watch.org/about); a feed that fails for ~2 days straight is switched off and a feed-health issue is filed for re-curation
 - **Freshness dead-man's switch** — the header shows when ingestion last succeeded; it goes amber/red if the pipeline stalls
 - **Region + language filtering, RTL, PWA** — 15 region/perspective buckets and per-language toggles over whatever the feed contains; first-class Persian/Arabic/Hebrew rendering; installable
 
@@ -139,7 +139,7 @@ One-time setup (all free tier):
    - Add `FEED_PROXY_URL` + `FEED_PROXY_SECRET` to the GitHub Actions secrets above, and set the Worker secret to the same value: `wrangler secret put FEED_PROXY_SECRET`.
    - For automatic Worker deploys, add `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets — then [deploy-worker.yml](.github/workflows/deploy-worker.yml) deploys [cloudflare/](cloudflare/) (config in [cloudflare/wrangler.toml](cloudflare/wrangler.toml)) on every push to `main` that touches it, and dry-run-validates PRs. Without the token the deploy step warns and skips, so you can also deploy by hand: `npx wrangler deploy` from `cloudflare/`. Free tier covers it. DB schema lives in [supabase/migrations](supabase/migrations).
 
-> The site deploys to `https://<user>.github.io/ww3watch` (the `BASE_PATH=/ww3watch` in the deploy workflow handles the sub-path). For a custom domain, set `BASE_PATH` to empty and add a `CNAME`.
+> The site deploys to `https://ww3watch.org/` with an empty `BASE_PATH` and `static/CNAME`. GitHub Pages and the domain DNS must also be configured for this custom domain. For a GitHub project-page fork, use `BASE_PATH=/ww3watch` and remove or replace the custom domain.
 
 > Scheduled GitHub Actions are auto-disabled after 60 days of **repo** inactivity — ordinary commits keep them alive.
 

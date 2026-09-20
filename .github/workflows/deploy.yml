@@ -31,7 +31,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          BASE_PATH: /ww3watch
+          BASE_PATH: '' # Custom domain serves the app at the root.
           # Repo VARIABLES, not secrets — matching ci.yml's e2e job. These are
           # publishable credentials that ship inside the built bundle, so hiding
           # them achieves nothing and reading them from two different stores meant

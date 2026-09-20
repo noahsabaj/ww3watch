@@ -17,7 +17,7 @@ import { serviceClient } from '../_shared/client.ts'
 import { buildRssXml, type FeedItem } from '../_shared/rss.ts'
 
 const supabase = serviceClient()
-const SITE_URL = 'https://noahsabaj.github.io/ww3watch'
+const SITE_URL = 'https://ww3watch.org'
 // Derived dynamically from SUPABASE_URL env so self-hosted / test environments work seamlessly.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const FEED_URL = SUPABASE_URL

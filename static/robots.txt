@@ -2,4 +2,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://noahsabaj.github.io/ww3watch/sitemap.xml
+Sitemap: https://ww3watch.org/sitemap.xml

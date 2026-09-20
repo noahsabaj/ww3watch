@@ -2,7 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from 'jsr:@std/assert@1'
 import { buildRssXml, rfc822, xmlEscape, type FeedItem } from './rss.ts'
 
 const META = {
-  siteUrl: 'https://noahsabaj.github.io/ww3watch',
+  siteUrl: 'https://ww3watch.org',
   feedUrl: 'https://example.supabase.co/functions/v1/rss',
   buildDate: '2026-06-16T12:00:00Z',
 }
@@ -11,7 +11,7 @@ function item(overrides: Partial<FeedItem> = {}): FeedItem {
   return {
     id: 'a-1',
     title: 'Headline',
-    url: 'https://noahsabaj.github.io/ww3watch/?article=a-1',
+    url: 'https://ww3watch.org/?article=a-1',
     summary: 'A summary.',
     publishedAt: '2026-06-16T11:00:00Z',
     sourceName: 'Reuters',
