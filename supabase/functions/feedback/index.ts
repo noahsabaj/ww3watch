@@ -8,6 +8,12 @@ const db = serviceClient()
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error:'method_not_allowed' },405)
+  // Public project-key authentication, followed by independent abuse controls.
+  // No visitor account is needed; the publishable key ships in the app.
+  const keys = Object.values(JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS') || '{}'))
+  const legacy = Deno.env.get('SUPABASE_ANON_KEY')
+  if (legacy) keys.push(legacy)
+  if (!keys.includes(req.headers.get('apikey'))) return json({ error:'invalid_project_key' },401)
   const body = await boundedJson(req)
   if (body instanceof Response) return body
   if (body.website) return json({ saved:true })
