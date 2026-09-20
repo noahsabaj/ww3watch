@@ -17,7 +17,7 @@ export interface HeadlineTranslation {
 // Why a translation failed, as far as the reader is concerned. The server's
 // 429 (per-IP hourly bucket) is the one case where "try again later" is the
 // truth and "tap to retry" is a lie.
-export type TranslateFailure = 'rate_limited' | 'failed'
+export type TranslateFailure = 'rate_limited' | 'failed' | 'refresh_required' | 'upgrade_required'
 
 export class TranslateError extends Error {
   constructor(public readonly reason: TranslateFailure) {
@@ -27,6 +27,8 @@ export class TranslateError extends Error {
 }
 
 export function failureLabel(reason: TranslateFailure): string {
+  if (reason === 'refresh_required') return 'Article changed — close and reopen to translate'
+  if (reason === 'upgrade_required') return 'Reload WW3Watch to update translation'
   return reason === 'rate_limited'
     ? 'Translation limit reached — try again later'
     : 'Translation failed — tap to retry'
@@ -37,6 +39,8 @@ export function failureLabel(reason: TranslateFailure): string {
 export function failureReason(error: unknown): TranslateFailure {
   if (error instanceof TranslateError) return error.reason
   const status = (error as { context?: { status?: unknown } } | null)?.context?.status
+  if (status === 409) return 'refresh_required'
+  if (status === 426) return 'upgrade_required'
   return status === 429 ? 'rate_limited' : 'failed'
 }
 
@@ -68,13 +72,7 @@ export function translateHeadline(
 
   const run = (async (): Promise<HeadlineTranslation> => {
     const { data, error } = await supabase.functions.invoke('translate', {
-      body: {
-        title: article.title,
-        content: article.summary ?? '',
-        lang: article.source_lang,
-        url: article.url,
-        target,
-      },
+      body: { version: 2, url: article.url, mode: 'summary', target },
     })
     if (error) throw new TranslateError(failureReason(error))
     if (!data || typeof data.title !== 'string' || typeof data.content !== 'string') {

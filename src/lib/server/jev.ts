@@ -1,3 +1,4 @@
+import { reserveClassification } from './ai-budget'
 // TypeSafe's Jev — a "System One" model: it does not generate text, it returns
 // calibrated probabilities for typed questions about a state. One request per
 // article, every question answered in parallel against that article alone
@@ -90,12 +91,20 @@ export async function callJev(state: unknown, questions: Record<string, unknown>
   const apiKey = process.env.TYPESAFE_API_KEY
   if (!apiKey) throw new Error('TYPESAFE_API_KEY is not set')
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(ENDPOINT, {
+    const request = JSON.stringify({ state, model: JEV_MODEL, questions })
+    const settle = await reserveClassification(JEV_MODEL, request)
+    let res: Response
+    let data: { answers?: JevResponse['answers']; usage?: { input_tokens?: number } } | null
+    try {
+    res = await fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ state, model: JEV_MODEL, questions }),
+      body: request,
       signal: AbortSignal.timeout(15000),
     })
+    data = await res.clone().json().catch(() => null)
+    await settle(data?.usage?.input_tokens)
+    } catch (error) { await settle(); throw error }
     if ((res.status === 429 || res.status === 529) && attempt < MAX_RETRIES) {
       const retryAfter = Number(res.headers.get('retry-after'))
       const backoff = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** attempt
@@ -104,7 +113,6 @@ export async function callJev(state: unknown, questions: Record<string, unknown>
       continue
     }
     if (!res.ok) throw new Error(`jev ${res.status}: ${(await res.text()).slice(0, 300)}`)
-    const data = await res.json()
     if (!data?.answers || typeof data.answers !== 'object') throw new Error(`jev: no answers in ${JSON.stringify(data).slice(0, 200)}`)
     return { answers: data.answers, inputTokens: Number(data.usage?.input_tokens) || 0 }
   }

@@ -26,12 +26,12 @@ beforeEach(() => {
 })
 
 describe('translateHeadline', () => {
-  it('sends the plain (title + content) shape and maps content back to summary', async () => {
+  it('sends only a stored article reference and maps content back to summary', async () => {
     invoke.mockResolvedValue({ data: { title: 'Hello world', content: 'This is a test.' }, error: null })
     const out = await translateHeadline(fa, 'en')
     expect(out).toEqual({ title: 'Hello world', summary: 'This is a test.' })
     expect(invoke).toHaveBeenCalledWith('translate', {
-      body: { title: fa.title, content: fa.summary, lang: 'fa', url: fa.url, target: 'en' },
+      body: { version: 2, mode: 'summary', url: fa.url, target: 'en' },
     })
   })
 
@@ -67,7 +67,7 @@ describe('translateHeadline', () => {
     invoke.mockResolvedValue({ data: { title: 'Hello world', content: '' }, error: null })
     const out = await translateHeadline({ ...fa, summary: null }, 'en')
     expect(out.summary).toBeNull()
-    expect(invoke.mock.calls[0][1].body.content).toBe('')
+    expect(invoke.mock.calls[0][1].body).not.toHaveProperty('content')
   })
 
   it('surfaces a 429 as rate_limited and everything else as failed, and caches neither', async () => {

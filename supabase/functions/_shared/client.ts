@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.1
 
 // Service client from Supabase's auto-injected env: prefer the new secret-keys
 // dict, fall back to the legacy service-role key.
-function secretKey(): string {
+export function secretKey(): string {
   const dict = Deno.env.get('SUPABASE_SECRET_KEYS')
   if (dict) {
     try {

@@ -1,3 +1,4 @@
+vi.mock('./ai-budget', () => ({ reserveClassification: async () => async () => {} }))
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
 afterEach(() => {

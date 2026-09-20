@@ -17,7 +17,10 @@ async function main() {
   const stats: RunStats = {}
   let runError: unknown = null
   try {
+    const release = await reserveClassification(JEV_MODEL, '')
+    await release(0)
     await run(stats)
+    assertBudgetHealthy()
   } catch (err) {
     runError = err
     throw err
@@ -34,3 +37,5 @@ main()
     console.error('[pipeline] fatal:', err)
     process.exit(1)
   })
+import { reserveClassification, assertBudgetHealthy } from '../src/lib/server/ai-budget'
+import { JEV_MODEL } from '../src/lib/server/jev'
