@@ -38,7 +38,9 @@ test('the reader still opens', async ({ page }) => {
   const links = page.locator('article a[href]')
   const candidates = await links.evaluateAll((nodes) => {
     const hosts = new Set<string>()
-    return nodes.map((n) => (n as HTMLAnchorElement).href).filter((href) => {
+    // Keep the literal attribute for subsequent locators: .href percent-encodes
+    // Persian/Arabic paths, which no longer match the original href attribute.
+    return nodes.map((n) => n.getAttribute('href')!).filter((href) => {
       const host = new URL(href).hostname
       if (hosts.has(host)) return false
       hosts.add(host)
