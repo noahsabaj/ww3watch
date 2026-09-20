@@ -102,6 +102,30 @@ select public.pipeline_status() as pipeline_status;
 select public.check_rate_limit('203.0.113.7', 'smoke', 5) as rate_limit_allows;
 select public.run_retention() as retention;
 
+-- Private operations: every RPC executes and privacy privileges stay closed.
+do $$
+declare reservation jsonb; rid uuid;
+begin
+  if public.reserve_ai('translation','test-model',10,10)->>'error' <> 'pricing_unverified' then raise exception 'unknown pricing allowed'; end if;
+  update public.ai_budgets set model='test-model',input_per_million=1,output_per_million=1,pricing_verified_at=now(),max_concurrent=1 where service='translation';
+  insert into public.ai_months(service,month,opening_verified_at) values('translation',date_trunc('month',now() at time zone 'UTC')::date,now()) on conflict(service,month) do update set opening_verified_at=excluded.opening_verified_at;
+  reservation := public.reserve_ai('translation','test-model',100,100);
+  rid := (reservation->>'id')::uuid;
+  if rid is null then raise exception 'reservation failed: %',reservation; end if;
+  if public.reserve_ai('translation','test-model',100,100)->>'error' <> 'busy' then raise exception 'concurrency cap bypassed'; end if;
+  perform public.settle_ai(rid,10,10);
+  perform public.settle_ai(rid,0,0);
+  if (select charged_usd from public.ai_months where service='translation') <> 0.00002 then raise exception 'settlement was not idempotent'; end if;
+  if public.reserve_ai('translation','test-model',4000000,0)->>'error' <> 'budget_exhausted' then raise exception 'budget cap bypassed'; end if;
+  if not public.submit_report('problem','Marked smoke test report',null,null,'smoke-report') then raise exception 'report failed'; end if;
+  perform public.submit_report('problem','Marked smoke test report',null,null,'smoke-report');
+  if (select count(*) from public.visitor_reports where fingerprint='smoke-report') <> 1 then raise exception 'duplicate report'; end if;
+  if has_table_privilege('anon','public.visitor_reports','SELECT') or has_function_privilege('anon','public.reserve_ai(text,text,integer,integer)','EXECUTE') then raise exception 'private data publicly accessible'; end if;
+  insert into public.rate_limits(ip,fn,window_start,count) values('expired','smoke',now()-interval '3 days',1);
+  perform public.run_private_retention();
+  if exists(select 1 from public.rate_limits where ip='expired') then raise exception 'expired identifiers retained'; end if;
+end $$;
+
 -- ── coverage: every public function must be called above ────────────────────
 do $$
 declare
@@ -111,7 +135,7 @@ declare
     'pipeline_status', 'purge_irrelevant_articles', 'reelect_story_reps', 'replace_trending',
     'run_retention', 'source_yield', 'story_join_sims', 'story_merge_candidates', 'merge_stories',
     -- event-trigger function: fires on DDL, cannot be called directly.
-    'rls_auto_enable'
+    'rls_auto_enable', 'reserve_ai', 'settle_ai', 'submit_report', 'run_private_retention'
   ];
   missing text;
 begin

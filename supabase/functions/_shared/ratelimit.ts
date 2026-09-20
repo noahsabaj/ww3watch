@@ -1,5 +1,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.108.2'
 import { corsHeaders } from './http.ts'
+import { privateBucket } from './identity.ts'
+import { secretKey } from './client.ts'
 
 // IP extraction for Supabase Edge Functions (which sit behind Cloudflare).
 // EMPIRICALLY VERIFIED (2026-06): a client that sends its own x-forwarded-for is
@@ -29,8 +31,8 @@ export function secondsToNextHour(nowMs: number = Date.now()): number {
 }
 
 // Per-IP hourly limit. Returns a Response to short-circuit (429 over limit, 400
-// when no client IP can be determined), or null to proceed. Fail-OPEN on limiter
-// (RPC) errors — a bookkeeping hiccup must never take the feature down — but
+// when no client IP can be determined), or null to proceed. Fail-CLOSED on limiter
+// (RPC) errors: unverified quota must never start new paid work; also
 // fail-CLOSED when there is no trustworthy IP to bucket on.
 export async function rateLimited(
   supabase: SupabaseClient,
@@ -47,13 +49,13 @@ export async function rateLimited(
   }
   try {
     const { data: allowed, error } = await supabase.rpc('check_rate_limit', {
-      p_ip: ip,
+      p_ip: await privateBucket(ip, secretKey()),
       p_fn: fn,
       p_limit: limit,
     })
     if (error) {
-      console.error(`[${fn}] rate-limit check failed (failing open):`, error)
-      return null
+      console.error(`[${fn}] rate-limit check failed (failing closed):`, error)
+      return new Response(JSON.stringify({ error: 'quota_unavailable' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
     if (allowed === false) {
       return new Response(JSON.stringify({ error: 'rate_limited' }), {
@@ -61,10 +63,11 @@ export async function rateLimited(
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(secondsToNextHour()) },
       })
     }
+    if (allowed === true) return null
   } catch (err) {
-    console.error(`[${fn}] rate-limit check failed (failing open):`, err)
+    console.error(`[${fn}] rate-limit check failed (failing closed):`, err)
   }
-  return null
+  return new Response(JSON.stringify({ error: 'quota_unavailable' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
 
 // Reject oversized request bodies before reading/parsing them — defense for the

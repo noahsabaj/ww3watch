@@ -24,7 +24,7 @@
   type ReaderState =
     | { status: 'idle' }
     | { status: 'loading' }
-    | { status: 'loaded'; title: string; byline: string | null; content: string; fetchedAt?: string | null }
+    | { status: 'loaded'; title: string; byline: string | null; content: string; fetchedAt?: string | null; contentVersion?: string }
     | { status: 'failed' }
 
   let reader = $state<ReaderState>({ status: 'idle' })
@@ -113,7 +113,7 @@
             .body.textContent ?? ''
           reader = text.trim().length < 200
             ? { status: 'failed' }
-            : { status: 'loaded', title: data.title, byline: data.byline, content: data.content, fetchedAt: data.fetchedAt }
+            : { status: 'loaded', title: data.title, byline: data.byline, content: data.content, fetchedAt: data.fetchedAt, contentVersion: data.contentVersion }
         }
       })
       .catch(() => {
@@ -194,71 +194,16 @@
     if (!article || translation.status === 'loading') return
     if (translation.status === 'done') { showTranslated = !showTranslated; return }
     translation = { status: 'loading' }
-    const title = displayTitle
     const target = prefs.readingLang
     try {
-      // Preferred path: translate the article's text blocks and re-insert the
-      // translations into the ORIGINAL DOM, so images/figures/layout survive
-      // (the LLM only sees plain text). Falls back to flattened plain text when
-      // there are no clean text blocks (div-only markup) or the reader failed.
-      if (reader.status === 'loaded') {
-        const doc = new DOMParser().parseFromString(reader.content, 'text/html')
-        // Translate at the TEXT-NODE level, not whole blocks: a pure paragraph is
-        // a single text node (translated whole, no fragmentation), while a
-        // paragraph with an inline <a>/<strong>/<img> yields several text nodes —
-        // so we only ever swap text and never destroy inline elements, images, or
-        // structure. We capture each node's surrounding whitespace and re-wrap so
-        // words don't glue to adjacent inline elements.
-        const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT)
-        const nodes: Text[] = []
-        const segments: string[] = []
-        const wraps: Array<[string, string]> = []
-        let shipped = 0
-        for (let node = walker.nextNode(); node && shipped < MAX_REQUEST_CHARS; node = walker.nextNode()) {
-          const raw = node.nodeValue ?? ''
-          const trimmed = raw.trim()
-          if (!trimmed) continue
-          const tag = node.parentElement?.tagName
-          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE' || tag === 'PRE') continue
-          nodes.push(node as Text)
-          segments.push(trimmed)
-          shipped += trimmed.length
-          wraps.push([raw.slice(0, raw.length - raw.trimStart().length), raw.slice(raw.trimEnd().length)])
-        }
-        if (segments.length > 0) {
-          const { data, error } = await supabase.functions.invoke('translate', {
-            body: { title, segments, lang: article.source_lang, url: article.url, target },
-          })
-          // Rethrow the supabase error itself: its status is what tells a rate
-          // limit ("try later") apart from a provider failure ("tap to retry").
-          if (error) throw error
-          if (!data?.title || !Array.isArray(data?.segments)) throw new Error('Translation failed')
-          // 1:1 by index; a missing translation leaves the original text in place.
-          nodes.forEach((node, i) => {
-            const t = data.segments[i]
-            if (typeof t === 'string' && t.trim()) node.nodeValue = wraps[i][0] + t + wraps[i][1]
-          })
-          translation = {
-            status: 'done',
-            title: data.title,
-            content: doc.body.innerHTML,
-            isHtml: true,
-            untranslated: typeof data.untranslated === 'number' ? data.untranslated : 0,
-          }
-          showTranslated = true
-          return
-        }
-      }
-      // Plain-text fallback (failed reader or div-only markup).
-      const plain = reader.status === 'loaded'
-        ? htmlToText(reader.content).slice(0, 8000)
-        : (article.summary ?? '')
-      const { data, error } = await supabase.functions.invoke('translate', {
-        body: { title, content: plain, lang: article.source_lang, url: article.url, target },
-      })
+      const { data, error } = await supabase.functions.invoke('translate', { body: {
+        version: 2, url: article.url, target,
+        mode: reader.status === 'loaded' && reader.contentVersion ? 'reader' : 'summary',
+        contentVersion: reader.status === 'loaded' ? reader.contentVersion : undefined,
+      } })
       if (error) throw error
-      if (!data?.title || typeof data?.content !== 'string') throw new Error('Translation failed')
-      translation = { status: 'done', title: data.title, content: data.content, isHtml: false, untranslated: 0 }
+      if (!data || typeof data.title !== 'string' || typeof data.content !== 'string') throw new Error('Translation failed')
+      translation = { status:'done',title:data.title,content:data.content,isHtml:data.format==='html',untranslated:data.untranslated ?? 0 }
       showTranslated = true
     } catch (err) {
       translation = { status: 'failed', reason: failureReason(err) }

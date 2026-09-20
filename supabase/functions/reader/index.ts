@@ -11,6 +11,8 @@
 import { Readability } from 'npm:@mozilla/readability@0.6.0'
 import { parseHTML } from 'npm:linkedom@0.18.12'
 import { corsHeaders, json } from '../_shared/http.ts'
+import { boundedJson } from '../_shared/body.ts'
+import { sha256Hex } from '../_shared/hash.ts'
 import { serviceClient } from '../_shared/client.ts'
 import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
 import { fetchGuarded } from '../_shared/net.ts'
@@ -33,8 +35,8 @@ type CacheRow = {
   site_name: string | null
   fetched_at: string
 }
-const staleHit = (c: CacheRow) =>
-  json({ title: c.title, byline: c.byline, content: c.content, siteName: c.site_name, fetchedAt: c.fetched_at, cached: true, stale: true })
+const staleHit = async (c: CacheRow) =>
+  json({ title: c.title, byline: c.byline, content: c.content, siteName: c.site_name, fetchedAt: c.fetched_at, contentVersion: await sha256Hex(c.content), cached: true, stale: true })
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -46,7 +48,8 @@ Deno.serve(async (req) => {
   let articleUrl: string | null = new URL(req.url).searchParams.get('url')
   if (!articleUrl && req.method === 'POST') {
     try {
-      const body = await req.json()
+      const body = await boundedJson(req)
+      if (body instanceof Response) return body
       if (typeof body?.url === 'string') articleUrl = body.url
     } catch {
       // fall through
@@ -82,6 +85,7 @@ Deno.serve(async (req) => {
       content: cached.content,
       siteName: cached.site_name,
       fetchedAt: cached.fetched_at,
+      contentVersion: await sha256Hex(cached.content),
       cached: true,
     })
   }
@@ -154,13 +158,13 @@ Deno.serve(async (req) => {
         { onConflict: 'url', ignoreDuplicates: false },
       )
       if (cacheError) console.error('[reader] cache write failed:', cacheError)
-      return json({ ...result, fetchedAt: now })
+      return json({ ...result, fetchedAt: now, contentVersion: await sha256Hex(result.content) })
     }
 
     // Near-empty extraction (bot-wall/redirect page): never persist junk. If we
     // have a prior good copy, keep serving it; else return the uncached result.
     if (cached) return staleHit(cached as CacheRow)
-    return json({ ...result, fetchedAt: now })
+    return json({ ...result, fetchedAt: now, contentVersion: await sha256Hex(result.content) })
   } catch {
     if (cached) return staleHit(cached as CacheRow)
     return json({ error: 'extraction_failed' }, 422)

@@ -66,4 +66,4 @@ jobs:
             echo "::warning::SUPABASE_ACCESS_TOKEN not set — skipping function deploy. Add it to enable auto-deploy."
             exit 0
           fi
-          supabase functions deploy reader translate rss --no-verify-jwt --project-ref qusjbpknlduuklnfciws
+          supabase functions deploy reader translate rss feedback --no-verify-jwt --project-ref qusjbpknlduuklnfciws
