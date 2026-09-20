@@ -14,4 +14,7 @@
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
+  <url><loc>https://ww3watch.org/trends</loc></url>
+  <url><loc>https://ww3watch.org/privacy</loc></url>
+  <url><loc>https://ww3watch.org/feedback</loc></url>
 </urlset>

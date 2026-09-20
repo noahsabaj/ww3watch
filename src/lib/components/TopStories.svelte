@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { headlineText } from '$lib/utils'
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { timeAgo } from '$lib/utils'
@@ -43,7 +44,7 @@
                     dir="auto"
                     class="text-sm text-gray-200 hover:text-white transition-colors leading-snug text-start"
                   >
-                    {rep.title}
+                    {headlineText(rep.title)}
                   </button>
                   {#if cluster.sourceCount > 1}
                     <button
@@ -70,7 +71,7 @@
                             dir="auto"
                             class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-start"
                           >
-                            {article.title}
+                            {headlineText(article.title)}
                           </button>
                           <span class="text-xs text-gray-600 shrink-0">{timeAgo(article.published_at, clock.now)}</span>
                         </div>

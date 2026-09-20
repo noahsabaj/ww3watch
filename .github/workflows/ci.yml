@@ -125,7 +125,7 @@ jobs:
           PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
       # Replicate deploy.yml's fallback copy so sirv --single serves the SPA.
-      - run: cp build/404.html build/index.html
+      - run: test -f build/index.html || cp build/404.html build/index.html
       - uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright

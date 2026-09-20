@@ -59,7 +59,14 @@
   })
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && open) open = false
+    if (!open) return
+    if (e.key === 'Escape') { e.preventDefault(); open = false }
+    if (e.key === 'Tab' && sheetEl) {
+      const controls = [...sheetEl.querySelectorAll<HTMLElement>('button, input, select, a[href], [tabindex="0"]')].filter(el => !el.hasAttribute('disabled'))
+      const first = controls[0], last = controls.at(-1)
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === sheetEl)) { e.preventDefault(); last?.focus() }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === sheetEl)) { e.preventDefault(); first?.focus() }
+    }
   }
 </script>
 
@@ -89,13 +96,16 @@
     </div>
 
     <div class="px-4 pt-2 pb-5 space-y-3">
+      <div class="flex justify-between items-center"><h2 class="font-semibold">Filters</h2><button class="min-h-11 min-w-11 px-3" onclick={() => open = false}>Close</button></div>
+      <label for="mobile-search" class="block text-sm text-gray-300">Search headlines</label>
       <!-- Search + All/None -->
       <div class="flex items-center gap-2">
         <input
+          id="mobile-search"
           type="text"
           placeholder="Search headlines..."
           bind:value={searchQuery}
-          class="flex-1 bg-[#18181b] border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          class="flex-1 min-w-0 bg-[#18181b] border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
         />
         <button onclick={selectAll} class="text-xs text-gray-400 hover:text-white px-2 py-1 transition-colors">All</button>
         <button onclick={clearAll} class="text-xs text-gray-400 hover:text-white px-2 py-1 transition-colors">None</button>
@@ -131,3 +141,5 @@
     </div>
   </div>
 {/if}
+
+<style>button { min-height: 44px; min-width: 44px; }</style>
