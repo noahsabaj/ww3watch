@@ -1,0 +1,30 @@
+name: Source audit probes
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: ww3watch-source-audit-probes
+  cancel-in-progress: false
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx scripts/source-audit/probe.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          FEED_PROXY_URL: ${{ secrets.FEED_PROXY_URL }}
+          FEED_PROXY_SECRET: ${{ secrets.FEED_PROXY_SECRET }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-probes
+          path: .tmp/source-audit/probes.json
+          retention-days: 7

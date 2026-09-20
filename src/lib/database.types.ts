@@ -677,6 +677,14 @@ export type Database = {
       ops_health: { Args: never; Returns: Json }
       pipeline_status: { Args: never; Returns: string }
       purge_irrelevant_articles: { Args: { p_ids: string[] }; Returns: number }
+      record_source_health: {
+        Args: { p_disable_after: number; p_results: Json }
+        Returns: {
+          disabled: boolean
+          source_id: string
+          source_name: string
+        }[]
+      }
       reelect_story_reps: { Args: { p_story_ids: string[] }; Returns: number }
       replace_trending: {
         Args: { p_log_picks: Json; p_rows: Json }
@@ -873,4 +881,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

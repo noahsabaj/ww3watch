@@ -126,6 +126,39 @@ begin
   if exists(select 1 from public.rate_limits where ip='expired') then raise exception 'expired identifiers retained'; end if;
 end $$;
 
+-- Source health must not overwrite curation or replay stale snapshots.
+do $$
+declare sid uuid := '00000000-0000-0000-0000-0000000000a1'; snapshot timestamptz; batch jsonb; n integer;
+begin
+  select updated_at into snapshot from public.sources where id=sid;
+  batch := jsonb_build_array(jsonb_build_object('id',sid,'url','https://smoke.example/rss',
+    'observed_updated_at',snapshot,'ok',false,'via','proxy','error_kind','http','error_detail','HTTP 403'));
+  select count(*) into n from public.record_source_health(batch,2);
+  if n <> 1 or (select consecutive_failures from public.sources where id=sid) <> 1 then raise exception 'health update failed'; end if;
+  select count(*) into n from public.record_source_health(batch,2);
+  if n <> 0 then raise exception 'replayed health result applied'; end if;
+  select updated_at into snapshot from public.sources where id=sid;
+  batch := jsonb_set(batch,'{0,observed_updated_at}',to_jsonb(snapshot));
+  update public.sources set url='https://smoke.example/new',name='Curated name' where id=sid;
+  select count(*) into n from public.record_source_health(batch,2);
+  if n <> 0 or (select name from public.sources where id=sid) <> 'Curated name' then raise exception 'health overwrote curation'; end if;
+  batch := jsonb_set(batch,'{0,url}',to_jsonb('https://smoke.example/new'::text));
+  select count(*) into n from public.record_source_health(batch,2) where disabled;
+  if n <> 1 or (select enabled from public.sources where id=sid) then raise exception 'auto-disable failed'; end if;
+  select updated_at into snapshot from public.sources where id=sid;
+  batch := jsonb_set(jsonb_set(batch,'{0,observed_updated_at}',to_jsonb(snapshot)),'{0,ok}','true');
+  select count(*) into n from public.record_source_health(batch,2);
+  if n <> 0 or (select enabled from public.sources where id=sid) then raise exception 'disabled source re-enabled'; end if;
+  update public.sources set enabled=true,updated_at=clock_timestamp() where id=sid;
+  select updated_at into snapshot from public.sources where id=sid;
+  batch := jsonb_set(batch,'{0,observed_updated_at}',to_jsonb(snapshot));
+  perform public.record_source_health(batch,2);
+  if (select consecutive_failures from public.sources where id=sid) <> 0
+     or (select last_error from public.sources where id=sid) is not null then raise exception 'recovery not recorded'; end if;
+  if has_function_privilege('anon','public.record_source_health(jsonb,integer)','EXECUTE')
+     or has_function_privilege('authenticated','public.record_source_health(jsonb,integer)','EXECUTE') then raise exception 'public health writes allowed'; end if;
+end $$;
+
 -- ── coverage: every public function must be called above ────────────────────
 do $$
 declare
@@ -135,7 +168,7 @@ declare
     'pipeline_status', 'purge_irrelevant_articles', 'reelect_story_reps', 'replace_trending',
     'run_retention', 'source_yield', 'story_join_sims', 'story_merge_candidates', 'merge_stories',
     -- event-trigger function: fires on DDL, cannot be called directly.
-    'rls_auto_enable', 'reserve_ai', 'settle_ai', 'submit_report', 'run_private_retention'
+    'rls_auto_enable', 'reserve_ai', 'settle_ai', 'submit_report', 'run_private_retention', 'record_source_health'
   ];
   missing text;
 begin
