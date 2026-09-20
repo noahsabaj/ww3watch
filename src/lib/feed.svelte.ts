@@ -32,8 +32,8 @@ export interface FeedOptions {
 
 // Dead-man's switch tiers: pipeline real cadence is 30–120 min, so >3h means
 // several missed runs; >24h means it's down.
-const STALE_AMBER_MS = 3 * 60 * 60 * 1000
-const STALE_RED_MS = 24 * 60 * 60 * 1000
+const STALE_AMBER_MS = 60 * 60 * 1000
+const STALE_RED_MS = 3 * 60 * 60 * 1000
 
 // Two separate cluster passes: allClustered uses the full article list (global top stories),
 // clustered uses the filtered list (feed view). They cannot be shared.
@@ -366,6 +366,14 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     get loadingMore() { return loadingMore },
     get liveMessage() { return liveMessage },
     get toast() { return toast },
+    initialize(value: FeedInitial) {
+      const ids = new Set(value.articles.map(a => a.id))
+      articles = [...value.articles, ...articles.filter(a => !ids.has(a.id))]
+      trending = value.trending
+      lastUpdatedAt = value.lastUpdatedAt
+      serverOffset = value.articles.length
+      hasMore = value.articles.length >= INITIAL_LIMIT
+    },
     flushQueue,
     loadOlder,
     recoverDeepLink,

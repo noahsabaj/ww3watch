@@ -90,3 +90,9 @@ describe('dayKey / dayLabel', () => {
     expect(dayLabel('not a date')).toBe('Earlier')
   })
 })
+import { headlineText } from './utils'
+
+it('decodes headline entities as text without interpreting markup', () => {
+  expect(headlineText('Lebanon&#039;s &amp; &lt;script&gt;')).toBe("Lebanon's & <script>")
+  expect(headlineText('&#x1f30d; &#x110000;')).toBe('🌍 &#x110000;')
+})

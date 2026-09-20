@@ -14,7 +14,7 @@
     size?: 'sm' | 'md'
   } = $props()
 
-  const pad = $derived(size === 'md' ? 'py-1' : 'py-0.5')
+  const pad = $derived(size === 'md' ? 'min-h-11 py-1' : 'py-0.5')
   const chip = $derived(`text-xs px-2 ${pad} rounded font-medium transition-colors cursor-pointer border`)
   const on = 'bg-blue-600/20 text-blue-300 border-blue-500/50'
   const off = 'bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-500'

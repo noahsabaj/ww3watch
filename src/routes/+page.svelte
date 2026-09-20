@@ -12,9 +12,11 @@
   import { createFilters } from '$lib/filters.svelte'
   import { createReaderRouting } from '$lib/deeplink.svelte'
   import type { Cluster } from '$lib/cluster'
-  import type { PageData } from './$types'
+  import { loadFeed } from '$lib/load-feed'
+  import { base } from '$app/paths'
 
-  let { data }: { data: PageData } = $props()
+  let loading = $state(true)
+  let loadError = $state(false)
 
   let scrollY = $state(0)
   let isPaused = $derived(scrollY > 300)
@@ -23,9 +25,9 @@
   // from the load — later changes arrive over realtime, not through `data`.
   const feed = createFeed(
     untrack(() => ({
-      articles: (data.articles as Article[]) ?? [],
-      trending: (data.trending as TrendingRef[]) ?? [],
-      lastUpdatedAt: (data.lastUpdatedAt as string | null) ?? null,
+      articles: [],
+      trending: [],
+      lastUpdatedAt: null,
     })),
     { isPaused: () => isPaused },
   )
@@ -112,9 +114,17 @@
     }
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
 
-    feed.start()
+    let cancelled = false
+    void loadFeed().then(result => {
+      if (cancelled) return
+      feed.initialize(result)
+      loadError = result.loadError
+      loading = false
+      feed.start()
+    }).catch(() => { if (!cancelled) { loadError = true; loading = false } })
 
     return () => {
+      cancelled = true
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       feed.stop()
     }
@@ -161,6 +171,10 @@
     </div>
   {/if}
 
+  <section class="max-w-3xl mx-auto px-4 py-4 text-sm text-gray-400" aria-label="About this feed">
+    <p>Follow global conflict reporting from multiple perspectives. Automated labels and story grouping do not independently verify a claim.</p>
+    <a class="inline-flex min-h-11 items-center text-blue-400 underline" href="{base}/about">How WW3Watch works</a>
+  </section>
   <!-- Trending Now -->
   <TopStories stories={feed.topStories} onselect={reader.openArticle} />
 
@@ -196,7 +210,9 @@
     {/if}
     {#if filters.clustered.length === 0}
       <div class="py-20 text-center text-gray-500 text-sm">
-        {#if data.loadError && feed.articles.length === 0}
+        {#if loading}
+          Loading the latest reporting…
+        {:else if loadError && feed.articles.length === 0}
           <p class="mb-3">Couldn't load the feed.</p>
           <button
             onclick={() => location.reload()}

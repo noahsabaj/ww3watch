@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { headlineText } from '$lib/utils'
   import type { Cluster } from '$lib/cluster'
   import { wireDuplicateIds, storyTimeline } from '$lib/cluster'
   import type { Article } from '$lib/types'
@@ -193,7 +194,7 @@
       }
     }}
   >
-    {titleText}
+    {headlineText(titleText)}
   </a>
 
   <!-- Summary -->
@@ -273,7 +274,7 @@
                 }
               }}
             >
-              {article.title}
+              {headlineText(article.title)}
             </a>
           </div>
         {/snippet}

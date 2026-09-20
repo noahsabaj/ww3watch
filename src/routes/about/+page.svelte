@@ -89,9 +89,7 @@
   })
 </script>
 
-<svelte:head>
-  <title>About — WW3Watch</title>
-</svelte:head>
+
 
 <div class="min-h-screen bg-[#0a0a0b]">
   <header class="sticky top-0 z-30 border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]"
@@ -105,10 +103,11 @@
 
   <main class="max-w-3xl mx-auto px-4 py-8 space-y-10 pb-24">
     <section>
+      {#if sources.length}<p class="text-sm text-gray-400 mb-3">{sources.filter(s => s.enabled).length} active sources · {sources.length} catalogued</p>{/if}
       <h1 class="text-2xl font-bold text-white mb-3">What this is</h1>
       <p class="text-gray-300 leading-relaxed mb-3">
         WW3Watch is a real-time aggregator of conflict and geopolitical news from
-        {sources.length || '200+'} sources across every major region and perspective — US and European
+        a catalog of {sources.length || '200+'} sources across every major region and perspective — US and European
         wires next to Iranian state media, Israeli papers next to Arab ones, Russian outlets next
         to OSINT researchers. It does not tell you what is true. It shows you who is saying what,
         side by side, as they say it.
@@ -260,7 +259,7 @@
            class="text-blue-400 hover:text-blue-300 underline">open source under AGPL-3.0</a>:
         anyone running a modified version as a service must publish their changes, so every
         derivative of this site stays as auditable as this one. Reader content is cached to survive
-        link rot; no accounts, no tracking, no analytics.
+        link rot. No visitor accounts or advertising analytics. Abuse-prevention records protect the service; see our <a href="{base}/privacy" class="text-blue-400 underline">privacy details</a>.
       </p>
     </section>
   </main>

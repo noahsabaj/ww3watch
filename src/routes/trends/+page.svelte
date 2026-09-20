@@ -35,10 +35,7 @@
   const dayLabel = (iso: string) => new Date(iso + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })
 </script>
 
-<svelte:head>
-  <title>Trends — WW3Watch</title>
-  <meta name="description" content="Stories per day involving each party, and how many were judged major events, over the last 30 days." />
-</svelte:head>
+
 
 <div class="min-h-screen bg-[#0a0a0b] text-gray-300">
   <main class="max-w-5xl mx-auto px-4 py-8">

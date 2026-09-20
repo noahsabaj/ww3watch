@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { headlineText } from '$lib/utils'
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
   import { storyTimeline } from '$lib/cluster'
@@ -349,9 +350,9 @@
     style="padding-top: env(safe-area-inset-top, 0px);"
   >
     <!-- Top bar -->
-    <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
+    <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
       <RegionBadge region={article.source_region} />
-      <span class="flex items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0">
+      <span class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0 basis-full order-first">
         {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{langTag(article.source_lang)}</span>{/if}
         <span class="truncate">{article.source_name}</span>
         <AffiliationBadge affiliation={article.source_affiliation} />
@@ -369,7 +370,7 @@
       <button
         onclick={share}
         aria-label={copied ? 'Link copied' : 'Share article'}
-        class="md:hidden shrink-0 ml-1 transition-colors {copied ? 'text-green-400' : 'text-gray-500 hover:text-gray-200'}"
+        class="min-h-11 min-w-11 md:hidden shrink-0 ml-1 transition-colors {copied ? 'text-green-400' : 'text-gray-500 hover:text-gray-200'}"
       >
         {#if copied}
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -383,10 +384,11 @@
           </svg>
         {/if}
       </button>
+      <a href="{base}/feedback?article={article.id}" class="min-h-11 inline-flex items-center text-xs text-blue-400">Report</a>
       <button
         bind:this={closeBtn}
         onclick={onclose}
-        class="text-gray-500 hover:text-gray-200 transition-colors text-lg leading-none shrink-0 ml-1"
+        class="min-h-11 min-w-11 text-gray-400 hover:text-gray-200 transition-colors text-lg leading-none shrink-0 ml-1"
         aria-label="Close reader"
       >
         ✕
@@ -433,8 +435,7 @@
         {#if showTranslated && translation.status === 'done' && translation.untranslated > 0}
           <p class="text-xs text-amber-500/80 mb-3">
             {translation.untranslated}
-            {translation.untranslated === 1 ? 'paragraph is' : 'paragraphs are'}
-            too far into the article to translate and {translation.untranslated === 1 ? 'remains' : 'remain'} in the original language.
+            {translation.untranslated === 1 ? 'text segment remains' : 'text segments remain'} in the original language. Names and short labels may stay unchanged; long articles may exceed the translation limit.
           </p>
         {/if}
         <div class="prose-reader" dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'}>
