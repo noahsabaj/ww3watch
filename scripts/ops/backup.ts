@@ -12,7 +12,7 @@ if (mode==='encrypt') {
   if (!process.env.BACKUP_PUBLIC_KEY) throw new Error('BACKUP_PUBLIC_KEY missing')
   const files = Object.fromEntries(names.map(n=>[n,readFileSync(join(directory,n),'utf8')]))
   if (files['data.sql'].length<1000 || !files['schema.sql'].includes('CREATE TABLE')) throw new Error('Refusing empty/incomplete backup')
-  const manifest = {version:1,createdAt:new Date().toISOString(),commit:process.env.GITHUB_SHA,hashes:Object.fromEntries(names.map(n=>[n,hash(files[n])])),excluded:['article_content','article_translations','article_embeddings','classified_rejects','verdicts','pipeline_runs','rate_limits','trending_log']}
+  const manifest = {version:1,createdAt:new Date().toISOString(),commit:process.env.GITHUB_SHA,hashes:Object.fromEntries(names.map(n=>[n,hash(files[n])])),excluded:['article_content','article_translations','article_embeddings','classified_rejects','verdicts','rate_limits']}
   const encrypted = encryptBackup(Buffer.from(JSON.stringify({manifest,files})),process.env.BACKUP_PUBLIC_KEY)
   const pages = JSON.parse(execFileSync('gh',['api','--paginate','--slurp',`repos/${process.env.GITHUB_REPOSITORY}/actions/artifacts?per_page=100`],{encoding:'utf8'}))
   const stored = pages.flatMap((p:{artifacts:Array<{expired:boolean;size_in_bytes:number}>})=>p.artifacts).filter((a:{expired:boolean})=>!a.expired).reduce((sum:number,a:{size_in_bytes:number})=>sum+a.size_in_bytes,0)

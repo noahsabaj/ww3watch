@@ -44,6 +44,11 @@ jobs:
         run: |
           set -euo pipefail
           docker exec supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -c 'create extension if not exists vector with schema extensions; create extension if not exists pg_cron;'
+          # pg_dump assumes standard Postgres defaults. Supabase's fresh local
+          # postgres role grants extra access; remove that inheritance before
+          # restoring the explicit production GRANT statements from the dump.
+          docker exec supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -c 'alter default privileges for role postgres revoke all on tables from public, anon, authenticated, service_role; alter default privileges for role postgres revoke all on sequences from public, anon, authenticated, service_role; alter default privileges for role postgres revoke all on functions from public, anon, authenticated, service_role;'
+          docker exec supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -c 'alter default privileges for role postgres in schema public revoke all on tables from public, anon, authenticated, service_role; alter default privileges for role postgres in schema public revoke all on sequences from public, anon, authenticated, service_role; alter default privileges for role postgres in schema public revoke all on functions from public, anon, authenticated, service_role;'
           # Keep SQL diagnostics private: COPY failures can otherwise echo report data.
           for file in schema data; do
             if ! docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < "$RUNNER_TEMP/recovery/restored/$file.sql" > "$RUNNER_TEMP/restore-$file.log" 2>&1; then
@@ -51,6 +56,7 @@ jobs:
               exit 1
             fi
           done
+          docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < scripts/ops/restore-services.sql
           docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < scripts/ops/verify-restore.sql > "$RUNNER_TEMP/restore-verification.txt"
       - run: npm run build
         env:

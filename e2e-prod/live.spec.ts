@@ -24,18 +24,42 @@ test('the deployed site serves a live feed', async ({ page }) => {
 test('ingestion is recent enough that the readout is not stale', async ({ page }) => {
   await page.goto('./')
   await expect(page.locator('header')).toBeVisible({ timeout: 30_000 })
-  // The header goes amber past 3h and red past 24h. Catch the red tier: hours
-  // in double digits, or any "d ago", means several missed runs at minimum.
-  await expect(page.locator('header')).toContainText(/updated (just now|[1-5]?\d+m ago)/)
+  // The operational threshold is one hour, including the browser readout.
+  await expect(page.locator('header')).toContainText(/updated (just now|[1-5]?\dm ago)/)
 })
 
 test('the reader still opens', async ({ page }) => {
+  test.setTimeout(180_000)
   await page.goto('./')
   await expect(page.locator('article').first()).toBeVisible({ timeout: 30_000 })
-  await page.locator('article a[href]').first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  await expect(page.locator('.prose-reader')).toBeVisible({timeout:30_000})
-  expect((await page.locator('.prose-reader').innerText()).length).toBeGreaterThan(200)
+  // A publisher can block extraction while our reader is healthy. Exercise a
+  // small sample of independent hosts; an explicit original-link fallback is
+  // acceptable per article, but the canary still requires real rendered text.
+  const links = page.locator('article a[href]')
+  const candidates = await links.evaluateAll((nodes) => {
+    const hosts = new Set<string>()
+    return nodes.map((n) => (n as HTMLAnchorElement).href).filter((href) => {
+      const host = new URL(href).hostname
+      if (hosts.has(host)) return false
+      hosts.add(host)
+      return true
+    }).slice(0, 8)
+  })
+  let rendered = false
+  for (const href of candidates) {
+    await page.locator(`article a[href=${JSON.stringify(href)}]`).first().click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('link', { name: 'Read original ↗', exact: true })).toHaveAttribute('href', href)
+    const content = dialog.locator('.prose-reader')
+    const fallback = dialog.getByRole('link', { name: 'Full article unavailable — read original ↗', exact: true })
+    await expect(content.or(fallback)).toBeVisible({ timeout: 15_000 })
+    if (await content.isVisible() && (await content.innerText()).length > 200) rendered = true
+    else await expect(fallback).toHaveAttribute('href', href)
+    await dialog.getByRole('button', { name: 'Close reader', exact: true }).click()
+    if (rendered) break
+  }
+  expect(rendered, 'At least one sampled publisher must render full reader content').toBe(true)
 })
 
 test('Trending Now is on the page with at least one pick', async ({ page }) => {

@@ -92,7 +92,7 @@ export async function callJev(state: unknown, questions: Record<string, unknown>
   if (!apiKey) throw new Error('TYPESAFE_API_KEY is not set')
   for (let attempt = 0; ; attempt++) {
     const request = JSON.stringify({ state, model: JEV_MODEL, questions })
-    const settle = await reserveClassification(JEV_MODEL, request)
+    const settle = await reserveClassification(JEV_MODEL, request, deadlineMs)
     let res: Response
     let data: { answers?: JevResponse['answers']; usage?: { input_tokens?: number } } | null
     try {

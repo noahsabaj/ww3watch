@@ -151,16 +151,23 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     }, 2500)
   }
 
-  // Realtime article/trending events mean a pipeline run just wrote — refresh
-  // the freshness anchor once the burst settles. Quiet runs that change
-  // nothing leave the readout conservatively stale, which is fine.
+  // Article writes can arrive before the run is recorded as successful. Poll
+  // the tiny timestamp while visible too, so quiet runs and that race cannot
+  // leave an open tab falsely reporting an outage.
   let statusRefreshTimer: ReturnType<typeof setTimeout> | undefined
-  function schedulePipelineStatusRefresh() {
-    clearTimeout(statusRefreshTimer)
-    statusRefreshTimer = setTimeout(async () => {
+  let statusPollTimer: ReturnType<typeof setInterval> | undefined
+  async function refreshPipelineStatus() {
+    try {
       const { data: ts, error } = await supabase.rpc('pipeline_status')
       if (!error && ts) lastUpdatedAt = ts as string
-    }, 5000)
+    } catch { /* preserve the last verified completion time */ }
+  }
+  function refreshVisibleStatus() {
+    if (document.visibilityState === 'visible') void refreshPipelineStatus()
+  }
+  function schedulePipelineStatusRefresh() {
+    clearTimeout(statusRefreshTimer)
+    statusRefreshTimer = setTimeout(refreshPipelineStatus, 5000)
   }
 
   // Realtime burst batching: the pipeline writes a burst of inserts +
@@ -289,6 +296,8 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
 
   /** Subscribe to realtime. Browser-only — call from onMount. */
   function start() {
+    statusPollTimer = setInterval(refreshVisibleStatus, 5 * 60_000)
+    document.addEventListener('visibilitychange', refreshVisibleStatus)
     channel = supabase
       .channel('articles-feed')
       .on(
@@ -341,6 +350,8 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
 
   /** Tear down timers and realtime channels — the onMount cleanup. */
   function stop() {
+    clearInterval(statusPollTimer)
+    document.removeEventListener('visibilitychange', refreshVisibleStatus)
     clearTimeout(trendingRefreshTimer)
     clearTimeout(statusRefreshTimer)
     clearTimeout(realtimeFlushTimer)

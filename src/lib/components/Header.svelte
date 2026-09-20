@@ -101,7 +101,7 @@
         {#if lastUpdatedAt}
           <span
             class={staleness === 'red' ? 'text-red-400' : staleness === 'amber' ? 'text-amber-500' : 'text-gray-600'}
-            title="Ingestion last completed {new Date(lastUpdatedAt).toLocaleString()} — runs about every 15 min{staleness === 'red' ? '. The pipeline appears to be down.' : staleness === 'amber' ? '. Several runs appear to have been missed.' : ''}"
+            title="Ingestion last completed {new Date(lastUpdatedAt).toLocaleString()} — runs about every 15 min{staleness === 'red' || staleness === 'amber' ? '. New reporting is delayed; existing stories remain available.' : ''}"
           >
             · updated {timeAgo(lastUpdatedAt, clock.now)}
           </span>
@@ -180,4 +180,7 @@
     </div>
   </div>
   <p class="sm:hidden max-w-3xl mx-auto text-xs text-gray-400 mt-1">{storyCount} stories{#if lastUpdatedAt} · updated {timeAgo(lastUpdatedAt, clock.now)}{/if}</p>
+  {#if staleness === 'amber' || staleness === 'red'}
+    <p role="status" class="max-w-3xl mx-auto text-xs text-amber-400 mt-2">New reporting is delayed. Existing stories and original article links remain available.</p>
+  {/if}
 </header>

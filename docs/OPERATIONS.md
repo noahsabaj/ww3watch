@@ -66,6 +66,12 @@ egress; the database snapshot cannot measure all infrastructure charges.
 Review that dashboard monthly and after traffic spikes. Alerts at 80% of either
 allowance are deduplicated; the issue closes when checks recover.
 
+The September 20 dashboard snapshot for the September 3–October 3 billing cycle
+showed 0.242/0.5 GB database usage, 0.309/5 GB egress, 63 Edge Function calls,
+20,544 Realtime messages and 55 peak Realtime connections, with no overage
+charges. The timestamped snapshot is in `ops_events.infrastructure_usage` and
+the operations summary; it must not be mistaken for a live traffic meter.
+
 ## Private reports and retention
 
 Review `visitor_reports` through the Supabase connection in Codex. Only the
@@ -100,9 +106,11 @@ Keep a separate offline owner-controlled copy. Never commit it, print it in
 logs, or upload it with an archive. Loss of the key means loss of recovery.
 
 Reader and translation caches, embeddings, rejected-item/verdict caches and
-operational logs are excluded. Reader content rebuilds on demand; translations
-rebuild under quotas and budgets. Re-run the embedding/backfill pipeline before
-restoring normal clustering throughput. Restore retention schedules and Realtime
+abuse buckets are excluded. Recent pipeline runs and trending history are kept
+so freshness and historical highlights survive. Reader content rebuilds on demand; translations
+rebuild under quotas and budgets. Normal ingestion regenerates embeddings for
+recent unassigned articles; existing stories remain readable without cached
+vectors. Similarity matching fills back in as new stories arrive. Restore retention schedules and Realtime
 publication membership from the migration runbook before a production cutover.
 
 To prove restoration, temporarily provide `BACKUP_RECOVERY_KEY` as an Actions
@@ -114,11 +122,24 @@ uploaded as proof. Remove the temporary recovery secret after the drill. The
 target is a 24-hour recovery point and basic service within two hours; a passing
 crypto unit test alone does not establish either target.
 
+Verified September 20, 2026: encrypted backup run `35521790915` restored in
+isolated run `35522026497`. The drill loaded 22,804 articles, 223 sources and
+8,485 stories, validated foreign keys and private-report access, and rendered
+the restored feed in **92 seconds**. The archive was four minutes old. The
+temporary GitHub recovery-key secret was removed after this successful drill.
+
 For a real outage, select the newest successful encrypted archive, restore into
 an isolated replacement first, run retention, recreate scheduled jobs and
-Realtime membership from migrations, and verify the feed before changing live
+Realtime membership using `scripts/ops/restore-services.sql`, and verify the feed before changing live
 credentials. Never restore over the only production copy. A backup older than
 30 hours or a failed backup job raises an issue; a successful job reports recovery.
+
+Before loading a schema into a new Supabase database, clear that target's
+`postgres` default privileges for tables, sequences and functions in `public`
+for PUBLIC/anon/authenticated/service_role, as the restore workflow does. The
+dump then applies the explicit production grants. Otherwise the target's broad
+defaults can silently add grants absent from the source. The restore test checks
+this boundary and must pass before a production cutover.
 
 ## Acceptance still requiring owner participation
 
