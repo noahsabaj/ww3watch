@@ -11,7 +11,7 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: ww3watch-pipeline # share the pipeline group: never dump while a run is rewriting health
+  group: ww3watch-source-backup # independent from ingestion
   cancel-in-progress: false
 
 permissions:

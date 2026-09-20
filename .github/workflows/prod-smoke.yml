@@ -16,6 +16,9 @@ on:
   schedule:
     - cron: '40 7 * * *' # daily, offset from the pipeline's :00/:15/:30/:45 slots
   workflow_dispatch: {}
+  workflow_run:
+    workflows: [Deploy to GitHub Pages]
+    types: [completed]
 
 concurrency:
   group: ww3watch-prod-smoke
@@ -27,6 +30,7 @@ permissions:
 
 jobs:
   smoke:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -42,6 +46,8 @@ jobs:
           key: playwright-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --config playwright.prod.config.ts
+        env:
+          PROD_URL: ${{ vars.PAGES_BASE_PATH && 'https://noahsabaj.github.io/ww3watch/' || 'https://ww3watch.org/' }}
 
       # DELIBERATELY inline bash, not scripts/ci/issues.ts: failure() is also
       # true when checkout, setup-node or `npm ci` broke, and a tsx script needs

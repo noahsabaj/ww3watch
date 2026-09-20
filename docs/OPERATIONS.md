@@ -18,3 +18,105 @@ recovery build and setting. A successful DNS lookup alone is not acceptance.
 
 GitHub provisions the certificate only while the custom domain is attached;
 allow a supervised cutover window and retain the prior successful deployment.
+
+Verified 2026-09-20: apex HTTPS, HTTP upgrade, www and the old GitHub address all
+return the new site; article query parameters survive redirects. GitHub's
+certificate expires 2026-12-19 and HTTPS enforcement is enabled. Search Console
+domain ownership is verified; the submitted sitemap succeeded with five pages.
+UptimeRobot monitor 804040223 checks the apex every five minutes and emails the
+owner. Repository checks cover certificate expiry because that UptimeRobot
+feature requires a paid plan.
+
+## Spending and stale ingestion
+
+The planning target is $20/month excluding the domain: $15 classification, $3
+translation and $2 unallocated reserve. This is not a promise covering unknown
+provider charges, database egress, taxes or other projects on shared accounts.
+Keep GitHub Pages and Supabase on their current free plans.
+
+`ai_budgets` contains verified model names and per-million-token rates;
+`ai_months` contains opening usage plus settled and uncertain reservations.
+Never initialize unknown usage to zero. Verify the provider dashboard first,
+then update these private tables using the service role. Unverified configuration
+blocks provider work. Check new pricing when changing models. At a new UTC month,
+the ledger opens automatically only after an earlier verified baseline exists.
+
+On September 20 TypeSafe billing showed $3.3322 since September 16 at $0.042 per
+million input tokens, with free output. The initial September classification
+ledger reserves $4, including a margin for delayed billing and unrelated account
+usage. The provider had $1.66 of credit remaining and auto-recharge was off;
+the application allowance does not replenish provider credit. Groq's Free plan
+showed $0.89 of projected September usage for `openai/gpt-oss-120b`, with no
+billable charges. Translation conservatively starts at $1 of equivalent cost,
+using the verified on-demand rates of $0.15 input/$0.60 output per million tokens.
+The Free plan is unchanged; accounting uses equivalent cost to retain a useful
+safety ceiling. Rates: https://console.groq.com/docs/models.
+
+Every attempt reserves spend before calling the provider. Unknown billing
+outcomes keep the reservation. Never refund an uncertain attempt without provider
+evidence. Quota/database failures deny new provider work. Cached translations and
+original reporting remain readable. When classification is denied, ingestion
+records failure and leaves pending items deferred. Never mark unreviewed stories
+accepted. Investigate the ingestion workflow after 60 minutes without success.
+
+The Operations workflow runs every 15 minutes and uploads a seven-day summary of
+database health, provider accounting, ingestion, backup age and report counts.
+The Supabase usage dashboard remains authoritative for backend traffic and
+egress; the database snapshot cannot measure all infrastructure charges.
+Review that dashboard monthly and after traffic spikes. Alerts at 80% of either
+allowance are deduplicated; the issue closes when checks recover.
+
+## Private reports and retention
+
+Review `visitor_reports` through the Supabase connection in Codex. Only the
+maintainer/service role can read or update reports; use states `new`, `reviewed`,
+and `closed`. Do not copy messages, email addresses or article references into
+public GitHub issues. Notification issues contain aggregate counts only.
+
+Abuse identifiers are daily keyed hashes and expire after 48 hours. Reports and
+optional contact details expire after 90 days. Hourly cleanup can add up to one
+hour. Encrypted archives can retain an expired report for seven additional days.
+After restoration, run private retention before opening production access.
+
+## Backups and restoration
+
+The encrypted database workflow has its own concurrency group and runs daily
+at 04:43 UTC. It backs up the public schema and persistent application data,
+including reports, configuration and budget accounting. Archives use AES-256-GCM
+with RSA-OAEP wrapped keys. Only the public key is supplied to backup jobs.
+GitHub retains encrypted artifacts seven days. The job refuses an upload if
+repository artifact storage plus the new archive exceeds 400 MiB; investigate
+capacity rather than deleting the last good recovery copy. Account-wide storage
+is a separate billing concern.
+
+The owner recovery key is outside this repository in
+`C:\Users\noahs\.ww3watch-recovery\private.pem`, with owner-only folder access.
+Keep a separate offline owner-controlled copy. Never commit it, print it in
+logs, or upload it with an archive. Loss of the key means loss of recovery.
+
+Reader and translation caches, embeddings, rejected-item/verdict caches and
+operational logs are excluded. Reader content rebuilds on demand; translations
+rebuild under quotas and budgets. Re-run the embedding/backfill pipeline before
+restoring normal clustering throughput. Restore retention schedules and Realtime
+publication membership from the migration runbook before a production cutover.
+
+To prove restoration, temporarily provide `BACKUP_RECOVERY_KEY` as an Actions
+secret and dispatch `Isolated encrypted backup restore` with a successful backup
+run ID. It downloads and decrypts only on an ephemeral runner, starts an empty
+local Supabase instance, restores schema/data, checks foreign keys and private
+access restrictions, and renders the restored feed. Only timestamps/counts are
+uploaded as proof. Remove the temporary recovery secret after the drill. The
+target is a 24-hour recovery point and basic service within two hours; a passing
+crypto unit test alone does not establish either target.
+
+For a real outage, select the newest successful encrypted archive, restore into
+an isolated replacement first, run retention, recreate scheduled jobs and
+Realtime membership from migrations, and verify the feed before changing live
+credentials. Never restore over the only production copy. A backup older than
+30 hours or a failed backup job raises an issue; a successful job reports recovery.
+
+## Acceptance still requiring owner participation
+
+Confirm filters, reader and navigation on a real phone. Browser viewport tests
+at 320, 390 and 430 pixels are useful but do not replace that check. Preserve an
+independent copy of the recovery key. No paid service upgrade is required.

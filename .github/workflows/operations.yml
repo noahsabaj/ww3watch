@@ -1,0 +1,44 @@
+name: Operations checks
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: ww3watch-operations
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: node --import tsx scripts/ci/operations.ts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          PAGES_BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operations-summary
+          path: operations-summary.json
+          retention-days: 7
+      # This fallback must work even when checkout/npm failed.
+      - name: Alert if the checks could not run
+        if: failure()
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          if [ ! -f operations-summary.json ]; then
+            gh label create operations-attention --color B60205 --force
+            existing=$(gh issue list --label operations-attention --state open --json number --jq '.[0].number')
+            if [ -z "$existing" ]; then
+              gh issue create --title "Operations checker failed to run" --label operations-attention --body "Inspect the failed Operations checks workflow; monitoring is unavailable."
+            fi
+          fi
