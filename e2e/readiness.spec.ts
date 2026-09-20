@@ -1,5 +1,20 @@
 import { test, expect } from '@playwright/test'
 
+test('an open feed refreshes completion time after a quiet pipeline run', async ({ page }) => {
+  await page.clock.install()
+  let completed = new Date(Date.now() - 2 * 3600_000).toISOString()
+  await page.route('**/rest/v1/rpc/pipeline_status', (route) => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify(completed),
+  }))
+  await page.goto('/')
+  await expect(page.locator('article').first()).toBeVisible()
+  await expect(page.getByText('New reporting is delayed. Existing stories and original article links remain available.')).toBeVisible()
+  completed = new Date(Date.now() + 5 * 60_000).toISOString()
+  await page.clock.fastForward(5 * 60_000)
+  await expect(page.getByText('New reporting is delayed. Existing stories and original article links remain available.')).toBeHidden()
+  await expect(page.locator('header')).toContainText('updated just now')
+})
+
 test('public pages have unique initial HTML metadata', async ({ request }) => {
   for (const path of ['/', '/about', '/trends', '/privacy', '/feedback']) {
     const response = await request.get(path)
