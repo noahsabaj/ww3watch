@@ -23,7 +23,12 @@
   <meta property="og:image" content="https://ww3watch.org/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="WW3Watch radar logo and global conflict news wordmark" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={meta[0]} />
+  <meta name="twitter:description" content={meta[1]} />
+  <meta name="twitter:image" content="https://ww3watch.org/og.png" />
+  <meta name="twitter:image:alt" content="WW3Watch radar logo and global conflict news wordmark" />
   <link rel="alternate" type="application/rss+xml" title="WW3Watch RSS" href="https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss" />
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"WW3Watch","url":"https://ww3watch.org/","description":"Global conflict reporting from multiple perspectives"}</script>
 </svelte:head>

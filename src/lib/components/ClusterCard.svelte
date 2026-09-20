@@ -12,6 +12,7 @@
     type HeadlineTranslation, type TranslateFailure,
   } from '$lib/translate'
   import { untrack } from 'svelte'
+  import ShareControls from '$lib/components/ShareControls.svelte'
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
@@ -54,7 +55,6 @@
     : shown ? 'Translated · show original'
     : 'Translate',
   )
-  const hasActions = $derived(!isSingle || canTranslate)
 
   // A headline the reader already translated this session comes back translated
   // when its card remounts (filtered away and back) or the reading language
@@ -199,12 +199,11 @@
 
   <!-- Summary -->
   {#if summaryText}
-    <p dir={shown ? translatedDir : 'auto'} class="text-sm text-gray-400 line-clamp-2 {hasActions ? 'mb-2' : ''}">{summaryText}</p>
+    <p dir={shown ? translatedDir : 'auto'} class="text-sm text-gray-400 line-clamp-2 mb-2">{summaryText}</p>
   {/if}
 
   <!-- Card actions: source-list toggle (multi-source stories) + opt-in translation -->
-  {#if hasActions}
-    <div class="flex items-center gap-3 mt-1 text-xs">
+  <div class="flex flex-wrap items-center gap-x-3 mt-1 text-xs">
       {#if !isSingle}
         <button
           onclick={() => expanded = !expanded}
@@ -223,8 +222,8 @@
           class="transition-colors {headline.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
         >{translateLabel}</button>
       {/if}
-    </div>
-  {/if}
+      <ShareControls article={rep} {cluster} />
+  </div>
 
   {#if !isSingle}
     {#if expanded}
