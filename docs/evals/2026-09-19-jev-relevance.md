@@ -49,3 +49,24 @@ Kushner at the Kremlin, a Hezbollah MP's statement, a US embassy security
 alert); two or three were misses (a history essay, a currency-market roundup).
 The regression baseline was re-recorded: 40 of 300 frozen titles changed side,
 all expected from the wording.
+
+**The head had to follow.** Its thresholds were calibrated against the labels of
+their day, so a wider question silently turned some of its confident rejects into
+misses — and the 3% audit slice is far too thin to notice (2 samples in 8 h).
+Measured directly instead: 500 of the ~1,000 articles the head auto-rejected in
+the 8 h after the merge, re-asked with the new question.
+
+| reject_below | in-scope articles lost | extra articles sent to Jev |
+|---|---|---|
+| 0.28 (trained) | 3.4% | — |
+| 0.25 | 2.4% | 7.6% |
+| **0.235** | **1.2%** | **12%** |
+| 0.15 | 0.2% | 42% |
+
+4.2% of that pool was in scope, ≈126 articles a day dropped before Jev saw them,
+against the head's 2% design floor. `HEAD_REJECT_BELOW` 0.235 is the knee: it
+recovers two thirds of the loss for ~$0.01/day. What it was losing was the
+recovered scope itself — Greenland security diplomacy, a South Ossetia election,
+occupied-region turnout figures. The next retrain calibrates against wide-scope
+labels and should make the override a no-op; it is a knob, not an edit to the
+trained artifact, so the retrain cannot silently undo it.

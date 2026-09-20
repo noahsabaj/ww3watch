@@ -14,6 +14,7 @@
 // what a journalist wrote (docs/CONVENTIONS.md).
 import { readFileSync } from 'node:fs'
 import { EMBEDDING_DIM, EMBEDDING_MODEL_TAG } from './embeddings'
+import { HEAD_ACCEPT_ABOVE, HEAD_REJECT_BELOW } from './config'
 
 export const HEAD_PATH = 'data/classifier-me5b.json'
 
@@ -53,12 +54,33 @@ export function loadHead(path = HEAD_PATH): ClassifierHead | null {
     console.error(`[prefilter] head at ${path} is not valid JSON — Jev-only classification:`, err)
     return null
   }
+  head = applyThresholdOverrides(head)
   const problems = validateHead(head)
   if (problems.length > 0) {
     console.error(`[prefilter] head at ${path} rejected (${problems.join('; ')}) — Jev-only classification`)
     return null
   }
   return head
+}
+
+// The weights are trained; where the confident tiers START is a policy choice
+// that the relevance QUESTION can invalidate without retraining anything (see
+// HEAD_REJECT_BELOW). Applied before validateHead so a bad override disables the
+// head rather than silently widening a tier.
+export function applyThresholdOverrides(
+  head: ClassifierHead,
+  rejectBelow = HEAD_REJECT_BELOW,
+  acceptAbove = HEAD_ACCEPT_ABOVE,
+): ClassifierHead {
+  const out = { ...head }
+  if (rejectBelow > 0) out.reject_below = rejectBelow
+  if (acceptAbove > 0) out.accept_above = acceptAbove
+  if (out.reject_below !== head.reject_below || out.accept_above !== head.accept_above) {
+    console.log(
+      `[prefilter] thresholds overridden: reject_below ${head.reject_below}→${out.reject_below}, accept_above ${head.accept_above}→${out.accept_above}`,
+    )
+  }
+  return out
 }
 
 export function validateHead(head: ClassifierHead): string[] {

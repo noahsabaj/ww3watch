@@ -60,6 +60,16 @@ export const JEV_POOL_CAP = num('JEV_POOL_CAP', 2000)
 // agreement is measured every run (stats.cls_head.audit_agreement) instead of
 // trusted from its training holdout.
 export const HEAD_AUDIT_RATE = num('HEAD_AUDIT_RATE', 0.03)
+// Overrides for the reject/accept thresholds trained into data/classifier-me5b.json.
+// The weights stay as trained; only where the confident tiers start moves. This
+// exists because the thresholds are calibrated against the LABELS OF THEIR DAY:
+// widening Jev's relevance question (#102) left the 2026-09-19 head auto-rejecting
+// 4.2% of what Jev now accepts — roughly 126 articles a day it never saw — against
+// a 2% design floor. Measured on 500 live head-rejects, 0.235 brings that to 1.2%
+// for ~12% more Jev calls (~$0.01/day). Set to 0 to use the trained value; the
+// next retrain recalibrates against wide-scope labels and should make this a no-op.
+export const HEAD_REJECT_BELOW = num('HEAD_REJECT_BELOW', 0.235)
+export const HEAD_ACCEPT_ABOVE = num('HEAD_ACCEPT_ABOVE', 0)
 // Consecutive failed fetches after which a source is switched off. With a run
 // every ~15 min this is roughly two days of solid failure — a moved feed URL or
 // a WAF that now blocks the runner and the proxy alike, not a bad afternoon.
@@ -110,7 +120,7 @@ export function configSnapshot(): Record<string, unknown> {
     JEV_MODEL,
     JEV_THRESHOLD, JEV_POOL_CAP, JEV_CONCURRENCY,
     PAIR_BAND, PAIR_YES, PAIR_NO, PAIR_CHUNK, STORY_MERGE,
-    HEAD_POOL_CAP, HEAD_AUDIT_RATE,
+    HEAD_POOL_CAP, HEAD_AUDIT_RATE, HEAD_REJECT_BELOW, HEAD_ACCEPT_ABOVE,
     PURGE_BELOW, PURGE_CAP_PER_RUN,
     SIGNALS_CAP, SIGNALS_LOOKBACK_HOURS,
     ASSIGN_CAP, ASSIGN_LOOKBACK_HOURS,
