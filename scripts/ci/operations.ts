@@ -7,11 +7,12 @@ import { checkSite } from '../ops/site-health'
 const failures: string[] = []
 failures.push(...await checkSite())
 const month = new Date().toISOString().slice(0,7)+'-01'
-const [pipeline,health,budgets,usage,reports,backup] = await Promise.all([
+const [pipeline,health,budgets,usage,reports,backup,infrastructure] = await Promise.all([
   db.rpc('pipeline_status'),db.rpc('ops_health'),db.from('ai_budgets').select('*'),
   db.from('ai_months').select('*').eq('month',month),
   db.from('visitor_reports').select('id',{head:true,count:'exact'}).eq('status','new'),
   db.from('ops_events').select('occurred_at').eq('name','backup_success').maybeSingle(),
+  db.from('ops_events').select('occurred_at,details').eq('name','infrastructure_usage').maybeSingle(),
 ])
 for (const [name,result] of Object.entries({pipeline,health,budgets,usage,reports,backup})) if(result.error) failures.push(`${name}: check unavailable`)
 if (!pipeline.data || Date.now()-Date.parse(pipeline.data)>3600_000) failures.push('Ingestion has not succeeded within 60 minutes')
@@ -26,7 +27,7 @@ try {
   const response = await fetch(url,{signal:AbortSignal.timeout(15000)})
   if (!response.ok || !(await response.text()).includes('WW3Watch')) failures.push('Public website response invalid')
 } catch { failures.push('Public website unavailable (DNS, TLS or HTTP)') }
-const summary = {checkedAt:new Date().toISOString(),site:url,lastPipeline:pipeline.data,lastBackup:backup.data?.occurred_at,health:health.data,budgets:budgets.data,usage:usage.data,newReports:reports.count,failures,backendTraffic:'Inspect Supabase usage dashboard; not measured by this database snapshot'}
+const summary = {checkedAt:new Date().toISOString(),site:url,lastPipeline:pipeline.data,lastBackup:backup.data?.occurred_at,health:health.data,budgets:budgets.data,usage:usage.data,newReports:reports.count,failures,backendTraffic:{lastVerified:infrastructure.data,refresh:'Manual dashboard verification; not a live infrastructure meter. Refresh monthly and after traffic spikes.'}}
 writeFileSync('operations-summary.json',JSON.stringify(summary,null,2))
 const label = {name:'operations-attention',color:'B60205',description:'Availability, backup or spending requires attention'}
 if (failures.length) {

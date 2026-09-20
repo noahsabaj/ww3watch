@@ -24,9 +24,8 @@ test('the deployed site serves a live feed', async ({ page }) => {
 test('ingestion is recent enough that the readout is not stale', async ({ page }) => {
   await page.goto('./')
   await expect(page.locator('header')).toBeVisible({ timeout: 30_000 })
-  // The header goes amber past 3h and red past 24h. Catch the red tier: hours
-  // in double digits, or any "d ago", means several missed runs at minimum.
-  await expect(page.locator('header')).toContainText(/updated (just now|[1-5]?\d+m ago)/)
+  // The operational threshold is one hour, including the browser readout.
+  await expect(page.locator('header')).toContainText(/updated (just now|[1-5]?\dm ago)/)
 })
 
 test('the reader still opens', async ({ page }) => {
