@@ -1,0 +1,51 @@
+name: Reviewed source curation
+on:
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: 'Committed plan under data/source-audit/rosters/'
+        type: string
+        required: true
+      mode:
+        description: 'Preview, apply, or restore recorded before-values'
+        type: choice
+        options: [dry-run, apply, rollback]
+        default: dry-run
+permissions:
+  contents: read
+concurrency:
+  group: ww3watch-pipeline
+  cancel-in-progress: false
+jobs:
+  curate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx scripts/source-audit/apply-roster.ts
+        env:
+          ROSTER_PLAN: ${{ inputs.plan }}
+          ROSTER_MODE: ${{ inputs.mode }}
+          CURATION_SERIALIZED: 'true'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      - name: Refresh source backup even after a partial failure
+        if: always()
+        run: node --import tsx scripts/backup-sources.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-curation-journal-and-backup
+          path: |
+            .tmp/source-audit/curation-journal.json
+            data/sources-backup.json
+          retention-days: 30

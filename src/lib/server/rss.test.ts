@@ -93,6 +93,17 @@ describe('fetchFeed', () => {
     delete process.env.FEED_PROXY_SECRET
   })
 
+  it.each(['News', 'News & analysis'])('resolves relative publisher links and rejects executable URLs with title %s', async (title) => {
+    // The unescaped ampersand exercises the tolerant parser as well as RSS2.
+    const xml = `<rss version="2.0"><channel><title>T</title>
+      <item><guid>stable-relative</guid><title>${title}</title><link>/article/123</link></item>
+      <item><guid>bad</guid><title>Bad</title><link>javascript:alert(1)</link></item>
+      </channel></rss>`
+    vi.spyOn(globalThis,'fetch').mockResolvedValueOnce(new Response(xml,{ headers: { 'Content-Type': 'application/rss+xml' } }))
+    const result = await fetchFeed(mockFeed)
+    expect(result.articles.map(a => [a.guid,a.url])).toEqual([['stable-relative','https://example.com/article/123']])
+  })
+
   it('classifies a network error (no articles, kind=network)', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network failure'))
     const result = await fetchFeed(mockFeed)

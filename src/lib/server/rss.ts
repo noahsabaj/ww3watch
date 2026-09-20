@@ -153,6 +153,13 @@ async function withProxySlot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+function articleUrl(link: string | undefined, feedUrl: string): string {
+  try {
+    const url = new URL(link || feedUrl, feedUrl)
+    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : ''
+  } catch { return '' }
+}
+
 function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInsert[]; clamped: number }> {
   const now = Date.now()
   return parser.parseString(xml).then((parsed) => {
@@ -164,7 +171,7 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
         return {
           guid: buildGuid(item),
           title: item.title?.trim() ?? '(no title)',
-          url: item.link ?? feed.url,
+          url: articleUrl(item.link, feed.url),
           summary,
           published_at: parseDate(item.pubDate, now),
           source_name: feed.name,
@@ -176,7 +183,7 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
           body_hash: bodyHash(summary),
         }
       })
-      .filter((a) => a.guid !== '')
+      .filter((a) => a.guid !== '' && a.url !== '')
     return { articles, clamped }
   })
 }
@@ -228,7 +235,7 @@ function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInser
       return {
         guid: buildGuid({ guid: textOf(item.guid) ?? textOf(item.id), link }),
         title: (textOf(item.title) ?? '(no title)').trim(),
-        url: link ?? feed.url,
+        url: articleUrl(link, feed.url),
         summary,
         published_at: parseDate(pubRaw, now),
         source_name: feed.name,
@@ -240,7 +247,7 @@ function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInser
         body_hash: bodyHash(summary),
       }
     })
-    .filter((a) => a.guid !== '')
+    .filter((a) => a.guid !== '' && a.url !== '')
   return { articles, clamped }
 }
 

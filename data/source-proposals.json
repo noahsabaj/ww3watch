@@ -1,0 +1,20 @@
+[
+  {
+    "id": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
+    "name": "Jahan News",
+    "region": "Iranian",
+    "lang": "fa",
+    "affiliation": null,
+    "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
+    "evidenceUrl": "https://www.jahannews.com/"
+  },
+  {
+    "id": "4a24ae26-16b2-4316-9267-5692b49ad791",
+    "name": "TRT World",
+    "region": "Turkish",
+    "lang": "en",
+    "affiliation": "state",
+    "url": "https://www.trtworld.com/feed/rss.xml",
+    "evidenceUrl": "https://www.trtworld.com/"
+  }
+]

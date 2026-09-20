@@ -19,12 +19,13 @@ const supabase = createClient(url, key, { auth: { persistSession: false } })
 async function main() {
   const { data, error } = await supabase
     .from('sources')
-    .select('url, name, region, lang, enabled, affiliation')
+    .select('id, url, name, region, lang, enabled, affiliation')
     .order('name')
   if (error) throw new Error(`sources query failed: ${JSON.stringify(error)}`)
   if (!data?.length) throw new Error('sources roster empty — refusing to write an empty backup')
 
   const rows = data.map((s) => ({
+    id: s.id,
     url: s.url,
     name: s.name,
     region: s.region,
