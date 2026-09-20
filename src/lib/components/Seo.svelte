@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/state'
-  import { base } from '$app/paths'
   const pages: Record<string, [string, string]> = {
     '/': ['WW3Watch — Global conflict news from multiple perspectives', 'Follow global conflict and geopolitical reporting, compare sources, and read original articles. Automated labels help organize coverage; they do not verify claims.'],
     '/about': ['About & methodology — WW3Watch', 'How WW3Watch selects sources, groups reporting and labels stories, with the active source roster and source health.'],
@@ -8,7 +7,7 @@
     '/privacy': ['Privacy — WW3Watch', 'How WW3Watch handles local preferences, security records, article images, translation requests and private feedback.'],
     '/feedback': ['Feedback & corrections — WW3Watch', 'Privately report a problem, request a correction or suggest a news source. No account required.'],
   }
-  const path = $derived((page.url.pathname.slice(base.length).replace(/\/$/, '') || '/'))
+  const path = $derived(page.route.id ?? '/')
   const meta = $derived(pages[path] ?? pages['/'])
   const canonical = $derived(`https://ww3watch.org${path === '/' ? '/' : path}`)
 </script>
