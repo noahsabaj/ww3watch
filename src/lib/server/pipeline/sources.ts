@@ -2,7 +2,6 @@
 import { appendFileSync } from 'node:fs'
 import { FEED_ERROR_KINDS, type FeedFetchResult, type FeedErrorKind } from '../rss'
 import type { Feed } from '../../types'
-import type { TablesInsert } from '../../database.types'
 import { supabaseAdmin } from '../supabase'
 import { AUTO_DISABLE_AFTER, UPSERT_BATCH } from '../config'
 
@@ -11,6 +10,7 @@ export type SourceRow = Feed & {
   id: string
   enabled: boolean
   consecutive_failures: number
+  updated_at: string
 }
 
 // The roster lives in the DB (sources table). A failed/empty roster query must
@@ -29,59 +29,29 @@ export async function loadSources(): Promise<SourceRow[]> {
   return data as SourceRow[]
 }
 
-// Write per-source health back after the fetch pass. Two homogeneous upserts
-// (PostgREST requires uniform payload keys): successes reset the failure
-// counter; failures increment it and record the kind/detail. A source crossing
-// AUTO_DISABLE_AFTER consecutive failures is switched off here; its name is
-// returned so the run can report it. Best-effort — health bookkeeping must
-// never fail the run.
+// Optimistic snapshot guards prevent stale fetch results from undoing curation.
+// Only the database decides whether a source crossed the disable threshold.
 export async function updateSourceHealth(results: FeedFetchResult[]): Promise<string[]> {
-  const now = new Date().toISOString()
-  const base = (s: SourceRow) => ({
-    id: s.id,
-    url: s.url,
-    name: s.name,
-    region: s.region,
-    lang: s.lang,
-    enabled: s.enabled,
-    updated_at: now,
-  })
-  const ok = results
-    .filter((r) => !r.error)
-    .map((r) => ({
-      ...base(r.feed as SourceRow),
-      last_ok_at: now,
-      last_via: r.via,
-      consecutive_failures: 0,
-      last_error_kind: null,
-      last_error: null,
-    }))
   const disabled: string[] = []
-  const failed = results
-    .filter((r) => r.error)
-    .map((r) => {
-      const feed = r.feed as SourceRow
-      const consecutive = (feed.consecutive_failures ?? 0) + 1
-      const stillEnabled = consecutive < AUTO_DISABLE_AFTER
-      if (!stillEnabled) disabled.push(`${feed.name} (${r.error!.kind}: ${r.error!.detail.slice(0, 80)})`)
-      return {
-        ...base(feed),
-        enabled: stillEnabled,
-        consecutive_failures: consecutive,
-        last_error_kind: r.error!.kind,
-        // Feed error details can embed binary/HTML response snippets — Postgres
-        // text rejects NUL (and friends); one bad row poisons the whole batch.
-        last_error: r.error!.detail.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').slice(0, 300),
-      }
+  const rows = results.map(r => ({
+    id: (r.feed as SourceRow).id,
+    url: r.feed.url,
+    observed_updated_at: (r.feed as SourceRow).updated_at,
+    ok: !r.error,
+    via: r.via,
+    error_kind: r.error?.kind ?? null,
+    error_detail: r.error?.detail.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').slice(0, 300) ?? null,
+  }))
+  for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
+    const { data, error } = await supabaseAdmin.rpc('record_source_health', {
+      p_results: rows.slice(i, i + UPSERT_BATCH), p_disable_after: AUTO_DISABLE_AFTER,
     })
-  const batches: TablesInsert<'sources'>[][] = [ok, failed]
-  for (const rows of batches) {
-    for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
-      const { error } = await supabaseAdmin
-        .from('sources')
-        .upsert(rows.slice(i, i + UPSERT_BATCH), { onConflict: 'id' })
-      if (error) console.error('[pipeline] source health write failed:', error)
+    if (error) {
+      // Never retry using an unguarded table upsert.
+      console.error('[pipeline] source health write failed:', error)
+      continue
     }
+    for (const changed of data ?? []) if (changed.disabled) disabled.push(changed.source_name)
   }
   if (disabled.length > 0) {
     console.warn(`[pipeline] auto-disabled ${disabled.length} source(s) after ${AUTO_DISABLE_AFTER} consecutive failures:`)
