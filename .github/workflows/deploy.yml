@@ -31,7 +31,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          BASE_PATH: '' # Custom domain serves the app at the root.
+          BASE_PATH: ${{ vars.PAGES_BASE_PATH || '' }} # /ww3watch during domain recovery; empty for the custom domain.
           # Repo VARIABLES, not secrets — matching ci.yml's e2e job. These are
           # publishable credentials that ship inside the built bundle, so hiding
           # them achieves nothing and reading them from two different stores meant
@@ -40,10 +40,13 @@ jobs:
           PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
       - name: SPA root + disable Jekyll
+        env:
+          BASE_PATH: ${{ vars.PAGES_BASE_PATH || '' }}
         # adapter-static (SPA mode) emits only 404.html; copy it to index.html so
         # the site root returns 200. .nojekyll keeps GitHub Pages from hiding _app/.
         run: |
-          cp build/404.html build/index.html
+          if [ ! -f build/index.html ]; then cp build/404.html build/index.html; fi
+          if [ -n "$BASE_PATH" ]; then rm -f build/CNAME; fi
           touch build/.nojekyll
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
