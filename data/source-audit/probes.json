@@ -35,6 +35,24 @@
       "itemCount": 10,
       "via": "proxy",
       "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+      "checkedAt": "2026-09-20T19:09:51.024Z",
+      "error": null,
+      "itemCount": 27,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35531349725"
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+      "checkedAt": "2026-09-20T19:26:03.582Z",
+      "error": null,
+      "itemCount": 27,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35532247493"
     }
   ]
 }

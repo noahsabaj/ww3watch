@@ -600,20 +600,26 @@ export const sourceAudit = {
     },
     {
       "id": "nikkei",
-      "name": "Financial Times / Nikkei",
+      "name": "Nikkei / Financial Times",
       "ownership": "The FT Group’s corporate page identifies it as part of Nikkei Inc. Related Nikkei services are not independent ownership.",
       "funding": "Commercial subscriptions, advertising and information services; current outlet-level proportions were not examined.",
       "purpose": "International business, economics and political reporting, with analysis and opinion.",
       "sourcing": "The sample includes security reporting and economic analysis. Estimates of lost revenue and assessments of sanctions effects are not directly observed outcomes.",
       "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
-      "coverage": "Global economics, politics and security",
+      "coverage": "Japan, Asia, international business and policy",
       "limitations": [
-        "This is a limited article sample, not independent verification of every published claim."
+        "This is a limited article sample, not independent verification of every published claim.",
+        "Financial Times and Nikkei Asia share a parent but have distinct editions; their reporting is not automatically independent corroboration."
       ],
       "evidence": [
         {
           "url": "https://aboutus.ft.com/company/",
           "title": "FT Group corporate ownership and services",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://asia.nikkei.com/announcements/nikkei-to-rename-flagship-english-publication-nikkei-asia",
+          "title": "Nikkei Asia publication and group relationship",
           "accessedAt": "2026-09-20"
         }
       ],
@@ -1323,6 +1329,686 @@ export const sourceAudit = {
         }
       ],
       "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "meduza",
+      "name": "Meduza",
+      "ownership": "The publisher identifies SIA Medusa Project in Riga and founder Galina Timchenko. Current beneficial shareholdings were not examined.",
+      "funding": "Describes international reader donations and publishing sales; current revenue proportions were not established.",
+      "purpose": "Russian and English reporting from exile, including anonymous reporting inside Russia. English AI-assisted translations receive editorial review according to its disclosure.",
+      "sourcing": "The sample identifies officials, an airport statement and a UN report, and distinguishes competing accounts of a missing candidate. Official attribution does not itself verify casualty totals or motives.",
+      "corrections": "Its code requires prompt corrections explaining what changed and why; exceptional deletions require an editorial explanation.",
+      "coverage": "Russia, Ukraine and neighbouring states",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://meduza.io/en/pages/about",
+          "title": "Legal publisher, funding and translation disclosure",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://meduza.io/en/pages/codex",
+          "title": "Sourcing and corrections code",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "mehr-media",
+      "name": "Mehr / Tehran Times",
+      "ownership": "The publisher identifies Mehr and Tehran Times as one media group belonging to the Islamic Development Organization.",
+      "funding": "The reviewed disclosure establishes institutional ownership, but not current financial amounts or revenue proportions.",
+      "purpose": "Iranian and international reporting with an explicit mission to advance the ideals of the Islamic Revolution.",
+      "sourcing": "Samples name Iranian officials, Al Jazeera, Al-Hadath and Al-Masirah. Party and partner reports are not independent confirmation, and video claims need provenance checks.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Iran and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://en.mehrnews.com/news/159449",
+          "title": "Publisher group, institutional ownership and editorial mission",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "middle-east-eye",
+      "name": "Middle East Eye",
+      "ownership": "The publisher identifies a London-based newsroom. Current legal ownership and controlling interests were not established in the reviewed disclosure.",
+      "funding": "Describes itself as independently funded; the identities and proportions of current funders were not established. The description is a publisher claim, not an audited finding.",
+      "purpose": "Middle East and North Africa reporting, analysis and opinion emphasizing local perspectives.",
+      "sourcing": "The five sampled updates attribute official claims and identify secondary reporting. Shared wire or broadcaster sourcing does not create independent corroboration.",
+      "corrections": "A reviewed investigation includes an explicit editor’s clarification. A complete standalone correction policy was not established.",
+      "coverage": "Middle East, North Africa and related international affairs",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.middleeasteye.net/about-middle-east-eye",
+          "title": "Publisher mission and newsroom structure",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.middleeasteye.net/big-story/exclusive-how-british-museum-made-false-claims-about-its-removal-palestine-displays",
+          "title": "Example of a visible editorial clarification",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "ardi",
+      "name": "Middle East Monitor",
+      "ownership": "The publisher identifies Ardi Associates Ltd as its owner and operator. Ultimate beneficial shareholdings were not established.",
+      "funding": "A current funding breakdown was not established.",
+      "purpose": "News and commentary with an explicit Palestinian advocacy and policy-influence purpose.",
+      "sourcing": "The sample credits Anadolu, Axios and other regional publications, includes opposing positions, and explicitly marks unauthenticated footage. Syndicated material should not count as a separate witness.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Palestine and Middle East",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.middleeastmonitor.com/about/",
+          "title": "Legal operator and stated editorial purpose",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "cersc-mondoweiss",
+      "name": "Mondoweiss",
+      "ownership": "The publisher states that the website is part of the nonprofit Center for Economic Research and Social Change and identifies its editorial leadership.",
+      "funding": "Reader donations; current donor proportions were not established. The publisher states that supporters do not direct its journalism.",
+      "purpose": "Reporting, analysis and commentary with an explicit Palestinian human-rights and justice focus.",
+      "sourcing": "The sample includes named local people, observed conditions and signed policy analysis. Interpretive legal and political framing should remain distinguishable from interview testimony.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Israel, Palestine and related US policy",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://mondoweiss.net/about-mondoweiss/",
+          "title": "Nonprofit home, funding and editorial purpose",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "azur",
+      "name": "Jerusalem Post / Maariv",
+      "ownership": "The Jerusalem Post’s 2014 report identifies owner Eli Azur and acquisition of Maariv. These titles are grouped on that disclosed relationship; current beneficial proportions were not independently verified.",
+      "funding": "Commercial publishing, subscriptions and events; current revenue proportions were not established.",
+      "purpose": "Israeli English- and Hebrew-language news and opinion.",
+      "sourcing": "Samples include official statements, credited secondary reports and military-technology analysis. Two reports about the same West Bank shooting are not independent confirmation.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Israel, Palestine, Jewish communities and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.jpost.com/business/business-news/antitrust-authority-approves-sale-of-makor-rishon-maariv-350878",
+          "title": "Dated shared-ownership disclosure",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.jpost.com/landedpages/aboutus.aspx",
+          "title": "Publisher purpose and operations",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.jpost.com/rss",
+          "title": "Publisher-supported RSS directory",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "mashregh",
+      "name": "Mashregh News",
+      "ownership": "The reviewed About page identifies the publication but does not establish its legal or beneficial owner.",
+      "funding": "A current funding breakdown was not established.",
+      "purpose": "Iranian reporting with an explicitly revolutionary mission defending the Islamic Republic and opposing what it describes as a Western cultural and media offensive.",
+      "sourcing": "The sample relays military claims, political statements and secondary reports. Evaluative language about foreign actors is the publisher’s framing, not an independently established fact.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Iran and regional affairs",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.mashreghnews.ir/news/699137/",
+          "title": "Publisher mission and About statement",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "comcast-news",
+      "name": "NBC News / Sky",
+      "ownership": "NBC News belongs to NBCUniversal within Comcast. Comcast’s June 2026 announcement proposes separating NBCUniversal and Sky in about a year; an announced transaction is not a completed change of control.",
+      "funding": "Commercial media operations include advertising and subscriptions. Newsroom-specific revenue proportions were not established.",
+      "purpose": "US broadcast and digital reporting, with international news and video coverage.",
+      "sourcing": "The sample attributes officials and documents, includes developing casualty figures, and distinguishes a proposed arms sale from delivery. Two video items were reviewed through their publisher synopses, not by watching the videos.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "United States and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.nbcnews.com/information/nbc-news-info/about-nbc-news-digital-n1232178",
+          "title": "NBC News organizational description",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.cmcsa.com/node/45796",
+          "title": "June 2026 proposed corporate separation",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "adani-ndtv",
+      "name": "NDTV",
+      "ownership": "NDTV’s corporate page identifies it as a subsidiary of AMG Media Networks Limited, part of the Adani Group.",
+      "funding": "Commercial media business. Current revenue proportions and funding arrangements were not established.",
+      "purpose": "Indian and international broadcast and digital news.",
+      "sourcing": "The sampled excerpts relay political remarks, military developments and analysis. An unexplained schedule change is not evidence of a particular military decision.",
+      "corrections": "Publishes a complaints process for NDTV television channels under NBDA rules. Its stated television deadline was not assumed to govern all website articles.",
+      "coverage": "India and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.ndtv.com/convergence/ndtv/corporatepage/index.aspx",
+          "title": "Corporate ownership disclosure",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.ndtv.com/convergence/ndtv/new/complaintform.aspx?src=topnav",
+          "title": "Television complaints process",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "new-york-times",
+      "name": "The New York Times",
+      "ownership": "The publicly listed New York Times Company has dual-class shares. Its March 2026 proxy identifies Ochs-Sulzberger family trust control of Class B voting stock; voting control is not the same as owning most economic equity.",
+      "funding": "The publication offers paid subscriptions. A current audited revenue breakdown was not examined.",
+      "purpose": "US and international reporting, investigations, analysis and opinion. These two RSS selections belong to one newsroom.",
+      "sourcing": "The ten sampled excerpts distinguish official claims, estimates, allegations and analysis. Short feed descriptions do not expose the full reporting or underlying evidence.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "United States and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://s23.q4cdn.com/152113917/files/doc_events/2026/Mar/The-New-York-Times-Company-2026-Proxy-Statement.pdf",
+          "title": "March 2026 ownership and voting structure",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.nytimes.com/section/world",
+          "title": "World coverage and subscription offering",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "newsweek",
+      "name": "Newsweek",
+      "ownership": "Newsweek’s About page identifies Dev Pragad and Johnathan Davis as equal shareholders.",
+      "funding": "Commercial publication with subscriptions and advertising; current revenue proportions were not established.",
+      "purpose": "US and international reporting, explanatory journalism and opinion.",
+      "sourcing": "The sample distinguishes official claims, purported footage and proposed policies. A report about a previously approved evacuation plan does not establish a new attack.",
+      "corrections": "Editorial guidelines require prompt, transparent corrections and visible retractions; corrected articles are to identify substantive changes.",
+      "coverage": "United States and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.newsweek.com/about-newsweek",
+          "title": "Publisher ownership disclosure",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.newsweek.com/editorial-guidelines",
+          "title": "Editorial independence and correction guidelines",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "nrk",
+      "name": "NRK",
+      "ownership": "Norway’s Ministry of Culture identifies NRK as a company wholly owned by the Norwegian state, with a public-service remit.",
+      "funding": "Funded through state-budget grants. Older television licence descriptions should not be treated as the current funding model.",
+      "purpose": "Norwegian public-service radio, television and online reporting.",
+      "sourcing": "The sample includes direct interviews, official statements, credited AFP observation and reporting built on CBS photographs. Reuse of CBS evidence is not a separate discovery of the photographs.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Norway, Europe and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.regjeringen.no/en/topics/culture-sports-and-non-profit-work/film-og-medier/innsiktsartikler/broadcasting/id2000629/",
+          "title": "Ownership, public remit and state-budget funding",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "novaya-europe",
+      "name": "Novaya Gazeta Europe",
+      "ownership": "The publication describes a newsroom formed by former Novaya Gazeta journalists working outside Russia after 2022. Current legal ownership was not established; its Moscow predecessor is not assumed to be the same operating entity.",
+      "funding": "Requests reader donations through Friends of Novaya Gazeta Europe in Switzerland. Current funding proportions were not established.",
+      "purpose": "Russian-language reporting from exile, including investigations and coverage of Russia’s war in Ukraine.",
+      "sourcing": "Its standards address primary documents, anonymous-source protection and verification of online material. The sample credits outside investigations and explicitly notes unconfirmed information.",
+      "corrections": "The website provides an error-reporting mechanism. A detailed public correction-log procedure was not established in the reviewed standards.",
+      "coverage": "Russia, Ukraine and Europe",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://novayagazeta.eu/about",
+          "title": "Newsroom history and reader support",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://novayagazeta.eu/standart",
+          "title": "Published sourcing standards and error reporting",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "npr",
+      "name": "NPR",
+      "ownership": "NPR is a nonprofit membership organization. Its member radio stations are independently operated, not all owned by NPR.",
+      "funding": "Discloses reader support, institutional giving and corporate sponsorship, and links financial filings. Its finance page notes the withdrawal of federal public-media funding; older funding percentages are not assumed current.",
+      "purpose": "US public-radio journalism, digital reporting and international wire coverage.",
+      "sourcing": "The sample mixes credited AP articles with NPR reporting and an audio transcript. Wire duplication is not independent confirmation; political announcements remain attributed.",
+      "corrections": "Its ethics guidance commits to forthright correction of errors and transparency about reporting.",
+      "coverage": "United States and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.npr.org/about/",
+          "title": "Nonprofit membership organization",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.npr.org/about-npr/178660742/public-radio-finances",
+          "title": "Funding disclosure and financial filings",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.npr.org/ethics/",
+          "title": "Ethics and corrections guidance",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "axel-springer-politico",
+      "name": "POLITICO / Axel Springer",
+      "ownership": "POLITICO identifies itself as a subsidiary of Axel Springer. The publisher’s 2021 acquisition disclosure includes both the US business and full ownership of POLITICO Europe.",
+      "funding": "Commercial subscriptions, including POLITICO Pro, and events; current revenue proportions were not established.",
+      "purpose": "Reporting and analysis about politics, policy and decision-makers in the United States and Europe.",
+      "sourcing": "The sample links named official statements, identifies an anonymous NATO source and credits Reuters and AFP observations. Readiness warnings and reported plans are not evidence that an attack has occurred.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Europe, United States and international policy",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.politico.eu/about-us/",
+          "title": "Publisher identity and editorial purpose",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.axelspringer.com/en/ax-press-release/axel-springer-completes-acquisition-of-politico",
+          "title": "Completed acquisition of US and European businesses",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "premium-times",
+      "name": "Premium Times",
+      "ownership": "Published by Premium Times Services Limited in Abuja; its About page names Dapo Olorunyomi as publisher. Current beneficial shareholdings were not established.",
+      "funding": "A current revenue and donor breakdown was not established in the reviewed publisher disclosure.",
+      "purpose": "Nigerian reporting and investigations with an explicit democracy, governance and human-rights purpose; also publishes opinion and international coverage.",
+      "sourcing": "The five short excerpts include Nigerian local violence, attributed foreign reporting and a signed opinion column. The limited excerpts do not expose the complete sourcing for local casualty figures.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Nigeria, Africa and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.premiumtimesng.com/about",
+          "title": "Publishing company, leadership and editorial mission",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "rferl",
+      "name": "Radio Free Europe / Radio Liberty",
+      "ownership": "RFE/RL is a private Delaware nonprofit with a board governed by federal requirements. Radio Farda and Radio Svoboda are services of this organization, not separate owners.",
+      "funding": "Funded by US congressional grants through USAGM; its current About page links financial audits. Current disbursements were not audited here, and 2026 restructuring reflects reported budget pressure.",
+      "purpose": "Reporting for audiences facing censorship, with an explicitly stated democratic-values mission. Radio Svoboda joined a combined Russia programming unit in May 2026.",
+      "sourcing": "Samples distinguish official assertions, wire observations and direct interviews. The services share an organization; publishing the same UN report or official statement in several languages is not independent corroboration.",
+      "corrections": "Its current linked standards require prompt correction, a visible explanation in web articles, and corrective posts when erroneous material was promoted on social platforms.",
+      "coverage": "Eastern Europe, Russia, Iran, Central Asia and related international affairs",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://about.rferl.org/about-rfe-rl/",
+          "title": "Legal structure, congressional funding and governance",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://about.rferl.org/wp-content/uploads/2024/01/Editorial-Standards-EN.pdf",
+          "title": "Current linked editorial and correction standards",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://about.rferl.org/article/rfe-rl-implements-strategic-reforms/",
+          "title": "2026 service restructuring",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "quincy",
+      "name": "Responsible Statecraft / Quincy Institute",
+      "ownership": "Responsible Statecraft is the online magazine of the nonprofit Quincy Institute for Responsible Statecraft.",
+      "funding": "Quincy discloses donors of at least $5,000 in contribution bands and says it does not accept foreign-government funding. Current amounts were not independently audited.",
+      "purpose": "News, analysis and opinion advancing diplomacy and restraint in US foreign policy. Outside contributors’ views are not necessarily institutional positions.",
+      "sourcing": "The sample is mainly interpretation of policy, oil-market risks and military strategy. One sanctions excerpt gives Thursday as the House vote day, whereas the House Clerk records September 16, a Wednesday. This isolated date error does not establish repeated fabrication.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "US foreign policy and international security",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim.",
+        "The vote-date concern was checked against the primary House record. No broader pattern of intentional or repeated false reporting was established."
+      ],
+      "evidence": [
+        {
+          "url": "https://responsiblestatecraft.org/about/",
+          "title": "Magazine ownership, purpose and contributors",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://quincyinst.org/about/transparency/",
+          "title": "Donor disclosure and conflicts policy",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://clerk.house.gov/Votes/2026308",
+          "title": "House vote date checked after a sample discrepancy",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "rossiya-segodnya",
+      "name": "Rossiya Segodnya / RIA Novosti / Sputnik",
+      "ownership": "The corporate site lists RIA Novosti and Sputnik within Rossiya Segodnya. Its legal disclosure identifies a Russian federal state unitary enterprise; these brands are grouped together.",
+      "funding": "State institutional ownership is disclosed; the group also sells news services, licensing and advertising. Current funding proportions were not established.",
+      "purpose": "Russian domestic and multilingual international news carrying an explicit Russian perspective.",
+      "sourcing": "The ten sampled excerpts lean heavily on Russian ministry statements. Military target descriptions, interception counts and claimed enemy intentions require independent corroboration; several reports relay one briefing.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Russia and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://special.xn--c1acbl2abdlkab1og.xn--p1ai/",
+          "title": "Corporate roster of RIA Novosti and Sputnik",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://riamediabank.ru/docs/about/oferta.html",
+          "title": "Federal state enterprise legal disclosure",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "tv-novosti",
+      "name": "RT / TV-Novosti",
+      "ownership": "Operated by the autonomous nonprofit TV-Novosti, originally established by the state news agency RIA Novosti. Its nonprofit legal form does not have ordinary corporate shareholders.",
+      "funding": "State Media Monitor’s September 2026 research identifies predominant Russian federal-budget financing. This review did not independently audit expenditure.",
+      "purpose": "International reporting, documentaries and opinion explicitly presenting a Russian viewpoint and alternatives to mainstream coverage.",
+      "sourcing": "The current sample attributes officials and includes signed geopolitical interpretation. Expanded review found upheld Ofcom findings of repeated due-impartiality breaches in 2018 broadcasts; those findings are not automatically findings of fabricated facts in today’s RSS items.",
+      "corrections": "The site offers feedback and complaints. A current detailed correction-log policy was not established.",
+      "coverage": "Russia and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim.",
+        "The documented broadcast impartiality failures justify explicit caution. This review did not establish an exclusion-level pattern of fabrication or deceptive attribution in the sampled feed; state funding or political viewpoint alone is not the exclusion criterion."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.rt.com/about-us/",
+          "title": "Publisher purpose and legal operator",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://statemediamonitor.com/2026/09/rt/",
+          "title": "September 2026 institutional and funding research",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.ofcom.org.uk/tv-radio-and-on-demand/broadcast-standards/supreme-court-will-not-hear-rt-appeal",
+          "title": "Upheld findings concerning seven 2018 broadcasts",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "okaz",
+      "name": "Saudi Gazette / Okaz",
+      "ownership": "Saudi Gazette’s May 2026 corporate report identifies ownership by Okaz Organization for Press and Publication. Ultimate beneficial proportions were not established.",
+      "funding": "Its About page describes commercial advertising and marketing operations; current revenue proportions were not established.",
+      "purpose": "English-language Saudi reporting for local and expatriate audiences, with regional and international coverage.",
+      "sourcing": "The five sampled openings largely report official condemnations, coalition statements and institutional events. Repeated official statements should not be treated as independent verification of military outcomes.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Saudi Arabia and regional affairs",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://saudigazette.com.sa/about-us",
+          "title": "Publisher purpose and advertising model",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://saudigazette.com.sa/article/661170/saudi-arabia/saudi-gazette-wins-top-digital-relaunch-award-at-middle-eastern-digital-media-awards-2026",
+          "title": "May 2026 ownership disclosure",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "shafaq",
+      "name": "Shafaq News",
+      "ownership": "The publisher identifies roots in the Shafaq Foundation for Culture and Media of the Feyli Kurds and chairman Ali Hussein Feyli. Current beneficial ownership was not established.",
+      "funding": "A current donor or commercial-revenue breakdown was not established in the reviewed disclosure.",
+      "purpose": "Iraqi, Kurdistan Region and wider Middle East reporting, with attention to minority communities.",
+      "sourcing": "The sample includes a named direct interview, explicit wire/broadcast attribution and an official explanation for explosions. Its standards limit anonymous sourcing and reserve publication decisions to journalists.",
+      "corrections": "The publisher commits to prompt, transparent corrections, noted on the original story where appropriate.",
+      "coverage": "Iraq, Kurdistan Region and Middle East",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://shafaq.com/en/who-we-are",
+          "title": "Institutional background, sourcing, AI and corrections policies",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "shargh",
+      "name": "Shargh Daily",
+      "ownership": "The publisher’s masthead identifies Mehdi Rahmanian as licence holder and responsible manager. Other beneficial interests were not established.",
+      "funding": "The site offers reader support and advertising; current revenue proportions were not established.",
+      "purpose": "Persian-language Iranian political, economic, social and cultural reporting.",
+      "sourcing": "The sample relays named officials and AFP reporting, but one short Erbil item attributes a drone-impact claim only to unnamed local sources. Other contemporaneous reporting quotes Kurdish authorities describing exercises and ordnance disposal; the cause should remain disputed here.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Iran and regional affairs",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim.",
+        "The conflicting Erbil explanation prompted comparison with a named official account. This establishes uncertainty in the short item, not a pattern of fabrication or a verified cause."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.sharghdaily.com/%D8%B5%D9%81%D8%AD%D9%87-%D8%AF%D8%B1%D8%A8%D8%A7%D8%B1%D9%87-%D9%85%D8%A7-9",
+          "title": "Publisher masthead",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://www.sharghdaily.com/",
+          "title": "Reader support and advertising links",
+          "accessedAt": "2026-09-20"
+        },
+        {
+          "url": "https://shafaq.com/en/Kurdistan/Erbil-explosions-linked-to-drills-security-activity",
+          "title": "Contemporaneous report of the Kurdish authorities’ alternative explanation",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "scmp",
+      "name": "South China Morning Post",
+      "ownership": "South China Morning Post Publishers Limited is wholly owned by Alibaba Group Holding Limited, as disclosed in its editorial policies.",
+      "funding": "The publisher lists advertising, branded content, circulation, syndication and events among its business revenues. Current proportions were not independently audited.",
+      "purpose": "English-language reporting and commentary on China, Hong Kong, Asia and international affairs.",
+      "sourcing": "The sample separates signed geopolitical opinion from attributed military and official accounts. Its standards require identifiable sourcing and senior approval for single-source stories.",
+      "corrections": "Its policy calls for visible, dated digital correction explanations and print corrections on page A2; off-platform agency changes require consultation.",
+      "coverage": "China, Hong Kong, Asia and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.scmp.com/policies-and-standards",
+          "title": "Ownership, sourcing and corrections policies",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "stars-stripes",
+      "name": "Stars and Stripes",
+      "ownership": "A US military news service within the Pentagon’s media organization. Its About page states editorial independence within its own editorial chain of command.",
+      "funding": "The publisher describes Pentagon support for roughly half its budget, principally printing and distribution, with advertising and subscriptions providing the remainder. These are publisher figures, not an independent audit.",
+      "purpose": "News for US service members, military families and veterans, with overseas bureaus and general international coverage.",
+      "sourcing": "The sample includes direct questions to CENTCOM, identified inspector-general findings and clearly attributed broadcast reporting. Government affiliation does not make official military claims independently verified.",
+      "corrections": "Its published core values commit to prompt corrections and separating news from opinion.",
+      "coverage": "US military communities and international security",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.stripes.com/about-us/",
+          "title": "Institutional status, funding and core values",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "sudan-tribune",
+      "name": "Sudan Tribune",
+      "ownership": "The Arabic site identifies itself as part of the Sudan Tribune news institution alongside its English service. Current legal ownership and beneficial interests were not established.",
+      "funding": "A current donor or revenue breakdown was not established in the reviewed institutional disclosure.",
+      "purpose": "Sudanese news, analysis and opinion with a stated focus on democratic freedoms, peace and gender. The Arabic and English editions serve different audiences and do not publish identical selections.",
+      "sourcing": "The five Arabic openings distinguish named humanitarian statements from anonymous local or government sources, but attack and casualty claims often depend on a party or advocacy organization.",
+      "corrections": "A current standalone corrections policy was not established in the reviewed material; this does not mean the publisher has no correction process.",
+      "coverage": "Sudan, especially Darfur, Kordofan and Blue Nile",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://sudantribune.net/%d9%85%d9%86-%d9%86%d8%ad%d9%86",
+          "title": "Arabic service institutional purpose and verification commitment",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
+    },
+    {
+      "id": "svt",
+      "name": "Sveriges Television (SVT)",
+      "ownership": "A Swedish public-service limited company owned by a foundation, according to its corporate disclosure.",
+      "funding": "Funded through an income-based public-service fee collected as a tax. Advertising is prohibited; limited sponsorship is permitted.",
+      "purpose": "Public-service television and digital news for Sweden, including local reporting and international affairs.",
+      "sourcing": "The sample names interviewees and documentary sources, distinguishes a planned local vote from an enacted donation, and labels a UN mission’s evidentiary standard.",
+      "corrections": "Articles explain the commitment to accuracy and impartiality and to stating what is unknown during breaking news. A detailed correction-log procedure was not established.",
+      "coverage": "Sweden and international",
+      "limitations": [
+        "This is a limited article sample, not independent verification of every published claim."
+      ],
+      "evidence": [
+        {
+          "url": "https://omoss.svt.se/about-svt.html",
+          "title": "Corporate structure, public funding and editorial remit",
+          "accessedAt": "2026-09-20"
+        }
+      ],
+      "reviewedAt": "2026-09-20"
     }
   ],
   "sources": [
@@ -2007,7 +2693,7 @@ export const sourceAudit = {
         {
           "url": "https://www.bbc.com/zhongwen/articles/c4gr202jdzpo/trad?at_medium=RSS&at_campaign=rss",
           "title": "中國16年來首修《國防動員法》 專家稱：吸取俄烏教訓 建立「平戰快速轉換」制度",
-          "publishedAt": "2026-09-14T00:19:09Z",
+          "publishedAt": "2026-09-14T00:19:09+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Describes a mobilization-law revision with expert interpretation of lessons from Ukraine; legal implementation was not separately examined.",
           "access": "publisher excerpt"
@@ -2370,7 +3056,7 @@ export const sourceAudit = {
         {
           "url": "https://www.channelnewsasia.com/world/german-general-breuer-elected-head-top-nato-military-body-6396861",
           "title": "German general Breuer elected to head top NATO military body",
-          "publishedAt": "2026-09-19T17:49:03Z",
+          "publishedAt": "2026-09-19T17:49:03+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Reuters report attributes Breuer’s election to NATO committee chair Dragone’s public announcement and distinguishes the election from the future handover.",
           "access": "publisher excerpt"
@@ -2611,7 +3297,7 @@ export const sourceAudit = {
         {
           "url": "https://www.jahannews.com/news/998181/قالیباف-آمریکا-برخلاف-ظاهرش-آسیب-پذیر-معرض-خطر",
           "title": "قالیباف: آمریکا برخلاف ظاهرش آسیب‌پذیر و در معرض خطر است",
-          "publishedAt": "2026-09-20T17:59:29.000Z",
+          "publishedAt": "2026-09-20T17:59:29+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Attributes a claim of US vulnerability to Iran’s parliamentary speaker; this is his geopolitical assessment.",
           "access": "publisher excerpt"
@@ -2619,7 +3305,7 @@ export const sourceAudit = {
         {
           "url": "https://www.jahannews.com/news/998180/یمن-کنار-ملت-ایران-نظام-اسلامی-هستیم",
           "title": "یمن: در کنار ملت ایران و نظام اسلامی آن هستیم",
-          "publishedAt": "2026-09-20T17:55:39.000Z",
+          "publishedAt": "2026-09-20T17:55:39+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Attributes support for Iran and a warning to Saudi Arabia to Yemen’s Supreme Political Council leader; this is a party’s position.",
           "access": "publisher excerpt"
@@ -2627,7 +3313,7 @@ export const sourceAudit = {
         {
           "url": "https://www.jahannews.com/news/998178/هشدار-قدیمی-ترین-حامی-صهیونیسم-کنگره-درباره-سقوط-جایگاه-اسرائیل",
           "title": "هشدار قدیمی‌‌ترین حامی صهیونیسم در کنگره درباره سقوط جایگاه اسرائیل",
-          "publishedAt": "2026-09-20T17:24:47.000Z",
+          "publishedAt": "2026-09-20T17:24:47+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "An excerpt about Israel’s international standing supplies little source detail. The underlying congressional statement was not verified.",
           "access": "publisher excerpt"
@@ -2635,7 +3321,7 @@ export const sourceAudit = {
         {
           "url": "https://www.jahannews.com/news/998175/انهدام-یک-فروند-پهپاد-شناسایی-دشمن-فراز-تنگه-هرمز",
           "title": "انهدام یک فروند پهپاد شناسایی دشمن بر فراز تنگه هرمز",
-          "publishedAt": "2026-09-20T17:03:22.000Z",
+          "publishedAt": "2026-09-20T17:03:22+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Attributes destruction of an Orbiter drone over Hormuz to Iran’s army; no independent confirmation in the excerpt.",
           "access": "publisher excerpt"
@@ -2643,7 +3329,7 @@ export const sourceAudit = {
         {
           "url": "https://www.jahannews.com/news/998172/هشدار-امنیتی-سفارت-آمریکا-شهروندان-خود-عربستان",
           "title": "هشدار امنیتی سفارت آمریکا به شهروندان خود در عربستان",
-          "publishedAt": "2026-09-20T16:53:04.000Z",
+          "publishedAt": "2026-09-20T16:53:04+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Reports a US security warning for Saudi Arabia while describing Houthi attacks in the publisher’s own retaliatory framing.",
           "access": "publisher excerpt"
@@ -2664,7 +3350,7 @@ export const sourceAudit = {
         {
           "url": "https://www.trtworld.com/article/728c8e94d24a",
           "title": "Houthis won't attack US, Washington is in touch with them: Trump",
-          "publishedAt": "2026-09-20T15:30:20.000Z",
+          "publishedAt": "2026-09-20T15:30:20+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Reports Trump’s assertion about contact with the Houthis and a warning to Iran; these are statements rather than confirmed future actions.",
           "access": "publisher excerpt"
@@ -2672,7 +3358,7 @@ export const sourceAudit = {
         {
           "url": "https://www.trtworld.com/article/0907fa5832df",
           "title": "Tehran claims US decided to resume strikes against Iran, vows retaliation",
-          "publishedAt": "2026-09-20T12:42:03.000Z",
+          "publishedAt": "2026-09-20T12:42:03+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Headline explicitly frames a decision to resume US attacks as Tehran’s claim. The reviewed excerpt does not corroborate the alleged US decision.",
           "access": "publisher excerpt"
@@ -2680,7 +3366,7 @@ export const sourceAudit = {
         {
           "url": "https://www.trtworld.com/article/60fe222fe709",
           "title": "Egypt's Sisi calls for Gaza truce enforcement and urges Iran deal during CIA chief meeting",
-          "publishedAt": "2026-09-20T12:00:21.000Z",
+          "publishedAt": "2026-09-20T12:00:21+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Attributes diplomatic proposals and ceasefire demands to President Sisi during a meeting with the CIA director.",
           "access": "publisher excerpt"
@@ -2688,7 +3374,7 @@ export const sourceAudit = {
         {
           "url": "https://www.trtworld.com/article/947737ebc6d8",
           "title": "Israel closes checkpoints, stranding over 100 Palestinian teachers in occupied West Bank",
-          "publishedAt": "2026-09-20T10:57:41.000Z",
+          "publishedAt": "2026-09-20T10:57:41+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Reports checkpoint effects on teachers and schools near Tubas; numerical impacts require the underlying local sourcing.",
           "access": "publisher excerpt"
@@ -2696,7 +3382,7 @@ export const sourceAudit = {
         {
           "url": "https://www.trtworld.com/article/a640cb94e171",
           "title": "Russia, Ukraine trade strikes in key areas as war continues to cause heavy casualties",
-          "publishedAt": "2026-09-20T11:33:19.000Z",
+          "publishedAt": "2026-09-20T11:33:19+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Describes strikes in Russia and Ukraine with reported casualties; the brief summary does not independently verify the totals.",
           "access": "publisher excerpt"
@@ -5077,7 +5763,7 @@ export const sourceAudit = {
         {
           "url": "https://www.justsecurity.org/157637/trump-bosnia-deal-us-house-report/?utm_source=rss&utm_medium=rss&utm_campaign=trump-bosnia-deal-us-house-report",
           "title": "“Pay for Play?” Trump’s Bosnia Moves Highlighted in U.S. House Probe",
-          "publishedAt": "Fri, 18 Sep 2026 13:04:15 +0000",
+          "publishedAt": "2026-09-18T13:04:15+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Identifies the Bosnia report as produced by House Democrats and distinguishes its corruption allegations from proven facts.",
           "access": "publisher excerpt"
@@ -5085,7 +5771,7 @@ export const sourceAudit = {
         {
           "url": "https://www.justsecurity.org/157396/guantanamo-dispatch-the-uss-cole-case-edges-toward-trial/?utm_source=rss&utm_medium=rss&utm_campaign=guantanamo-dispatch-the-uss-cole-case-edges-toward-trial",
           "title": "Guantánamo Dispatch: The USS Cole Case Edges Toward Trial",
-          "publishedAt": "Fri, 18 Sep 2026 12:49:05 +0000",
+          "publishedAt": "2026-09-18T12:49:05+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Links the military judge’s docketing order and describes the reporter’s long-term courtroom beat; trial dates remain conditional.",
           "access": "publisher excerpt"
@@ -5093,7 +5779,7 @@ export const sourceAudit = {
         {
           "url": "https://www.justsecurity.org/157793/early-edition-september-18-2026/?utm_source=rss&utm_medium=rss&utm_campaign=early-edition-september-18-2026",
           "title": "Early Edition: September 18, 2026",
-          "publishedAt": "Fri, 18 Sep 2026 12:13:26 +0000",
+          "publishedAt": "2026-09-18T12:13:26+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Credits the New York Times, Axios and Reuters for aggregated reports; this is not additional independent confirmation.",
           "access": "publisher excerpt"
@@ -5377,6 +6063,1755 @@ export const sourceAudit = {
           "publishedAt": "2026-09-13T18:01:00+00:00",
           "reviewedAt": "2026-09-20",
           "observation": "Attributes a border-closure announcement to the self-described Fezzan Revolutionary Force; its constituency is explicitly uncertain.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "0111a97a-5377-4d08-bb49-063f3e1683a5",
+      "publisherId": "meduza",
+      "name": "Meduza",
+      "feedUrl": "https://meduza.io/rss/en/all",
+      "decision": "retain with limitations",
+      "rationale": "The sample identifies officials, an airport statement and a UN report, and distinguishes competing accounts of a missing candidate. Official attribution does not itself verify casualty totals or motives.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://meduza.io/en/news/2026/09/20/three-children-are-among-the-four-reportedly-killed-in-russia-s-latest-strikes-on-the-kyiv-region",
+          "title": "Three children are among the four people reportedly killed in Russia’s latest strikes on the Kyiv region",
+          "publishedAt": "2026-09-20T08:22:31+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes casualties and damaged sites to Ukrainian authorities and notes unspecified locations.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://meduza.io/en/feature/2026/09/20/on-the-third-day-of-russia-s-parliamentary-elections-moscow-came-under-what-its-mayor-called-the-largest-ukrainian-drone-attack-on-the-capital-officials-reported-two-deaths",
+          "title": "On the third day of Russia’s parliamentary elections, Moscow came under what its mayor called the largest Ukrainian drone attack on the capital. Officials reported two deaths.",
+          "publishedAt": "2026-09-20T08:12:19+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the scale and alleged purpose of the drone attack to Moscow’s mayor.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://meduza.io/en/feature/2026/09/20/russia-s-elections-continue-into-day-two-with-observers-barred-from-polling-stations-turnout-topping-40-and-bears-complicating-voting",
+          "title": "Russia’s elections continue into day two with observers barred from polling stations, turnout topping 40%, and bears complicating voting",
+          "publishedAt": "2026-09-20T03:18:47+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Contrasts a candidate’s video statement with volunteers’ doubts; the account remains disputed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://meduza.io/en/feature/2026/09/20/the-u-n-has-documented-more-than-1-000-cases-of-sexual-violence-in-russia-s-war-against-ukraine-it-attributes-89-to-russia-and-most-of-the-victims-are-men",
+          "title": "The U.N. has documented more than 1,000 cases of sexual violence in Russia’s war against Ukraine. It attributes 89% to Russia, and most of the victims are men.",
+          "publishedAt": "2026-09-20T02:12:01+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly summarizes a UN monitoring report and states its time window; it is not an independent second investigation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://meduza.io/en/news/2026/09/20/luxembourg-s-only-airport-halted-flights-for-hours-after-unauthorized-drones-were-detected-overhead",
+          "title": "Luxembourg’s only airport halted flights for hours after ‘unauthorized drones’ were detected overhead",
+          "publishedAt": "2026-09-20T01:56:36+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Cites the airport’s own announcement; the detected drones’ operator is not established.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "9585991a-7cce-4485-ae6f-7a3c70563238",
+      "publisherId": "mehr-media",
+      "name": "Mehr News",
+      "feedUrl": "https://en.mehrnews.com/rss",
+      "decision": "retain with limitations",
+      "rationale": "Samples name Iranian officials, Al Jazeera, Al-Hadath and Al-Masirah. Party and partner reports are not independent confirmation, and video claims need provenance checks.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://en.mehrnews.com/news/247923/Enemy-s-drone-targeted-over-Hormuz-Iran-Army",
+          "title": "Enemy's drone targeted over Hormuz: Iran Army",
+          "publishedAt": "2026-09-20T17:16:18+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes the Iranian army’s interception statement; the drone’s identity was not independently verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.mehrnews.com/news/247922/Qatari-spokesmann-claims-US-seeks-agreement-with-Iran",
+          "title": "Qatari spokesman claims US seeking agreement with Iran",
+          "publishedAt": "2026-09-20T17:06:13+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Al Jazeera and Qatar’s spokesperson for a negotiating position.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.mehrnews.com/news/247920/Loud-explosions-heard-in-Erbil-VIDEO",
+          "title": "Loud explosions heard in Erbil (+VIDEO)",
+          "publishedAt": "2026-09-20T15:13:39+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Al-Hadath and other reports for explosions; the opening does not establish their cause.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.mehrnews.com/news/247918/Saudi-warplanes-heavily-bomb-Yemeni-radars-VIDEO",
+          "title": "Saudi warplanes heavily bomb Yemeni radars (+VIDEO)",
+          "publishedAt": "2026-09-20T14:11:42+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Al-Masirah correspondents for strike accounts and uses openly partisan framing.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://en.mehrnews.com/news/247917/Gaza-death-toll-rises-to-73-913-health-ministry",
+          "title": "Gaza death toll rises to 73,913: health ministry",
+          "publishedAt": "2026-09-20T13:18:35+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly attributes cumulative casualties to Gaza’s health ministry; the total is dated, not independently audited here.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "109d1b8e-3ded-42a3-86c2-fd1a6aabc77e",
+      "publisherId": "middle-east-eye",
+      "name": "Middle East Eye",
+      "feedUrl": "https://www.middleeasteye.net/rss",
+      "decision": "retain with limitations",
+      "rationale": "The five sampled updates attribute official claims and identify secondary reporting. Shared wire or broadcaster sourcing does not create independent corroboration.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.middleeasteye.net/live-blog/live-blog-update/jordan-condemns-ben-gvirs-al-aqsa-mosque-incursion-calls-international",
+          "title": "Jordan condemns Ben Gvir's Al-Aqsa Mosque incursion, calls for international action",
+          "publishedAt": "2026-09-20T16:19:08+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a legal and diplomatic condemnation to Jordan’s foreign ministry.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeasteye.net/live-blog/live-blog-update/israeli-forces-raid-west-bank-shooting-suspects-hometown-besiege-mosque",
+          "title": "Israeli forces raid West Bank shooting suspect's hometown, besiege mosque",
+          "publishedAt": "2026-09-20T16:09:08+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Al Jazeera and Israel Army Radio; the suspect’s alleged affiliation remains attributed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeasteye.net/live-blog/live-blog-update/qatarenergy-says-hormuz-crisis-may-delay-some-expansion-projects",
+          "title": "QatarEnergy says Hormuz crisis may delay some expansion projects",
+          "publishedAt": "2026-09-20T15:45:31+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes project delays and output levels to QatarEnergy’s CEO.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeasteye.net/live-blog/live-blog-update/trump-tells-tehran-behave-and-lays-out-three-options-ending-war-iran",
+          "title": "Trump tells Tehran to 'behave' and lays out three options on ending war on Iran",
+          "publishedAt": "2026-09-20T15:28:24+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies Fox News as the venue for Trump’s threats and negotiating remarks.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeasteye.net/live-blog/live-blog-update/iran-military-warns-middle-eastern-nations-complicit-if-us-resumes",
+          "title": "Iran military warns middle eastern nations 'complicit' if US resumes attacks from American bases",
+          "publishedAt": "2026-09-20T14:35:33+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a regional threat to Iran’s military rather than presenting it as a forecast of certain attacks.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "835599ca-0df4-4d36-8d8b-f50c239c6d0a",
+      "publisherId": "ardi",
+      "name": "Middle East Monitor",
+      "feedUrl": "https://www.middleeastmonitor.com/feed/",
+      "decision": "retain with limitations",
+      "rationale": "The sample credits Anadolu, Axios and other regional publications, includes opposing positions, and explicitly marks unauthenticated footage. Syndicated material should not count as a separate witness.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": "Disabled before this review. The earlier curation rationale has not been established; fetch failures are not an editorial exclusion.",
+      "samples": [
+        {
+          "url": "https://www.middleeastmonitor.com/20260917-houthis-release-footage-purportedly-showing-wreckage-of-downed-saudi-f-15/",
+          "title": "Houthis release footage purportedly showing wreckage of downed Saudi F-15",
+          "publishedAt": "2026-09-17T11:45:01+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Calls the aircraft footage purported and explicitly says its location and time were not independently verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeastmonitor.com/20260917-trump-to-hold-iran-talks-with-gulf-leaders-next-week-in-new-york-report/",
+          "title": "Trump to hold Iran talks with Gulf leaders next week in New York: Report",
+          "publishedAt": "2026-09-17T11:36:46+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Anadolu relaying Axios’s three unnamed sources; this is a multi-step sourcing chain.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeastmonitor.com/20260917-turkey-accuses-greece-of-militarising-demilitarised-aegean-islands/",
+          "title": "Turkey accuses Greece of militarising demilitarised Aegean islands",
+          "publishedAt": "2026-09-17T11:27:14+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Includes Turkey’s allegation and Greece’s rejection and credits Kathimerini.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeastmonitor.com/20260917-israel-prepares-for-new-ground-operation-in-gaza/",
+          "title": "Israel prepares for new ground operation in Gaza",
+          "publishedAt": "2026-09-17T10:30:53+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Yedioth Ahronoth for reported preparations; a reported plan is not an operation already launched.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.middleeastmonitor.com/20260917-330-foot-shroud-bearing-names-of-20000-gaza-children-killed-by-israel-displayed-at-un-church-center/",
+          "title": "330-foot shroud bearing names of 20,000 Gaza children killed by Israel displayed at UN Church Center",
+          "publishedAt": "2026-09-17T09:49:25+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Anadolu and the memorial’s organizers; the display is not itself an independent casualty audit.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "83db4b20-f0d6-4f81-a913-129d55dfb58d",
+      "publisherId": "cersc-mondoweiss",
+      "name": "Mondoweiss",
+      "feedUrl": "https://mondoweiss.net/feed/",
+      "decision": "retain with limitations",
+      "rationale": "The sample includes named local people, observed conditions and signed policy analysis. Interpretive legal and political framing should remain distinguishable from interview testimony.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://mondoweiss.net/2026/09/inside-gazas-death-trap-of-collapsing-bombed-buildings/",
+          "title": "Inside Gaza’s death trap of collapsing, bombed-out buildings",
+          "publishedAt": "2026-09-18T16:53:23+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Opens with a named bereaved resident’s account; the broader risk estimate is attributed to Civil Defense.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://mondoweiss.net/2026/09/the-new-school-year-in-gaza-begins-in-tents/",
+          "title": "The new school year in Gaza begins in tents",
+          "publishedAt": "2026-09-17T15:25:23+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Follows a named family’s school preparations; the broader framing is the publisher’s interpretation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://mondoweiss.net/2026/09/inside-a-palestinian-familys-agonizing-decision-to-abandon-their-home-under-threat-of-israeli-settler-violence/",
+          "title": "Inside a Palestinian family’s agonizing decision to abandon their home under threat of Israeli settler violence",
+          "publishedAt": "2026-09-16T18:17:37+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Describes a local journey and family displacement; it is a reported individual experience, not a population estimate.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://mondoweiss.net/2026/09/israel-merges-two-settler-outposts-near-jerusalem-furthering-the-fragmentation-of-the-west-bank/",
+          "title": "Israel merges two settler outposts near Jerusalem, furthering the fragmentation of the West Bank",
+          "publishedAt": "2026-09-14T16:48:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes the announced land measure from observers’ interpretation of its timing and strategic purpose.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://mondoweiss.net/2026/09/are-the-uk-sanctions-on-israel-real-progress-or-more-illusion/",
+          "title": "Are the UK sanctions on Israel real progress, or more illusion?",
+          "publishedAt": "2026-09-12T13:30:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Clearly evaluative commentary assesses sanctions and their exceptions; its judgment about sufficiency is opinion.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "publisherId": "azur",
+      "name": "Jerusalem Post",
+      "feedUrl": "https://www.jpost.com/Rss/RssFeedsHeadlines.aspx",
+      "decision": "retain with limitations",
+      "rationale": "Samples include official statements, credited secondary reports and military-technology analysis. Two reports about the same West Bank shooting are not independent confirmation.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.jpost.com/middle-east/iran-news/article-909181",
+          "title": "Iran claims US preparing to resume attacks, threatens bases, supporting regional countries",
+          "publishedAt": "2026-09-20T13:55:23+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes threatened strikes to Iran’s military.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.jpost.com/israel-news/defense-news/article-909196",
+          "title": "IDF prepares West Bank mass-arrest operation, demolition of Neveh Tzuf terrorist’s home - report",
+          "publishedAt": "2026-09-20T16:57:48+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Army Radio and security officials for reported preparations and a suspect assessment.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.jpost.com/israel-news/defense-news/article-909173",
+          "title": "Netanel Shukrun identified as Neveh Tzuf terror attack victim, IDF catches terrorist near hospital",
+          "publishedAt": "2026-09-20T11:41:13+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports identification of a shooting victim and a manhunt; the suspect’s actions remain described as believed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.jpost.com/international/article-909189",
+          "title": "Trump converts plans for Washington triumphal arch into military drone facility",
+          "publishedAt": "2026-09-20T15:28:15+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies Trump’s proposal for a military facility; this is not completed construction.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.jpost.com/israel-news/article-909190",
+          "title": "Behind NAZA: How AI is used to assess, reduce collateral damage in IDF - interview",
+          "publishedAt": "2026-09-20T15:34:05+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Interview and film analysis frames claimed civilian-harm benefits of military AI; no operational validation was performed here.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Five current publisher RSS excerpts reviewed. The catalogued breaking-news endpoint still serves June 2025 material; a publisher-supported current endpoint is being probed before a reversible replacement."
+    },
+    {
+      "sourceId": "7b48de5a-dccd-4f89-98d5-35b515f14a52",
+      "publisherId": "azur",
+      "name": "Maariv מעריב",
+      "feedUrl": "https://www.maariv.co.il/Rss/RssChadashot",
+      "decision": "retain with limitations",
+      "rationale": "Samples include official statements, credited secondary reports and military-technology analysis. Two reports about the same West Bank shooting are not independent confirmation.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.maariv.co.il/news/military/article-1369175",
+          "title": "גבר נפצע אנוש בפיגוע ירי סמוך לנווה צוף, המחבל נמלט",
+          "publishedAt": "2026-09-20T08:43:47+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Early report attributes a critical injury and describes a manhunt; later developments may change the account.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.maariv.co.il/news/world/article-1369157",
+          "title": "אחרי המפלה מול החות'ים: סעודיה הקימה ועדת חקירה צבאית",
+          "publishedAt": "2026-09-20T07:44:14+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Al-Modon for a Saudi inquiry claim; the inquiry was not independently verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.maariv.co.il/news/military/article-1369156",
+          "title": "יום כיפור בכוננות שיא: צה\"ל והמשטרה מתגברים כוחות ברחבי הארץ",
+          "publishedAt": "2026-09-20T07:42:26+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Describes heightened holiday readiness; readiness is not evidence of a specific imminent attack.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.maariv.co.il/news/world/article-1369144",
+          "title": "ההתבטאות של קאליבאף חשפה את המשבר הפנימי באיראן - ונראה שזאת רק ההתחלה",
+          "publishedAt": "2026-09-20T07:17:15+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Analysis interprets Ghalibaf’s remarks as domestic political conflict.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.maariv.co.il/news/world/article-1369123",
+          "title": "אחרי איראן: החות'ים מקרבים את ארה\"ב לעימות חדש בתימן",
+          "publishedAt": "2026-09-20T06:23:19+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly says no US strike decision has been made despite discussion of military options.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "4e7202d8-aaf2-4d80-8247-71ea339ee0e5",
+      "publisherId": "mashregh",
+      "name": "Mashregh News",
+      "feedUrl": "https://www.mashreghnews.ir/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample relays military claims, political statements and secondary reports. Evaluative language about foreign actors is the publisher’s framing, not an independently established fact.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.mashreghnews.ir/news/1840480/%D8%A7%D9%86%D9%87%D8%AF%D8%A7%D9%85-%DB%8C%DA%A9-%D9%81%D8%B1%D9%88%D9%86%D8%AF-%D9%BE%D9%87%D9%BE%D8%A7%D8%AF-%D8%B4%D9%86%D8%A7%D8%B3%D8%A7%DB%8C%DB%8C-%D8%AF%D8%B4%D9%85%D9%86-%D8%A8%D8%B1-%D9%81%D8%B1%D8%A7%D8%B2-%D8%AA%D9%86%DA%AF%D9%87-%D9%87%D8%B1%D9%85%D8%B2",
+          "title": "انهدام یک فروند پهپاد شناسایی دشمن بر فراز تنگه هرمز",
+          "publishedAt": "2026-09-20T17:05:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the Orbiter interception claim to Iran’s army; no independent identification was examined.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.mashreghnews.ir/news/1840479/%D8%B1%DB%8C%D8%A7%D8%B6-%D8%AF%D8%B1-%D8%A8%D8%B1%D8%A7%D8%A8%D8%B1-%D8%B5%D9%86%D8%B9%D8%A7-%D9%85%D8%B9%D8%A7%D8%AF%D9%84%D9%87-%D8%AC%D8%AF%DB%8C%D8%AF-%DB%8C%D9%85%D9%86-%D8%B9%D9%84%DB%8C%D9%87-%D8%B9%D8%B1%D8%A8%D8%B3%D8%AA%D8%A7%D9%86",
+          "title": "«ریاض در برابر صنعا»؛ معادله جدید یمن علیه عربستان",
+          "publishedAt": "2026-09-20T17:00:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a Yemeni official’s threatened escalation, not a completed operation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.mashreghnews.ir/news/1840473/%D9%87%D8%B4%D8%AF%D8%A7%D8%B1-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%B3%D9%81%D8%A7%D8%B1%D8%AA-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%A8%D9%87-%D8%B4%D9%87%D8%B1%D9%88%D9%86%D8%AF%D8%A7%D9%86-%D8%AE%D9%88%D8%AF-%D8%AF%D8%B1-%D8%B9%D8%B1%D8%A8%D8%B3%D8%AA%D8%A7%D9%86",
+          "title": "هشدار امنیتی سفارت آمریکا به شهروندان خود در عربستان",
+          "publishedAt": "2026-09-20T16:55:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits RT for a report of US warnings; the underlying warning was not independently examined.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.mashreghnews.ir/news/1840455/%D8%AD%D9%85%D9%84%D8%A7%D8%AA-%D8%AC%D8%AF%DB%8C%D8%AF-%D8%B1%DA%98%DB%8C%D9%85-%D8%B5%D9%87%DB%8C%D9%88%D9%86%DB%8C%D8%B3%D8%AA%DB%8C-%D8%A8%D9%87-%D8%AC%D9%86%D9%88%D8%A8-%D9%84%D8%A8%D9%86%D8%A7%D9%86",
+          "title": "حملات جدید رژیم صهیونیستی به جنوب لبنان",
+          "publishedAt": "2026-09-20T16:29:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes southern Lebanon developments to field reports without named witnesses in the excerpt.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.mashreghnews.ir/news/1840464/%D8%AF%DB%8C%D8%AF%D8%A7%D8%B1-%D9%88%D8%B2%DB%8C%D8%B1-%D8%AE%D8%B2%D8%A7%D9%86%D9%87-%D8%AF%D8%A7%D8%B1%DB%8C-%D8%A2%D9%85%D8%B1%DB%8C%DA%A9%D8%A7-%D8%A8%D8%A7-%D9%85%D8%B9%D8%A7%D9%88%D9%86-%D9%86%D8%AE%D8%B3%D8%AA-%D9%88%D8%B2%DB%8C%D8%B1-%DA%86%DB%8C%D9%86",
+          "title": "دیدار وزیر خزانه‌داری آمریکا با معاون نخست‌وزیر چین",
+          "publishedAt": "2026-09-20T16:20:19+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a US-China meeting while applying strongly evaluative language to the United States; separate that framing from the meeting account.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "f8ae1e5f-d0f7-4da3-867b-4bce8081d1a7",
+      "publisherId": "comcast-news",
+      "name": "NBC News",
+      "feedUrl": "https://feeds.nbcnews.com/nbcnews/public/world",
+      "decision": "retain with limitations",
+      "rationale": "The sample attributes officials and documents, includes developing casualty figures, and distinguishes a proposed arms sale from delivery. Two video items were reviewed through their publisher synopses, not by watching the videos.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.nbcnews.com/world/russia/two-dead-moscow-region-drones-hit-oil-refinery-russian-capital-rcna598767",
+          "title": "Two dead in Moscow as Ukraine launches massive drone attack while Russia votes",
+          "publishedAt": "2026-09-20T09:28:37+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Includes both Ukrainian and Russian officials; the body updates deaths beyond the earlier headline count.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nbcnews.com/now/video/russia-holds-first-parliamentary-election-since-war-in-ukraine-began-270118981859",
+          "title": "Russia holds first parliamentary election since war in Ukraine began",
+          "publishedAt": "2026-09-18T17:45:27+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Publisher video synopsis identifies reporter Matt Bodner and critics of the election; the footage was not watched.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/national-security/state-department-approves-243b-f-35-fighter-jet-sale-saudi-arabia-chin-rcna598487",
+          "title": "U.S. clears potential $24.3B F-35 sale to Saudi Arabia despite security concerns",
+          "publishedAt": "2026-09-18T16:32:29+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Cites the State Department’s proposed sale and named congressional concerns; approval is not delivery.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nbcnews.com/now/video/u-n-panel-accuses-u-s-of-committing-war-crimes-in-iran-270039109528",
+          "title": "U.N. panel accuses U.S. of committing war crimes in Iran",
+          "publishedAt": "2026-09-17T16:15:11+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Video synopsis reports a UN panel’s reasonable-grounds assessment, not a judicial verdict; footage was not watched.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/congress/house-passes-russia-sanctions-bill-named-lindsey-graham-sending-trump-rcna598124",
+          "title": "House passes Russia sanctions bill named for Lindsey Graham, sending it to Trump",
+          "publishedAt": "2026-09-16T22:31:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Links a congressional bill and distinguishes House passage from presidential signing.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "4a97156b-5214-4adb-9022-fc5762175a5a",
+      "publisherId": "adani-ndtv",
+      "name": "NDTV",
+      "feedUrl": "https://feeds.feedburner.com/ndtvnews-world-news",
+      "decision": "retain with limitations",
+      "rationale": "The sampled excerpts relay political remarks, military developments and analysis. An unexplained schedule change is not evidence of a particular military decision.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.ndtv.com/world-news/trump-says-houthis-agree-to-not-fight-us-amid-attacks-on-saudi-arabia-12073002#publisher=newsstand",
+          "title": "Trump Says Houthis Agree To Not Fight US Amid Attacks On Saudi Arabia",
+          "publishedAt": "2026-09-20T15:11:38+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes Trump’s position on the Houthis from reported territorial developments in Yemen.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.ndtv.com/world-news/russia-ukraine-war-video-massive-ukrainian-drone-barrage-on-moscow-amid-elections-in-russia-12072111#publisher=newsstand",
+          "title": "Video: Massive Ukrainian Drone Barrage On Moscow Amid Elections In Russia",
+          "publishedAt": "2026-09-20T10:36:30+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the attack’s scale to Moscow’s mayor; video provenance was not independently checked.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.ndtv.com/world-news/us-iran-war-washington-ready-to-negotiate-as-tehran-sends-7-conditions-to-end-middle-east-war-to-trump-amid-saudi-houthis-attacks-12071721#publisher=newsstand",
+          "title": "\"If US Wants To Get Out Of Quagmire...\": Iran Sends 7 Conditions To Trump",
+          "publishedAt": "2026-09-20T09:08:45+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Iranian negotiating conditions; a list of demands is not an agreement.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.ndtv.com/world-news/donald-trump-used-to-slam-china-why-hes-now-rolling-out-red-carpet-for-xi-jinping-12071420#publisher=newsstand",
+          "title": "Trump Used To Slam China. Why He's Now Rolling Out Red Carpet For Xi",
+          "publishedAt": "2026-09-20T06:53:21+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Analysis interprets summit symbolism and political relationships rather than documenting a new military action.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.ndtv.com/world-news/donald-trump-cuts-short-weekend-at-camp-david-returns-to-white-house-as-mideat-tensions-rise-12071016#publisher=newsstand",
+          "title": "Donald Trump Cuts Short Weekend At Camp David As Tensions Rise In Middle East",
+          "publishedAt": "2026-09-20T04:22:42+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "States that the early Camp David departure was unexplained; no military motive is established.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "1bcfafe0-08f9-40cc-ac84-6bde2358cd18",
+      "publisherId": "new-york-times",
+      "name": "New York Times",
+      "feedUrl": "https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml",
+      "decision": "retain with limitations",
+      "rationale": "The ten sampled excerpts distinguish official claims, estimates, allegations and analysis. Short feed descriptions do not expose the full reporting or underlying evidence.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.nytimes.com/2026/09/20/world/middleeast/saudi-arabia-yemen-houthis-fighting.html",
+          "title": "Houthis Push to Expand Territory as Tensions With Saudi Arabia Rise",
+          "publishedAt": "2026-09-20T15:54:14+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Houthi territorial gains; the excerpt alone does not establish control at every location.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/19/world/middleeast/israel-pardon-azaria.html",
+          "title": "Israeli President Pardons Ex-Soldier Over Killing of Incapacitated Palestinian",
+          "publishedAt": "2026-09-19T21:26:09+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a presidential pardon decision; it does not erase the historical conviction.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/18/us/politics/iran-war-cost-pentagon.html",
+          "title": "Cost of Iran War Estimated at $43.6 Billion",
+          "publishedAt": "2026-09-18T19:23:11+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes an estimated war cost to Pentagon information provided to Congress; estimates may exclude additional costs.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/16/business/saudi-pipeline-houthi-attacks.html",
+          "title": "Global Oil Prices Could Hit Highest Levels in Months After Saudi Pipeline Attacks",
+          "publishedAt": "2026-09-16T09:04:31+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explains threats to oil routes and prospective market effects; projected price movements remain analysis.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/15/technology/binance-iran-china.html",
+          "title": "Two Chinese Firms Used Binance to Launder Iranian Oil Money, US Says",
+          "publishedAt": "2026-09-15T17:29:37+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports prosecutors’ accusations about cryptocurrency firms; an accusation is not a conviction.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "6ecaaa6c-e942-4d8f-aa2c-cad7e3d7e256",
+      "publisherId": "new-york-times",
+      "name": "NYT World",
+      "feedUrl": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+      "decision": "retain with limitations",
+      "rationale": "The ten sampled excerpts distinguish official claims, estimates, allegations and analysis. Short feed descriptions do not expose the full reporting or underlying evidence.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.nytimes.com/2026/09/20/world/middleeast/israeli-killed-west-bank-attack.html",
+          "title": "Israeli Shot and Killed in West Bank by Palestinian, Officials Say",
+          "publishedAt": "2026-09-20T14:59:59+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the shooting and arrest account to authorities; the short excerpt cannot resolve every disputed detail.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/20/world/europe/moscow-russia-ukraine.html",
+          "title": "Hundreds of Drones Target Moscow on Final Day of Russian Elections",
+          "publishedAt": "2026-09-20T09:44:55+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes Moscow drone reports from Ukraine’s claim about a new ballistic capability.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/20/world/europe/russia-duma-election-yabloko.html",
+          "title": "Russia Barred Their Party, but These Antiwar Voices Are Still Standing",
+          "publishedAt": "2026-09-20T09:02:04+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Describes a political party’s antiwar candidates; the stated candidate count was not independently audited.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/20/world/middleeast/west-bank-pool-palestinians-israelis-water.html",
+          "title": "Israeli Tourist Trap ‘Herod’s Pool’ Is Draining Palestinians’ Land Dry",
+          "publishedAt": "2026-09-20T09:00:50+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports consequences of water diversion for Palestinian farming; the underlying records were not examined in this excerpt review.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nytimes.com/2026/09/19/world/asia/pakistan-mosque-attack-bahadur.html",
+          "title": "Group Linked to Al Qaeda Claims Responsibility for Mosque Attack in Pakistan",
+          "publishedAt": "2026-09-19T20:02:22+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a claim of responsibility for a mosque attack; a group’s claim alone does not establish responsibility.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "b07ce622-88bc-470a-8026-b34aeea57150",
+      "publisherId": "newsweek",
+      "name": "Newsweek",
+      "feedUrl": "https://www.newsweek.com/rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample distinguishes official claims, purported footage and proposed policies. A report about a previously approved evacuation plan does not establish a new attack.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.newsweek.com/trump-cuts-camp-david-trip-short-as-us-issues-middle-east-travel-alerts-12464894",
+          "title": "Trump Cuts Camp David Trip Short as US Issues Middle East Travel Alerts",
+          "publishedAt": "2026-09-20T11:43:50+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports an altered presidential schedule without establishing the reason for the change.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.newsweek.com/ukraine-launches-largest-ever-drone-attack-on-moscow-russia-says-12464786",
+          "title": "Ukraine Launches Largest-Ever Drone Attack on Moscow, Russia Says",
+          "publishedAt": "2026-09-20T07:56:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the largest-attack characterization to Moscow’s mayor.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.newsweek.com/footage-shows-ukraines-latest-answer-to-jet-powered-shaheds-destroy-target-12463744",
+          "title": "Footage Shows Ukraine's Latest Answer to Jet-Powered Shaheds Destroy Target",
+          "publishedAt": "2026-09-19T16:16:56+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies Zelensky’s account and purported interception footage; the video was not independently authenticated.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.newsweek.com/lithuania-reveals-new-evacuation-plan-details-in-case-of-military-threat-12463451",
+          "title": "Lithuania Reveals New Evacuation Plan Details In Case of Military Threat",
+          "publishedAt": "2026-09-19T15:14:05+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "States that Lithuania’s evacuation plan was approved earlier; current coverage is not a new evacuation order.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.newsweek.com/trumps-f-35-bet-outsources-war-to-saudi-arabia-as-oil-prices-soar-12460514",
+          "title": "Trump’s F-35 Bet Outsources War to Saudi Arabia as Oil Prices Soar",
+          "publishedAt": "2026-09-19T08:00:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Discusses potential technology risks through attributed diplomatic analysis; the proposed sale remains subject to approval.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "9d759491-e6e7-49d7-adbc-a0a2c019ffb5",
+      "publisherId": "nikkei",
+      "name": "Nikkei Asia",
+      "feedUrl": "https://asia.nikkei.com/rss/feed/nar",
+      "decision": "retain with limitations",
+      "rationale": "The sample identifies diplomats, unnamed naval officials and analysis. Reported procurement discussions and forecasts do not establish completed purchases or inevitable conflict.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://asia.nikkei.com/spotlight/comment/a-cornered-putin-might-recklessly-provoke-nato",
+          "title": "A cornered Putin might recklessly provoke NATO",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Labeled comment interprets Putin’s options; its warning is not evidence of an approved attack plan.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://asia.nikkei.com/politics/international-relations/taiwan-tensions/foreign-envoys-in-taiwan-warn-rules-of-game-at-sea-are-being-challenged",
+          "title": "Foreign envoys in Taiwan warn rules of game at sea are being challenged",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies US, UK and EU diplomats at a Taipei forum; their assessments remain attributed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://asia.nikkei.com/politics/okinawa-political-shift-clears-way-for-japan-defense-buildup-near-taiwan",
+          "title": "Okinawa political shift clears way for Japan defense buildup near Taiwan",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes an election result from possible future military expansion.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://asia.nikkei.com/politics/defense/us-weighs-buying-warships-from-japan-south-korea-to-counter-china",
+          "title": "US weighs buying warships from Japan, South Korea to counter China",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes procurement discussions to multiple unnamed naval officials; no purchase is reported as completed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://asia.nikkei.com/business/markets/commodities/china-dips-back-into-oil-market-as-hormuz-hostilities-stoke-prices",
+          "title": "China dips back into oil market as Hormuz hostilities stoke prices",
+          "publishedAt": null,
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes inventory motives to analysts; the interpretation is distinct from observed import movements.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "c3c50672-43d1-4a12-9ac2-888a392ad36a",
+      "publisherId": "nrk",
+      "name": "Norwegian NRK",
+      "feedUrl": "https://www.nrk.no/toppsaker.rss",
+      "decision": "retain with limitations",
+      "rationale": "The sample includes direct interviews, official statements, credited AFP observation and reporting built on CBS photographs. Reuse of CBS evidence is not a separate discovery of the photographs.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.nrk.no/urix/tyskland-trenger-80-000-nye-soldater-for-a-bli-krigsdyktige-1.18026481",
+          "title": "Tyskland sliter med å finne nok soldater til Europas største hær",
+          "publishedAt": "2026-09-20T06:16:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reporters describe interviews at German recruitment events and distinguish young people’s ambitions from enlistment totals.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nrk.no/nyheter/ukraina-angrep-oljeraffineri-i-moskva-1.18030537",
+          "title": "Ukraina angrep oljeraffineri i Moskva",
+          "publishedAt": "2026-09-20T05:42:15+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes damage and casualty accounts separately to Russian and Ukrainian authorities.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nrk.no/nyheter/fire-drept-i-batangrep-i-karibia-1.18030509",
+          "title": "Fire drept i båtangrep i Karibia",
+          "publishedAt": "2026-09-20T00:18:18+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the drug-smuggling allegation to US Southern Command and includes criticism of the strikes.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nrk.no/urix/nye-bilder-viser-store-skader-pa-amerikanske-baser-i-midtosten-1.18030114",
+          "title": "Store skader på amerikanske baser i Midtøsten",
+          "publishedAt": "2026-09-19T13:35:52+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly credits CBS for photographs and soldier interviews, then adds a named Norwegian expert’s assessment.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.nrk.no/nyheter/eksplosjoner-hort-i-riyadh-1.18029932",
+          "title": "Eksplosjoner hørt i Riyadh",
+          "publishedAt": "2026-09-19T01:38:33+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separates Saudi alerts and the later all-clear from an AFP journalist’s account of hearing explosions.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "9ee485a2-20b5-4d92-a10b-0cac00178859",
+      "publisherId": "novaya-europe",
+      "name": "Novaya Gazeta Europe",
+      "feedUrl": "https://novayagazeta.eu/feed/rss",
+      "decision": "retain with limitations",
+      "rationale": "Its standards address primary documents, anonymous-source protection and verification of online material. The sample credits outside investigations and explicitly notes unconfirmed information.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://novayagazeta.eu/articles/2026/09/20/ukraina-sovershila-samuiu-massirovannuiu-dronovuiu-ataku-na-moskvu-news",
+          "title": "Украина совершила самую массированную дроновую атаку на Москву",
+          "publishedAt": "2026-09-20T05:26:56+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separately credits Moscow’s mayor and ASTRA; the largest-attack characterization is attributed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://novayagazeta.eu/articles/2026/09/19/oon-rf-otvetstvenna-za-89-zafiksirovannykh-sluchaev-seksualizirovannogo-nasiliia-vo-vremia-voiny-news",
+          "title": "ООН: РФ ответственна за 89% зафиксированных случаев сексуализированного насилия во время войны",
+          "publishedAt": "2026-09-19T19:35:18+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Summarizes a UN report with its time window and attributed case counts; it is not a separate investigation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://novayagazeta.eu/articles/2026/09/19/alternativa-dlia-germanii-pobeda-dlia-rossii",
+          "title": "Альтернатива для Германии — победа для России?",
+          "publishedAt": "2026-09-19T15:54:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Political analysis interprets AfD positions and a consulate closure.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://novayagazeta.eu/articles/2026/09/19/zelenskii-anonsiroval-novye-dalnoboinye-udary-po-rf-news",
+          "title": "Зеленский анонсировал новые дальнобойные удары по РФ",
+          "publishedAt": "2026-09-19T13:36:47+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes Zelensky’s warning of future strikes while noting the lack of further detail.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://novayagazeta.eu/articles/2026/09/19/v-alabuge-stroiat-podzemnye-tsekhi-dlia-proizvodstva-dronov-news",
+          "title": "В «Алабуге» строят подземные цехи для производства дронов",
+          "publishedAt": "2026-09-19T13:03:44+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Dnipro OSINT for satellite-image interpretation and explicitly notes the absence of other confirmation.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "43e11670-4f9e-4514-b061-fc40b01a6235",
+      "publisherId": "npr",
+      "name": "NPR World",
+      "feedUrl": "https://feeds.npr.org/1004/rss.xml",
+      "decision": "retain with limitations",
+      "rationale": "The sample mixes credited AP articles with NPR reporting and an audio transcript. Wire duplication is not independent confirmation; political announcements remain attributed.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.npr.org/2026/09/20/nx-s1-5975372/ukraine-fires-drones-at-russia-moscow",
+          "title": "Ukraine fires over 1,000 drones at Russia, including hundreds launched at Moscow",
+          "publishedAt": "2026-09-20T09:16:42+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "AP report attributes drone counts and casualties to officials; the figures remain developing.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.npr.org/2026/09/19/nx-s1-5974980/saudi-arabia-houthis-attempted-attack-capital",
+          "title": "Saudi Arabia says Houthis tried to attack its capital",
+          "publishedAt": "2026-09-20T03:57:23+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "AP report distinguishes Saudi interception claims from residents’ observations and Houthi statements.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.npr.org/2026/09/19/nx-s1-5974215/france-poland-and-european-allies-warn-of-escalating-russian-hybrid-attacks",
+          "title": "France, Poland and European allies warn of escalating Russian 'hybrid' attacks",
+          "publishedAt": "2026-09-19T11:40:48+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Published audio transcript identifies NPR’s correspondent explaining European leaders’ allegations; audio was not separately reviewed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.npr.org/2026/09/19/g-s1-144169/russia-holds-parliamentary-vote-in-areas-it-seized-from-ukraine",
+          "title": "Russia holds parliamentary vote in areas it seized from Ukraine in the war",
+          "publishedAt": "2026-09-19T06:39:57+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "AP report includes Ukrainian objections and an activist’s coercion account about voting in occupied areas.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.npr.org/2026/09/19/g-s1-144158/us-and-denmark-reach-deal",
+          "title": "US and Denmark reach deal to build US military presence in Greenland",
+          "publishedAt": "2026-09-19T04:44:46+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the emerging Greenland agreement to Trump’s announcement; the detailed agreement was not independently examined.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "40b828bb-dc2c-4f65-97d8-e7e718fd1c98",
+      "publisherId": "axel-springer-politico",
+      "name": "Politico Europe",
+      "feedUrl": "https://www.politico.eu/feed/",
+      "decision": "retain with limitations",
+      "rationale": "The sample links named official statements, identifies an anonymous NATO source and credits Reuters and AFP observations. Readiness warnings and reported plans are not evidence that an attack has occurred.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.politico.eu/article/ukraine-drone-attack-moscow-elections/?utm_source=RSS_Feed&utm_medium=RSS&utm_campaign=RSS_Syndication",
+          "title": "Massive Ukrainian drone attack hits Moscow on last day of Russian elections",
+          "publishedAt": "2026-09-20T09:23:27+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes drone counts, damage and intent separately to Russian and Ukrainian officials.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.politico.eu/article/france-national-rally-russia-rebuke/?utm_source=RSS_Feed&utm_medium=RSS&utm_campaign=RSS_Syndication",
+          "title": "France’s National Rally criticizes Russia in rare rebuke",
+          "publishedAt": "2026-09-19T16:12:59+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Links a party statement condemning Russia; the characterization of its rarity is editorial context.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.politico.eu/article/germany-carsten-breuer-nato-military-committee/?utm_source=RSS_Feed&utm_medium=RSS&utm_campaign=RSS_Syndication",
+          "title": "Germany’s top general to lead NATO’s highest military authority",
+          "publishedAt": "2026-09-19T15:33:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Cites the current NATO chair’s announcement and an anonymous official about voting; the appointment starts later.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.politico.eu/article/nato-ready-russia-false-flag-attack-giuseppe-cavo-dragone/?utm_source=RSS_Feed&utm_medium=RSS&utm_campaign=RSS_Syndication",
+          "title": "NATO ‘ready’ for potential Russian false flag attack, alliance’s top general says",
+          "publishedAt": "2026-09-19T14:23:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports NATO’s readiness assessment and political warnings; a potential false-flag scenario is not an established operation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.politico.eu/article/smoke-flight-delays-riyadh-king-khalid-airport-air-raid-alert/?utm_source=RSS_Feed&utm_medium=RSS&utm_campaign=RSS_Syndication",
+          "title": "Smoke and flight delays at Riyadh airport after air raid alert",
+          "publishedAt": "2026-09-19T14:17:23+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Reuters footage, AFP residents and FlightRadar24, and explicitly notes unanswered requests for official comment.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "c60f07d6-7335-4719-85d7-fb5b5765d9ea",
+      "publisherId": "premium-times",
+      "name": "Premium Times",
+      "feedUrl": "https://www.premiumtimesng.com/feed",
+      "decision": "retain with limitations",
+      "rationale": "The five short excerpts include Nigerian local violence, attributed foreign reporting and a signed opinion column. The limited excerpts do not expose the complete sourcing for local casualty figures.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.premiumtimesng.com/foreign/world-foreign/910942-us-issues-new-warning-to-americans-in-the-middle-east.html",
+          "title": "US issues new warning to Americans in the Middle East",
+          "publishedAt": "2026-09-20T06:09:34+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Summarizes a US travel warning; potential disruption is not a confirmed cancellation.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.premiumtimesng.com/opinion/910894-houthis-and-saudis-when-the-weak-strike-back-by-owei-lakemfa.html",
+          "title": "Houthis and Saudis: When the weak strike back, By Owei Lakemfa",
+          "publishedAt": "2026-09-19T19:35:44+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Signed opinion argues against prevailing accounts of the Yemen conflict; its evaluative position should remain distinguishable from news.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.premiumtimesng.com/news/headlines/910726-gunmen-kill-three-injure-many-in-plateau-market-attack.html",
+          "title": "Gunmen kill three, injure many in Plateau market attack",
+          "publishedAt": "2026-09-19T08:40:25+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a market attack, but the short feed excerpt does not identify the casualty-count source.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.premiumtimesng.com/regional/nnorth-east/910687-hundreds-of-nigerians-flee-to-cameroon-after-fatal-violence-in-mambilla-plateau.html",
+          "title": "Hundreds of Nigerians flee to Cameroon after fatal violence in Mambilla Plateau",
+          "publishedAt": "2026-09-19T06:32:47+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports displacement into Cameroon; the short excerpt does not expose a full accounting of those displaced.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.premiumtimesng.com/news/910557-russia-china-veto-un-resolution-to-monitor-iran-sanctions.html",
+          "title": "Russia, China veto UN resolution to monitor Iran sanctions",
+          "publishedAt": "2026-09-18T13:32:31+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly credits Reuters for the UN vote report; republication is not another independent source.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "14d898fb-2ee1-4f3d-9c33-4e3a01292b4c",
+      "publisherId": "rferl",
+      "name": "Radio Farda",
+      "feedUrl": "https://www.radiofarda.com/api/zrttpol-vomx-tpeoogpi/rss.xml",
+      "decision": "retain with limitations",
+      "rationale": "Samples distinguish official assertions, wire observations and direct interviews. The services share an organization; publishing the same UN report or official statement in several languages is not independent corroboration.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.radiofarda.com/a/iran-says-it-has-conveyed-conditions-to-re-engage-in-talks-with-us/33859457.html",
+          "title": "محسن رضایی می‌گوید ایران شروط خود را برای توقف جنگ با آمریکا اعلام کرده است",
+          "publishedAt": "2026-09-19T17:05:11+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separates Rezaei’s negotiating conditions from Ghalibaf’s statement; demands are not an agreement.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.radiofarda.com/a/centcom-chief-over-1-billion-barrels-of-crude-passed-through-hormuz/33859426.html",
+          "title": "فرمانده سنتکام: بیش از یک میلیارد بشکه نفت در ماه‌های اخیر از تنگه هرمز عبور کرده است",
+          "publishedAt": "2026-09-19T13:42:37+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes oil-flow and mine-clearance claims to CENTCOM’s commander; the claims were not independently audited.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.radiofarda.com/a/flames-smoke-seen-near-riyadh-airport/33859417.html",
+          "title": "«آتش و دود» در اطراف فرودگاه ریاض در پی تشدید درگیری بین عربستان سعودی و حوثی‌ها",
+          "publishedAt": "2026-09-19T13:06:00+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits Reuters imagery and AFP residents, distinguishing those observations from Saudi alerts.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.radiofarda.com/a/us-greenland-pact/33859366.html",
+          "title": "آمریکا، دانمارک و گرینلند توافق امنیتی تازه‌ای اعلام کردند",
+          "publishedAt": "2026-09-19T10:13:26+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports positions from US, Danish and Greenlandic officials; the agreement itself was not independently examined.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.radiofarda.com/a/iran-executes-man-accused-of-providing-missile-info-to-israel-judiciary/33859298.html",
+          "title": "قوه قضائیه ایران از اعدام یک متهم به «جاسوسی برای اسرائیل» خبر داد",
+          "publishedAt": "2026-09-19T06:09:36+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes espionage allegations to the judiciary’s Mizan agency and notes missing execution details.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "4cc44208-efe0-4fb4-a88f-666e9e3ae210",
+      "publisherId": "rferl",
+      "name": "Radio Free Europe",
+      "feedUrl": "https://www.rferl.org/api/zbgvmtl-vomx-tpeq_kmr",
+      "decision": "retain with limitations",
+      "rationale": "Samples distinguish official assertions, wire observations and direct interviews. The services share an organization; publishing the same UN report or official statement in several languages is not independent corroboration.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.rferl.org/a/russia-ukraine-elections-drone-missile-strikes/33859774.html",
+          "title": "Russia And Ukraine Launch Attacks On Final Day Of Russian Parliamentary Vote",
+          "publishedAt": "2026-09-20T14:33:26+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes attack descriptions to authorities and identifies an analyst’s interpretation of the election.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rferl.org/a/russia-rassvet-starlink-satellite-internet-ukraine/33858763.html",
+          "title": "Russia's Starlink Rival Faces Problems In Orbit And Threats On The Ground",
+          "publishedAt": "2026-09-20T08:16:24+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Combines a Pentagon report and a pro-invasion channel’s account of satellite communications problems; technical performance was not independently tested.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rferl.org/a/33859294.html",
+          "title": "Trump Signs Russia-Iran Sanctions Bill, Putting New Pressure Tools At His Disposal",
+          "publishedAt": "2026-09-19T05:53:39+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes signing to the White House and distinguishes legal authority from future enforcement decisions.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rferl.org/a/us-poland-us-army-base-nato-russia/33858649.html",
+          "title": "US, Poland Making Progress On Permanent American Army Base, Trump Says",
+          "publishedAt": "2026-09-18T06:40:30+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes Trump and Poland’s president about progress; a permanent base is not reported as completed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rferl.org/a/us-senator-jeanne-shaheen-putin-ukraine-russia/33858412.html",
+          "title": "US Senator Jeanne Shaheen: ‘Putin Is Trying To Wait Us Out’",
+          "publishedAt": "2026-09-17T21:34:53+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Direct interview with Shaheen includes an editorial note giving the precise House vote rather than leaving a loose characterization unexplained.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "a1808be1-86b5-4086-9916-2aefafad300e",
+      "publisherId": "rferl",
+      "name": "Radio Svoboda",
+      "feedUrl": "https://www.svoboda.org/api/z-pqpiev-qpp",
+      "decision": "retain with limitations",
+      "rationale": "Samples distinguish official assertions, wire observations and direct interviews. The services share an organization; publishing the same UN report or official statement in several languages is not independent corroboration.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.svoboda.org/a/deyateli-tserkvi-prizvali-papu-rimskogo-spasti-zhiteley-oleshek-ot-goloda/33859791.html",
+          "title": "Деятели церкви призвали спасти жителей Олешек от голодной смерти",
+          "publishedAt": "2026-09-20T13:42:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes a Ukrainian religious council’s appeal and population estimate; the appeal is not an independent census.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svoboda.org/a/iran-peregovorov-s-ssha-ne-budet-do-vypolneniya-trebovaniy/33859711.html",
+          "title": "Иран: переговоров с США не будет до выполнения требований",
+          "publishedAt": "2026-09-20T08:51:23+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies Al Jazeera as the interview venue for Iran’s stated conditions.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svoboda.org/a/v-kievskoy-oblasti-ot-udarov-rf-za-sutki-pogibli-troe-detey/33859696.html",
+          "title": "В Киевской области от ударов РФ за сутки погибли трое детей",
+          "publishedAt": "2026-09-20T07:54:21+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separately identifies Russian military claims and Ukrainian casualty reports.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svoboda.org/a/ukrainskie-voennye-atakovali-moskovskuyu-oblastj-i-npz-v-moskve/33859669.html",
+          "title": "Украинские военные атаковали Московскую область и НПЗ в Москве",
+          "publishedAt": "2026-09-20T06:02:55+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes Telegram claims, Zelensky’s statement and Moscow’s account; weapon fragments were not independently authenticated.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svoboda.org/a/oon-opisala-1004-sluchaya-seksualjnyh-pytok-v-hode-voyny-v-ukraine/33859475.html",
+          "title": "ООН описала 1004 случая сексуальных пыток в ходе войны в Украине",
+          "publishedAt": "2026-09-19T17:52:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explains limits of the UN monitoring sample; documented cases are not presented as the complete prevalence of abuse.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "ed354183-91d7-4ae2-865f-56b2544d620b",
+      "publisherId": "quincy",
+      "name": "Responsible Statecraft",
+      "feedUrl": "https://responsiblestatecraft.org/feed/",
+      "decision": "retain with limitations",
+      "rationale": "The sample is mainly interpretation of policy, oil-market risks and military strategy. One sanctions excerpt gives Thursday as the House vote day, whereas the House Clerk records September 16, a Wednesday. This isolated date error does not establish repeated fabrication.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://responsiblestatecraft.org/china-missile-test-pacific/",
+          "title": "Chinese missile tests cast long shadow over Pacific Islands",
+          "publishedAt": "2026-09-18T04:05:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Interprets a Pacific forum statement; the reported endorsement count and missile implications were not independently audited.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://responsiblestatecraft.org/iran-war-houthis/",
+          "title": "The Houthis could tip the Iran war in Tehran's favor",
+          "publishedAt": "2026-09-18T04:05:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Policy analysis projects how Houthi action could affect negotiations; its scenario is not a prediction of certain outcomes.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://responsiblestatecraft.org/sanctions-bill-russia/",
+          "title": "New Russia sanctions amid war risk even higher gas prices",
+          "publishedAt": "2026-09-17T13:47:34+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "The excerpt says Thursday for the House vote; the Clerk records Wednesday, September 16. Its statement that signing was pending reflects its publication stage.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://responsiblestatecraft.org/oil-pipeline-saudi-arabia/",
+          "title": "With Mideast on fire, oil prices are poised to explode",
+          "publishedAt": "2026-09-17T04:05:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Oil-market analysis combines reported shipment delays and possible future disruption; a price forecast is not an observed result.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://responsiblestatecraft.org/saudi-arabia-houthi/",
+          "title": "How Saudi Arabia's anti-Houthi strategy crashed and burned",
+          "publishedAt": "2026-09-17T04:05:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Historical and strategic interpretation evaluates Saudi policy; causal judgments remain the author’s analysis.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "3ab0139c-4787-4c86-bddc-9d7aee507ffb",
+      "publisherId": "rossiya-segodnya",
+      "name": "RIA Novosti",
+      "feedUrl": "https://ria.ru/export/rss2/archive/index.xml",
+      "decision": "retain with limitations",
+      "rationale": "The ten sampled excerpts lean heavily on Russian ministry statements. Military target descriptions, interception counts and claimed enemy intentions require independent corroboration; several reports relay one briefing.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://ria.ru/20260920/mvd-2119069854.html",
+          "title": "Зарубежные провокаторы агитировали граждан портить бюллетени, сообщило МВД",
+          "publishedAt": "2026-09-20T17:36:49+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes ballot-spoiling accusations to a named Interior Ministry official.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://ria.ru/20260920/pvo-2119067073.html",
+          "title": "ПВО за день уничтожила 112 украинских беспилотников над Россией",
+          "publishedAt": "2026-09-20T17:31:09+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports interception counts over a specified period; the underlying military count was not independently verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://ria.ru/20260920/vsu-2119066446.html",
+          "title": "ВС России продолжили удары по портам и судам, используемым в интересах ВСУ",
+          "publishedAt": "2026-09-20T17:28:14+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Relays a Defence Ministry account of port and ship strikes; alleged military use is the belligerent’s characterization.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://ria.ru/20260920/mo-2119065156.html",
+          "title": "ВС России поразили склад боеприпасов в Петровке",
+          "publishedAt": "2026-09-20T17:22:59+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a claimed ammunition-depot strike; the target’s identity and damage were not independently verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://ria.ru/20260920/odessa-2119065035.html",
+          "title": "ВС России поразили сухогруз с военным имуществом в порту Одесса",
+          "publishedAt": "2026-09-20T17:22:21+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Relays the ministry’s cargo-ship strike account; this overlaps the same briefing as other sampled items.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "35bef871-edfa-424b-8b94-89bf58d2011f",
+      "publisherId": "rossiya-segodnya",
+      "name": "Sputnik",
+      "feedUrl": "https://sputnikglobe.com/export/rss2/index.xml",
+      "decision": "retain with limitations",
+      "rationale": "The ten sampled excerpts lean heavily on Russian ministry statements. Military target descriptions, interception counts and claimed enemy intentions require independent corroboration; several reports relay one briefing.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://sputnikglobe.com/20260920/russian-forces-repel-massive-ukrainian-attacks-aimed-at-derailing-state-duma-elections-1124765821.html",
+          "title": "Russian Forces Repel Massive Ukrainian Attack Aimed at Derailing State Duma Elections",
+          "publishedAt": "2026-09-20T17:09:36+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes both the claimed interceptions and alleged election-disruption motive to Russia’s Defence Ministry.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sputnikglobe.com/20260920/russian-rassvet-satellite-network-puts-ukraine-on-alert-1124765687.html",
+          "title": "Russian Rassvet Satellite Network Puts Ukraine on Alert",
+          "publishedAt": "2026-09-20T15:57:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a possible satellite capability to Ukrainian adviser Serhii Beskrestnov; possible capability is not verified deployment.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sputnikglobe.com/20260920/russian-strikes-leave-ukraines-biggest-steel-producers-offline--report-1124765284.html",
+          "title": "Russian Strikes Leave Ukraine’s Biggest Steel Producers Offline – Report",
+          "publishedAt": "2026-09-20T11:14:50+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits unnamed media citing industry representatives; the short excerpt does not identify each original report.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sputnikglobe.com/20260920/russian-drones-rain-fire-on-ukrainian-forces-in-donbass-1124764881.html",
+          "title": "Russian Drones Rain Fire on Ukrainian Forces in Donbass",
+          "publishedAt": "2026-09-20T10:33:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Relays the Defence Ministry’s drone-operation account; the video was not independently reviewed or authenticated.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sputnikglobe.com/20260920/russian-air-defenses-shoot-down-1951-ukrainian-drone---mod-1124764522.html",
+          "title": "Russian Air Defenses Shoot Down 1,951 Ukrainian Drone - MoD",
+          "publishedAt": "2026-09-20T08:38:35+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a daily interception total to the Defence Ministry; it is not an independently established count.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "0dd9db66-d293-4822-bda2-a49bfc08f38e",
+      "publisherId": "tv-novosti",
+      "name": "RT",
+      "feedUrl": "https://www.rt.com/rss/",
+      "decision": "retain with limitations",
+      "rationale": "The current sample attributes officials and includes signed geopolitical interpretation. Expanded review found upheld Ofcom findings of repeated due-impartiality breaches in 2018 broadcasts; those findings are not automatically findings of fabricated facts in today’s RSS items.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.rt.com/news/646004-eu-worst-energy-crisis-dmitriev/?utm_source=rss&utm_medium=rss&utm_campaign=RSS",
+          "title": "EU facing ‘worst energy crisis in history’ – Putin envoy",
+          "publishedAt": "2026-09-20T12:58:14+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the worst-energy-crisis characterization to Kremlin envoy Dmitriev; this is his comparative assessment.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rt.com/news/646003-idf-soldier-criminal-record/?utm_source=rss&utm_medium=rss&utm_campaign=RSS",
+          "title": "Israel wipes criminal record of soldier who shot wounded Palestinian",
+          "publishedAt": "2026-09-20T11:58:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Herzog’s action concerning Azaria’s criminal record; the underlying historical conviction is identified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rt.com/news/646005-russophobic-west-blame-ukraine-peace-chance/?utm_source=rss&utm_medium=rss&utm_campaign=RSS",
+          "title": "‘Russophobic West’ to blame for lost Ukraine peace chance – NATO state leader",
+          "publishedAt": "2026-09-20T11:32:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes claims about lost peace opportunities to Fico; his causal interpretation is not independently established.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rt.com/africa/645905-history-of-ceuta-and-melilla/?utm_source=rss&utm_medium=rss&utm_campaign=RSS",
+          "title": "Beyond Europe’s fence: Ceuta, Melilla, and unfinished decolonization",
+          "publishedAt": "2026-09-20T09:30:09+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Historical and geopolitical analysis interprets competing sovereignty arguments around Ceuta and Melilla.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.rt.com/russia/646001-two-russian-civilians-killed-ukrainian-drone-strike/?utm_source=rss&utm_medium=rss&utm_campaign=RSS",
+          "title": "Two civilians killed as Ukrainian drones strike homes near Moscow",
+          "publishedAt": "2026-09-20T04:31:56+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes casualties, interception counts and the alleged election-disruption motive to Russian officials.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "7467ce24-c5f4-496f-9818-9677352487fe",
+      "publisherId": "okaz",
+      "name": "Saudi Gazette",
+      "feedUrl": "https://saudigazette.com.sa/rssFeed/74",
+      "decision": "retain with limitations",
+      "rationale": "The five sampled openings largely report official condemnations, coalition statements and institutional events. Repeated official statements should not be treated as independent verification of military outcomes.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://saudigazette.com.sa/article/664708/saudi-arabia/un-gcc-chiefs-condemn-houthi-militia-attacks-on-saudi-arabia-saying-serious-threat-to-regional-security",
+          "title": "UN, GCC chiefs condemn Houthi militia attacks on Saudi Arabia, saying serious threat to regional security",
+          "publishedAt": "2026-09-20T13:35:23+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies UN and GCC leaders and a meeting context for their condemnations.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://saudigazette.com.sa/article/664707/saudi-arabia/islamic-military-coalition-conducts-specialized-program-on-countering-extremism",
+          "title": "Islamic Military Coalition conducts specialized program on countering extremism",
+          "publishedAt": "2026-09-20T13:01:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports an IMCTC training program with RUSI; participation is not proof of program effectiveness.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://saudigazette.com.sa/article/664697/saudi-arabia/arab-and-islamic-world-condemns-houthi-attacks-affirms-support-for-saudi-arabia",
+          "title": "Arab and Islamic world condemns Houthi attacks; affirms support for Saudi Arabia",
+          "publishedAt": "2026-09-20T07:24:35+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Lists governments’ condemnations; shared statements do not independently corroborate the attack details.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://saudigazette.com.sa/article/664694/saudi-arabia/saudi-air-defenses-intercept-houthi-ballistic-missile-targeting-riyadh",
+          "title": "Saudi air defenses intercept Houthi ballistic missile targeting Riyadh",
+          "publishedAt": "2026-09-19T22:54:36+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the interception account to named coalition spokesman Turki Al-Maliki.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://saudigazette.com.sa/article/664681/saudi-arabia/unsc-condemns-houthi-attacks-affirms-solidarity-with-saudi-arabia-in-confronting-aggression",
+          "title": "UNSC condemns Houthi attacks; affirms solidarity with Saudi Arabia in confronting aggression",
+          "publishedAt": "2026-09-19T13:46:45+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a Security Council members’ statement; its legal and military characterizations remain attributed.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "eacc44ce-3667-47f3-8701-1f53dba146d0",
+      "publisherId": "shafaq",
+      "name": "Shafaq News",
+      "feedUrl": "https://shafaq.com/rss/en",
+      "decision": "retain with limitations",
+      "rationale": "The sample includes a named direct interview, explicit wire/broadcast attribution and an official explanation for explosions. Its standards limit anonymous sourcing and reserve publication decisions to journalists.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://shafaq.com/en/World/CENTCOM-diverted-109-vessels-in-Hormuz",
+          "title": "CENTCOM diverted 109 vessels in Hormuz",
+          "publishedAt": "2026-09-20T17:19:55+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the vessel count to CENTCOM and embeds its public statement; the count was not independently audited.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://shafaq.com/en/World/Trump-probably-open-to-Pezeshkian-meeting",
+          "title": "Trump ‘probably open’ to Pezeshkian meeting",
+          "publishedAt": "2026-09-20T15:38:13+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies Fox News as the source of Trump’s remarks; openness to a meeting is not a scheduled meeting.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://shafaq.com/en/Kurdistan/Erbil-explosions-linked-to-drills-security-activity",
+          "title": "Erbil explosions linked to drills, security activity",
+          "publishedAt": "2026-09-20T15:32:05+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Separates the Counter-Terrorism Service’s exercise explanation from a local source’s controlled-disposal account.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://shafaq.com/en/Iraq/Exclusive-US-forces-to-stay-in-Iraq-after-Coalition-exit",
+          "title": "Exclusive: US forces to stay in Iraq after Coalition exit",
+          "publishedAt": "2026-09-20T13:28:25+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Names Bahaa al-Araji as the interview source; his account of the future US presence is not a bilateral agreement independently inspected here.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://shafaq.com/en/Middle-East/Iran-military-warns-US-against-renewed-attacks",
+          "title": "Iran military warns US against renewed attacks",
+          "publishedAt": "2026-09-20T12:18:56+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly notes that Iran’s allegation of a US war decision supplies no evidence.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "3b2422be-7123-4359-8281-bc129e3b20c1",
+      "publisherId": "shargh",
+      "name": "Shargh Daily",
+      "feedUrl": "https://www.sharghdaily.com/feeds/",
+      "decision": "retain with limitations",
+      "rationale": "The sample relays named officials and AFP reporting, but one short Erbil item attributes a drone-impact claim only to unnamed local sources. Other contemporaneous reporting quotes Kurdish authorities describing exercises and ordnance disposal; the cause should remain disputed here.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.sharghdaily.com/fa/tiny/news-1129385",
+          "title": "سفارت آمریکا به شهروندان خود در عربستان هشدار داد",
+          "publishedAt": "2026-09-20T16:52:37+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Relays a US travel warning while adding the publisher’s partisan framing of the Yemen conflict.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.sharghdaily.com/fa/tiny/news-1129384",
+          "title": "واکنش آمریکا به حمله حوثی ها به ریاض",
+          "publishedAt": "2026-09-20T16:51:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Credits AFP observation and notes that the White House did not explain Trump’s schedule change.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.sharghdaily.com/fa/tiny/news-1129362",
+          "title": "قطر: واشنگتن خواهان توافق با ایران است",
+          "publishedAt": "2026-09-20T16:04:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes Qatar’s spokesperson on efforts to restart talks; efforts are not a concluded agreement.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.sharghdaily.com/fa/tiny/news-1129358",
+          "title": "قطر: از طریق دیپلماسی برای ثبات منطقه تلاش می‌کنیم",
+          "publishedAt": "2026-09-20T15:20:02+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports Qatar’s prime minister’s diplomatic position and economic priorities.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.sharghdaily.com/fa/tiny/news-1129354",
+          "title": "انفجار در نزدیکی فرودگاه اربیل",
+          "publishedAt": "2026-09-20T14:39:38+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes a drone-impact explanation to unnamed locals; a contemporaneous official account reported elsewhere gives a different explanation.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "498186bb-da5f-48d7-ad94-0be4f23dad7f",
+      "publisherId": "scmp",
+      "name": "South China Morning Post",
+      "feedUrl": "https://www.scmp.com/rss/91/feed",
+      "decision": "retain with limitations",
+      "rationale": "The sample separates signed geopolitical opinion from attributed military and official accounts. Its standards require identifiable sourcing and senior approval for single-source stories.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.scmp.com/opinion/asia-opinion/article/3367489/new-north-korea-russia-bridge-delivers-powerful-message-china?utm_source=rss_feed",
+          "title": "New North Korea-Russia bridge delivers a powerful message to China",
+          "publishedAt": "2026-09-20T12:30:04+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Analysis interprets a North Korea–Russia bridge as a signal to Beijing; this is geopolitical inference.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.scmp.com/news/china/diplomacy/article/3368158/does-trumps-new-ai-force-signal-tech-race-escalation-ahead-xi-jinping-summit?utm_source=rss_feed",
+          "title": "Does Trump’s new AI Force signal tech race escalation ahead of Xi Jinping summit?",
+          "publishedAt": "2026-09-20T12:00:11+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a proposed AI initiative and expert concerns while noting uncertainty about its structure.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.scmp.com/news/asia/east-asia/article/3368160/north-korea-fires-two-missiles-three-hours-amid-tensions-over-us-drills?utm_source=rss_feed",
+          "title": "North Korea fires 2 missiles in 3 hours amid tensions over US drills",
+          "publishedAt": "2026-09-20T11:25:27+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the missile-launch account to South Korean authorities; initial descriptions remain conditional.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.scmp.com/opinion/world-opinion/article/3367866/middle-powers-dont-have-wait-trump-xi-putin-summit?utm_source=rss_feed",
+          "title": "Middle powers don’t have to wait for a Trump-Xi-Putin summit",
+          "publishedAt": "2026-09-20T08:30:09+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Signed opinion argues that middle powers have agency; a possible leaders’ summit is not a confirmed outcome.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.scmp.com/news/world/russia-central-asia/article/3368144/ukraine-pummels-moscow-drones-last-day-russian-election?utm_source=rss_feed",
+          "title": "Ukraine pummels Moscow with drones on last day of Russian election",
+          "publishedAt": "2026-09-20T07:17:12+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes casualty and interception claims to Moscow’s mayor and election authorities, with eyewitness observations distinguished.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "d5067597-62f3-4de2-b692-5fd47a0be101",
+      "publisherId": "stars-stripes",
+      "name": "Stars and Stripes",
+      "feedUrl": "https://subscribe.stripes.com/rss/middle-east.xml",
+      "decision": "retain with limitations",
+      "rationale": "The sample includes direct questions to CENTCOM, identified inspector-general findings and clearly attributed broadcast reporting. Government affiliation does not make official military claims independently verified.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.stripes.com/theaters/us/2026-09-18/state-department-approves-sale-of-48-f35s-to-saudi-arabia-22888413.html",
+          "title": "Trump administration advances $24 billion F-35 sale to Saudi Arabia",
+          "publishedAt": "2026-09-18T14:16:30+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Distinguishes State Department approval of a potential F-35 sale from completed delivery and notes congressional review.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.stripes.com/theaters/middle_east/2026-09-18/un-report-concludes-us-war-crimes-iran-22880407.html",
+          "title": "UN report cites possible US war crimes in deadly strikes on Iran school, sports center",
+          "publishedAt": "2026-09-18T11:38:59+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports a UN fact-finding mission’s reasonable-grounds assessment, including findings about Iran; this is not a court judgment.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.stripes.com/theaters/middle_east/2026-09-15/iran-boats-destroyed-middle-east-drone-22861851.html",
+          "title": "US ‘forcefully’ deters 2 Iranian boats from taking Navy drone in Middle East",
+          "publishedAt": "2026-09-15T17:39:37+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Names CENTCOM spokesman Tim Hawkins and an email response, while identifying unanswered questions and separate Axios and Iranian accounts.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.stripes.com/theaters/us/2026-09-15/dodig-iran-war-cost-munitions-22860181.html",
+          "title": "Iran war exposed US munitions shortfalls and production bottlenecks, Pentagon IG says",
+          "publishedAt": "2026-09-15T15:16:58+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies an inspector-general report and its June 30 reporting boundary; these figures are not presented as a current full-war total.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.stripes.com/branches/air_force/2026-09-14/iran-rescue-operation-22848006.html",
+          "title": "Downed F-15E airman recounts massive US rescue mission in Iran",
+          "publishedAt": "2026-09-14T10:19:22+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Explicitly attributes the airman’s account to CBS 60 Minutes; republication is not another independent interview.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "258809da-87d7-47a1-a6b8-4c80a9ab39fd",
+      "publisherId": "sudan-tribune",
+      "name": "Sudan Tribune",
+      "feedUrl": "https://sudantribune.net/feed/",
+      "decision": "retain with limitations",
+      "rationale": "The five Arabic openings distinguish named humanitarian statements from anonymous local or government sources, but attack and casualty claims often depend on a party or advocacy organization.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://sudantribune.net/article/318999",
+          "title": "أطباء : مقتل متطوع في سجن «شالا» بالفاشر",
+          "publishedAt": "2026-09-20T14:12:03+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the alleged death of a humanitarian volunteer in detention to the Sudan Doctors Network; the underlying detention record was not verified.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sudantribune.net/article/318996",
+          "title": "مسيرات «الدعم السريع» تهاجم مواقع مدنية عسكرية في الأبيض والجيش يتصدى",
+          "publishedAt": "2026-09-20T10:56:30+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Uses unnamed local sources for attacks around El Obeid and separately attributes an interception claim to the army.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sudantribune.net/article/318980",
+          "title": "الجيش يسقط مسيّرة ويكبد «الدعم السريع» خسائر بالنيل الأزرق",
+          "publishedAt": "2026-09-19T17:33:19+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Quotes a Fourth Infantry Division statement for a drone interception; military performance claims remain attributed.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sudantribune.net/article/318974",
+          "title": "الخرطوم تدرس تحركا ضد اجتماعات بريطانية ويابانية بالدعم السريع",
+          "publishedAt": "2026-09-19T16:52:32+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes possible diplomatic measures to unnamed senior government sources and distinguishes reported British humanitarian reasoning.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://sudantribune.net/article/318967",
+          "title": "رتفاع أعداد النازحين إلى منطقة طويلة بشمال دارفور",
+          "publishedAt": "2026-09-19T14:07:35+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Identifies displaced-persons spokesman Adam Rijal and separates the latest arrivals from the cumulative September figures.",
+          "access": "publisher excerpt"
+        }
+      ],
+      "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check."
+    },
+    {
+      "sourceId": "389d5ab9-cf51-470f-a745-15068c20330b",
+      "publisherId": "svt",
+      "name": "SVT Nyheter",
+      "feedUrl": "https://www.svt.se/nyheter/rss.xml",
+      "decision": "retain with limitations",
+      "rationale": "The sample names interviewees and documentary sources, distinguishes a planned local vote from an enacted donation, and labels a UN mission’s evidentiary standard.",
+      "reviewedAt": "2026-09-20",
+      "disabledReason": null,
+      "samples": [
+        {
+          "url": "https://www.svt.se/nyheter/utrikes/oppositionspolitikern-putin-forbereder-sig-pa-att-lamna-makten",
+          "title": "Oppositionspolitikern: Putin förbereder sig på att lämna makten",
+          "publishedAt": "2026-09-20T10:33:06+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Attributes the interpretation of Putin’s intentions to opposition politician Boris Nadezhdin; it is not an established succession plan.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svt.se/nyheter/lokalt/sormland/region-sormland-skanker-ambulanser-till-ukraina",
+          "title": "Region Sörmland skänker ambulanser till Ukraina",
+          "publishedAt": "2026-09-20T10:32:07+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "The headline anticipates an ambulance donation, while the text says the regional board decision is scheduled for Tuesday.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svt.se/nyheter/inrikes/tyska-forband-forstarker-gotland-i-nato-operation",
+          "title": "Tyska förband förstärker Gotland i Nato-operation",
+          "publishedAt": "2026-09-18T08:48:18+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Names Swedish military officers describing the Gotland reinforcement operation; an operational test is not an attack on Sweden.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svt.se/nyheter/utrikes/expertgrupp-usa-attacker-troligen-krigsbrott",
+          "title": "Expertgrupp: USA-attacker troligen krigsbrott",
+          "publishedAt": "2026-09-18T02:01:21+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Uses the UN mission’s reasonable-grounds formulation rather than describing a criminal conviction.",
+          "access": "publisher excerpt"
+        },
+        {
+          "url": "https://www.svt.se/nyheter/utrikes/usa-oppnar-for-100-procentiga-tullar-mot-lander-som-koper-rysk-olja",
+          "title": "USA öppnar för 100-procentiga tullar mot länder som köper rysk olja",
+          "publishedAt": "2026-09-16T22:32:13+00:00",
+          "reviewedAt": "2026-09-20",
+          "observation": "Reports the House vote and explicitly says the bill still awaits presidential signing at that publication stage.",
           "access": "publisher excerpt"
         }
       ],

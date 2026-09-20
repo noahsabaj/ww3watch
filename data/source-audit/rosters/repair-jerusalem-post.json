@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "id": "repair-jerusalem-post",
+  "reviewedAt": "2026-09-20",
+  "changes": [
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "before": {
+        "url": "https://www.jpost.com/Rss/RssFeedsHeadlines.aspx",
+        "name": "Jerusalem Post",
+        "region": "Israeli",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+        "name": "Jerusalem Post",
+        "region": "Israeli",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "The old headline endpoint serves June 2025 items. The publisher RSS directory advertises this current front-page feed; two production-path probes more than 15 minutes apart returned current dated reports.",
+      "evidence": [
+        "https://www.jpost.com/rss",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35531349725",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35532247493"
+      ]
+    }
+  ]
+}

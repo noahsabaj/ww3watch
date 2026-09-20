@@ -51,7 +51,10 @@ export function validateSourceAudit(audit: SourceAudit): string[] {
     if (!publishers.has(s.publisherId) || !date(s.reviewedAt) || !s.rationale || !url(s.feedUrl)) errors.push(`Incomplete source: ${s.sourceId}`)
     if (!['retain','retain with limitations','exclude','unresolved'].includes(s.decision)) errors.push(`Invalid decision: ${s.sourceId}`)
     if (s.samples.filter(a => a.access !== 'unavailable').length < 5 && !s.sampleLimitations) errors.push(`Missing sample limitation: ${s.sourceId}`)
-    if (s.samples.some(a => !url(a.url) || !a.title || !a.observation || !date(a.reviewedAt))) errors.push(`Invalid sample: ${s.sourceId}`)
+    if (new Set(s.samples.map(a => a.url)).size !== s.samples.length) errors.push(`Duplicate sample: ${s.sourceId}`)
+    if (s.samples.some(a => !url(a.url) || !a.title || !a.observation || !date(a.reviewedAt)
+      || (a.publishedAt !== null && !date(a.publishedAt))
+      || !['full text','publisher excerpt','unavailable'].includes(a.access))) errors.push(`Invalid sample: ${s.sourceId}`)
   }
   return errors
 }

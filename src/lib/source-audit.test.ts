@@ -22,3 +22,11 @@ it('rejects unsupported publication claims and unaccounted-for samples', () => {
   expect(validateSourceAudit(audit)).toContain('Incomplete source: test')
   expect(validateSourceAudit(audit)).toContain('Missing sample limitation: test')
 })
+
+it('rejects duplicate articles and invalid publication dates or access claims', () => {
+  const audit: SourceAudit = structuredClone(sourceAudit)
+  const source = audit.sources[0]
+  source.samples.push({ ...source.samples[0], publishedAt: 'not-a-date', access: 'assumed' as never })
+  expect(validateSourceAudit(audit)).toContain(`Duplicate sample: ${source.sourceId}`)
+  expect(validateSourceAudit(audit)).toContain(`Invalid sample: ${source.sourceId}`)
+})
