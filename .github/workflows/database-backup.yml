@@ -22,11 +22,14 @@ jobs:
       - uses: supabase/setup-cli@v2
         with: {version: '2.117.0'}
       - name: Dump schema and persistent data
-        env: {SUPABASE_ACCESS_TOKEN: '${{ secrets.SUPABASE_ACCESS_TOKEN }}'}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
+          test -n "$SUPABASE_DB_PASSWORD" || { echo '::error::SUPABASE_DB_PASSWORD is required for the documented direct-password fallback.'; exit 1; }
           mkdir -p "$RUNNER_TEMP/backup"
-          supabase db dump --project-ref qusjbpknlduuklnfciws --schema public --file "$RUNNER_TEMP/backup/schema.sql"
-          supabase db dump --project-ref qusjbpknlduuklnfciws --schema public --data-only --use-copy --exclude public.article_content,public.article_translations,public.article_embeddings,public.classified_rejects,public.verdicts,public.pipeline_runs,public.rate_limits,public.trending_log --file "$RUNNER_TEMP/backup/data.sql"
+          supabase db dump --project-ref qusjbpknlduuklnfciws --password "$SUPABASE_DB_PASSWORD" --schema public --file "$RUNNER_TEMP/backup/schema.sql"
+          supabase db dump --project-ref qusjbpknlduuklnfciws --password "$SUPABASE_DB_PASSWORD" --schema public --data-only --use-copy --exclude public.article_content,public.article_translations,public.article_embeddings,public.classified_rejects,public.verdicts,public.pipeline_runs,public.rate_limits,public.trending_log --file "$RUNNER_TEMP/backup/data.sql"
       - name: Encrypt and check artifact storage allowance
         run: node --import tsx scripts/ops/backup.ts encrypt "$RUNNER_TEMP/backup"
         env:

@@ -89,6 +89,11 @@ repository artifact storage plus the new archive exceeds 400 MiB; investigate
 capacity rather than deleting the last good recovery copy. Account-wide storage
 is a separate billing concern.
 
+The Supabase CLI's temporary login-role setup currently fails for this project
+with an ADMIN/CREATEROLE permission error. The backup job uses the documented
+password fallback via the repository secret `SUPABASE_DB_PASSWORD`. Set the
+existing database password there; never paste it into chat or commit it.
+
 The owner recovery key is outside this repository in
 `C:\Users\noahs\.ww3watch-recovery\private.pem`, with owner-only folder access.
 Keep a separate offline owner-controlled copy. Never commit it, print it in
@@ -117,6 +122,7 @@ credentials. Never restore over the only production copy. A backup older than
 
 ## Acceptance still requiring owner participation
 
-Confirm filters, reader and navigation on a real phone. Browser viewport tests
-at 320, 390 and 430 pixels are useful but do not replace that check. Preserve an
-independent copy of the recovery key. No paid service upgrade is required.
+The owner confirmed on September 20 that the site, reader and filters work on a
+real phone, and that UptimeRobot emails arrived. Browser viewport checks also
+passed at 320, 390 and 430 pixels. Preserve an independent copy of the recovery
+key. No paid service upgrade is required.
