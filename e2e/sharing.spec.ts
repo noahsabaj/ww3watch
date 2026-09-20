@@ -155,6 +155,11 @@ for (const width of [320, 390, 430, 1280]) {
     const check = async (container: ReturnType<Page['locator']>) => {
       for (const button of await container.locator('[data-share-controls] button').all()) {
         await expect(button).toBeVisible()
+        // The reader slides in; wait for its controls to reach the viewport.
+        await expect.poll(async () => {
+          const rect = await button.boundingBox()
+          return !!rect && rect.x >= 0 && rect.x + rect.width <= width
+        }).toBe(true)
         const box = (await button.boundingBox())!
         expect(box.height).toBeGreaterThanOrEqual(44)
         expect(box.width).toBeGreaterThanOrEqual(44)
