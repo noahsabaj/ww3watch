@@ -5,12 +5,12 @@
      intentionally omitted. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://noahsabaj.github.io/ww3watch/</loc>
+    <loc>https://ww3watch.org/</loc>
     <changefreq>hourly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://noahsabaj.github.io/ww3watch/about</loc>
+    <loc>https://ww3watch.org/about</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>

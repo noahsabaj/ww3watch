@@ -59,7 +59,7 @@ Sources are **data**, not code — they live in the `sources` table, and feed cu
 is done in SQL, not by editing a file. To propose adding, fixing, or disabling a feed,
 open a **Source suggestion** issue (template provided) with the feed URL, the outlet's
 region and primary language, and whether it's state / public / exile-affiliated. The
-[`/about`](https://noahsabaj.github.io/ww3watch/) page shows the live roster and each
+[`/about`](https://ww3watch.org/) page shows the live roster and each
 source's health.
 
 ## Pull requests

@@ -9,7 +9,7 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   use: {
-    baseURL: process.env.PROD_URL ?? 'https://noahsabaj.github.io/ww3watch/',
+    baseURL: process.env.PROD_URL ?? 'https://ww3watch.org/',
     ...devices['Desktop Chrome'],
   },
   projects: [{ name: 'chromium' }],
