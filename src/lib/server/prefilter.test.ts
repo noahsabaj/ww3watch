@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { EMBEDDING_DIM, EMBEDDING_MODEL_TAG } from './embeddings'
 import {
-  validateHead, headScore, tierOf, partitionByHead, type ClassifierHead,
+  validateHead, headScore, tierOf, partitionByHead, applyThresholdOverrides, type ClassifierHead,
 } from './prefilter'
 
 function head(over: Partial<ClassifierHead> = {}): ClassifierHead {
@@ -76,5 +76,29 @@ describe('partitionByHead', () => {
     expect(p.uncertain).toEqual(['a', 'b', 'c'])
     expect(p.accept).toEqual(['d'])
     expect(p.reject).toEqual(['e'])
+  })
+})
+
+describe('applyThresholdOverrides', () => {
+  it('moves where the confident tiers start without touching the trained weights', () => {
+    const trained = head()
+    const out = applyThresholdOverrides(trained, 0.235, 0.7)
+    expect(out.reject_below).toBe(0.235)
+    expect(out.accept_above).toBe(0.7)
+    expect(out.weights).toBe(trained.weights)
+    expect(out.bias).toBe(trained.bias)
+    // the input is not mutated — loadHead validates the returned copy
+    expect(trained.reject_below).toBe(0.2)
+  })
+
+  it('treats 0 as "use the trained value", per knob', () => {
+    const out = applyThresholdOverrides(head(), 0, 0.7)
+    expect(out.reject_below).toBe(0.2)
+    expect(out.accept_above).toBe(0.7)
+  })
+
+  it('leaves an override that collapses the uncertain band for validateHead to reject', () => {
+    const out = applyThresholdOverrides(head(), 0.9, 0)
+    expect(validateHead(out)).toContain('reject_below >= accept_above (no uncertain band)')
   })
 })
