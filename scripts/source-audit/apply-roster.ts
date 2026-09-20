@@ -42,7 +42,11 @@ for (let i = 0; i < plan.changes.length; i++) {
   const entry = { sourceId: c.sourceId, before: curated(snapshot), after: c.after, state: 'prepared' }
   journal.changes.push(entry); save()
   if (mode !== 'dry-run') {
-    const { data, error } = await db.from('sources').update({ ...c.after, updated_at: new Date().toISOString() })
+    // A replacement endpoint must earn its own live health; neither the old
+    // endpoint's success nor a historic failure streak describes it.
+    const resetHealth = c.before.url !== c.after.url || (!c.before.enabled && c.after.enabled)
+      ? { consecutive_failures: 0, last_ok_at: null, last_error: null, last_error_kind: null, last_via: null } : {}
+    const { data, error } = await db.from('sources').update({ ...c.after, ...resetHealth, updated_at: new Date().toISOString() })
       .eq('id',c.sourceId).eq('updated_at',snapshot.updated_at).select('id')
     if (error || data?.length !== 1) throw new Error(`Curation write failed or snapshot changed: ${c.sourceId}; inspect the journal before retrying`)
     entry.state = 'applied'; save()
