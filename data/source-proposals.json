@@ -16,5 +16,14 @@
     "affiliation": "state",
     "url": "https://www.trtworld.com/feed/rss.xml",
     "evidenceUrl": "https://www.trtworld.com/"
+  },
+  {
+    "id": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+    "name": "Jerusalem Post",
+    "region": "Israeli",
+    "lang": "en",
+    "affiliation": null,
+    "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+    "evidence": "https://www.jpost.com/rss"
   }
 ]
