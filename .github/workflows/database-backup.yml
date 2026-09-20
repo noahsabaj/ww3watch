@@ -1,0 +1,56 @@
+name: Encrypted database backup
+on:
+  schedule:
+    - cron: '43 4 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+  issues: write
+concurrency:
+  group: ww3watch-database-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - uses: supabase/setup-cli@v2
+        with: {version: '2.117.0'}
+      - name: Dump schema and persistent data
+        env: {SUPABASE_ACCESS_TOKEN: '${{ secrets.SUPABASE_ACCESS_TOKEN }}'}
+        run: |
+          mkdir -p "$RUNNER_TEMP/backup"
+          supabase db dump --project-ref qusjbpknlduuklnfciws --schema public --file "$RUNNER_TEMP/backup/schema.sql"
+          supabase db dump --project-ref qusjbpknlduuklnfciws --schema public --data-only --use-copy --exclude public.article_content,public.article_translations,public.article_embeddings,public.classified_rejects,public.verdicts,public.pipeline_runs,public.rate_limits,public.trending_log --file "$RUNNER_TEMP/backup/data.sql"
+      - name: Encrypt and check artifact storage allowance
+        run: node --import tsx scripts/ops/backup.ts encrypt "$RUNNER_TEMP/backup"
+        env:
+          BACKUP_PUBLIC_KEY: ${{ vars.BACKUP_PUBLIC_KEY }}
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-database-backup
+          path: ${{ runner.temp }}/backup/ww3watch-backup.enc
+          retention-days: 7
+          if-no-files-found: error
+      - run: node --import tsx scripts/ops/record-backup.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      - name: Alert on backup failure
+        if: failure()
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          gh label create backup-failure --color B60205 --force
+          existing=$(gh issue list --label backup-failure --state open --json number --jq '.[0].number')
+          if [ -z "$existing" ]; then gh issue create --title "Encrypted backup failed" --label backup-failure --body "Inspect the encrypted backup workflow. Previous archives remain available until their retention expires."; fi
+      - name: Clear backup alert after recovery
+        if: success()
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          for number in $(gh issue list --label backup-failure --state open --json number --jq '.[].number'); do gh issue close "$number" --comment "Encrypted backup succeeded."; done

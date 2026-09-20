@@ -1,0 +1,77 @@
+name: Isolated encrypted backup restore
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run:
+        description: Successful encrypted backup run ID
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ww3watch-restore-drill
+  cancel-in-progress: false
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - uses: supabase/setup-cli@v2
+        with: {version: '2.117.0'}
+      - name: Download and decrypt in ephemeral runner storage
+        env:
+          BACKUP_RUN: ${{ inputs.backup_run }}
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_PRIVATE_KEY: ${{ secrets.BACKUP_RECOVERY_KEY }}
+        run: |
+          set -euo pipefail
+          test "$BACKUP_RUN" -eq "$BACKUP_RUN"
+          date +%s > "$RUNNER_TEMP/restore-start"
+          mkdir -m 700 "$RUNNER_TEMP/recovery"
+          gh run download "$BACKUP_RUN" --name encrypted-database-backup --dir "$RUNNER_TEMP/recovery"
+          node --import tsx scripts/ops/backup.ts decrypt "$RUNNER_TEMP/recovery" > "$RUNNER_TEMP/recovery-summary.json"
+      - name: Start empty isolated database
+        run: |
+          mv supabase/migrations "$RUNNER_TEMP/migrations"
+          supabase start
+          mv "$RUNNER_TEMP/migrations" supabase/migrations
+      - name: Restore and verify relationships and access policies
+        run: |
+          set -euo pipefail
+          docker exec supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -c 'create extension if not exists vector with schema extensions; create extension if not exists pg_cron;'
+          # Keep SQL diagnostics private: COPY failures can otherwise echo report data.
+          for file in schema data; do
+            if ! docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < "$RUNNER_TEMP/recovery/restored/$file.sql" > "$RUNNER_TEMP/restore-$file.log" 2>&1; then
+              echo '::error::Database restore failed. Private SQL diagnostics remain only on the ephemeral runner.'
+              exit 1
+            fi
+          done
+          docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < scripts/ops/verify-restore.sql > "$RUNNER_TEMP/restore-verification.txt"
+      - run: npm run build
+        env:
+          PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config playwright.restore.config.ts
+      - name: Record restoration time
+        run: |
+          elapsed=$(($(date +%s)-$(cat "$RUNNER_TEMP/restore-start")))
+          test "$elapsed" -lt 7200
+          echo "Restored feed verified in $elapsed seconds." >> "$RUNNER_TEMP/restore-verification.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: restore-proof
+          path: |
+            ${{ runner.temp }}/recovery-summary.json
+            ${{ runner.temp }}/restore-verification.txt
+          retention-days: 7
+      - name: Record successful drill
+        run: node --import tsx scripts/ops/record-backup.ts restore_success
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

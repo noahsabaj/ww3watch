@@ -72,6 +72,9 @@ jobs:
       - name: RPC smoke test
         run: docker exec -i supabase_db_ww3watch psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/tests/rpc_smoke.sql
 
+      - name: Concurrent budget reservations
+        run: node scripts/ops/test-budget-concurrency.mjs
+
       # Type-check the repo against types generated from THIS database — the one
       # just built from supabase/migrations — not the committed copy. A migration
       # that renames or retypes something a caller uses fails here even when

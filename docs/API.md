@@ -1,9 +1,10 @@
 # WW3Watch API
 
 WW3Watch is a static SPA backed by Supabase. There is no bespoke app server — the
-public surface is three Supabase **Edge Functions** plus a set of anon-readable
-tables you can query directly or subscribe to over Realtime. Everything here is
-read-only and public by design; the source of truth is the code under
+public surface is four Supabase **Edge Functions** plus anon-readable feed
+tables you can query directly or subscribe to over Realtime. Feedback is private
+and write-only through its submission endpoint; operational tables are service-only.
+The source of truth is the code under
 [`supabase/functions/`](../supabase/functions) and the SQL migrations.
 
 Base URL for functions:
@@ -13,8 +14,10 @@ https://qusjbpknlduuklnfciws.supabase.co/functions/v1
 ```
 
 The functions set `verify_jwt = false` (the publishable key is not a JWT), so they
-can be called without auth. Per-IP rate limits and an article-URL allowlist are the
-abuse controls — see [`_shared/ratelimit.ts`](../supabase/functions/_shared/ratelimit.ts)
+do not require visitor accounts. Feedback validates the public project key in
+the `apikey` header. Daily keyed abuse identifiers, actual request-byte limits,
+stored-content lookup and atomic provider budgets are the abuse controls — see
+[`_shared/ratelimit.ts`](../supabase/functions/_shared/ratelimit.ts)
 and [`_shared/net.ts`](../supabase/functions/_shared/net.ts).
 
 ---
@@ -41,7 +44,7 @@ Readability's pick is a link list or near-empty), cached in `article_content`
 and SSRF-guarded on every redirect hop.
 
 - **Input:** `?url=<article url>` (query) or `{ "url": "<article url>" }` (POST body).
-- **Output (JSON):** `{ title, byline, content, siteName, fetchedAt, cached?, stale? }`.
+- **Output (JSON):** `{ title, byline, content, contentVersion, siteName, fetchedAt, cached?, stale? }`.
   `content` is raw HTML — it is sanitized with DOMPurify **on the client** before
   rendering.
 - **Errors:** `400 missing_url|invalid_url`, `404 unknown_article` (only URLs the
@@ -53,19 +56,30 @@ and SSRF-guarded on every redirect hop.
 Translates an article's title + body into a target language. Text-node-level, so
 images and inline markup are preserved; same-language requests short-circuit.
 
-- **Input (JSON):** `{ title, lang, url, target }` plus either `segments: string[]`
-  (the article's text blocks; the reader panel) or `content: string` (plain text;
-  the feed card's headline + summary). `lang` is the source language code,
-  `target` is one of the supported reading languages (see
+- **Input (JSON):** `{ version: 2, url, mode, target, contentVersion? }`.
+  Mode is `summary` or `reader`; reader mode requires the version returned by
+  `/reader`. The server obtains all content and language from stored articles.
+  Arbitrary client text is not accepted. `target` is a supported language (see
   [`_shared/lang.ts`](../supabase/functions/_shared/lang.ts)).
-- **Output (JSON):** `{ title, segments, untranslated }` or `{ title, content }` in
-  the target language. `segments` is index-aligned with the input; `untranslated`
-  counts segments echoed in the original language because the article exceeded
-  the provider's per-request budget (the tail of a long article).
-- **Errors:** `400` (bad target / oversized body), `404 unknown_article`, `429`
-  (rate limited per IP: ~20/h for articles, ~120/h for short title+summary
-  requests — decided by size, not by the caller), `502` (translation provider
-  failure / partial response — not cached).
+- **Output (JSON):** `{ title, content, untranslated, cached? }`. Reader HTML is
+  reconstructed on the server and sanitized again before browser rendering.
+  `untranslated` counts omitted segments due to length limits, not unchanged text.
+- **Errors:** `400` invalid request, `404` unknown content, `409 refresh_required`
+  stale reader version, `413` over 4096 request bytes, `426 upgrade_required`
+  old interface, `429` quota/budget limits, `503` quota accounting unavailable,
+  and `502` provider failure. Cached results do not start new provider work.
+- Each provider attempt reserves cost atomically; reported usage reconciles it.
+  An attempt with uncertain billing retains its charge reservation.
+
+## `POST /feedback`
+
+Send the public project key in `apikey`. Input: `{ category, message, articleId?,
+email?, website? }`. Categories are `problem`, `correction`, `source`, `privacy`.
+Messages must be 10–4000 characters. Email is optional; `website` is a honeypot.
+No account or attachments are accepted. Limits are five submissions per hourly
+abuse bucket, duplicate suppression, and 100 submissions per UTC day globally.
+The response acknowledges submission without exposing private report contents.
+Public database reads and updates are denied.
 
 ---
 

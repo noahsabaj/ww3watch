@@ -26,7 +26,7 @@ test('ingestion is recent enough that the readout is not stale', async ({ page }
   await expect(page.locator('header')).toBeVisible({ timeout: 30_000 })
   // The header goes amber past 3h and red past 24h. Catch the red tier: hours
   // in double digits, or any "d ago", means several missed runs at minimum.
-  await expect(page.locator('header')).toContainText(/updated (just now|\d+m ago|[1-9]h ago)/)
+  await expect(page.locator('header')).toContainText(/updated (just now|[1-5]?\d+m ago)/)
 })
 
 test('the reader still opens', async ({ page }) => {
@@ -34,6 +34,8 @@ test('the reader still opens', async ({ page }) => {
   await expect(page.locator('article').first()).toBeVisible({ timeout: 30_000 })
   await page.locator('article a[href]').first().click()
   await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.locator('.prose-reader')).toBeVisible({timeout:30_000})
+  expect((await page.locator('.prose-reader').innerText()).length).toBeGreaterThan(200)
 })
 
 test('Trending Now is on the page with at least one pick', async ({ page }) => {
