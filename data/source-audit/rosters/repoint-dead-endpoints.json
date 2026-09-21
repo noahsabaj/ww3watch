@@ -1,0 +1,282 @@
+{
+  "version": 1,
+  "id": "repoint-dead-endpoints",
+  "reviewedAt": "2026-09-21",
+  "changes": [
+    {
+      "sourceId": "0bb56efa-d23b-4c7e-96cd-24282c3d0013",
+      "before": {
+        "url": "https://rss.dw.com/rdf/rss-en-middle-east",
+        "name": "Deutsche Welle",
+        "region": "European",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "public"
+      },
+      "after": {
+        "url": "https://rss.dw.com/xml/rss-en-all",
+        "name": "Deutsche Welle",
+        "region": "European",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "public"
+      },
+      "reason": "The catalogued Middle East endpoint returns an empty document. DW's feed directory advertises this all-English feed, which is broader: it carries German domestic coverage the relevance classifier will filter out. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://rss.dw.com/xml/rss-en-all",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "78bcc160-1fb3-46bf-bce4-e7822045287e",
+      "before": {
+        "url": "https://www.i24news.tv/en/rss",
+        "name": "i24 News",
+        "region": "Israeli",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://www.i24news.tv/en/news.xml",
+        "name": "i24 News",
+        "region": "Israeli",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "The catalogued path serves HTML. The publisher serves its English news feed at this path, with parallel fr/ar/he editions on the same pattern. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.i24news.tv/en",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "1dfcfd07-76f7-4155-93c1-f5f27e9bd97a",
+      "before": {
+        "url": "https://isfahan.irna.ir/rss",
+        "name": "IRNA Isfahan",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.irna.ir/rss/tp/1003",
+        "name": "IRNA Isfahan",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "The provincial subdomain no longer resolves. IRNA serves Isfahan as topic 1003 on its main domain; the feed's channel title names the province. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.irna.ir/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "2f7a19a2-598b-4b32-9bc0-2e1bf816b1de",
+      "before": {
+        "url": "https://kermanshah.irna.ir/rss",
+        "name": "IRNA Kermanshah",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.irna.ir/rss/tp/1028",
+        "name": "IRNA Kermanshah",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "The provincial subdomain no longer resolves. IRNA serves Kermanshah as topic 1028 on its main domain; the feed's channel title names the province. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.irna.ir/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "a74a3bae-ab55-42c5-9a31-5d3a760f3e03",
+      "before": {
+        "url": "https://khorasanrazavi.irna.ir/rss",
+        "name": "IRNA Khorasan",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.irna.ir/rss/tp/1018",
+        "name": "IRNA Khorasan",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "The provincial subdomain no longer resolves. IRNA serves Razavi Khorasan as topic 1018 on its main domain; the feed's channel title names the province. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.irna.ir/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "7d9bab43-2c39-412d-9a54-a5cad137670b",
+      "before": {
+        "url": "https://khuzestan.irna.ir/rss",
+        "name": "IRNA Khuzestan",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.irna.ir/rss/tp/1019",
+        "name": "IRNA Khuzestan",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "The provincial subdomain no longer resolves. IRNA serves Khuzestan as topic 1019 on its main domain; the feed's channel title names the province. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.irna.ir/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
+      "before": {
+        "url": "https://www.jahannews.com/feeds/",
+        "name": "Jahan News",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": false,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
+        "name": "Jahan News",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "Replace the unusable endpoint with RSS advertised by the publisher. Carried over from the repair-jahan-trt plan, which validated but was never applied. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.jahannews.com/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "7f07baed-255a-439d-93df-1db9cbefb747",
+      "before": {
+        "url": "https://omannews.gov.om/rss",
+        "name": "Oman News Agency",
+        "region": "Arab/Gulf",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://omannews.gov.om/rss.ona?rsslang=en",
+        "name": "Oman News Agency",
+        "region": "Arab/Gulf",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "The catalogued path serves HTML. The agency's feed requires an explicit language parameter, which this URL supplies. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://omannews.gov.om/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "179338d6-0b55-401c-8645-5556b6016724",
+      "before": {
+        "url": "https://sputniknews.com/export/rss2/world/index.xml",
+        "name": "Sputnik World",
+        "region": "Russian",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://sputnikglobe.com/export/rss2/archive/index.xml",
+        "name": "Sputnik World",
+        "region": "Russian",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "The catalogued sputniknews.com endpoint redirects to sputnikglobe.com without serving a feed; this is the archive feed on the current domain. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://sputnikglobe.com/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "552e32f4-cad1-4b9a-baf2-5b6248c5fd56",
+      "before": {
+        "url": "https://www.tasnimnews.com/en/rss/feed/0/7/0/all-stories",
+        "name": "Tasnim News",
+        "region": "Iranian",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.tasnimnews.ir/en/rss/feed/0/0/8/1/TopStories",
+        "name": "Tasnim News",
+        "region": "Iranian",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "The .com host no longer resolves in DNS. The same English service is served from the agency’s .ir domain. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.tasnimnews.ir/en",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    },
+    {
+      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
+      "before": {
+        "url": "https://www.trtworld.com/rss",
+        "name": "TRT World",
+        "region": "Turkish",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.trtworld.com/feed/rss.xml",
+        "name": "TRT World",
+        "region": "Turkish",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "Replace the unusable endpoint with RSS advertised by the publisher. Carried over from the repair-jahan-trt plan, which validated but was never applied. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.trtworld.com/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+      ]
+    }
+  ]
+}
