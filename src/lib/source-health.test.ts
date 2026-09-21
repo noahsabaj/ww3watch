@@ -15,4 +15,12 @@ describe('source fetch status is not editorial credibility', () => {
       expect(sourceHealth({ ...source, last_ok_at }, now)).toBe('unknown')
     }
   })
+  it('reads a success inside the shared clock’s lag as fresh, not unknown', () => {
+    // clock.now ticks every 30s, so a feed fetched seconds ago can carry a
+    // last_ok_at slightly ahead of it. That used to render the contradiction
+    // "Fetch status: unknown. Last success just now."
+    expect(sourceHealth({ ...source, last_ok_at: '2026-09-20T12:00:20Z' }, now)).toBe('recently fetched')
+    expect(sourceHealth({ ...source, last_ok_at: '2026-09-20T12:01:59Z' }, now)).toBe('recently fetched')
+    expect(sourceHealth({ ...source, last_ok_at: '2026-09-20T12:02:01Z' }, now)).toBe('unknown')
+  })
 })
