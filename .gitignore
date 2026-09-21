@@ -32,3 +32,6 @@ supabase/.temp
 
 # Agent worktrees (nested git checkouts) — never commit
 .claude/worktrees/
+
+# Scratch working dir for audits/scripts — never commit
+.tmp/

@@ -8,6 +8,7 @@
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import type { SourceRegion } from '$lib/types'
   import type { SourceRosterRow } from './+page'
+  import SourceDirectory from '$lib/components/SourceDirectory.svelte'
 
   type Highlight = {
     article_id: string
@@ -20,6 +21,7 @@
 
   // Live data, fetched client-side so the prerendered prose never freezes it.
   let sources = $state<SourceRosterRow[]>([])
+  let sourceLoadError = $state(false)
   let windowTotal = $state(0)
   let regionCounts = $state<[string, number][]>([])
   let highlights = $state<Highlight[]>([])
@@ -28,7 +30,7 @@
     const [sourcesResult, windowResult, logResult] = await Promise.all([
       supabase
         .from('sources')
-        .select('name, region, lang, enabled, last_ok_at, consecutive_failures')
+        .select('id, name, region, lang, enabled, last_ok_at, consecutive_failures')
         .order('region')
         .order('name'),
       supabase
@@ -43,6 +45,7 @@
         .limit(50),
     ])
 
+    sourceLoadError = !!sourcesResult.error
     sources = (sourcesResult.data ?? []) as SourceRosterRow[]
     const counts = new Map<string, number>()
     for (const row of windowResult.data ?? []) {
@@ -69,24 +72,6 @@
     highlights = flat
   })
 
-  // Healthy = succeeded recently; failing = multiple consecutive misses
-  // (pipeline runs every ~30–120 min, so >6 misses ≈ dead for half a day+).
-  function healthClass(s: { last_ok_at: string | null; consecutive_failures: number; enabled: boolean }): string {
-    if (!s.enabled) return 'bg-gray-700'
-    if (s.consecutive_failures === 0 && s.last_ok_at) return 'bg-green-500'
-    if (s.consecutive_failures > 6) return 'bg-red-500'
-    return 'bg-amber-500'
-  }
-
-  const byRegion = $derived.by(() => {
-    const map = new Map<string, SourceRosterRow[]>()
-    for (const s of sources) {
-      const g = map.get(s.region)
-      if (g) g.push(s)
-      else map.set(s.region, [s])
-    }
-    return [...map.entries()]
-  })
 </script>
 
 
@@ -204,40 +189,7 @@
       {/if}
     </section>
 
-    <section>
-      <h2 class="text-xl font-bold text-white mb-3">Every source, with its health</h2>
-      <p class="text-gray-500 text-sm leading-relaxed mb-4">
-        The full roster, live from the database the pipeline maintains. Green: fetched successfully
-        on recent runs. Amber: failing recently (many news sites block datacenter IPs; a proxy
-        rescues most). Red: failing for half a day or more. Gray: disabled.
-      </p>
-      {#if sources.length === 0}
-        <p class="text-gray-600 text-sm">Loading the live roster…</p>
-      {/if}
-      {#each byRegion as [region, sources]}
-        <details class="mb-2 group">
-          <summary class="cursor-pointer list-none flex items-center gap-2 py-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <span class="inline-block transition-transform group-open:rotate-90">▸</span>
-            <RegionBadge region={region as SourceRegion} />
-            <span class="text-gray-500 text-xs">{sources.length} sources ·
-              {sources.filter(s => s.consecutive_failures === 0 && s.last_ok_at).length} healthy</span>
-          </summary>
-          <div class="pl-6 pb-2 space-y-1">
-            {#each sources as s}
-              <div class="flex items-center gap-2 text-xs">
-                <span class="w-2 h-2 rounded-full shrink-0 {healthClass(s)}"
-                      title={s.last_ok_at ? `last ok ${timeAgo(s.last_ok_at, clock.now)}` : 'never fetched successfully'}></span>
-                <span class="text-gray-300">{s.name}</span>
-                <span class="text-gray-600">{s.lang}</span>
-                {#if s.consecutive_failures > 0}
-                  <span class="text-gray-600">· {s.consecutive_failures} consecutive misses</span>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        </details>
-      {/each}
-    </section>
+    <SourceDirectory {sources} loadError={sourceLoadError} />
 
     <section>
       <h2 class="text-xl font-bold text-white mb-3">Follow it elsewhere</h2>

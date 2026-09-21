@@ -270,7 +270,7 @@
       <RegionBadge region={article.source_region} />
       <span class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0 basis-full order-first">
         {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{langTag(article.source_lang)}</span>{/if}
-        <span class="truncate">{article.source_name}</span>
+        <span>{article.source_name}</span>
         <AffiliationBadge affiliation={article.source_affiliation} />
         <SignalBadges {article} />
       </span>
@@ -284,6 +284,7 @@
         Read original ↗
       </a>
       <a href="{base}/feedback?article={article.id}" class="min-h-11 inline-flex items-center text-xs text-blue-400">Report</a>
+      <a href="{base}/about{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="min-h-11 inline-flex items-center text-xs text-blue-400">Source profile</a>
       <button
         bind:this={closeBtn}
         onclick={onclose}
