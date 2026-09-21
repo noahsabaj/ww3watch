@@ -99,15 +99,6 @@
     "evidenceUrl": "https://www.rajanews.com/"
   },
   {
-    "id": "9480b101-474a-4044-ba0c-d5633715ac95",
-    "name": "Sky News",
-    "region": "UK",
-    "lang": "en",
-    "affiliation": null,
-    "url": "https://feeds.skynews.com/feeds/rss/world.xml",
-    "evidenceUrl": "https://news.sky.com/info/rss"
-  },
-  {
     "id": "179338d6-0b55-401c-8645-5556b6016724",
     "name": "Sputnik World",
     "region": "Russian",
