@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "id": "repair-jahan-trt",
+  "reviewedAt": "2026-09-20",
+  "changes": [
+    {
+      "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
+      "before": {
+        "url": "https://www.jahannews.com/feeds/",
+        "name": "Jahan News",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": false,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
+        "name": "Jahan News",
+        "region": "Iranian",
+        "lang": "fa",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "Replace the unusable endpoint with RSS advertised by the publisher; two production-path probes succeeded more than 15 minutes apart. Editorial limitations remain in the source profile.",
+      "evidence": [
+        "https://www.jahannews.com/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35528273231",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
+      ]
+    },
+    {
+      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
+      "before": {
+        "url": "https://www.trtworld.com/rss",
+        "name": "TRT World",
+        "region": "Turkish",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.trtworld.com/feed/rss.xml",
+        "name": "TRT World",
+        "region": "Turkish",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "reason": "Replace the unusable endpoint with RSS advertised by the publisher; two production-path probes succeeded more than 15 minutes apart. Editorial limitations remain in the source profile.",
+      "evidence": [
+        "https://www.trtworld.com/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35528273231",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
+      ]
+    }
+  ]
+}

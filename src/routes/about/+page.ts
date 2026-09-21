@@ -8,6 +8,7 @@ export const prerender = true
 export const ssr = true
 
 export type SourceRosterRow = {
+  id: string
   name: string
   region: string
   lang: string

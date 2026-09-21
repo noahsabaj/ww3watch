@@ -1,0 +1,58 @@
+{
+  "results": [
+    {
+      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
+      "url": "https://www.trtworld.com/feed/rss.xml",
+      "checkedAt": "2026-09-20T18:12:34.408Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35528273231"
+    },
+    {
+      "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
+      "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
+      "checkedAt": "2026-09-20T18:12:34.083Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35528273231"
+    },
+    {
+      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
+      "url": "https://www.trtworld.com/feed/rss.xml",
+      "checkedAt": "2026-09-20T18:28:20.441Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
+    },
+    {
+      "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
+      "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
+      "checkedAt": "2026-09-20T18:28:20.229Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+      "checkedAt": "2026-09-20T19:09:51.024Z",
+      "error": null,
+      "itemCount": 27,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35531349725"
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+      "checkedAt": "2026-09-20T19:26:03.582Z",
+      "error": null,
+      "itemCount": 27,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35532247493"
+    }
+  ]
+}

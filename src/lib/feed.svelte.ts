@@ -14,6 +14,7 @@ import type { Article } from './types'
 import { groupByStoryId } from './cluster'
 import type { Cluster } from './cluster'
 import { clock } from './now.svelte'
+import { FEED_COLUMNS } from './feed-columns'
 
 export type TrendingRef = { article_id: string; story_id: string | null }
 
@@ -46,9 +47,6 @@ const MAX_ARTICLES = 800
 // protection entirely). Beyond this, the next realtime flush trims the oldest.
 const MAX_LOADED = 2400
 
-// Server column list — MUST match +page.ts so realtime/pagination rows are
-// shape-identical to the initial load.
-const FEED_COLUMNS = 'id,title,url,summary,published_at,fetched_at,source_name,source_region,source_lang,source_affiliation,story_id,body_hash,topic,severity,claim,unverified,opinion,actors'
 const INITIAL_LIMIT = 500 // keep in sync with +page.ts .limit()
 const PAGE_SIZE = 100
 

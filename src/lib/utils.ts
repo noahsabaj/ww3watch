@@ -30,7 +30,7 @@ export const AFFILIATION_LABELS: Record<string, string> = {
 }
 export const AFFILIATION_TITLES: Record<string, string> = {
   state: 'State-controlled or state-owned media',
-  public: 'Public broadcaster — publicly funded with an editorial charter',
+  public: 'Public-service broadcaster. Ownership and funding arrangements vary; see the source profile.',
   exile: 'Exile / diaspora outlet operating outside the country it covers',
 }
 

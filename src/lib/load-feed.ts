@@ -1,14 +1,14 @@
 import { supabase } from '$lib/supabase'
+import { FEED_COLUMNS } from '$lib/feed-columns'
 
 export async function loadFeed() {
   const [articlesResult, trendingResult, statusResult] = await Promise.all([
     // Explicit column list — only what the feed/reader render. Drops
-    // guid/feed_url/source_id (~25% of row width × 500 × every boot,
-    // against the 5GB/mo egress budget); none are read client-side. Realtime
+    // guid/feed_url, keeping source_id for stable profile links. Realtime
     // payloads still carry full rows, so the Article type marks those optional.
     supabase
       .from('articles')
-      .select('id,title,url,summary,published_at,fetched_at,source_name,source_region,source_lang,source_affiliation,story_id,body_hash,topic,severity,claim,unverified,opinion,actors')
+      .select(FEED_COLUMNS)
       .order('published_at', { ascending: false, nullsFirst: false })
       .order('fetched_at', { ascending: false })
       .limit(500),

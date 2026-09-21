@@ -93,6 +93,17 @@ describe('fetchFeed', () => {
     delete process.env.FEED_PROXY_SECRET
   })
 
+  it.each(['News', 'News & analysis'])('resolves relative publisher links and rejects executable URLs with title %s', async (title) => {
+    // The unescaped ampersand exercises the tolerant parser as well as RSS2.
+    const xml = `<rss version="2.0"><channel><title>T</title>
+      <item><guid>stable-relative</guid><title>${title}</title><link>/article/123</link></item>
+      <item><guid>bad</guid><title>Bad</title><link>javascript:alert(1)</link></item>
+      </channel></rss>`
+    vi.spyOn(globalThis,'fetch').mockResolvedValueOnce(new Response(xml,{ headers: { 'Content-Type': 'application/rss+xml' } }))
+    const result = await fetchFeed(mockFeed)
+    expect(result.articles.map(a => [a.guid,a.url])).toEqual([['stable-relative','https://example.com/article/123']])
+  })
+
   it('classifies a network error (no articles, kind=network)', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network failure'))
     const result = await fetchFeed(mockFeed)
@@ -191,6 +202,19 @@ describe('fetchFeed', () => {
     expect(result.articles[0].title).toBe('Test Article')
     expect(result.articles[0].guid).toBe('https://example.com/article-1')
     expect(result.articles[0].source_name).toBe('Test')
+  })
+
+  it('preserves RDF dc:date publication times without changing article identity', async () => {
+    const date = new Date(Date.now() - 60_000).toISOString()
+    const xml = `<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <channel rdf:about="https://example.com/rss"><title>Test</title><link>https://example.com</link><description>News</description></channel>
+      <item rdf:about="https://example.com/report"><title>Report</title><link>https://example.com/report</link><dc:date>${date}</dc:date></item>
+      </rdf:RDF>`
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(xml, { status: 200 }))
+    const result = await fetchFeed(mockFeed)
+    expect(result.error).toBeUndefined()
+    expect(result.articles[0]).toMatchObject({ published_at: date, guid: 'https://example.com/report' })
   })
 
   it('keeps the feed when an item has an unparseable pubDate (regression)', async () => {
