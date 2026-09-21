@@ -33,6 +33,10 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // og.png is a 1200×630 social-share card scraped by external crawlers —
         // it's never rendered in-app, so precaching it just bloats every install.
+        // (source-samples.json needs no entry here: globPatterns above doesn't
+        // match .json, which is why the sample evidence is a static asset rather
+        // than a bundled module — it was 61% of the audit and almost nobody
+        // opens it.)
         globIgnores: ['**/og.png'],
         runtimeCaching: [
           {
