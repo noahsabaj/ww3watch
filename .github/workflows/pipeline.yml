@@ -173,6 +173,13 @@ jobs:
       # to one chain: GitHub holds at most one pending run per group, so a
       # backstop schedule firing while a chained run is pending just replaces
       # it. workflow_dispatch is one of the two events GITHUB_TOKEN may trigger.
+      #
+      # That replacement is why --yield-to exists. source-curation.yml shares
+      # this group on purpose (its writes to `sources` must not interleave with
+      # ingestion's health writes), so a dispatched curation run only ever
+      # WAITED — and was then replaced by the next chained dispatch and
+      # cancelled, every time, in every run of the chain. Skipping one link so
+      # it can start is cheap; the curation job re-dispatches this workflow.
       - name: Chain the next run
         if: ${{ !cancelled() }}
         env:
@@ -185,9 +192,13 @@ jobs:
         # ingestion to the throttled backstop cron for hours. It also covers a
         # dispatch that failed inside the script, with one immediate retry (by
         # then the pacing sleep has already happened, so `wait` is <= 0).
+        # It deliberately does NOT re-implement --yield-to: it only runs when
+        # the toolchain is broken, and keeping ingestion alive then matters more
+        # than a curation run that can be re-dispatched by hand.
         run: |
           if node --import tsx scripts/ci/chain.ts --start "${{ steps.clock.outputs.start }}" \
-               --workflow pipeline.yml --ref "${{ github.ref_name }}"; then
+               --workflow pipeline.yml --ref "${{ github.ref_name }}" \
+               --yield-to source-curation.yml; then
             exit 0
           fi
           echo "::warning::scripts/ci/chain.ts did not complete — chaining from the bash fallback"

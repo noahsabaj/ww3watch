@@ -31,11 +31,38 @@ export type ChainOptions = {
   cadence: number
   workflow: string
   ref: string
+  yieldTo?: string // workflow that may not be displaced; '' disables the check
   now?: () => number // epoch seconds
   wait?: (seconds: number) => Promise<unknown>
 }
 
-export async function chainNextRun(gh: Gh, opts: ChainOptions): Promise<{ sleptSeconds: number }> {
+// GitHub holds at most ONE pending run per concurrency group, so a dispatch
+// lands on a waiting run and cancels it. That is deliberate between chained
+// ingestion runs — a stale backstop firing should be replaced — but
+// source-curation.yml shares the group (its writes must not interleave with
+// ingestion's), and the chain dispatches while this job is still in progress.
+// A curation run therefore waited, was displaced by the next chained dispatch,
+// and was cancelled. Every time: source-curation.yml had never once run.
+const WAITING = new Set(['queued', 'pending', 'waiting', 'requested', 'in_progress'])
+
+// A tolerant lookup: if `gh` fails or prints something unparseable we chain as
+// before. Losing one curation run to a displaced dispatch is recoverable (it is
+// re-dispatchable by hand); stopping ingestion on a flaky list call is not.
+export async function isWaiting(gh: Gh, workflow: string): Promise<boolean> {
+  const res = await gh(['run', 'list', '--workflow', workflow, '--limit', '20', '--json', 'status'])
+  if (res.code !== 0) {
+    console.log(`[chain] could not list ${workflow} runs (exit ${res.code}); chaining anyway`)
+    return false
+  }
+  try {
+    return (JSON.parse(res.stdout) as Array<{ status: string }>).some(r => WAITING.has(r.status))
+  } catch {
+    console.log(`[chain] could not parse the ${workflow} run list; chaining anyway`)
+    return false
+  }
+}
+
+export async function chainNextRun(gh: Gh, opts: ChainOptions): Promise<{ sleptSeconds: number; dispatched: boolean }> {
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000))
   const wait = opts.wait ?? ((s: number) => sleep(s * 1000))
 
@@ -45,18 +72,27 @@ export async function chainNextRun(gh: Gh, opts: ChainOptions): Promise<{ sleptS
     console.log(`[chain] run took ${nowEpoch - opts.startEpoch}s; sleeping ${delay}s to pace the next start`)
     await wait(delay)
   }
+  // Checked AFTER the pacing sleep, not before: the sleep is most of the
+  // cadence, and a curation run dispatched during it is exactly the one this
+  // has to see. Yielding drops this link of the chain rather than the curation
+  // run; source-curation.yml re-dispatches the pipeline when it finishes, and
+  // the backstop cron covers a curation run that never starts.
+  if (opts.yieldTo && await isWaiting(gh, opts.yieldTo)) {
+    console.log(`[chain] ${opts.yieldTo} is waiting on this concurrency group; not dispatching, it restarts the chain`)
+    return { sleptSeconds: delay, dispatched: false }
+  }
   // workflow_dispatch is one of the two events GITHUB_TOKEN may trigger. A
   // failed dispatch throws → exit 1, as `gh workflow run … && echo …` did.
   await ghOrThrow(gh, ['workflow', 'run', opts.workflow, '--ref', opts.ref])
   console.log('[chain] dispatched the next run')
-  return { sleptSeconds: delay }
+  return { sleptSeconds: delay, dispatched: true }
 }
 
 async function main(): Promise<void> {
   const { values } = parseArgs({
-    options: { start: { type: 'string' }, workflow: { type: 'string' }, ref: { type: 'string' } },
+    options: { start: { type: 'string' }, workflow: { type: 'string' }, ref: { type: 'string' }, 'yield-to': { type: 'string' } },
   })
-  if (!values.start || !values.workflow || !values.ref) throw new Error('usage: chain.ts --start <epoch> --workflow <file> --ref <ref>')
+  if (!values.start || !values.workflow || !values.ref) throw new Error('usage: chain.ts --start <epoch> --workflow <file> --ref <ref> [--yield-to <file>]')
   // Number(''), unlike bash's $(( )), is 0 — so empty is rejected by hand.
   const cadenceRaw = process.env.CADENCE_SECONDS
   if (!cadenceRaw) throw new Error('CADENCE_SECONDS is not set')
@@ -65,6 +101,7 @@ async function main(): Promise<void> {
     cadence: Number(cadenceRaw),
     workflow: values.workflow,
     ref: values.ref,
+    yieldTo: values['yield-to'],
   })
 }
 
