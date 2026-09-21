@@ -11,8 +11,12 @@ on:
         type: choice
         options: [dry-run, apply, rollback]
         default: dry-run
+# actions: re-dispatch pipeline.yml. The ingestion chain skips one link when a
+# curation run is waiting (pipeline.yml's --yield-to), so this job owes it a
+# restart; without one the chain waits on the throttled backstop cron.
 permissions:
   contents: read
+  actions: write
 concurrency:
   group: ww3watch-pipeline
   cancel-in-progress: false
@@ -41,6 +45,16 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      # always(): a failed or rolled-back curation must still hand the chain
+      # back. Runs before the upload so a dispatch outage cannot cost us the
+      # journal, and `|| true` keeps a failed dispatch from masking the real
+      # result of the curation step — the backstop cron restarts the chain.
+      - name: Restart the ingestion chain this run displaced
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pipeline.yml --ref main || true
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
