@@ -1,15 +1,6 @@
 {
   "results": [
     {
-      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
-      "url": "https://www.trtworld.com/feed/rss.xml",
-      "checkedAt": "2026-09-20T18:12:34.408Z",
-      "error": null,
-      "itemCount": 100,
-      "via": "proxy",
-      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35528273231"
-    },
-    {
       "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
       "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
       "checkedAt": "2026-09-20T18:12:34.083Z",
@@ -21,11 +12,11 @@
     {
       "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
       "url": "https://www.trtworld.com/feed/rss.xml",
-      "checkedAt": "2026-09-20T18:28:20.441Z",
+      "checkedAt": "2026-09-20T18:12:34.408Z",
       "error": null,
       "itemCount": 100,
       "via": "proxy",
-      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35528273231"
     },
     {
       "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
@@ -33,6 +24,15 @@
       "checkedAt": "2026-09-20T18:28:20.229Z",
       "error": null,
       "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
+    },
+    {
+      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
+      "url": "https://www.trtworld.com/feed/rss.xml",
+      "checkedAt": "2026-09-20T18:28:20.441Z",
+      "error": null,
+      "itemCount": 100,
       "via": "proxy",
       "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35529119036"
     },
@@ -53,6 +53,276 @@
       "itemCount": 27,
       "via": "proxy",
       "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35532247493"
+    },
+    {
+      "sourceId": "0bb56efa-d23b-4c7e-96cd-24282c3d0013",
+      "url": "https://rss.dw.com/xml/rss-en-all",
+      "checkedAt": "2026-09-21T03:23:57.519Z",
+      "error": null,
+      "itemCount": 137,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "78bcc160-1fb3-46bf-bce4-e7822045287e",
+      "url": "https://www.i24news.tv/en/news.xml",
+      "checkedAt": "2026-09-21T03:23:57.702Z",
+      "error": null,
+      "itemCount": 25,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "1dfcfd07-76f7-4155-93c1-f5f27e9bd97a",
+      "url": "https://www.irna.ir/rss/tp/1003",
+      "checkedAt": "2026-09-21T03:23:57.744Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "2f7a19a2-598b-4b32-9bc0-2e1bf816b1de",
+      "url": "https://www.irna.ir/rss/tp/1028",
+      "checkedAt": "2026-09-21T03:23:58.029Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "a74a3bae-ab55-42c5-9a31-5d3a760f3e03",
+      "url": "https://www.irna.ir/rss/tp/1018",
+      "checkedAt": "2026-09-21T03:23:58.422Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "7d9bab43-2c39-412d-9a54-a5cad137670b",
+      "url": "https://www.irna.ir/rss/tp/1019",
+      "checkedAt": "2026-09-21T03:23:58.436Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
+      "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
+      "checkedAt": "2026-09-21T03:23:59.127Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "1380f7f0-d0fb-40a4-b625-2699e7a7018c",
+      "url": "https://jordantimes.com/rss-feed/2",
+      "checkedAt": "2026-09-21T03:23:59.229Z",
+      "error": null,
+      "itemCount": 50,
+      "via": "direct",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "ad0bf0ca-0ab4-4d29-9569-a4fb3c3f8685",
+      "url": "https://kuwaittimes.com/rssfeed/10/",
+      "checkedAt": "2026-09-21T03:23:59.482Z",
+      "error": null,
+      "itemCount": 50,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "7f07baed-255a-439d-93df-1db9cbefb747",
+      "url": "https://omannews.gov.om/rss.ona?rsslang=en",
+      "checkedAt": "2026-09-21T03:23:59.534Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "bac13345-7e9d-432a-b634-099b05e2c762",
+      "url": "https://www.rajanews.com/rss.xml",
+      "checkedAt": "2026-09-21T03:23:59.540Z",
+      "error": null,
+      "itemCount": 15,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "179338d6-0b55-401c-8645-5556b6016724",
+      "url": "https://sputnikglobe.com/export/rss2/archive/index.xml",
+      "checkedAt": "2026-09-21T03:23:59.746Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "552e32f4-cad1-4b9a-baf2-5b6248c5fd56",
+      "url": "https://www.tasnimnews.ir/en/rss/feed/0/0/8/1/TopStories",
+      "checkedAt": "2026-09-21T03:24:00.028Z",
+      "error": null,
+      "itemCount": 25,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "06d49095-7fc5-4b16-8200-436099cffcb8",
+      "url": "https://thepeninsulaqatar.com/category/world/feed",
+      "checkedAt": "2026-09-21T03:24:00.674Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
+      "url": "https://www.trtworld.com/feed/rss.xml",
+      "checkedAt": "2026-09-21T03:24:00.782Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35557348777"
+    },
+    {
+      "sourceId": "0bb56efa-d23b-4c7e-96cd-24282c3d0013",
+      "url": "https://rss.dw.com/xml/rss-en-all",
+      "checkedAt": "2026-09-21T03:40:24.216Z",
+      "error": null,
+      "itemCount": 137,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "78bcc160-1fb3-46bf-bce4-e7822045287e",
+      "url": "https://www.i24news.tv/en/news.xml",
+      "checkedAt": "2026-09-21T03:40:24.255Z",
+      "error": null,
+      "itemCount": 25,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "1dfcfd07-76f7-4155-93c1-f5f27e9bd97a",
+      "url": "https://www.irna.ir/rss/tp/1003",
+      "checkedAt": "2026-09-21T03:40:24.294Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "2f7a19a2-598b-4b32-9bc0-2e1bf816b1de",
+      "url": "https://www.irna.ir/rss/tp/1028",
+      "checkedAt": "2026-09-21T03:40:25.096Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "a74a3bae-ab55-42c5-9a31-5d3a760f3e03",
+      "url": "https://www.irna.ir/rss/tp/1018",
+      "checkedAt": "2026-09-21T03:40:25.470Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "7d9bab43-2c39-412d-9a54-a5cad137670b",
+      "url": "https://www.irna.ir/rss/tp/1019",
+      "checkedAt": "2026-09-21T03:40:25.871Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
+      "url": "https://cdn.jahannews.com/feeds/rssb5.-er48r6--4qhfle2m.puirug.r.xml",
+      "checkedAt": "2026-09-21T03:40:25.877Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "1380f7f0-d0fb-40a4-b625-2699e7a7018c",
+      "url": "https://jordantimes.com/rss-feed/2",
+      "checkedAt": "2026-09-21T03:40:26.145Z",
+      "error": null,
+      "itemCount": 50,
+      "via": "direct",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "ad0bf0ca-0ab4-4d29-9569-a4fb3c3f8685",
+      "url": "https://kuwaittimes.com/rssfeed/10/",
+      "checkedAt": "2026-09-21T03:40:26.192Z",
+      "error": null,
+      "itemCount": 50,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "7f07baed-255a-439d-93df-1db9cbefb747",
+      "url": "https://omannews.gov.om/rss.ona?rsslang=en",
+      "checkedAt": "2026-09-21T03:40:26.240Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "bac13345-7e9d-432a-b634-099b05e2c762",
+      "url": "https://www.rajanews.com/rss.xml",
+      "checkedAt": "2026-09-21T03:40:26.249Z",
+      "error": null,
+      "itemCount": 15,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "179338d6-0b55-401c-8645-5556b6016724",
+      "url": "https://sputnikglobe.com/export/rss2/archive/index.xml",
+      "checkedAt": "2026-09-21T03:40:26.602Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "552e32f4-cad1-4b9a-baf2-5b6248c5fd56",
+      "url": "https://www.tasnimnews.ir/en/rss/feed/0/0/8/1/TopStories",
+      "checkedAt": "2026-09-21T03:40:26.754Z",
+      "error": null,
+      "itemCount": 25,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "06d49095-7fc5-4b16-8200-436099cffcb8",
+      "url": "https://thepeninsulaqatar.com/category/world/feed",
+      "checkedAt": "2026-09-21T03:40:27.257Z",
+      "error": null,
+      "itemCount": 30,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
+      "url": "https://www.trtworld.com/feed/rss.xml",
+      "checkedAt": "2026-09-21T03:40:27.293Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
     }
   ]
 }

@@ -1,5 +1,59 @@
 [
   {
+    "id": "0bb56efa-d23b-4c7e-96cd-24282c3d0013",
+    "name": "Deutsche Welle",
+    "region": "European",
+    "lang": "en",
+    "affiliation": "public",
+    "url": "https://rss.dw.com/xml/rss-en-all",
+    "evidenceUrl": "https://rss.dw.com/xml/rss-en-all"
+  },
+  {
+    "id": "78bcc160-1fb3-46bf-bce4-e7822045287e",
+    "name": "i24 News",
+    "region": "Israeli",
+    "lang": "en",
+    "affiliation": null,
+    "url": "https://www.i24news.tv/en/news.xml",
+    "evidenceUrl": "https://web.archive.org/web/20151026170552/http://www.i24news.tv/app.php/en/feeds"
+  },
+  {
+    "id": "1dfcfd07-76f7-4155-93c1-f5f27e9bd97a",
+    "name": "IRNA Isfahan",
+    "region": "Iranian",
+    "lang": "fa",
+    "affiliation": "state",
+    "url": "https://www.irna.ir/rss/tp/1003",
+    "evidenceUrl": "https://www.irna.ir/rss?tp=1003"
+  },
+  {
+    "id": "2f7a19a2-598b-4b32-9bc0-2e1bf816b1de",
+    "name": "IRNA Kermanshah",
+    "region": "Iranian",
+    "lang": "fa",
+    "affiliation": "state",
+    "url": "https://www.irna.ir/rss/tp/1028",
+    "evidenceUrl": "https://www.irna.ir/service/province/kermanshah/1000"
+  },
+  {
+    "id": "a74a3bae-ab55-42c5-9a31-5d3a760f3e03",
+    "name": "IRNA Khorasan",
+    "region": "Iranian",
+    "lang": "fa",
+    "affiliation": "state",
+    "url": "https://www.irna.ir/rss/tp/1018",
+    "evidenceUrl": "https://www.irna.ir/service/province/rkhorasan"
+  },
+  {
+    "id": "7d9bab43-2c39-412d-9a54-a5cad137670b",
+    "name": "IRNA Khuzestan",
+    "region": "Iranian",
+    "lang": "fa",
+    "affiliation": "state",
+    "url": "https://www.irna.ir/rss/tp/1019",
+    "evidenceUrl": "https://www.irna.ir/rss?tp=1019"
+  },
+  {
     "id": "e518d50c-911f-4f61-9fd0-22ba18bb19d6",
     "name": "Jahan News",
     "region": "Iranian",
@@ -9,6 +63,69 @@
     "evidenceUrl": "https://www.jahannews.com/"
   },
   {
+    "id": "1380f7f0-d0fb-40a4-b625-2699e7a7018c",
+    "name": "Jordan Times",
+    "region": "Arab/Gulf",
+    "lang": "en",
+    "affiliation": null,
+    "url": "https://jordantimes.com/rss-feed/2",
+    "evidenceUrl": "https://jordantimes.com/rss"
+  },
+  {
+    "id": "ad0bf0ca-0ab4-4d29-9569-a4fb3c3f8685",
+    "name": "Kuwait Times",
+    "region": "Arab/Gulf",
+    "lang": "en",
+    "affiliation": null,
+    "url": "https://kuwaittimes.com/rssfeed/10/",
+    "evidenceUrl": "https://kuwaittimes.com/rss/"
+  },
+  {
+    "id": "7f07baed-255a-439d-93df-1db9cbefb747",
+    "name": "Oman News Agency",
+    "region": "Arab/Gulf",
+    "lang": "en",
+    "affiliation": "state",
+    "url": "https://omannews.gov.om/rss.ona?rsslang=en",
+    "evidenceUrl": "https://omannews.gov.om/rssinfo/"
+  },
+  {
+    "id": "bac13345-7e9d-432a-b634-099b05e2c762",
+    "name": "Raja News",
+    "region": "Iranian",
+    "lang": "fa",
+    "affiliation": null,
+    "url": "https://www.rajanews.com/rss.xml",
+    "evidenceUrl": "https://www.rajanews.com/"
+  },
+  {
+    "id": "179338d6-0b55-401c-8645-5556b6016724",
+    "name": "Sputnik World",
+    "region": "Russian",
+    "lang": "en",
+    "affiliation": "state",
+    "url": "https://sputnikglobe.com/export/rss2/archive/index.xml",
+    "evidenceUrl": "https://sputnikglobe.com/"
+  },
+  {
+    "id": "552e32f4-cad1-4b9a-baf2-5b6248c5fd56",
+    "name": "Tasnim News",
+    "region": "Iranian",
+    "lang": "en",
+    "affiliation": "state",
+    "url": "https://www.tasnimnews.ir/en/rss/feed/0/0/8/1/TopStories",
+    "evidenceUrl": "https://www.tasnimnews.ir/en/rss"
+  },
+  {
+    "id": "06d49095-7fc5-4b16-8200-436099cffcb8",
+    "name": "The Peninsula",
+    "region": "Arab/Gulf",
+    "lang": "en",
+    "affiliation": null,
+    "url": "https://thepeninsulaqatar.com/category/world/feed",
+    "evidenceUrl": "https://web.archive.org/cdx/search/cdx?url=thepeninsulaqatar.com&matchType=domain&fl=original,timestamp,statuscode,mimetype&collapse=urlkey&filter=mimetype:.*xml.*&limit=120"
+  },
+  {
     "id": "4a24ae26-16b2-4316-9267-5692b49ad791",
     "name": "TRT World",
     "region": "Turkish",
@@ -16,14 +133,5 @@
     "affiliation": "state",
     "url": "https://www.trtworld.com/feed/rss.xml",
     "evidenceUrl": "https://www.trtworld.com/"
-  },
-  {
-    "id": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
-    "name": "Jerusalem Post",
-    "region": "Israeli",
-    "lang": "en",
-    "affiliation": null,
-    "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
-    "evidence": "https://www.jpost.com/rss"
   }
 ]
