@@ -49,16 +49,18 @@
 </script>
 
 {#snippet status()}
+  <!-- One flex row, so the dot, the count and the freshness share a line box
+       (an inline-flex count next to plain inline text sat off-baseline). -->
   <span class="inline-flex items-center gap-1.5" title={live ? 'Live updates connected' : 'Live updates reconnecting'}>
-    <span class="h-1.5 w-1.5 rounded-full {live ? 'bg-emerald-400 motion-safe:animate-pulse' : 'bg-fg-3'}" aria-hidden="true"></span>
-    {isFiltered ? `${storyCount.toLocaleString()} of ${totalCount.toLocaleString()}` : storyCount.toLocaleString()} stories
+    <span class="h-1.5 w-1.5 shrink-0 rounded-full {live ? 'bg-emerald-400 motion-safe:animate-pulse' : 'bg-fg-3'}" aria-hidden="true"></span>
+    <span>{isFiltered ? `${storyCount.toLocaleString()} of ${totalCount.toLocaleString()}` : storyCount.toLocaleString()} stories</span>
+    {#if lastUpdatedAt}
+      <span
+        class={staleness === 'red' ? 'text-red-400' : staleness === 'amber' ? 'text-amber-400' : ''}
+        title="Ingestion last completed {new Date(lastUpdatedAt).toLocaleString()} — runs about every 15 min{staleness === 'red' || staleness === 'amber' ? '. New reporting is delayed; existing stories remain available.' : ''}"
+      >· updated {timeAgo(lastUpdatedAt, clock.now)}</span>
+    {/if}
   </span>
-  {#if lastUpdatedAt}
-    <span
-      class={staleness === 'red' ? 'text-red-400' : staleness === 'amber' ? 'text-amber-400' : ''}
-      title="Ingestion last completed {new Date(lastUpdatedAt).toLocaleString()} — runs about every 15 min{staleness === 'red' || staleness === 'amber' ? '. New reporting is delayed; existing stories remain available.' : ''}"
-    > · updated {timeAgo(lastUpdatedAt, clock.now)}</span>
-  {/if}
 {/snippet}
 
 <!-- Sticky so filters and the menu stay one tap away; padding-top clears the
