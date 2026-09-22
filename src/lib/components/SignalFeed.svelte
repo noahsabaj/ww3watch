@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte'
+  import { onMount } from 'svelte'
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import SignalStory from '$lib/components/SignalStory.svelte'
@@ -54,14 +54,6 @@
   $effect(() => {
     if (clusters[0] && activeId === null) activeId = clusters[0].id
   })
-
-  async function jump(id: string) {
-    activeId = id
-    await tick()
-    const index = clusters.findIndex((c) => c.id === id)
-    if (!scroller || index < 0) return
-    scroller.scrollTo({ top: index * scroller.clientHeight })
-  }
 </script>
 
 <div class="relative h-full min-h-0">
@@ -92,17 +84,5 @@
     <p class="pointer-events-none absolute right-3 top-4 text-[11px] tabular-nums text-gray-500">
       {activeIndex + 1} / {clusters.length}
     </p>
-    <div class="absolute top-1/2 right-2 z-10 flex -translate-y-1/2 flex-col gap-1.5 max-h-[40%] overflow-hidden">
-      {#each clusters.slice(0, 12) as cluster (cluster.id)}
-        <button
-          type="button"
-          aria-label={cluster.representative.source_region}
-          onclick={() => jump(cluster.id)}
-          class="flex size-5 items-center justify-center"
-        >
-          <span class="rounded-full {cluster.id === activeId ? 'h-3.5 w-1.5 bg-white' : 'size-1.5 bg-white/35'}"></span>
-        </button>
-      {/each}
-    </div>
   {/if}
 </div>
