@@ -57,7 +57,7 @@ test('card copies a clean story link without changing filters, reader or history
   const card = await selectStory(page, { hasText: 'ceasefire talks resume' })
   const originalUrl = page.url()
   const depth = await page.evaluate(() => history.length)
-  const search = page.locator('header input[type="text"]')
+  const search = page.getByRole('searchbox', { name: 'Search headlines' })
   await search.fill('ceasefire')
   await card.getByRole('button', { name: 'Copy story link' }).click()
   await expect(card.getByRole('status')).toHaveText('Link copied')

@@ -48,19 +48,19 @@
   {:else}
     <div class="signal-grain absolute inset-0"></div>
   {/if}
-  <!-- Bottom padding clears the floating filter button and the home indicator. -->
+  <!-- Bottom padding clears the home indicator. -->
   <div
-    class="relative flex shrink-0 flex-col justify-end px-5 {photo.shown ? 'bg-[#070809] pt-4' : 'h-full pt-6'}"
-    style="padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px))"
+    class="relative flex shrink-0 flex-col justify-end px-5 {photo.shown ? 'bg-ink pt-4' : 'h-full pt-6'}"
+    style="padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px))"
   >
     <div class="mb-3 flex flex-wrap items-center gap-2">
-      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-400">{rep.source_region}</span>
+      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg-2">{rep.source_region}</span>
       {#if repLang}
-        <span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{repLang}</span>
+        <span class="text-[9px] font-mono uppercase tracking-wide text-fg-3 border border-line rounded px-1">{repLang}</span>
       {/if}
       <SignalBadges article={badgeSignals} />
       {#if translation.shown}
-        <span class="text-[10px] font-medium uppercase tracking-[0.12em] text-gray-500">Translated</span>
+        <span class="text-[10px] font-medium uppercase tracking-[0.12em] text-fg-3">Translated</span>
       {/if}
     </div>
 
@@ -69,7 +69,7 @@
       target="_blank"
       rel="noopener noreferrer"
       dir={translation.dir}
-      class="font-serif text-[2rem] leading-[1.12] font-medium tracking-tight text-white hover:text-blue-200"
+      class="font-serif text-[2rem] leading-[1.12] font-medium tracking-tight text-fg hover:text-fg"
       onclick={(e) => {
         if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
           e.preventDefault()
@@ -80,21 +80,21 @@
       {headlineText(translation.shown?.title ?? rep.title)}
     </a>
 
-    <p class="mt-3 text-sm text-gray-400 tabular-nums">
+    <p class="mt-3 text-sm text-fg-2 tabular-nums">
       {rep.source_name}
       · {cluster.sourceCount} {cluster.sourceCount === 1 ? 'source' : 'sources'}
       · {timeAgo(rep.published_at, clock.now)}
     </p>
     {#if photo.shown}
-      <p class="mt-1 text-[11px] uppercase tracking-[0.14em] text-gray-500">Photo · {photo.shown.sourceName}</p>
+      <p class="mt-1 text-[11px] uppercase tracking-[0.14em] text-fg-3">Photo · {photo.shown.sourceName}</p>
     {/if}
 
     {#if others.length > 0}
       <ul class="mt-4 space-y-1.5">
         {#each others as article (article.id)}
-          <li class="flex items-center gap-2 text-sm text-gray-300 min-w-0">
+          <li class="flex items-center gap-2 text-sm text-fg-2 min-w-0">
             <span class="w-2 h-2 rounded-full shrink-0 {REGION_COLORS[article.source_region]?.split(' ')[0] ?? 'bg-gray-500'}"></span>
-            <span class="truncate text-gray-400" dir="auto">
+            <span class="truncate text-fg-2" dir="auto">
               {article.source_name} · {headlineText(article.title)}
             </span>
           </li>
@@ -108,13 +108,13 @@
           type="button"
           onclick={translation.toggle}
           aria-busy={translation.busy}
-          class="transition-colors {translation.failed ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
+          class="action min-h-9 {translation.failed ? '!text-amber-400' : '!text-accent'}"
         >{translation.label}</button>
       {/if}
       <ShareControls article={rep} {cluster} />
     </div>
     {#if cluster.sourceCount > 1}
-      <p class="mt-3 text-xs text-gray-600">Tap the headline to read it and every other newsroom's version.</p>
+      <p class="mt-3 text-xs text-fg-3">Tap the headline to read it and every other newsroom's version.</p>
     {/if}
   </div>
 </article>

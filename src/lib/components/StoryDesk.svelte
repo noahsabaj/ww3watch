@@ -114,7 +114,6 @@
     pane?.scrollTo({ top: 0 })
   })
 
-  const tab = 'text-[11px] px-2.5 py-1 rounded-full border transition-colors'
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -126,10 +125,10 @@
     bind:this={rail}
     data-desk-rail
     aria-label="Stories"
-    class="relative min-h-0 overflow-y-auto border-r border-gray-800/80"
+    class="relative min-h-0 overflow-y-auto border-r border-line"
     onscroll={() => (paused = (rail?.scrollTop ?? 0) > 300)}
   >
-    <div class="sticky top-0 z-10 flex items-center gap-1 border-b border-gray-800/80 bg-[#0a0a0b]/95 px-4 py-2 backdrop-blur">
+    <div class="sticky top-0 z-10 flex items-center gap-1 border-b border-line bg-ink/95 px-4 py-2.5 backdrop-blur">
       <div class="flex items-center gap-1" role="group" aria-label="Feed order">
         {#each [['latest', 'Latest'], ['top', 'Top · 24h']] as [mode, label] (mode)}
           <button
@@ -137,27 +136,27 @@
             onclick={() => onSortMode(mode as SortMode)}
             aria-pressed={sortMode === mode}
             title={mode === 'top' ? 'The last 24 hours, ranked by severity, independent corroboration and recency' : 'Newest first'}
-            class="{tab} {sortMode === mode ? 'border-blue-500/50 bg-blue-600/15 text-blue-300' : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-600'}"
+            class="pill min-h-8 px-3 text-xs"
           >{label}</button>
         {/each}
       </div>
       {#if newCount > 0 && paused}
-        <button type="button" onclick={flush} class="ml-auto rounded-full bg-blue-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-blue-500">
+        <button type="button" onclick={flush} class="btn ml-auto min-h-8 px-3 text-xs">
           ↑ {newCount} new
         </button>
       {/if}
     </div>
 
     {#if lastVisitAt === null}
-      <section class="border-b border-gray-800/60 px-4 py-3 text-xs leading-relaxed text-gray-400" aria-label="About this feed">
+      <section class="border-b border-line px-4 py-3 text-xs leading-relaxed text-fg-2" aria-label="About this feed">
         Global conflict reporting from every side, grouped into stories. Automated labels and grouping do not verify a claim.
-        <a class="text-blue-400 underline" href="{base}/about">How WW3Watch works</a>
+        <a class="link" href="{base}/about">How WW3Watch works</a>
       </section>
     {/if}
 
     {#if trending.length > 0}
-      <section class="border-b border-gray-800/60 px-4 pt-3 pb-2" aria-labelledby="trending-heading">
-        <h2 id="trending-heading" class="mb-1 text-[10px] uppercase tracking-[0.18em] text-gray-500">Trending now</h2>
+      <section class="border-b border-line px-4 pt-3 pb-2" aria-labelledby="trending-heading">
+        <h2 id="trending-heading" class="label mb-1">Trending now</h2>
         <ol>
           {#each trending as c, i (c.id)}
             <li>
@@ -166,9 +165,9 @@
                 data-trending-story={c.id}
                 onclick={() => select(c)}
                 aria-current={selected?.id === c.id ? 'true' : undefined}
-                class="flex w-full items-baseline gap-2 rounded py-1.5 text-start text-[13px] leading-snug transition-colors {selected?.id === c.id ? 'text-white' : 'text-gray-300 hover:text-white'}"
+                class="flex w-full items-baseline gap-2 rounded py-1.5 text-start text-[13px] leading-snug transition-colors {selected?.id === c.id ? 'text-fg' : 'text-fg-2 hover:text-fg'}"
               >
-                <span class="w-3 shrink-0 font-mono text-[11px] text-gray-600">{i + 1}</span>
+                <span class="w-3 shrink-0 font-mono text-[11px] text-fg-3">{i + 1}</span>
                 <span dir="auto" class="line-clamp-2">{headlineText(c.representative.title)}</span>
               </button>
             </li>
@@ -182,10 +181,10 @@
         {@const rep = c.representative}
         {@const active = selected?.id === c.id}
         {#if sortMode === 'latest' && (i === 0 || dayKey(rep.published_at, clock.now) !== dayKey(clusters[i - 1].representative.published_at, clock.now))}
-          <li aria-hidden="true" class="px-4 pt-4 pb-1 text-[10px] uppercase tracking-[0.18em] text-gray-600" data-day>{dayLabel(rep.published_at, clock.now)}</li>
+          <li aria-hidden="true" class="label px-4 pt-5 pb-1" data-day>{dayLabel(rep.published_at, clock.now)}</li>
         {/if}
         {#if i === lastVisitIndex}
-          <li role="separator" class="px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-blue-400/70">New since your last visit <span aria-hidden="true">↑</span></li>
+          <li role="separator" class="label px-4 py-2 !text-accent">New since your last visit <span aria-hidden="true">↑</span></li>
         {/if}
         <li>
           <button
@@ -193,16 +192,16 @@
             data-desk-story={c.id}
             onclick={() => select(c)}
             aria-current={active ? 'true' : undefined}
-            class="block w-full border-l-[3px] rounded-none px-4 py-3 text-start transition-colors {REGION_BORDER[rep.source_region] ?? 'border-gray-600'} {active ? 'bg-white/[0.07]' : 'hover:bg-white/[0.03]'}"
+            class="block w-full border-l-[3px] rounded-none px-4 py-3 text-start transition-colors {REGION_BORDER[rep.source_region] ?? 'border-line-strong'} {active ? 'bg-white/[0.07]' : 'hover:bg-white/[0.03]'}"
           >
-            <span class="flex items-center gap-1.5 text-[11px] text-gray-500 tabular-nums">
+            <span class="flex items-center gap-1.5 text-[11px] text-fg-3 tabular-nums">
               <span>{rep.source_region}</span>
               {#if langTag(rep.source_lang)}<span class="font-mono">{langTag(rep.source_lang)}</span>{/if}
               <span aria-hidden="true">·</span>
               <span>{c.sourceCount} {c.sourceCount === 1 ? 'outlet' : 'outlets'}</span>
               <span class="ml-auto">{timeAgo(rep.published_at, clock.now)}</span>
             </span>
-            <span dir="auto" class="mt-1 block text-[15px] leading-snug line-clamp-3 {active ? 'text-white font-medium' : 'text-gray-200'}">
+            <span dir="auto" class="mt-1 block text-[15px] leading-snug line-clamp-3 {active ? 'text-fg font-medium' : 'text-fg'}">
               {headlineText(rep.title)}
             </span>
           </button>
@@ -215,20 +214,20 @@
             type="button"
             onclick={onLoadOlder}
             aria-disabled={loadingMore}
-            class="rounded-full border border-gray-800 px-5 py-2 text-sm text-gray-400 hover:border-gray-600 hover:text-gray-200 aria-disabled:opacity-50"
+            class="btn-ghost text-sm aria-disabled:opacity-50"
           >{loadingMore ? 'Loading…' : 'Load older stories'}</button>
         {:else}
-          <p id="feed-end" tabindex="-1" class="text-xs text-gray-600 outline-none">
+          <p id="feed-end" tabindex="-1" class="text-xs text-fg-3 outline-none">
             {sortMode === 'top' ? 'That’s every ranked story from the last 24 hours.' : 'You’ve reached the oldest stories.'}
           </p>
         {/if}
-        <p class="mt-4 text-[11px] text-gray-700 pointer-coarse:hidden">j / k to move · o to read</p>
+        <p class="mt-4 text-[11px] text-fg-3 pointer-coarse:hidden">j / k to move · o to read</p>
       </li>
     </ol>
   </nav>
 
   <!-- Pane -->
-  <div bind:this={pane} data-desk-pane class="min-h-0 overflow-y-auto bg-[#070809]">
+  <div bind:this={pane} data-desk-pane class="min-h-0 overflow-y-auto bg-ink">
     {#if reader.selectedArticle}
       <ArticlePanel inline article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
     {:else if selected}

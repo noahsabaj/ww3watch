@@ -37,13 +37,13 @@
           type="button"
           onclick={() => onLoadOlder?.()}
           aria-disabled={loadingMore}
-          class="text-sm text-gray-300 border border-gray-700 rounded-full px-5 py-2 aria-disabled:opacity-50"
+          class="btn-ghost text-sm aria-disabled:opacity-50"
         >
           {loadingMore ? 'Loading…' : 'Load older stories'}
         </button>
       </div>
     {:else}
-      <p id="feed-end" tabindex="-1" class="flex h-full snap-start items-center justify-center px-6 text-center text-xs text-gray-600 outline-none">
+      <p id="feed-end" tabindex="-1" class="flex h-full snap-start items-center justify-center px-6 text-center text-xs text-fg-3 outline-none">
         {ranked ? 'That’s every ranked story from the last 24 hours.' : 'You’ve reached the oldest stories.'}
       </p>
     {/if}

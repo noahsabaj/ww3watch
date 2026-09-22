@@ -22,15 +22,13 @@ test('tapping a headline opens the reader as a dialog', async ({ page }) => {
   await expect(stories(page).first()).toBeVisible()
 })
 
-test('the filter button never covers a story', async ({ page }) => {
-  const fab = await page.getByRole('button', { name: /^Open filters/ }).boundingBox()
-  const story = storyCard(page)
-  for (const el of await story.locator('a[href], button').all()) {
-    const box = await el.boundingBox()
-    if (!box || !fab) continue
-    const overlaps = box.x < fab.x + fab.width && box.x + box.width > fab.x && box.y < fab.y + fab.height && box.y + box.height > fab.y
-    expect(overlaps, `${await el.innerText()} sits under the filter button`).toBe(false)
-  }
+test('filters and the menu live in the header, with nothing floating over stories', async ({ page }) => {
+  const header = page.locator('header')
+  await expect(header.getByRole('button', { name: /^Open filters/ })).toBeVisible()
+  await expect(header.getByRole('button', { name: 'Menu' })).toBeVisible()
+  const floating = await page.evaluate(() =>
+    [...document.querySelectorAll('button, a')].filter((el) => getComputedStyle(el).position === 'fixed').length)
+  expect(floating).toBe(0)
 })
 
 test('feed order lives in the filter sheet', async ({ page }) => {

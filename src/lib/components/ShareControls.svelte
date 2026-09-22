@@ -68,20 +68,20 @@
 
 <div class="flex flex-wrap items-center gap-x-3 min-w-0 max-w-full text-xs" data-share-controls>
   <button type="button" onclick={copy} disabled={busy}
-    class="min-h-11 min-w-11 text-gray-400 hover:text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-blue-400 focus-visible:outline-offset-2 rounded">
+    class="min-h-11 min-w-11 text-fg-2 hover:text-fg disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded">
     Copy {target.kind} link
   </button>
   {#if nativeShare}
     <button type="button" onclick={share} disabled={busy}
-      class="min-h-11 min-w-11 text-gray-400 hover:text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-blue-400 focus-visible:outline-offset-2 rounded">Share</button>
+      class="min-h-11 min-w-11 text-fg-2 hover:text-fg disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded">Share</button>
   {/if}
-  <span role="status" aria-live="polite" aria-atomic="true" class="text-gray-300">{message}</span>
+  <span role="status" aria-live="polite" aria-atomic="true" class="text-fg-2">{message}</span>
   {#if manualCopy}
-    <label class="w-full min-w-0 text-gray-400 pb-2">
+    <label class="w-full min-w-0 text-fg-2 pb-2">
       Link to {target.kind}
       <input type="text" readonly value={target.url} onclick={(event) => event.currentTarget.select()}
         onfocus={(event) => event.currentTarget.select()}
-        class="block w-full min-w-0 min-h-11 mt-1 rounded border border-gray-600 bg-[#0a0a0b] px-2 text-gray-200 focus-visible:outline-2 focus-visible:outline-blue-400" />
+        class="field mt-1 min-w-0 text-sm" />
     </label>
   {/if}
 </div>

@@ -1,9 +1,27 @@
 @import "tailwindcss";
 
+/* ── The WW3Watch theme ─────────────────────────────────────────────────────
+   One night palette for every page. Colour carries meaning only in two
+   places: a story's region (a thin bar or a dot, never a filled block) and the
+   single accent for links and the current selection. Headlines and page
+   titles are serif; everything around them is sans. */
+@theme {
+  --color-ink: #070809;          /* the ground, everywhere */
+  --color-panel: #0e1013;        /* sheets, popovers, cards */
+  --color-raised: #15181c;       /* fields, hovered rows */
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.18);
+  --color-fg: #f1f2f4;           /* headlines, primary text */
+  --color-fg-2: #a4a9b1;         /* body, secondary */
+  --color-fg-3: #6c7179;         /* metadata, labels */
+  --color-accent: #8fb4f5;       /* links, the current selection */
+}
+
 @layer base {
   html {
-    background-color: #0a0a0b;
-    color: #e5e7eb;
+    background-color: var(--color-ink);
+    color: var(--color-fg);
+    -webkit-tap-highlight-color: transparent;
   }
 
   * {
@@ -20,21 +38,151 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #111113;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #374151;
+    background: rgb(255 255 255 / 0.12);
     border-radius: 3px;
   }
-}
 
-@layer base {
-  :focus-visible { outline: 2px solid #60a5fa; outline-offset: 3px; }
-  footer a { min-height: 44px; display: inline-flex; align-items: center; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+  ::selection { background: rgb(143 180 245 / 0.3); }
 }
 
 @layer components {
+  /* Section label: SMALL CAPS above a group. */
+  .label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-fg-3);
+  }
+
+  /* Toggle / choice pill. Pressed = a lit outline, not a coloured block. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    padding: 0 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-line);
+    font-size: 13px;
+    color: var(--color-fg-2);
+    transition: color 150ms, border-color 150ms, background-color 150ms;
+  }
+  .pill:hover { color: var(--color-fg); border-color: var(--color-line-strong); }
+  .pill[aria-pressed="true"],
+  .pill[aria-current="true"] {
+    color: var(--color-fg);
+    border-color: rgb(255 255 255 / 0.32);
+    background: rgb(255 255 255 / 0.07);
+  }
+
+  /* The one filled button: white on ink. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0 1.25rem;
+    border-radius: 9999px;
+    background: var(--color-fg);
+    color: var(--color-ink);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 150ms, opacity 150ms;
+  }
+  .btn:hover { background: #ffffff; }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; }
+
+  /* Outline button for secondary actions. */
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0 1.25rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-line-strong);
+    color: var(--color-fg);
+    font-size: 14px;
+    transition: background-color 150ms;
+  }
+  .btn-ghost:hover { background: rgb(255 255 255 / 0.06); }
+
+  /* Round icon button (header filters, menu, close). */
+  .icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    color: var(--color-fg-2);
+    transition: color 150ms, background-color 150ms;
+  }
+  .icon-btn:hover, .icon-btn[aria-expanded="true"] { color: var(--color-fg); background: rgb(255 255 255 / 0.07); }
+
+  /* Quiet text action (Translate, Copy link, Report…). */
+  .action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--color-fg-2);
+    transition: color 150ms;
+  }
+  .action:hover { color: var(--color-fg); }
+
+  /* Inline link inside prose. */
+  .link {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-color: rgb(143 180 245 / 0.35);
+    text-underline-offset: 3px;
+  }
+  .link:hover { text-decoration-color: currentColor; }
+
+  /* Text field, select and textarea. */
+  .field {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.875rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-raised);
+    color: var(--color-fg);
+    font-size: 15px;
+    transition: border-color 150ms;
+  }
+  .field::placeholder { color: var(--color-fg-3); }
+  .field:focus { outline: none; border-color: rgb(143 180 245 / 0.6); }
+
+  /* Small uppercase qualifier on a headline (STATE, WIRE, STATEMENT…). */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.35rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-line-strong);
+    color: var(--color-fg-3);
+    flex-shrink: 0;
+  }
+
+  /* Long-form page text (About, Privacy, Trends notes). */
+  .page-prose { color: var(--color-fg-2); font-size: 17px; line-height: 1.7; }
+  .page-prose p + p { margin-top: 1rem; }
+  .page-prose strong { color: var(--color-fg); font-weight: 600; }
+
   .signal-scroller {
     scrollbar-width: none;
   }
@@ -45,8 +193,8 @@
   .signal-story {
     background:
       radial-gradient(120% 70% at 50% -8%, rgba(var(--wash), 0.42) 0%, transparent 58%),
-      linear-gradient(to top, #070809 0%, #070809 42%, transparent 100%),
-      #070809;
+      linear-gradient(to top, var(--color-ink) 0%, var(--color-ink) 42%, transparent 100%),
+      var(--color-ink);
   }
 
   .signal-grain::after {

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, untrack, tick } from 'svelte'
   import Header from '$lib/components/Header.svelte'
-  import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import SignalFeed from '$lib/components/SignalFeed.svelte'
   import StoryDesk from '$lib/components/StoryDesk.svelte'
@@ -45,8 +44,6 @@
   // and an afterNavigate callback.
   const reader = createReaderRouting(feed)
 
-  let filterSheetOpen = $state(false)
-  let filterDropdownOpen = $state(false)
 
   // Install prompt
   let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null)
@@ -130,7 +127,7 @@
   })
 </script>
 
-<div class="h-dvh overflow-hidden bg-[#070809] flex flex-col">
+<div class="h-dvh overflow-hidden bg-ink flex flex-col">
   <Header
     bind:searchQuery={filters.searchQuery}
     bind:activeRegions={filters.activeRegions}
@@ -139,7 +136,9 @@
     bind:signalFilter={filters.signalFilter}
     availableTopics={filters.availableTopics}
     availableActors={filters.availableActors}
-    bind:filterDropdownOpen
+    sortMode={filters.sortMode}
+    onSortMode={filters.setSortMode}
+    onReset={filters.clearFilters}
     storyCount={filters.clustered.length}
     totalCount={Math.max(feed.allClustered.length, filters.clustered.length)}
     isFiltered={filters.isFiltered}
@@ -148,53 +147,44 @@
     staleness={feed.staleness}
   />
 
-  <!-- Install prompt banner (phones only, dismissible) -->
+  <!-- Install prompt (phones only, dismissible) -->
   {#if installPromptEvent && !installDismissed && desk === false}
-    <div class="bg-blue-950/80 border-b border-blue-900 px-4 py-2 flex items-center gap-3">
-      <span class="text-sm text-blue-200 flex-1">Add WW3Watch to your home screen</span>
-      <button
-        onclick={handleInstall}
-        class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-medium transition-colors shrink-0"
-      >
-        Install
-      </button>
-      <button
-        onclick={dismissInstall}
-        class="text-gray-400 hover:text-gray-200 transition-colors text-lg leading-none shrink-0"
-        aria-label="Dismiss"
-      >
-        ✕
+    <div class="flex items-center gap-3 border-b border-line bg-panel px-4 py-2.5">
+      <span class="flex-1 text-sm text-fg-2">Add WW3Watch to your home screen</span>
+      <button onclick={handleInstall} class="btn min-h-8 px-4 text-[13px]">Install</button>
+      <button onclick={dismissInstall} class="icon-btn -mr-2 h-9 w-9" aria-label="Dismiss">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
       </button>
     </div>
   {/if}
 
   {#if filters.clustered.length === 0}
-    <div class="flex-1 py-20 text-center text-gray-500 text-sm">
+    <div class="flex-1 px-6 py-24 text-center text-sm text-fg-3">
       {#if loading || desk === null}
         Loading the latest reporting…
       {:else if loadError && feed.articles.length === 0}
-        <p class="mb-3">Couldn't load the feed.</p>
+        <p class="mb-4 font-serif text-xl text-fg">Couldn't load the feed.</p>
         <button
           onclick={() => location.reload()}
-          class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+          class="btn-ghost"
         >
           Retry
         </button>
       {:else if feed.articles.length === 0}
         No stories yet — new ones appear here live.
       {:else if filters.sortMode === 'top' && filters.latestClustered.length > 0}
-        <p class="mb-3">Nothing from the last 24 hours matches.</p>
+        <p class="mb-4 font-serif text-xl text-fg">Nothing from the last 24 hours matches.</p>
         <button
           onclick={() => filters.setSortMode('latest')}
-          class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+          class="btn-ghost"
         >
           Show latest
         </button>
       {:else}
-        <p class="mb-3">No stories match your filters.</p>
+        <p class="mb-4 font-serif text-xl text-fg">No stories match your filters.</p>
         <button
           onclick={filters.clearFilters}
-          class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+          class="btn-ghost"
         >
           Clear filters
         </button>
@@ -218,10 +208,10 @@
   {:else if desk === false}
     <!-- New articles banner -->
     {#if feed.newQueue.length > 0}
-      <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(4rem + env(safe-area-inset-top, 0px))">
+      <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(6.5rem + env(safe-area-inset-top, 0px))">
         <button
           onclick={flushQueue}
-          class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-full shadow-lg transition-colors"
+          class="btn min-h-9 px-4 text-[13px] shadow-lg shadow-black/50"
         >
           ↑ {feed.newQueue.length} new {feed.newQueue.length === 1 ? 'story' : 'stories'}
         </button>
@@ -241,36 +231,6 @@
     </div>
   {/if}
 
-  <!-- Phone filters: a floating button opens the sheet. The desk has them in the header. -->
-  <button
-    class="fixed right-4 z-30 min-[820px]:hidden w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
-    style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px))"
-    onclick={() => filterSheetOpen = true}
-    aria-label={filters.isFiltered ? 'Open filters (active)' : 'Open filters'}
-  >
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <line x1="4" y1="6" x2="20" y2="6"/>
-      <line x1="4" y1="12" x2="16" y2="12"/>
-      <line x1="4" y1="18" x2="12" y2="18"/>
-    </svg>
-    {#if filters.isFiltered}
-      <span class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#0a0a0b]" aria-hidden="true"></span>
-    {/if}
-  </button>
-
-  <FilterSheet
-    bind:open={filterSheetOpen}
-    bind:activeRegions={filters.activeRegions}
-    bind:excludedLangs={filters.excludedLangs}
-    availableLangs={filters.availableLangs}
-    bind:searchQuery={filters.searchQuery}
-    bind:signalFilter={filters.signalFilter}
-    availableTopics={filters.availableTopics}
-    availableActors={filters.availableActors}
-    sortMode={filters.sortMode}
-    onSortMode={filters.setSortMode}
-  />
-
   <!-- On a phone the reader is a full-screen dialog; the desk hosts it in its pane. -->
   {#if !desk}
     <ArticlePanel article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
@@ -284,8 +244,8 @@
   <!-- Transient toast — sighted-only mirror of the live region above. -->
   {#if feed.toast}
     <div
-      class="fixed left-1/2 -translate-x-1/2 z-40 bg-gray-900 border border-gray-700 text-gray-200 text-sm px-4 py-2 rounded-full shadow-lg"
-      style="bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px))"
+      class="fixed left-1/2 -translate-x-1/2 z-40 rounded-full border border-line bg-panel px-4 py-2 text-sm text-fg shadow-lg shadow-black/50"
+      style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px))"
       aria-hidden="true"
     >
       {feed.toast}

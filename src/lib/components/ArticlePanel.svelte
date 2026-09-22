@@ -228,21 +228,21 @@
        translate into. Rendered in both the loaded and failed reader states. -->
   {#snippet translateControls()}
     {#if article}
-      <div class="flex items-center gap-2 mb-4 flex-wrap text-xs">
+      <div class="flex items-center gap-2">
         {#if article.source_lang !== prefs.readingLang}
           <button
             onclick={translate}
-            class="transition-colors {translation.status === 'failed' ? 'text-amber-400 hover:text-amber-300' : 'text-blue-400 hover:text-blue-300'}"
+            class="action {translation.status === 'failed' ? '!text-amber-400' : '!text-accent'}"
           >{translateLabel}</button>
-          <span class="text-gray-600" aria-hidden="true">→</span>
+          <span class="text-fg-3" aria-hidden="true">→</span>
         {:else}
-          <span class="text-gray-500">Original ({LANG_NAMES[article.source_lang] ?? article.source_lang.toUpperCase()}) — read in</span>
+          <span class="text-fg-3">Original ({LANG_NAMES[article.source_lang] ?? article.source_lang.toUpperCase()}) · read in</span>
         {/if}
         <select
           value={prefs.readingLang}
           onchange={(e) => changeReadingLang(e.currentTarget.value)}
           aria-label="Reading language"
-          class="bg-[#1a1a1d] border border-gray-700 rounded text-gray-300 py-0.5 px-1.5 focus:outline-none focus:border-blue-500"
+          class="field min-h-9 w-auto py-1 pl-3 pr-8 text-[13px]"
         >
           {#each TARGET_LANGS as code}
             <option value={code}>{LANG_NAMES[code]}</option>
@@ -271,84 +271,76 @@
     tabindex="-1"
     onkeydown={trapFocus}
     class={inline
-      ? 'h-full bg-[#0a0a0b] flex flex-col'
-      : 'panel-slide fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-[#0a0a0b] border-l border-gray-800 z-50 flex flex-col'}
+      ? 'h-full bg-ink flex flex-col'
+      : 'panel-slide fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-ink border-l border-line z-50 flex flex-col'}
     style={inline ? undefined : 'padding-top: env(safe-area-inset-top, 0px);'}
   >
-    <!-- Top bar -->
-    <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
-      <RegionBadge region={article.source_region} />
-      <span class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0 {inline ? '' : 'basis-full order-first'}">
-        {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{langTag(article.source_lang)}</span>{/if}
-        <span>{article.source_name}</span>
-        <AffiliationBadge affiliation={article.source_affiliation} />
-        <SignalBadges {article} />
-      </span>
-      <span class="text-xs text-gray-500 shrink-0 whitespace-nowrap">{timeAgo(article.published_at, clock.now)}</span>
-      <a
-        href={article.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="ml-auto text-xs text-gray-500 hover:text-gray-300 transition-colors shrink-0 whitespace-nowrap"
-      >
-        Read original ↗
-      </a>
-      <a href="{base}/feedback?article={article.id}" class="min-h-11 inline-flex items-center text-xs text-blue-400">Report</a>
-      <a href="{base}/about{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="min-h-11 inline-flex items-center text-xs text-blue-400">Source profile</a>
+    <!-- Top bar: the way back, and the way out to the publisher. -->
+    <div class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line px-2">
       <button
         bind:this={closeBtn}
         onclick={onclose}
-        class="min-h-11 min-w-11 text-gray-400 hover:text-gray-200 transition-colors leading-none shrink-0 {inline ? 'order-first -ml-2 mr-2 px-2 text-sm' : 'ml-1 text-lg'}"
+        class={inline ? 'action px-3 text-sm' : 'icon-btn'}
         aria-label="Close reader"
       >
-        {inline ? '← Story' : '✕'}
+        {#if inline}← Story{:else}<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>{/if}
       </button>
-    </div>
-
-    <div class="px-4 border-b border-gray-800 shrink-0">
-      <ShareControls {article} {cluster} />
+      <a href={article.url} target="_blank" rel="noopener noreferrer" class="action px-3 text-sm">Read original ↗</a>
     </div>
 
     <!-- Content area -->
-    <div class="flex-1 overflow-y-auto px-6 py-5 {inline ? 'lg:px-10' : ''}">
-      <div class={inline ? 'mx-auto max-w-3xl' : ''}>
+    <div class="flex-1 overflow-y-auto px-5 pt-6 pb-10 {inline ? 'lg:px-10' : ''}">
+      <div class="mx-auto {inline ? 'max-w-3xl' : 'max-w-2xl'}">
+
+      <!-- Who published it. -->
+      <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-fg-3">
+        <RegionBadge region={article.source_region} />
+        <span aria-hidden="true">·</span>
+        <span class="text-[13px] font-medium text-fg">{article.source_name}</span>
+        {#if langTag(article.source_lang)}<span class="tag font-mono">{langTag(article.source_lang)}</span>{/if}
+        <AffiliationBadge affiliation={article.source_affiliation} />
+        <SignalBadges {article} />
+        <span class="whitespace-nowrap">· {timeAgo(article.published_at, clock.now)}</span>
+      </div>
 
       {#if reader.status === 'loading'}
-        <div class="space-y-3">
-          <div class="h-7 bg-gray-800 rounded w-3/4 shimmer"></div>
-          <div class="h-7 bg-gray-800 rounded w-1/2 shimmer"></div>
-          <div class="h-4 bg-gray-800/60 rounded w-1/3 mt-4 shimmer"></div>
-          <div class="space-y-2 mt-6">
-            <div class="h-4 bg-gray-800 rounded shimmer"></div>
-            <div class="h-4 bg-gray-800 rounded w-11/12 shimmer"></div>
-            <div class="h-4 bg-gray-800 rounded w-full shimmer"></div>
-            <div class="h-4 bg-gray-800 rounded w-10/12 shimmer"></div>
-            <div class="h-4 bg-gray-800 rounded w-full shimmer"></div>
-          </div>
-          <div class="space-y-2 mt-4">
-            <div class="h-4 bg-gray-800 rounded w-full shimmer"></div>
-            <div class="h-4 bg-gray-800 rounded w-9/12 shimmer"></div>
-            <div class="h-4 bg-gray-800 rounded w-full shimmer"></div>
-            <div class="h-4 bg-gray-800 rounded w-11/12 shimmer"></div>
-          </div>
+        <div class="space-y-3" aria-hidden="true">
+          <div class="h-8 w-11/12 rounded-lg bg-raised shimmer"></div>
+          <div class="h-8 w-2/3 rounded-lg bg-raised shimmer"></div>
+        </div>
+      {:else}
+        <h1 dir="auto" class="font-serif text-[1.9rem] font-medium leading-[1.15] tracking-tight text-fg">
+          {showTranslated && translation.status === 'done' ? translation.title : reader.status === 'loaded' ? displayTitle : article.title}
+        </h1>
+        {#if reader.status === 'loaded' && (reader.byline || snapshotAgeLabel)}
+          <p class="mt-3 text-xs text-fg-3">
+            {#if reader.byline}{reader.byline}{/if}
+            {#if snapshotAgeLabel}<span title="Articles are often corrected or updated after first publication; this is when the reader cached this copy.">{reader.byline ? ' · ' : ''}{snapshotAgeLabel}</span>{/if}
+          </p>
+        {/if}
+      {/if}
+
+      <!-- Tools: translation, sharing, and the two ways to question a source. -->
+      <div class="mt-4 mb-7 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line pb-3 text-[13px]">
+        {#if reader.status !== 'loading'}{@render translateControls()}{/if}
+        <ShareControls {article} {cluster} />
+        <a href="{base}/feedback?article={article.id}" class="action">Report</a>
+        <a href="{base}/about{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="action">Source profile</a>
+      </div>
+
+      {#if reader.status === 'loading'}
+        <div class="space-y-2.5" aria-hidden="true">
+          {#each [12, 11, 12, 10, 12, 9, 11] as w, i (i)}
+            <div class="h-4 rounded bg-raised shimmer" style="width: {(w / 12) * 100}%"></div>
+          {/each}
         </div>
 
       {:else if reader.status === 'loaded'}
-        <h1 dir="auto" class="text-xl font-bold text-white leading-snug mb-2">
-          {showTranslated && translation.status === 'done' ? translation.title : displayTitle}
-        </h1>
-        {#if reader.byline}
-          <p class="text-xs text-gray-500 mb-3">{reader.byline}</p>
-        {/if}
-        {#if snapshotAgeLabel}
-          <p class="text-xs text-gray-600 mb-3" title="Articles are often corrected or updated after first publication; this is when the reader cached this copy.">{snapshotAgeLabel}</p>
-        {/if}
-        {@render translateControls()}
         <!-- A long article can exceed the translator's output budget; the tail
              comes back in its original language. Say so rather than serving a
              silently half-translated page. -->
         {#if showTranslated && translation.status === 'done' && translation.untranslated > 0}
-          <p class="text-xs text-amber-500/80 mb-3">
+          <p class="mb-4 text-xs text-amber-400/90">
             {translation.untranslated}
             {translation.untranslated === 1 ? 'text segment remains' : 'text segments remain'} in the original language. Names and short labels may stay unchanged; long articles may exceed the translation limit.
           </p>
@@ -372,61 +364,54 @@
         </div>
 
       {:else if reader.status === 'failed'}
-        <h1 dir="auto" class="text-xl font-bold text-white leading-snug mb-3">
-          {showTranslated && translation.status === 'done' ? translation.title : article.title}
-        </h1>
-        {@render translateControls()}
         {#if article.summary}
-          <p dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'} class="text-gray-300 leading-relaxed mb-6">
+          <p dir={showTranslated && translation.status === 'done' ? translatedDir : 'auto'} class="mb-6 text-[17px] leading-relaxed text-fg-2">
             {showTranslated && translation.status === 'done' ? translation.content : article.summary}
           </p>
         {/if}
-        <a
-          href={article.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-block text-sm border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200 transition-colors px-3 py-1.5 rounded"
-        >
+        <a href={article.url} target="_blank" rel="noopener noreferrer" class="btn-ghost text-sm">
           Full article unavailable — read original ↗
         </a>
       {/if}
 
       {#if clusterTimeline && reader.status !== 'loading'}
-        <div class="mt-8 pt-5 border-t border-gray-800">
-          <p class="text-[10px] uppercase tracking-widest text-gray-600 mb-3">
+        <section class="mt-10 border-t border-line pt-6">
+          <h2 class="label mb-3">
             {clusterTimeline.sourceCount} sources{#if clusterTimeline.firstAt} · first reported {timeAgo(new Date(clusterTimeline.firstAt).toISOString(), clock.now)}{/if}
-          </p>
+          </h2>
           <!-- Chronological: oldest first, the original report tagged. -->
-          <div class="space-y-2">
+          <ol class="space-y-1">
             {#each clusterTimeline.ordered as entry (entry.article.id)}
-              <div class="flex items-center gap-2 py-0.5">
-                <span class="text-[9px] font-mono shrink-0 w-12 text-right {entry.isFirst ? 'text-amber-400 font-bold' : 'text-gray-600'}">
+              <li class="flex items-start gap-3 rounded-lg px-2 py-2 {entry.article.id === article.id ? 'bg-white/[0.04]' : ''}">
+                <span class="w-11 shrink-0 pt-0.5 text-right font-mono text-[10px] {entry.isFirst ? 'text-amber-300' : 'text-fg-3'}">
                   {entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : ''}
                 </span>
-                <RegionBadge region={entry.article.source_region} size="sm" />
-                <span class="flex items-center gap-1 text-xs text-gray-500 shrink-0">
-                  {#if langTag(entry.article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1">{langTag(entry.article.source_lang)}</span>{/if}
-                  {entry.article.source_name}
-                </span>
-                <AffiliationBadge affiliation={entry.article.source_affiliation} />
-                {#if entry.isWire}
-                  <span class="text-[9px] uppercase tracking-wider text-gray-600 border border-gray-700/60 rounded px-1 shrink-0" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
-                {/if}
-                {#if entry.article.id === article.id}
-                  <span class="text-xs text-blue-400 line-clamp-1 flex-1 min-w-0">← reading now</span>
-                {:else}
-                  <button
-                    onclick={() => onselect?.(entry.article)}
-                    dir="auto"
-                    class="text-xs text-gray-300 hover:text-blue-400 transition-colors line-clamp-1 flex-1 min-w-0 text-start"
-                  >
-                    {entry.article.title}
-                  </button>
-                {/if}
-              </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-3">
+                    <RegionBadge region={entry.article.source_region} size="sm" />
+                    <span class="text-fg-2">{entry.article.source_name}</span>
+                    {#if langTag(entry.article.source_lang)}<span class="font-mono uppercase">{langTag(entry.article.source_lang)}</span>{/if}
+                    <AffiliationBadge affiliation={entry.article.source_affiliation} />
+                    {#if entry.isWire}
+                      <span class="tag" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
+                    {/if}
+                  </div>
+                  {#if entry.article.id === article.id}
+                    <p dir="auto" class="mt-1 text-[14px] leading-snug text-fg">{entry.article.title} <span class="text-accent">· reading</span></p>
+                  {:else}
+                    <button
+                      onclick={() => onselect?.(entry.article)}
+                      dir="auto"
+                      class="mt-1 block text-start text-[14px] leading-snug text-fg-2 transition-colors hover:text-fg"
+                    >
+                      {entry.article.title}
+                    </button>
+                  {/if}
+                </div>
+              </li>
             {/each}
-          </div>
-        </div>
+          </ol>
+        </section>
       {/if}
 
       </div>
@@ -443,9 +428,9 @@
   .shimmer {
     background: linear-gradient(
       90deg,
-      #1f2937 25%,
-      #374151 50%,
-      #1f2937 75%
+      #15181c 25%,
+      #1f2328 50%,
+      #15181c 75%
     );
     background-size: 200% 100%;
   }
@@ -464,15 +449,15 @@
 
   /* unicode-bidi: plaintext = per-paragraph first-strong direction, so mixed
      Persian/English article bodies (injected via {@html}) each align correctly. */
-  :global(.prose-reader p)      { color: #d1d5db; line-height: 1.75; margin-bottom: 1rem; font-size: 0.9375rem; unicode-bidi: plaintext; }
+  :global(.prose-reader p)      { color: #c9ccd2; line-height: 1.75; margin-bottom: 1.1rem; font-size: 1.0625rem; unicode-bidi: plaintext; }
   :global(.prose-reader h1),
   :global(.prose-reader h2),
-  :global(.prose-reader h3)     { color: white; font-weight: 600; margin: 1.5rem 0 0.5rem; }
-  :global(.prose-reader a)      { color: #60a5fa; text-decoration: underline; }
-  :global(.prose-reader img)    { max-width: 100%; border-radius: 4px; margin: 1rem 0; }
+  :global(.prose-reader h3)     { color: var(--color-fg); font-family: var(--font-serif); font-weight: 500; font-size: 1.25rem; margin: 1.75rem 0 0.5rem; }
+  :global(.prose-reader a)      { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgb(143 180 245 / 0.35); }
+  :global(.prose-reader img)    { max-width: 100%; border-radius: 0.75rem; margin: 1.25rem 0; }
   :global(.prose-reader ul),
-  :global(.prose-reader ol)     { color: #d1d5db; padding-left: 1.5rem; margin-bottom: 1rem; line-height: 1.75; }
-  :global(.prose-reader blockquote) { border-left: 3px solid #4b5563; padding-left: 1rem; color: #9ca3af; margin: 1rem 0; }
+  :global(.prose-reader ol)     { color: #c9ccd2; padding-left: 1.5rem; margin-bottom: 1rem; line-height: 1.75; }
+  :global(.prose-reader blockquote) { border-inline-start: 2px solid var(--color-line-strong); padding-inline-start: 1rem; color: var(--color-fg-2); margin: 1.25rem 0; }
   :global(.prose-reader figure) { margin: 1rem 0; }
-  :global(.prose-reader figcaption) { color: #6b7280; font-size: 0.8125rem; margin-top: 0.25rem; }
+  :global(.prose-reader figcaption) { color: var(--color-fg-3); font-size: 0.8125rem; margin-top: 0.25rem; }
 </style>

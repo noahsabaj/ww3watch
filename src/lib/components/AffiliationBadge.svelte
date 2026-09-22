@@ -3,18 +3,16 @@
 
   let { affiliation }: { affiliation: string | null | undefined } = $props()
 
-  // Muted, color-hinted tag (same weight as the 'wire' badge): state = red,
-  // public = sky, exile = violet. Independent/untagged sources render nothing.
-  const cls: Record<string, string> = {
-    state: 'border-red-800/60 text-red-400/90',
-    public: 'border-sky-800/60 text-sky-400/90',
-    exile: 'border-violet-800/60 text-violet-400/90',
+  // Same tag as wire / statement; state media alone keeps a colour hint, since
+  // that is the distinction a reader most needs at a glance.
+  const tone: Record<string, string> = {
+    state: 'border-red-500/40 text-red-300/90',
   }
 </script>
 
 {#if affiliation && AFFILIATION_LABELS[affiliation]}
   <span
-    class="text-[9px] uppercase tracking-wider border rounded px-1 shrink-0 {cls[affiliation] ?? 'border-gray-700/60 text-gray-500'}"
+    class="tag {tone[affiliation] ?? ''}"
     title={AFFILIATION_TITLES[affiliation]}
   >{AFFILIATION_LABELS[affiliation]}</span>
 {/if}
