@@ -82,10 +82,43 @@ test('reader links use source IDs and Back returns to the selected article', asy
   await expect(reader).toBeVisible()
   const oldUrl = page.url()
   const link = reader.getByRole('link',{ name: 'Source profile' })
-  await expect(link).toHaveAttribute('href',/^\/about#(source-[a-f0-9-]+|sources)$/)
+  await expect(link).toHaveAttribute('href',/^\/about\?article=[a-f0-9-]+#(source-[a-f0-9-]+|sources)$/)
   await link.click()
   await expect(page.getByRole('heading',{ name: 'Source directory' })).toBeVisible()
   await page.goBack()
   await expect(reader).toBeVisible()
   expect(page.url()).toBe(oldUrl)
+})
+
+test('Report and Source profile lead back to the article, not the top of the feed', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('article a[href]').first().click()
+  const reader = page.getByLabel('Article reader', { exact: true })
+  await expect(reader).toBeVisible()
+  const articleUrl = page.url()
+  const headline = await reader.getByRole('heading').first().textContent()
+
+  for (const name of ['Report','Source profile']) {
+    await reader.getByRole('link',{ name }).click()
+    const back = page.locator('header').getByRole('link',{ name: 'Back to article' })
+    await expect(back).toBeVisible()
+    await expect(page.locator('header').getByRole('link',{ name: 'Latest reporting' })).toHaveCount(0)
+    await back.click()
+    await expect(reader).toBeVisible()
+    await expect(reader.getByRole('heading').first()).toHaveText(headline!)
+    expect(page.url()).toBe(articleUrl)
+  }
+
+  // Opened cold (a reload, or a shared link), the way back deep-links the article.
+  await reader.getByRole('link',{ name: 'Report' }).click()
+  await page.reload()
+  await page.locator('header').getByRole('link',{ name: 'Back to article' }).click()
+  await expect(reader).toBeVisible()
+  await expect(reader.getByRole('heading').first()).toHaveText(headline!)
+})
+
+test('pages reached without an article keep the feed link', async ({ page }) => {
+  await page.goto('/feedback')
+  await expect(page.locator('header').getByRole('link',{ name: 'Latest reporting' })).toBeVisible()
+  await expect(page.locator('header').getByRole('link',{ name: 'Back to article' })).toHaveCount(0)
 })

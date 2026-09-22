@@ -227,6 +227,7 @@
           hasMore={feed.hasMore && filters.sortMode === 'latest'}
           loadingMore={feed.loadingMore}
           ranked={filters.sortMode === 'top'}
+          focusId={reader.selectedCluster?.id ?? null}
         />
       {/key}
     </div>
