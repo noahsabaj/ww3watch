@@ -17,6 +17,7 @@ import { serviceClient } from '../_shared/client.ts'
 import { rateLimited, tooLarge } from '../_shared/ratelimit.ts'
 import { fetchGuarded } from '../_shared/net.ts'
 import { fallbackArticle, looksLikeJunk, htmlToText, MIN_TEXT_CHARS } from '../_shared/extract.ts'
+import { extractPageImage } from '../_shared/image.ts'
 
 const supabase = serviceClient()
 
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
   // SSRF/proxy surface to our own article set.
   const { data: known, error: gateError } = await supabase
     .from('articles')
-    .select('url')
+    .select('url, image_url')
     .eq('url', articleUrl)
     .limit(1)
   if (gateError) console.error('[reader] gate lookup failed:', gateError)
@@ -142,6 +143,27 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date().toISOString()
+    // Best-effort: if ingest had no photograph, keep the og:image we already
+    // fetched with the page. Never overwrite an RSS photo, never fail the reader.
+    if (!known[0].image_url) {
+      try {
+        const image = extractPageImage(html, articleUrl)
+        const { error: imageError } = await supabase
+          .from('articles')
+          .update({
+            image_url: image?.url ?? null,
+            image_width: image?.width ?? null,
+            image_height: image?.height ?? null,
+            image_fetched_at: now,
+          })
+          .eq('url', articleUrl)
+          .is('image_url', null)
+        if (imageError) console.error('[reader] image stamp failed:', imageError)
+      } catch (err) {
+        console.error('[reader] image stamp failed:', err)
+      }
+    }
+
     if (result.content.length <= MAX_CACHE_CONTENT_CHARS && textLen >= MIN_TEXT_CHARS) {
       // Overwrite on refresh (ignoreDuplicates:false) and ALWAYS set fetched_at —
       // PostgREST only updates payload columns, so omitting it would freeze the

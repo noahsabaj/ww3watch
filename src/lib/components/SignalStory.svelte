@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte'
-  import type { Cluster } from '$lib/cluster'
+  import { storyImage, type Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_COLORS } from '$lib/types'
   import { headlineText, isRtlLang, langTag, timeAgo } from '$lib/utils'
@@ -48,7 +48,13 @@
         },
   )
   const wash = $derived(WASH[rep.source_region] ?? '110, 114, 128')
+  const photo = $derived(storyImage(cluster))
   const canTranslate = $derived(rep.source_lang !== prefs.readingLang)
+  let photoBroken = $state(false)
+  $effect(() => {
+    void photo?.url
+    photoBroken = false
+  })
 
   type HeadlineState =
     | { status: 'idle' }
@@ -112,8 +118,21 @@
   data-story={cluster.id}
   class="signal-story relative h-full snap-start overflow-hidden"
   style="--wash: {wash}"
+  data-photo={photo && !photoBroken ? '1' : undefined}
 >
-  <div class="signal-grain absolute inset-0"></div>
+  {#if photo && !photoBroken}
+    <img
+      src={photo.url}
+      alt=""
+      class="absolute inset-0 h-full w-full object-cover"
+      referrerpolicy="no-referrer"
+      decoding="async"
+      onerror={() => { photoBroken = true }}
+    />
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/25"></div>
+  {:else}
+    <div class="signal-grain absolute inset-0"></div>
+  {/if}
   <div class="relative flex h-full flex-col justify-end px-5 pb-8 pt-6">
     <div class="mb-3 flex flex-wrap items-center gap-2">
       <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-400">{rep.source_region}</span>
@@ -147,6 +166,9 @@
       · {cluster.sourceCount} {cluster.sourceCount === 1 ? 'source' : 'sources'}
       · {timeAgo(rep.published_at, clock.now)}
     </p>
+    {#if photo && !photoBroken}
+      <p class="mt-1 text-[11px] uppercase tracking-[0.14em] text-gray-500">Photo · {photo.sourceName}</p>
+    {/if}
 
     {#if others.length > 0}
       <ul class="mt-4 space-y-1.5">

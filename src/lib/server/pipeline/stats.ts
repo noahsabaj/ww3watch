@@ -49,6 +49,11 @@ export interface RunStats {
   signals_tokens?: number
   signals_purged?: number
   signals_error?: string
+  // images
+  images_filled?: number
+  images_none?: number
+  images_failed?: number
+  images_error?: string
   // finalize
   trending?: string
   db?: Record<string, unknown>

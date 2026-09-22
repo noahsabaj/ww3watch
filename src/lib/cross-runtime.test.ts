@@ -26,3 +26,11 @@ describe('MAJOR_SEVERITY across runtimes', () => {
     expect(Number(m![1])).toBe(MAJOR_SEVERITY)
   })
 })
+
+describe('image.ts across runtimes', () => {
+  it('is copied verbatim into the Deno reader', () => {
+    const node = readFileSync('src/lib/server/image.ts', 'utf8')
+    const deno = readFileSync('supabase/functions/_shared/image.ts', 'utf8')
+    expect(deno).toBe(node)
+  })
+})

@@ -26,3 +26,11 @@ test('List restores the classic feed and Signal takes it back', async ({ page })
   await page.getByRole('button', { name: 'Signal', exact: true }).click()
   await expect(page.locator('[data-signal-story]').first()).toBeVisible()
 })
+
+test('Signal falls back to the colour field when a story has no photograph', async ({ page }) => {
+  await page.goto('/')
+  const story = page.locator('[data-signal-story]').first()
+  await expect(story).toBeVisible({ timeout: 20_000 })
+  await expect(story).not.toHaveAttribute('data-photo', '1')
+  await expect(story.locator('img')).toHaveCount(0)
+})
