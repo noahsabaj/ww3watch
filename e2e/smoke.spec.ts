@@ -24,11 +24,14 @@ test.beforeEach(async ({ page }) => {
   await openHome(page)
 })
 
-test('the desk lists every seeded story, grouped, and shows the first', async ({ page }) => {
+test('the desk lists every seeded story, grouped, and opens on the top trending one', async ({ page }) => {
   await expect(stories(page)).toHaveCount(STORIES)
   await expect(page.locator('header')).toContainText(`${STORIES} stories`)
-  await expect(stories(page).first()).toHaveAttribute('aria-current', 'true')
-  await expect(storyCard(page)).toHaveAttribute('data-story', (await stories(page).first().getAttribute('data-desk-story'))!)
+  // The seed's trending #1 is the 3-outlet wire story, not the newest singleton.
+  const top = await page.locator('[data-trending-story]').first().getAttribute('data-trending-story')
+  await expect(storyCard(page)).toHaveAttribute('data-story', top!)
+  await expect(storyCard(page)).toContainText('ceasefire talks resume')
+  await expect(page.locator(`[data-desk-story="${top}"]`)).toHaveAttribute('aria-current', 'true')
 })
 
 test('picking a story in the rail shows it in the pane', async ({ page }) => {
@@ -42,6 +45,7 @@ test('picking a story in the rail shows it in the pane', async ({ page }) => {
 })
 
 test('j and k move through stories, o reads the one selected', async ({ page }) => {
+  await stories(page).first().click()
   const second = await stories(page).nth(1).getAttribute('data-desk-story')
   await page.keyboard.press('j')
   await expect(stories(page).nth(1)).toHaveAttribute('aria-current', 'true')

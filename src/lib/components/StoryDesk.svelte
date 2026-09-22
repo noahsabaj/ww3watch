@@ -51,8 +51,17 @@
     const reading = reader.selectedCluster
     if (reading) return clusters.find((c) => c.id === reading.id) ?? reading
     const picked = pickedId && (clusters.find((c) => c.id === pickedId) ?? trending.find((c) => c.id === pickedId))
-    return picked || clusters[0] || null
+    return picked || opening || null
   })
+
+  // Before anything is picked, open on a story worth the pane: the top trending
+  // one that survives the filters, else the newest covered by more than one
+  // outlet (the side-by-side is the point), else simply the newest.
+  const opening = $derived(
+    trending.map((t) => clusters.find((c) => c.id === t.id)).find(Boolean) ??
+      clusters.find((c) => c.sourceCount > 1) ??
+      clusters[0],
+  )
 
   // "New since your last visit": the first story older than the last visit, in
   // Latest only (Top isn't in time order).
