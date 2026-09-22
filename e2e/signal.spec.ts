@@ -56,6 +56,17 @@ test('a first visit shows a swipe cue on the first story until the reader swipes
   await expect(hint).toHaveCount(0)
 })
 
+test('the address follows the story on screen, so a browser share sends it', async ({ page }) => {
+  expect(new URL(page.url()).search).toBe('')
+  await page.getByLabel('Stories', { exact: true }).evaluate((el) => el.scrollBy(0, el.clientHeight))
+  await expect(page).toHaveURL(/\/\?(story|article)=[\w-]+$/)
+  const onScreen = page.url()
+  await stories(page).nth(1).locator('a[href]').first().click()
+  await expect(reader(page)).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(onScreen)
+})
+
 test('the story scroller is keyboard reachable', async ({ page }) => {
   const scroller = page.getByLabel('Stories', { exact: true })
   await scroller.focus()

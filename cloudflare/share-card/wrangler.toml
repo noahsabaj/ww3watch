@@ -1,0 +1,16 @@
+# Config for the share-card Worker (cloudflare/share-card/index.ts), deployed by
+# .github/workflows/deploy-worker.yml. It sits in front of GitHub Pages on
+# ww3watch.org (the zone is on Cloudflare; the site itself still comes from
+# GitHub). SUPABASE_ANON_KEY is the public key the site ships with; the deploy
+# passes it from the repo variable PUBLIC_SUPABASE_ANON_KEY.
+name = "share-card"
+main = "index.ts"
+compatibility_date = "2025-06-01"
+workers_dev = false
+
+# Route patterns can't name a query string, so the Worker sees every request and
+# passes anything that isn't a shared link straight to GitHub Pages.
+routes = [{ pattern = "ww3watch.org/*", zone_name = "ww3watch.org" }]
+
+[vars]
+SUPABASE_URL = "https://qusjbpknlduuklnfciws.supabase.co"

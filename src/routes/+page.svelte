@@ -9,6 +9,10 @@
   import { createFilters } from '$lib/filters.svelte'
   import { createReaderRouting } from '$lib/deeplink.svelte'
   import { loadFeed } from '$lib/load-feed'
+  import { shareTarget } from '$lib/share'
+  import { replaceState } from '$app/navigation'
+  import { base } from '$app/paths'
+  import type { Cluster } from '$lib/cluster'
 
   // One home, two shapes, chosen by the screen rather than a toggle: Signal (one
   // story at a time, full screen) on a phone; the story desk (every story in a
@@ -53,6 +57,15 @@
   // Previous visit, frozen at mount so realtime prepends don't move the
   // "new since your last visit" line. null = first visit.
   let lastVisitAt = $state<number | null>(null)
+
+  // Signal: the address follows the story on screen, so sharing the page from
+  // the browser sends that story, same link as the Share button. Left alone
+  // while the reader is open; it owns the URL then.
+  function onSignalView(cluster: Cluster) {
+    if (reader.selectedArticle) return
+    const { search } = new URL(shareTarget(cluster.representative, cluster).url)
+    replaceState(`${base}/${search}`, {})
+  }
 
   function flushQueue() {
     feed.flushQueue()
@@ -228,6 +241,7 @@
           loadingMore={feed.loadingMore}
           ranked={filters.sortMode === 'top'}
           focusId={reader.selectedCluster?.id ?? null}
+          onview={onSignalView}
         />
       {/key}
     </div>
