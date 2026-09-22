@@ -35,6 +35,13 @@
 }
 
 @layer components {
+  .signal-scroller {
+    scrollbar-width: none;
+  }
+  .signal-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
   .signal-story {
     background:
       radial-gradient(120% 70% at 50% -8%, rgba(var(--wash), 0.42) 0%, transparent 58%),
