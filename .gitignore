@@ -35,3 +35,7 @@ supabase/.temp
 
 # Scratch working dir for audits/scripts — never commit
 .tmp/
+
+# Wrangler local vars
+.dev.vars
+.wrangler/

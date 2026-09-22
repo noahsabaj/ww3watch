@@ -11,6 +11,7 @@
     loadingMore,
     ranked = false,
     focusId = null,
+    onview,
   }: {
     clusters: Cluster[]
     onselect?: (a: Article) => void
@@ -21,6 +22,8 @@
     ranked?: boolean
     /** The story the open reader belongs to. */
     focusId?: string | null
+    /** The story on screen changed (not called for the first one on landing). */
+    onview?: (cluster: Cluster) => void
   } = $props()
 
   // A first-time visitor sees one story and no scrollbar, so nothing says there
@@ -44,7 +47,18 @@
     scroller.scrollTo({ top: story.offsetTop, behavior: 'instant' })
   })
 
+  // The story on screen, so the address bar (and Safari's own Share button)
+  // names it rather than the homepage.
+  let onScreen = 0
+  function reportView(el: HTMLElement) {
+    const i = Math.round(el.scrollTop / Math.max(1, el.clientHeight))
+    if (i === onScreen) return
+    onScreen = i
+    if (clusters[i]) onview?.(clusters[i])
+  }
+
   function onscroll(e: Event) {
+    reportView(e.currentTarget as HTMLElement)
     if (performance.now() - jumpedAt < 500) return
     if (swiped || (e.currentTarget as HTMLElement).scrollTop < 48) return
     swiped = true
