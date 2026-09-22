@@ -16,6 +16,13 @@ const MAX_URL_LEN = 2000
 const NON_IMAGE_EXT = /\.(mp3|mp4|m4a|aac|wav|mov|webm|pdf|zip|xml|json)(\?|$)/i
 const TRACKER =
   /pixel|1x1|spacer|tracking[-_]?pixel|scorecardresearch|doubleclick|facebook\.com\/tr|google-analytics|googletagmanager/i
+// Social share cards: an image the publisher renders FROM the headline (often
+// over a photo) for link previews. As a backdrop it prints the headline twice,
+// the second copy fighting the first. RIA's /images/sharing/, Meduza's
+// /imgly/share/, generic og-image renderers. The plain photo, when a feed has
+// one, still comes through its RSS media.
+const SHARE_CARD =
+  /\/(?:imgly\/)?shar(?:e|ing)\/|\/(?:api\/)?og(?:-image)?(?:\/|\.png|$)|\/opengraph-image|\/social[-_]?(?:card|image)|\/share[-_]?(?:card|image)/i
 
 export function sanitizeImageUrl(raw: unknown, baseUrl: string): string | null {
   if (typeof raw !== 'string') return null
@@ -30,6 +37,7 @@ export function sanitizeImageUrl(raw: unknown, baseUrl: string): string | null {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
   if (url.username || url.password) return null
   if (TRACKER.test(url.href) || NON_IMAGE_EXT.test(url.pathname)) return null
+  if (SHARE_CARD.test(url.pathname)) return null
   return url.href
 }
 

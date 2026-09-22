@@ -25,26 +25,32 @@
   data-signal-story
   data-story={cluster.id}
   data-photo={photo.shown ? '1' : undefined}
-  class="signal-story relative h-full snap-start overflow-hidden"
+  class="signal-story relative flex h-full snap-start flex-col overflow-hidden"
   style="--wash: {regionWash(rep.source_region)}"
 >
+  <!-- A photograph gets the top of the screen to itself and the story sits
+       below it on the dark ground, never on top of it: newsroom images often
+       carry their own lettering (share cards, captions, banners) and two sets
+       of words on one surface are unreadable. -->
   {#if photo.shown}
-    <img
-      src={photo.shown.url}
-      alt=""
-      class="absolute inset-0 h-full w-full object-cover"
-      referrerpolicy="no-referrer"
-      decoding="async"
-      onerror={photo.fail}
-      onload={photo.loaded}
-    />
-    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/25"></div>
+    <div class="relative min-h-0 flex-1 overflow-hidden">
+      <img
+        src={photo.shown.url}
+        alt=""
+        class="absolute inset-0 h-full w-full object-cover"
+        referrerpolicy="no-referrer"
+        decoding="async"
+        onerror={photo.fail}
+        onload={photo.loaded}
+      />
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#070809] to-transparent"></div>
+    </div>
   {:else}
     <div class="signal-grain absolute inset-0"></div>
   {/if}
   <!-- Bottom padding clears the floating filter button and the home indicator. -->
   <div
-    class="relative flex h-full flex-col justify-end px-5 pt-6"
+    class="relative flex shrink-0 flex-col justify-end px-5 {photo.shown ? 'bg-[#070809] pt-4' : 'h-full pt-6'}"
     style="padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px))"
   >
     <div class="mb-3 flex flex-wrap items-center gap-2">

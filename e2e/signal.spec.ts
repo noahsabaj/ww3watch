@@ -67,3 +67,12 @@ for (const [width, height, layout] of [[744, 1133, 'signal'], [820, 1180, 'desk'
     })
   })
 }
+
+test('a photograph never sits under the story text', async ({ page }) => {
+  const story = page.locator('[data-signal-story][data-photo="1"]').first()
+  await story.scrollIntoViewIfNeeded()
+  const img = await story.locator('img').boundingBox()
+  const headline = await story.locator('a[href]').first().boundingBox()
+  expect(img && headline).toBeTruthy()
+  expect(img!.y + img!.height).toBeLessThanOrEqual(headline!.y)
+})

@@ -267,3 +267,10 @@ test('a story without a photograph stays typographic', async ({ page }) => {
   const pane = await selectStory(page, wireStory)
   await expect(pane.locator('img')).toHaveCount(0)
 })
+
+test('the pane photograph is a band above the headline, not behind it', async ({ page }) => {
+  const pane = await selectStory(page, { hasText: /\b4 outlets\b/ })
+  const img = await pane.locator('img').boundingBox()
+  const headline = await pane.locator('h2').boundingBox()
+  expect(img!.y + img!.height).toBeLessThanOrEqual(headline!.y)
+})

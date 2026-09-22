@@ -69,10 +69,11 @@
   style="--wash: {regionWash(rep.source_region)}"
 >
   <div class="signal-grain absolute inset-0"></div>
-  <!-- A newsroom photograph heads the pane and fades into it; the headline
-       sits on its lower edge. Without one the region wash carries the story. -->
+  <!-- A newsroom photograph heads the pane as its own band, and the story
+       starts below it: images often carry their own lettering, so ours never
+       sits on top of one. Without a photo the region wash carries the story. -->
   {#if photo.shown}
-    <div class="absolute inset-x-0 top-0 h-[34rem] overflow-hidden">
+    <div class="relative h-[26rem] overflow-hidden">
       <img
         src={photo.shown.url}
         alt=""
@@ -82,10 +83,10 @@
         onerror={photo.fail}
         onload={photo.loaded}
       />
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070809] via-[#070809]/75 to-[#070809]/10"></div>
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#070809] to-transparent"></div>
     </div>
   {/if}
-  <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pb-16 {photo.shown ? 'pt-64' : 'pt-14'}">
+  <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pb-16 {photo.shown ? 'pt-6' : 'pt-14'}">
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-400">{rep.source_region}</span>
       {#if repLang}
