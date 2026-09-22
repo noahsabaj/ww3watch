@@ -3,8 +3,8 @@
 // and the pipeline's trending ranker, so "how corroborated" and "how important"
 // mean one thing everywhere. Nothing here may import server-only code.
 import type { Article } from './types'
-import { wireDuplicateIds } from './cluster'
-import { isClaim, isMajor, isOpinion, isUnverified, MAJOR_SEVERITY } from './signals'
+import { wireDuplicateIds, type Cluster } from './cluster'
+import { isClaim, isMajor, isOpinion, isUnverified, MAJOR_SEVERITY, type ArticleSignals } from './signals'
 
 // Counting is code's job, not a model's. Log-scaled: the step from 1 source to 3
 // is worth more than from 9 to 11. Breadth across regions and languages is the
@@ -55,6 +55,23 @@ export function storySignals(articles: Article[]): StorySignals {
     independent: new Set(own.map((a) => a.source_name)).size,
     regions: new Set(articles.map((a) => a.source_region)).size,
     langs: new Set(articles.map((a) => a.source_lang)).size,
+  }
+}
+
+// The badges a story wears. They describe the STORY, not whichever member
+// happens to represent it: major if any independent source reports a
+// significant event, unconfirmed only if every one of them hedges,
+// statement/analysis only if nobody reports something that happened. A single
+// article is its own story.
+export function storyBadgeSignals(cluster: Cluster): Partial<ArticleSignals> {
+  const rep = cluster.representative
+  if (cluster.sourceCount === 1) return rep
+  const story = storySignals(cluster.articles)
+  return {
+    severity: story.topSeverity,
+    unverified: story.unconfirmed ? 1 : 0,
+    claim: story.talkOnly ? (rep.claim ?? 1) : 0,
+    opinion: story.talkOnly ? (rep.opinion ?? 0) : 0,
   }
 }
 

@@ -1,31 +1,32 @@
 <script lang="ts">
   import { onMount, untrack, tick } from 'svelte'
-  import type { Article } from '$lib/types'
   import Header from '$lib/components/Header.svelte'
-  import ClusterCard from '$lib/components/ClusterCard.svelte'
-  import TopStories from '$lib/components/TopStories.svelte'
   import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import SignalFeed from '$lib/components/SignalFeed.svelte'
-  import { dayKey, dayLabel } from '$lib/utils'
-  import { clock } from '$lib/now.svelte'
-  import { createFeed, type TrendingRef } from '$lib/feed.svelte'
+  import StoryDesk from '$lib/components/StoryDesk.svelte'
+  import { createFeed } from '$lib/feed.svelte'
   import { createFilters } from '$lib/filters.svelte'
   import { createReaderRouting } from '$lib/deeplink.svelte'
-  import type { Cluster } from '$lib/cluster'
   import { loadFeed } from '$lib/load-feed'
-  import { parseHomeView, readStoredHomeView, storeHomeView, type HomeView } from '$lib/home-view'
-  import { base } from '$app/paths'
-  import { replaceState } from '$app/navigation'
-  import { page } from '$app/state'
+
+  // One home, two shapes, chosen by the screen rather than a toggle: Signal (one
+  // story at a time, full screen) on a phone; the story desk (every story in a
+  // column, the selected one beside it) on anything wide enough to scan. The
+  // feed is loaded client-side, so nothing story-shaped renders before the
+  // layout is known and neither shape flashes the other.
+  const DESK_QUERY = '(min-width: 900px)'
+  let desk = $state<boolean | null>(null)
 
   let loading = $state(true)
   let loadError = $state(false)
 
-  let scrollY = $state(0)
-  let homeView = $state<HomeView>('signal')
+  // Realtime inserts queue instead of shifting the list under the reader: always
+  // in Signal (a swipe in progress must not be yanked), on the desk once the
+  // rail is scrolled away from the top.
+  let railPaused = $state(false)
   let signalEpoch = $state(0)
-  let isPaused = $derived(homeView === 'signal' || scrollY > 300)
+  let isPaused = $derived(desk === false || railPaused)
 
   // Article list + realtime + pagination (src/lib/feed.svelte.ts), seeded once
   // from the load — later changes arrive over realtime, not through `data`.
@@ -39,7 +40,7 @@
   )
   // Search / region / language / signal filters + sort (src/lib/filters.svelte.ts).
   const filters = createFilters(() => feed.articles)
-  // Reader panel shallow routing + ?article= / ?story= deep links
+  // Reader shallow routing + ?article= / ?story= deep links
   // (src/lib/deeplink.svelte.ts). Must run during init: it registers an $effect
   // and an afterNavigate callback.
   const reader = createReaderRouting(feed)
@@ -51,49 +52,26 @@
   let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null)
   let installDismissed = $state(false)
 
-  // "New since your last visit" marker, frozen at mount so realtime prepends
-  // don't move the line. localStorage is rewritten to now on each visit.
+  // Previous visit, frozen at mount so realtime prepends don't move the
+  // "new since your last visit" line. null = first visit.
   let lastVisitAt = $state<number | null>(null)
-
-  // Index of the first cluster older than the last visit. The feed is DESC, so
-  // this is the boundary between "new since you were here" (above) and "seen
-  // before" (below). -1 = no marker (first visit, or nothing new, or all new).
-  let lastVisitDividerIndex = $derived.by(() => {
-    if (lastVisitAt === null || filters.sortMode === 'top') return -1
-    const clustered = filters.clustered
-    const t = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : 0)
-    for (let i = 1; i < clustered.length; i++) {
-      if (t(clustered[i - 1]) > lastVisitAt && t(clustered[i]) <= lastVisitAt) return i
-    }
-    return -1
-  })
-
-  function setHomeView(next: HomeView) {
-    homeView = next
-    storeHomeView(next)
-    const url = new URL(page.url)
-    if (next === 'signal') url.searchParams.delete('view')
-    else url.searchParams.set('view', 'list')
-    replaceState(`${url.pathname}${url.search}${url.hash}`, page.state)
-  }
 
   function flushQueue() {
     feed.flushQueue()
     signalEpoch += 1
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
   }
+
+  // Leaving the queued state (the rail scrolled back to the top) releases what
+  // arrived meanwhile, so nothing stays hidden behind a banner that no longer shows.
+  $effect(() => {
+    if (!isPaused && untrack(() => feed.newQueue.length) > 0) feed.flushQueue()
+  })
 
   async function loadOlder() {
     // The large list re-render below blurs the focused control; if the user
-    // drove this from the keyboard, restore focus afterward (mouse users are
-    // left alone — :focus-visible keeps the ring keyboard-only anyway).
+    // drove this from the keyboard, restore focus afterward.
     const hadFocus = document.activeElement?.id === 'feed-load-older'
     if (!(await feed.loadOlder())) return
-    // Restore focus to the button (or the end marker, once the button unmounts
-    // on the final page) so a keyboard user isn't dropped to <body>. tick() flushes
-    // the append render; rAF then runs after the browser settles that layout, so
-    // focus lands on the live element rather than a torn-down one.
     if (hadFocus) {
       await tick()
       requestAnimationFrame(() => {
@@ -114,13 +92,16 @@
   }
 
   onMount(() => {
-    homeView = parseHomeView(window.location.search, readStoredHomeView())
+    const media = window.matchMedia(DESK_QUERY)
+    desk = media.matches
+    const onMedia = (e: MediaQueryListEvent) => { desk = e.matches }
+    media.addEventListener('change', onMedia)
+
     filters.restoreSortMode()
     if (localStorage.getItem('pwa-install-dismissed')) {
       installDismissed = true
     }
 
-    // "New since your last visit" marker: read the previous visit, then stamp now.
     const prevVisit = Number(localStorage.getItem('ww3-last-visit'))
     lastVisitAt = Number.isFinite(prevVisit) && prevVisit > 0 ? prevVisit : null
     localStorage.setItem('ww3-last-visit', String(Date.now()))
@@ -142,15 +123,14 @@
 
     return () => {
       cancelled = true
+      media.removeEventListener('change', onMedia)
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       feed.stop()
     }
   })
 </script>
 
-<svelte:window bind:scrollY />
-
-<div class={homeView === 'signal' ? 'h-dvh overflow-hidden bg-[#070809] flex flex-col' : 'min-h-screen bg-[#0a0a0b]'}>
+<div class="h-dvh overflow-hidden bg-[#070809] flex flex-col">
   <Header
     bind:searchQuery={filters.searchQuery}
     bind:activeRegions={filters.activeRegions}
@@ -166,13 +146,11 @@
     realtimeStatus={feed.realtimeStatus}
     lastUpdatedAt={feed.lastUpdatedAt}
     staleness={feed.staleness}
-    bind:homeView
-    onHomeView={setHomeView}
   />
 
-  <!-- Install prompt banner (mobile only, dismissible) -->
-  {#if installPromptEvent && !installDismissed}
-    <div class="md:hidden bg-blue-950/80 border-b border-blue-900 px-4 py-2 flex items-center gap-3">
+  <!-- Install prompt banner (phones only, dismissible) -->
+  {#if installPromptEvent && !installDismissed && desk === false}
+    <div class="bg-blue-950/80 border-b border-blue-900 px-4 py-2 flex items-center gap-3">
       <span class="text-sm text-blue-200 flex-1">Add WW3Watch to your home screen</span>
       <button
         onclick={handleInstall}
@@ -190,168 +168,82 @@
     </div>
   {/if}
 
-  {#if homeView === 'list'}
-    <section class="max-w-3xl mx-auto px-4 py-4 text-sm text-gray-400" aria-label="About this feed">
-      <p>Follow global conflict reporting from multiple perspectives. Automated labels and story grouping do not independently verify a claim.</p>
-      <a class="inline-flex min-h-11 items-center text-blue-400 underline" href="{base}/about">How WW3Watch works</a>
-    </section>
-    <TopStories stories={feed.topStories} onselect={reader.openArticle} />
-  {/if}
-
-  <!-- New articles banner -->
-  {#if feed.newQueue.length > 0 && isPaused}
-    <!-- 4rem clears the sticky header (~59px on md+ where the search input sets row height) -->
-    <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(4rem + env(safe-area-inset-top, 0px))">
-      <button
-        onclick={flushQueue}
-        class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-full shadow-lg transition-colors"
-      >
-        ↑ {feed.newQueue.length} new {feed.newQueue.length === 1 ? 'article' : 'articles'}
-      </button>
+  {#if filters.clustered.length === 0}
+    <div class="flex-1 py-20 text-center text-gray-500 text-sm">
+      {#if loading || desk === null}
+        Loading the latest reporting…
+      {:else if loadError && feed.articles.length === 0}
+        <p class="mb-3">Couldn't load the feed.</p>
+        <button
+          onclick={() => location.reload()}
+          class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+        >
+          Retry
+        </button>
+      {:else if feed.articles.length === 0}
+        No stories yet — new ones appear here live.
+      {:else if filters.sortMode === 'top' && filters.latestClustered.length > 0}
+        <p class="mb-3">Nothing from the last 24 hours matches.</p>
+        <button
+          onclick={() => filters.setSortMode('latest')}
+          class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+        >
+          Show latest
+        </button>
+      {:else}
+        <p class="mb-3">No stories match your filters.</p>
+        <button
+          onclick={filters.clearFilters}
+          class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+        >
+          Clear filters
+        </button>
+      {/if}
     </div>
-  {/if}
-
-  {#if homeView === 'signal'}
+  {:else if desk}
+    <StoryDesk
+      clusters={filters.clustered}
+      trending={feed.topStories}
+      {reader}
+      sortMode={filters.sortMode}
+      onSortMode={filters.setSortMode}
+      hasMore={feed.hasMore}
+      loadingMore={feed.loadingMore}
+      onLoadOlder={loadOlder}
+      {lastVisitAt}
+      newCount={feed.newQueue.length}
+      onFlush={flushQueue}
+      bind:paused={railPaused}
+    />
+  {:else if desk === false}
+    <!-- New articles banner -->
+    {#if feed.newQueue.length > 0}
+      <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(4rem + env(safe-area-inset-top, 0px))">
+        <button
+          onclick={flushQueue}
+          class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-full shadow-lg transition-colors"
+        >
+          ↑ {feed.newQueue.length} new {feed.newQueue.length === 1 ? 'story' : 'stories'}
+        </button>
+      </div>
+    {/if}
     <div class="relative min-h-0 flex-1">
-      {#if filters.clustered.length === 0}
-        <div class="py-20 text-center text-gray-500 text-sm">
-          {#if loading}
-            Loading the latest reporting…
-          {:else if loadError && feed.articles.length === 0}
-            <p class="mb-3">Couldn't load the feed.</p>
-            <button
-              onclick={() => location.reload()}
-              class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
-            >
-              Retry
-            </button>
-          {:else if feed.articles.length === 0}
-            No stories yet — new ones appear here live.
-          {:else if filters.sortMode === 'top' && filters.latestClustered.length > 0}
-            <p class="mb-3">Nothing from the last 24 hours matches.</p>
-            <button
-              onclick={() => filters.setSortMode('latest')}
-              class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
-            >
-              Show latest
-            </button>
-          {:else}
-            <p class="mb-3">No stories match your filters.</p>
-            <button
-              onclick={filters.clearFilters}
-              class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
-            >
-              Clear filters
-            </button>
-          {/if}
-        </div>
-      {:else}
-        {#key signalEpoch}
-          <SignalFeed
-            clusters={filters.clustered}
-            onselect={reader.openArticle}
-            onLoadOlder={filters.sortMode === 'latest' ? loadOlder : undefined}
-            hasMore={feed.hasMore && filters.sortMode === 'latest'}
-            loadingMore={feed.loadingMore}
-          />
-        {/key}
-      {/if}
+      {#key signalEpoch}
+        <SignalFeed
+          clusters={filters.clustered}
+          onselect={reader.openArticle}
+          onLoadOlder={filters.sortMode === 'latest' ? loadOlder : undefined}
+          hasMore={feed.hasMore && filters.sortMode === 'latest'}
+          loadingMore={feed.loadingMore}
+          ranked={filters.sortMode === 'top'}
+        />
+      {/key}
     </div>
-  {:else}
-  <!-- Feed -->
-  <main
-    class="max-w-3xl mx-auto divide-y divide-gray-800/50"
-    style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px))"
-  >
-    {#if feed.articles.length > 0}
-      <div class="flex items-center gap-1 px-4 pt-2" role="group" aria-label="Feed order">
-        {#each [['latest', 'Latest'], ['top', 'Top · 24h']] as [mode, label] (mode)}
-          <button
-            onclick={() => filters.setSortMode(mode as 'latest' | 'top')}
-            aria-pressed={filters.sortMode === mode}
-            title={mode === 'top' ? 'The last 24 hours, ranked by severity, independent corroboration and recency' : 'Newest first'}
-            class="text-[11px] px-2.5 py-1 rounded-full border transition-colors {filters.sortMode === mode ? 'border-blue-500/50 bg-blue-600/15 text-blue-300' : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-600'}"
-          >{label}</button>
-        {/each}
-      </div>
-    {/if}
-    {#if filters.clustered.length === 0}
-      <div class="py-20 text-center text-gray-500 text-sm">
-        {#if loading}
-          Loading the latest reporting…
-        {:else if loadError && feed.articles.length === 0}
-          <p class="mb-3">Couldn't load the feed.</p>
-          <button
-            onclick={() => location.reload()}
-            class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
-          >
-            Retry
-          </button>
-        {:else if feed.articles.length === 0}
-          No stories yet — new ones appear here live.
-        {:else if filters.sortMode === 'top' && filters.latestClustered.length > 0}
-          <p class="mb-3">Nothing from the last 24 hours matches.</p>
-          <button
-            onclick={() => filters.setSortMode('latest')}
-            class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
-          >
-            Show latest
-          </button>
-        {:else}
-          <p class="mb-3">No stories match your filters.</p>
-          <button
-            onclick={filters.clearFilters}
-            class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
-          >
-            Clear filters
-          </button>
-        {/if}
-      </div>
-    {:else}
-      {#each filters.clustered as cluster, i (cluster.id)}
-        <!-- Day separator at each calendar-day boundary — safe because
-             groupByClusterId sorts by representative published_at DESC. -->
-        {#if filters.sortMode === 'latest' && (i === 0 || dayKey(cluster.representative.published_at, clock.now) !== dayKey(filters.clustered[i - 1].representative.published_at, clock.now))}
-          <div class="px-4 py-1.5 text-[10px] uppercase tracking-widest text-gray-600">
-            {dayLabel(cluster.representative.published_at, clock.now)}
-          </div>
-        {/if}
-        <!-- "New since your last visit" boundary: everything above is new. The
-             visible text carries the meaning; the ↑ is decorative (hidden from SR). -->
-        {#if i === lastVisitDividerIndex}
-          <div class="flex items-center gap-3 px-4 py-3" role="separator">
-            <div class="flex-1 h-px bg-gradient-to-r from-transparent to-blue-800/50"></div>
-            <span class="text-[10px] uppercase tracking-widest text-blue-400/70 whitespace-nowrap">New since your last visit <span aria-hidden="true">↑</span></span>
-            <div class="flex-1 h-px bg-gradient-to-l from-transparent to-blue-800/50"></div>
-          </div>
-        {/if}
-        <ClusterCard {cluster} onselect={reader.openArticle} />
-      {/each}
-      {#if feed.hasMore && filters.sortMode === 'latest'}
-        <div class="py-6 text-center">
-          <button
-            id="feed-load-older"
-            onclick={loadOlder}
-            aria-disabled={feed.loadingMore}
-            class="text-sm text-gray-400 hover:text-gray-200 border border-gray-800 hover:border-gray-600 rounded-full px-5 py-2 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-wait aria-disabled:hover:text-gray-400"
-          >
-            {feed.loadingMore ? 'Loading…' : 'Load older stories'}
-          </button>
-        </div>
-      {:else}
-        <!-- Focus anchor: when the button above unmounts on the last page,
-             loadOlder() moves focus here so keyboard users aren't dropped to body. -->
-        <p id="feed-end" tabindex="-1" class="py-6 text-center text-xs text-gray-600 outline-none">
-          You've reached the oldest stories.
-        </p>
-      {/if}
-    {/if}
-  </main>
   {/if}
 
-  <!-- Mobile FAB: opens FilterSheet -->
+  <!-- Phone filters: a floating button opens the sheet. The desk has them in the header. -->
   <button
-    class="fixed right-4 z-30 md:hidden w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
+    class="fixed right-4 z-30 min-[900px]:hidden w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
     style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px))"
     onclick={() => filterSheetOpen = true}
     aria-label={filters.isFiltered ? 'Open filters (active)' : 'Open filters'}
@@ -366,20 +258,30 @@
     {/if}
   </button>
 
-  <!-- Mobile filter sheet -->
-  <FilterSheet bind:open={filterSheetOpen} bind:activeRegions={filters.activeRegions} bind:excludedLangs={filters.excludedLangs} availableLangs={filters.availableLangs} bind:searchQuery={filters.searchQuery} bind:signalFilter={filters.signalFilter} availableTopics={filters.availableTopics} availableActors={filters.availableActors} />
+  <FilterSheet
+    bind:open={filterSheetOpen}
+    bind:activeRegions={filters.activeRegions}
+    bind:excludedLangs={filters.excludedLangs}
+    availableLangs={filters.availableLangs}
+    bind:searchQuery={filters.searchQuery}
+    bind:signalFilter={filters.signalFilter}
+    availableTopics={filters.availableTopics}
+    availableActors={filters.availableActors}
+    sortMode={filters.sortMode}
+    onSortMode={filters.setSortMode}
+  />
 
-  <ArticlePanel article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
+  <!-- On a phone the reader is a full-screen dialog; the desk hosts it in its pane. -->
+  {#if !desk}
+    <ArticlePanel article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
+  {/if}
 
   <!-- Persistent polite live region: mounted up-front (empty) so screen readers
        reliably announce when its text later changes — pagination results and
-       deep-link recovery misses both flow through liveMessage. A region created
-       in the same tick as its text is commonly missed by AT, so it stays mounted. -->
+       deep-link recovery misses both flow through liveMessage. -->
   <div class="sr-only" role="status" aria-live="polite">{feed.liveMessage}</div>
 
-  <!-- Transient toast — sighted-only mirror of recovery/pagination errors.
-       Announcement is handled by the persistent live region above, so this
-       carries no role to avoid a double announcement. -->
+  <!-- Transient toast — sighted-only mirror of the live region above. -->
   {#if feed.toast}
     <div
       class="fixed left-1/2 -translate-x-1/2 z-40 bg-gray-900 border border-gray-700 text-gray-200 text-sm px-4 py-2 rounded-full shadow-lg"

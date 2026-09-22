@@ -10,12 +10,15 @@
     onLoadOlder,
     hasMore,
     loadingMore,
+    ranked = false,
   }: {
     clusters: Cluster[]
     onselect?: (a: Article) => void
     onLoadOlder?: () => Promise<void>
     hasMore: boolean
     loadingMore: boolean
+    /** Top order: the list ends at the 24h window, not at the oldest story. */
+    ranked?: boolean
   } = $props()
 
   let scroller: HTMLDivElement | undefined = $state()
@@ -57,7 +60,10 @@
 </script>
 
 <div class="relative h-full min-h-0">
-  <div bind:this={scroller} class="h-full snap-y snap-mandatory overflow-y-auto">
+  <!-- Focusable so arrow keys and Page Down move between stories: a scrolling
+       region the keyboard can't reach is an axe failure (scrollable-region-focusable). -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div bind:this={scroller} tabindex="0" aria-label="Stories" class="h-full snap-y snap-mandatory overflow-y-auto outline-none">
     {#each clusters as cluster (cluster.id)}
       <SignalStory {cluster} {onselect} />
     {/each}
@@ -75,13 +81,13 @@
       </div>
     {:else}
       <p id="feed-end" tabindex="-1" class="flex h-full snap-start items-center justify-center px-6 text-center text-xs text-gray-600 outline-none">
-        You've reached the oldest stories.
+        {ranked ? 'That’s every ranked story from the last 24 hours.' : 'You’ve reached the oldest stories.'}
       </p>
     {/if}
   </div>
 
   {#if clusters.length > 0}
-    <p class="pointer-events-none absolute right-3 top-4 text-[11px] tabular-nums text-gray-500">
+    <p aria-hidden="true" class="pointer-events-none absolute right-3 top-4 text-[11px] tabular-nums text-gray-500">
       {activeIndex + 1} / {clusters.length}
     </p>
   {/if}

@@ -4,6 +4,7 @@
   import { LANG_NAMES } from '$lib/utils'
   import SignalFilters from '$lib/components/SignalFilters.svelte'
   import type { Actor, SignalFilter, Topic } from '$lib/signals'
+  import type { SortMode } from '$lib/filters.svelte'
 
   let {
     open = $bindable(),
@@ -14,6 +15,8 @@
     signalFilter = $bindable(),
     availableTopics,
     availableActors,
+    sortMode,
+    onSortMode,
   }: {
     open: boolean
     activeRegions: Set<SourceRegion>
@@ -23,6 +26,8 @@
     availableTopics: { key: Topic; count: number }[]
     availableActors: { key: Actor; count: number }[]
     searchQuery: string
+    sortMode: SortMode
+    onSortMode: (mode: SortMode) => void
   } = $props()
 
   function toggleRegion(region: SourceRegion) {
@@ -75,7 +80,7 @@
 {#if open}
   <!-- Backdrop -->
   <div
-    class="fixed inset-0 bg-black/60 z-60 md:hidden"
+    class="fixed inset-0 bg-black/60 z-60 min-[900px]:hidden"
     onclick={() => open = false}
     role="presentation"
   ></div>
@@ -87,7 +92,7 @@
     aria-modal="true"
     aria-label="Search, region, language and topic filters"
     tabindex="-1"
-    class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 md:hidden max-h-[85vh] overflow-y-auto"
+    class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 min-[900px]:hidden max-h-[85vh] overflow-y-auto"
     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
   >
     <!-- Drag handle -->
@@ -97,6 +102,15 @@
 
     <div class="px-4 pt-2 pb-5 space-y-3">
       <div class="flex justify-between items-center"><h2 class="font-semibold">Filters</h2><button class="min-h-11 min-w-11 px-3" onclick={() => open = false}>Close</button></div>
+      <div class="flex items-center gap-2" role="group" aria-label="Feed order">
+        {#each [['latest', 'Latest'], ['top', 'Top · 24h']] as [mode, label] (mode)}
+          <button
+            onclick={() => onSortMode(mode as SortMode)}
+            aria-pressed={sortMode === mode}
+            class="text-sm px-4 rounded-full border transition-colors {sortMode === mode ? 'border-blue-500/50 bg-blue-600/15 text-blue-300' : 'border-gray-700 text-gray-400'}"
+          >{label}</button>
+        {/each}
+      </div>
       <label for="mobile-search" class="block text-sm text-gray-300">Search headlines</label>
       <!-- Search + All/None -->
       <div class="flex items-center gap-2">

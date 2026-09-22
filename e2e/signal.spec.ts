@@ -1,28 +1,48 @@
 import { test, expect } from '@playwright/test'
+import { openHome, openReader, reader, stories, storyCard } from './home'
 
-test('Signal is the first-open homepage', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.getByRole('button', { name: 'Signal', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('[data-signal-story]').first()).toBeVisible({ timeout: 20_000 })
+// Below 900px the home is Signal: one story at a time, full screen.
+test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+
+test.beforeEach(async ({ page }) => {
+  await openHome(page)
 })
 
-test('tapping a Signal headline opens the reader', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.locator('[data-signal-story] a[href]').first()).toBeVisible({ timeout: 20_000 })
-  await page.locator('[data-signal-story] a[href]').first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
+test('a phone gets Signal, not the desk', async ({ page }) => {
+  await expect(storyCard(page)).toBeVisible()
+  await expect(page.locator('[data-desk-rail]')).toHaveCount(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
+test('tapping a headline opens the reader as a dialog', async ({ page }) => {
+  await openReader(page)
+  await expect(page.getByRole('dialog', { name: 'Article reader' })).toBeVisible()
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog')).toBeHidden()
-  await expect(page.locator('[data-signal-story]').first()).toBeVisible()
+  await expect(reader(page)).toBeHidden()
+  await expect(stories(page).first()).toBeVisible()
 })
 
-test('List restores the classic feed and Signal takes it back', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.locator('[data-signal-story]').first()).toBeVisible({ timeout: 20_000 })
-  await page.getByRole('button', { name: 'List', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'List', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByRole('group', { name: 'Feed order' })).toBeVisible()
-  await expect(page.locator('article').first()).toBeVisible()
-  await page.getByRole('button', { name: 'Signal', exact: true }).click()
-  await expect(page.locator('[data-signal-story]').first()).toBeVisible()
+test('the filter button never covers a story', async ({ page }) => {
+  const fab = await page.getByRole('button', { name: /^Open filters/ }).boundingBox()
+  const story = storyCard(page)
+  for (const el of await story.locator('a[href], button').all()) {
+    const box = await el.boundingBox()
+    if (!box || !fab) continue
+    const overlaps = box.x < fab.x + fab.width && box.x + box.width > fab.x && box.y < fab.y + fab.height && box.y + box.height > fab.y
+    expect(overlaps, `${await el.innerText()} sits under the filter button`).toBe(false)
+  }
+})
+
+test('feed order lives in the filter sheet', async ({ page }) => {
+  await page.getByRole('button', { name: /^Open filters/ }).click()
+  const order = page.getByRole('dialog').getByRole('group', { name: 'Feed order' })
+  await expect(order.getByRole('button', { name: 'Latest' })).toHaveAttribute('aria-pressed', 'true')
+  await order.getByRole('button', { name: /^Top/ }).click()
+  await expect(order.getByRole('button', { name: /^Top/ })).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('the story scroller is keyboard reachable', async ({ page }) => {
+  const scroller = page.getByLabel('Stories', { exact: true })
+  await scroller.focus()
+  await expect(scroller).toBeFocused()
 })

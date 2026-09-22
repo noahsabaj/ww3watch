@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { openHome, reader, selectStory, storyCard } from './home'
 
 type ShareMock = {
   copied: string[]
@@ -48,13 +49,12 @@ async function setup(page: Page, native = false) {
       window.shareMock.shared.push(data)
     } : undefined })
   }, native)
-  await page.goto('/?view=list&utm_source=sharing-test')
-  await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
+  await openHome(page, '/?utm_source=sharing-test')
 }
 
 test('card copies a clean story link without changing filters, reader or history; link opens cold', async ({ page }) => {
   await setup(page)
-  const card = page.locator('article').filter({ has: page.getByRole('button', { name: 'Copy story link' }) }).first()
+  const card = await selectStory(page, { hasText: 'ceasefire talks resume' })
   const originalUrl = page.url()
   const depth = await page.evaluate(() => history.length)
   const search = page.locator('header input[type="text"]')
@@ -64,20 +64,20 @@ test('card copies a clean story link without changing filters, reader or history
   await expect(search).toHaveValue('ceasefire')
   await expect(page).toHaveURL(originalUrl)
   expect(await page.evaluate(() => history.length)).toBe(depth)
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(reader(page)).toHaveCount(0)
   await expect(card.getByRole('button', { name: 'Share', exact: true })).toHaveCount(0)
   const copied = await page.evaluate(() => window.shareMock.copied[0])
   expect(copied).toMatch(/^https:\/\/ww3watch.org\/\?story=[0-9a-f-]{36}$/)
   await page.goto(new URL(copied).search)
-  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 20_000 })
+  await expect(reader(page)).toBeVisible({ timeout: 20_000 })
   await page.getByLabel('Close reader').click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.locator('article').first()).toBeVisible()
+  await expect(reader(page)).toHaveCount(0)
+  await expect(storyCard(page)).toBeVisible()
 })
 
 test('single article copies from keyboard and its link reopens the correct article', async ({ page }) => {
   await setup(page)
-  const card = page.locator('article').filter({ has: page.getByRole('button', { name: 'Copy article link' }) }).first()
+  const card = await selectStory(page, { hasText: /\b1 outlet\b/ })
   const original = await card.locator('a[href]').first().getAttribute('href')
   const button = card.getByRole('button', { name: 'Copy article link' })
   await button.focus()
@@ -86,7 +86,7 @@ test('single article copies from keyboard and its link reopens the correct artic
   const copied = await page.evaluate(() => window.shareMock.copied[0])
   expect(copied).toMatch(/^https:\/\/ww3watch.org\/\?article=[0-9a-f-]{36}$/)
   await page.goto(new URL(copied).search)
-  const dialog = page.getByRole('dialog')
+  const dialog = reader(page)
   await expect(dialog).toBeVisible({ timeout: 20_000 })
   await expect(dialog.getByRole('link', { name: 'Read original ↗', exact: true })).toHaveAttribute('href', original!)
   await dialog.getByRole('button', { name: 'Copy article link' }).click()
@@ -97,7 +97,7 @@ test('single article copies from keyboard and its link reopens the correct artic
 test('blocked clipboard offers a selectable link; retry succeeds', async ({ page }) => {
   await setup(page)
   await page.evaluate(() => { window.shareMock.clipboardFails = true })
-  const card = page.locator('article').first()
+  const card = storyCard(page)
   await card.getByRole('button', { name: /Copy .* link/ }).click()
   await expect(card.getByRole('status')).toContainText('Could not copy automatically')
   const input = card.getByRole('textbox', { name: /Link to/ })
@@ -111,7 +111,7 @@ test('blocked clipboard offers a selectable link; retry succeeds', async ({ page
 
 test('native share sends original headline and link, cancellation is silent, errors offer copying', async ({ page }) => {
   await setup(page, true)
-  const card = page.locator('article').first()
+  const card = storyCard(page)
   const originalTitle = (await card.locator('a[href]').first().innerText()).trim()
   const share = card.getByRole('button', { name: 'Share', exact: true })
   await share.click()
@@ -129,8 +129,8 @@ test('native share sends original headline and link, cancellation is silent, err
 
 test('reader source changes reset feedback and ignore an old pending copy; Back still closes reader', async ({ page }) => {
   await setup(page)
-  await page.locator('article').filter({ has: page.getByRole('button', { name: 'Copy story link' }) }).first().locator('a[href]').first().click()
-  const dialog = page.getByRole('dialog')
+  await (await selectStory(page, { hasText: /\d+ outlets/ })).locator('a[href]').first().click()
+  const dialog = reader(page)
   const copy = dialog.getByRole('button', { name: 'Copy story link' })
   await copy.click()
   await expect(dialog.getByRole('status')).toHaveText('Link copied')
@@ -151,7 +151,7 @@ for (const width of [320, 390, 430, 1280]) {
   test(`sharing controls fit at ${width}px on cards and reader`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
     await setup(page, true)
-    const card = page.locator('article').first()
+    const card = storyCard(page)
     const check = async (container: ReturnType<Page['locator']>) => {
       for (const button of await container.locator('[data-share-controls] button').all()) {
         await expect(button).toBeVisible()
@@ -169,7 +169,7 @@ for (const width of [320, 390, 430, 1280]) {
     }
     await check(card)
     await card.locator('a[href]').first().click()
-    const dialog = page.getByRole('dialog')
+    const dialog = reader(page)
     await expect(dialog).toBeVisible()
     await check(dialog)
     await page.evaluate(() => { window.shareMock.clipboardFails = true })

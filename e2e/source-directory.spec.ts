@@ -78,7 +78,7 @@ test('reader links use source IDs and Back returns to the selected article', asy
   // (see smoke.spec.ts). Clicking the <article> does nothing.
   await expect(page.locator('article a[href]').first()).toBeVisible()
   await page.locator('article a[href]').first().click()
-  const reader = page.getByRole('dialog',{ name: 'Article reader' })
+  const reader = page.getByLabel('Article reader', { exact: true })
   await expect(reader).toBeVisible()
   const oldUrl = page.url()
   const link = reader.getByRole('link',{ name: 'Source profile' })

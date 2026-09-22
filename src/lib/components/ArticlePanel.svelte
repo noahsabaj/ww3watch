@@ -15,11 +15,15 @@
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
 
-  let { article, cluster = null, onclose, onselect }: {
+  // inline: the desk's story pane hosts the reader in place (no backdrop, no
+  // focus trap, the page keeps scrolling). Otherwise it is a modal dialog over
+  // Signal on a phone.
+  let { article, cluster = null, onclose, onselect, inline = false }: {
     article: Article | null
     cluster?: Cluster | null
     onclose: () => void
     onselect?: (a: Article) => void
+    inline?: boolean
   } = $props()
 
   type ReaderState =
@@ -126,6 +130,7 @@
   })
 
   $effect(() => {
+    if (inline) return
     document.body.style.overflow = article ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   })
@@ -153,7 +158,7 @@
   })
 
   function trapFocus(e: KeyboardEvent) {
-    if (e.key !== 'Tab' || !panelEl) return
+    if (inline || e.key !== 'Tab' || !panelEl) return
     const focusables = panelEl.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     )
@@ -247,28 +252,33 @@
     {/if}
   {/snippet}
 
-  <!-- Backdrop -->
-  <div
-    class="fixed inset-0 bg-black/50 z-40"
-    onclick={onclose}
-    role="presentation"
-  ></div>
+  {#if !inline}
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-black/50 z-40"
+      onclick={onclose}
+      role="presentation"
+    ></div>
+  {/if}
 
-  <!-- Panel (div, not aside: a modal dialog isn't complementary content) -->
+  <!-- Modal: a dialog (div, not aside — a modal isn't complementary content).
+       Inline: a labelled region of the story pane. -->
   <div
     bind:this={panelEl}
-    role="dialog"
-    aria-modal="true"
+    role={inline ? 'region' : 'dialog'}
+    aria-modal={inline ? undefined : 'true'}
     aria-label="Article reader"
     tabindex="-1"
     onkeydown={trapFocus}
-    class="panel-slide fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-[#0a0a0b] border-l border-gray-800 z-50 flex flex-col"
-    style="padding-top: env(safe-area-inset-top, 0px);"
+    class={inline
+      ? 'h-full bg-[#0a0a0b] flex flex-col'
+      : 'panel-slide fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-[#0a0a0b] border-l border-gray-800 z-50 flex flex-col'}
+    style={inline ? undefined : 'padding-top: env(safe-area-inset-top, 0px);'}
   >
     <!-- Top bar -->
     <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0 min-w-0">
       <RegionBadge region={article.source_region} />
-      <span class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0 basis-full order-first">
+      <span class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-300 min-w-0 {inline ? '' : 'basis-full order-first'}">
         {#if langTag(article.source_lang)}<span class="text-[9px] font-mono uppercase tracking-wide text-gray-500 border border-gray-700/60 rounded px-1 shrink-0">{langTag(article.source_lang)}</span>{/if}
         <span>{article.source_name}</span>
         <AffiliationBadge affiliation={article.source_affiliation} />
@@ -288,10 +298,10 @@
       <button
         bind:this={closeBtn}
         onclick={onclose}
-        class="min-h-11 min-w-11 text-gray-400 hover:text-gray-200 transition-colors text-lg leading-none shrink-0 ml-1"
+        class="min-h-11 min-w-11 text-gray-400 hover:text-gray-200 transition-colors leading-none shrink-0 {inline ? 'order-first -ml-2 mr-2 px-2 text-sm' : 'ml-1 text-lg'}"
         aria-label="Close reader"
       >
-        ✕
+        {inline ? '← Story' : '✕'}
       </button>
     </div>
 
@@ -300,7 +310,8 @@
     </div>
 
     <!-- Content area -->
-    <div class="flex-1 overflow-y-auto px-6 py-5">
+    <div class="flex-1 overflow-y-auto px-6 py-5 {inline ? 'lg:px-10' : ''}">
+      <div class={inline ? 'mx-auto max-w-3xl' : ''}>
 
       {#if reader.status === 'loading'}
         <div class="space-y-3">
@@ -418,6 +429,7 @@
         </div>
       {/if}
 
+      </div>
     </div>
   </div>
 {/if}
