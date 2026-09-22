@@ -35,3 +35,23 @@ export async function openReader(page: Page) {
   await storyCard(page).locator('a[href]').first().click()
   await expect(reader(page)).toBeVisible()
 }
+
+/** Emoji, and the Unicode arrows/symbols iOS may render as colour emoji. The
+ *  interface uses SVG icons (src/lib/components/Icon.svelte) instead. */
+export async function emojiInChrome(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    // Emoji_Presentation, not Extended_Pictographic: © and ® in quoted source
+    // text are ordinary characters that no platform draws as emoji.
+    const re = /\p{Emoji_Presentation}|️|[←-⇿⬀-⯿]/u
+    // Publisher headlines and article text are theirs; check our chrome.
+    const skip = '[data-desk-story], [data-desk-story-pane] h2, [data-signal-story] a[href], .prose-reader, [data-trending-story]'
+    const hits: string[] = []
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const el = n.parentElement
+      if (!el || el.closest(skip) || !re.test(n.textContent ?? '')) continue
+      hits.push((n.textContent ?? '').trim().slice(0, 60))
+    }
+    return hits
+  })
+}

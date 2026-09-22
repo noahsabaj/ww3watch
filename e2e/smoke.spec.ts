@@ -297,3 +297,18 @@ test('secondary pages share the site header, menu and footer', async ({ page }) 
     await expect(page.locator('h1')).toHaveCount(1)
   }
 })
+
+test('no emoji or text arrows anywhere in the interface', async ({ page }) => {
+  const { emojiInChrome } = await import('./home')
+  expect(await emojiInChrome(page)).toEqual([])
+  await page.getByRole('button', { name: 'Menu' }).click()
+  expect(await emojiInChrome(page)).toEqual([])
+  await page.keyboard.press('Escape')
+  await openReader(page)
+  expect(await emojiInChrome(page)).toEqual([])
+  for (const path of ['/about', '/trends', '/privacy', '/feedback']) {
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    expect(await emojiInChrome(page), path).toEqual([])
+  }
+})

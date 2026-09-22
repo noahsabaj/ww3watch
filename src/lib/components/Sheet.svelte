@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import type { Snippet } from 'svelte'
 
   // One surface for everything that opens over the page (filters, the menu):
@@ -69,7 +70,7 @@
     <div class="flex items-center justify-between px-5 pt-2 pb-1 min-[820px]:pt-3">
       <h2 class="font-serif text-xl text-fg">{title}</h2>
       <button type="button" class="icon-btn -mr-2" aria-label="Close" onclick={() => (open = false)}>
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        <Icon name="close" size={18} stroke={2} />
       </button>
     </div>
     <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">

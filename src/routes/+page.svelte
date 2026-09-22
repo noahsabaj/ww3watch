@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import { onMount, untrack, tick } from 'svelte'
   import Header from '$lib/components/Header.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
@@ -153,7 +154,7 @@
       <span class="flex-1 text-sm text-fg-2">Add WW3Watch to your home screen</span>
       <button onclick={handleInstall} class="btn min-h-8 px-4 text-[13px]">Install</button>
       <button onclick={dismissInstall} class="icon-btn -mr-2 h-9 w-9" aria-label="Dismiss">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        <Icon name="close" size={16} stroke={2} />
       </button>
     </div>
   {/if}
@@ -211,9 +212,9 @@
       <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(6.5rem + env(safe-area-inset-top, 0px))">
         <button
           onclick={flushQueue}
-          class="btn min-h-9 px-4 text-[13px] shadow-lg shadow-black/50"
+          class="btn min-h-9 gap-1.5 px-4 text-[13px] shadow-lg shadow-black/50"
         >
-          ↑ {feed.newQueue.length} new {feed.newQueue.length === 1 ? 'story' : 'stories'}
+          <Icon name="arrow-up" size={14} />{feed.newQueue.length} new {feed.newQueue.length === 1 ? 'story' : 'stories'}
         </button>
       </div>
     {/if}

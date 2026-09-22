@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import { onMount } from 'svelte'
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
@@ -68,12 +69,12 @@
 
 <div class="flex flex-wrap items-center gap-x-3 min-w-0 max-w-full text-xs" data-share-controls>
   <button type="button" onclick={copy} disabled={busy}
-    class="min-h-11 min-w-11 text-fg-2 hover:text-fg disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded">
-    Copy {target.kind} link
+    class="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded text-fg-2 hover:text-fg disabled:opacity-50">
+    <Icon name="link" size={15} />Copy {target.kind} link
   </button>
   {#if nativeShare}
     <button type="button" onclick={share} disabled={busy}
-      class="min-h-11 min-w-11 text-fg-2 hover:text-fg disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded">Share</button>
+      class="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded text-fg-2 hover:text-fg disabled:opacity-50"><Icon name="share" size={15} />Share</button>
   {/if}
   <span role="status" aria-live="polite" aria-atomic="true" class="text-fg-2">{message}</span>
   {#if manualCopy}

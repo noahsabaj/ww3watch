@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import type { Snippet } from 'svelte'
   import { base } from '$app/paths'
   import SiteMenu from '$lib/components/SiteMenu.svelte'
@@ -22,7 +23,7 @@
   <header class="sticky top-0 z-30 border-b border-line bg-ink px-4" style="padding-top: env(safe-area-inset-top, 0px)">
     <div class="mx-auto flex h-16 items-center gap-4 px-1 {wide ? 'max-w-6xl' : 'max-w-3xl'}">
       <a href="{base}/" class="text-lg font-bold tracking-tight text-fg">WW3Watch</a>
-      <a href="{base}/" class="action ml-auto text-sm">← Latest reporting</a>
+      <a href="{base}/" class="action ml-auto gap-1.5 text-sm"><Icon name="arrow-left" size={15} />Latest reporting</a>
       <SiteMenu />
     </div>
   </header>

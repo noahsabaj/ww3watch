@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import { base } from '$app/paths'
   import { page } from '$app/state'
   import Sheet from '$lib/components/Sheet.svelte'
@@ -19,7 +20,7 @@
 </script>
 
 <button type="button" class="icon-btn" aria-label="Menu" aria-haspopup="dialog" aria-expanded={open} onclick={() => (open = true)}>
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8h16M4 16h16" /></svg>
+  <Icon name="menu" size={20} />
 </button>
 
 <Sheet bind:open title="Menu">
@@ -34,7 +35,7 @@
         class="group flex items-baseline justify-between gap-4 rounded-xl px-2 py-3 transition-colors hover:bg-white/[0.04]"
       >
         <span>
-          <span class="block font-serif text-[19px] text-fg group-aria-[current=page]:text-accent">{item.title}{item.external ? ' ↗' : ''}</span>
+          <span class="flex items-center gap-2 font-serif text-[19px] text-fg group-aria-[current=page]:text-accent">{item.title}{#if item.external}<Icon name="external" size={16} class="text-fg-3" />{/if}</span>
           <span class="mt-0.5 block text-[13px] text-fg-3">{item.note}</span>
         </span>
       </a>

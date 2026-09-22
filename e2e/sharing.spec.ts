@@ -88,7 +88,7 @@ test('single article copies from keyboard and its link reopens the correct artic
   await page.goto(new URL(copied).search)
   const dialog = reader(page)
   await expect(dialog).toBeVisible({ timeout: 20_000 })
-  await expect(dialog.getByRole('link', { name: 'Read original ↗', exact: true })).toHaveAttribute('href', original!)
+  await expect(dialog.getByRole('link', { name: 'Read original', exact: true })).toHaveAttribute('href', original!)
   await dialog.getByRole('button', { name: 'Copy article link' }).click()
   await expect(dialog.getByRole('status')).toHaveText('Link copied')
   expect(await page.evaluate(() => window.shareMock.copied[0])).toBe(copied)

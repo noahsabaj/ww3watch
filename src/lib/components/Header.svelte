@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import type { SourceRegion } from '$lib/types'
   import { timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
@@ -91,9 +92,7 @@
         aria-expanded={filtersOpen}
         onclick={() => (filtersOpen = true)}
       >
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" />
-        </svg>
+        <Icon name="filters" size={20} />
         {#if isFiltered}<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-accent ring-2 ring-ink" aria-hidden="true"></span>{/if}
       </button>
       <SiteMenu />

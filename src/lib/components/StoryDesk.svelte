@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_BORDER } from '$lib/types'
@@ -142,7 +143,7 @@
       </div>
       {#if newCount > 0 && paused}
         <button type="button" onclick={flush} class="btn ml-auto min-h-8 px-3 text-xs">
-          ↑ {newCount} new
+          <Icon name="arrow-up" size={14} />{newCount} new
         </button>
       {/if}
     </div>
@@ -184,7 +185,7 @@
           <li aria-hidden="true" class="label px-4 pt-5 pb-1" data-day>{dayLabel(rep.published_at, clock.now)}</li>
         {/if}
         {#if i === lastVisitIndex}
-          <li role="separator" class="label px-4 py-2 !text-accent">New since your last visit <span aria-hidden="true">↑</span></li>
+          <li role="separator" class="label px-4 py-2 !text-accent"><span class="inline-flex items-center gap-1.5">New since your last visit<Icon name="arrow-up" size={12} /></span></li>
         {/if}
         <li>
           <button

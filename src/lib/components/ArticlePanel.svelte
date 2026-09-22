@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import { headlineText } from '$lib/utils'
   import type { Article } from '$lib/types'
   import type { Cluster } from '$lib/cluster'
@@ -232,9 +233,9 @@
         {#if article.source_lang !== prefs.readingLang}
           <button
             onclick={translate}
-            class="action {translation.status === 'failed' ? '!text-amber-400' : '!text-accent'}"
-          >{translateLabel}</button>
-          <span class="text-fg-3" aria-hidden="true">→</span>
+            class="action gap-1.5 {translation.status === 'failed' ? '!text-amber-400' : '!text-accent'}"
+          ><Icon name="translate" size={15} />{translateLabel}</button>
+          <Icon name="arrow-right" size={14} class="text-fg-3" />
         {:else}
           <span class="text-fg-3">Original ({LANG_NAMES[article.source_lang] ?? article.source_lang.toUpperCase()}) · read in</span>
         {/if}
@@ -283,9 +284,9 @@
         class={inline ? 'action px-3 text-sm' : 'icon-btn'}
         aria-label="Close reader"
       >
-        {#if inline}← Story{:else}<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>{/if}
+        {#if inline}<Icon name="arrow-left" size={16} class="mr-1.5" />Story{:else}<Icon name="close" size={18} stroke={2} />{/if}
       </button>
-      <a href={article.url} target="_blank" rel="noopener noreferrer" class="action px-3 text-sm">Read original ↗</a>
+      <a href={article.url} target="_blank" rel="noopener noreferrer" class="action gap-1.5 px-3 text-sm">Read original<Icon name="external" size={14} /></a>
     </div>
 
     <!-- Content area -->
@@ -324,8 +325,8 @@
       <div class="mt-4 mb-7 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line pb-3 text-[13px]">
         {#if reader.status !== 'loading'}{@render translateControls()}{/if}
         <ShareControls {article} {cluster} />
-        <a href="{base}/feedback?article={article.id}" class="action">Report</a>
-        <a href="{base}/about{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="action">Source profile</a>
+        <a href="{base}/feedback?article={article.id}" class="action gap-1.5"><Icon name="flag" size={15} />Report</a>
+        <a href="{base}/about{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="action gap-1.5"><Icon name="info" size={15} />Source profile</a>
       </div>
 
       {#if reader.status === 'loading'}
@@ -370,7 +371,7 @@
           </p>
         {/if}
         <a href={article.url} target="_blank" rel="noopener noreferrer" class="btn-ghost text-sm">
-          Full article unavailable — read original ↗
+          Full article unavailable — read original<Icon name="external" size={14} />
         </a>
       {/if}
 

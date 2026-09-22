@@ -158,8 +158,24 @@ export function isShareCard(url: string): boolean {
   }
 }
 
+// WordPress files an upload under /uploads/YYYY/MM/. A photo uploaded more than
+// six months before the article is a house graphic the newsroom reuses (Al-Quds
+// Al-Arabi's "breaking" card from 2024 on a 2026 story), not a picture of
+// this event.
+const STALE_UPLOAD_MONTHS = 6
+
+export function isReusedUpload(url: string, publishedAt: string | null): boolean {
+  const m = url.match(/\/uploads\/(\d{4})\/(\d{2})\//)
+  if (!m || !publishedAt) return false
+  const published = new Date(publishedAt)
+  if (Number.isNaN(published.getTime())) return false
+  const months = (published.getUTCFullYear() - Number(m[1])) * 12 + (published.getUTCMonth() + 1 - Number(m[2]))
+  return months > STALE_UPLOAD_MONTHS
+}
+
 export function storyImage(cluster: Cluster): StoryPhoto | null {
-  const usable = (a: Article): a is Article & { image_url: string } => !!a.image_url && !isShareCard(a.image_url)
+  const usable = (a: Article): a is Article & { image_url: string } =>
+    !!a.image_url && !isShareCard(a.image_url) && !isReusedUpload(a.image_url, a.published_at)
   const withPhoto = cluster.articles.filter(usable)
   if (withPhoto.length === 0) return null
   const rep = cluster.representative

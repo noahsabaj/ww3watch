@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupByStoryId, storyTimeline, storyImage, isShareCard } from './cluster'
+import { groupByStoryId, storyTimeline, storyImage, isShareCard, isReusedUpload } from './cluster'
 import type { Article } from './types'
 
 let seq = 0
@@ -215,5 +215,22 @@ describe('share-card pattern', () => {
     const display = grab('src/lib/cluster.ts')
     expect(display).toBeTruthy()
     expect(display).toBe(grab('src/lib/server/image.ts'))
+  })
+})
+
+describe('isReusedUpload', () => {
+  const at = '2026-09-22T15:00:00Z'
+  it('flags a WordPress upload far older than the article', () => {
+    expect(isReusedUpload('https://www.alquds.co.uk/wp-content/uploads/2024/08/br-20082024.jpg', at)).toBe(true)
+  })
+  it('keeps this month, last month and anything without a dated path', () => {
+    expect(isReusedUpload('https://www.alquds.co.uk/wp-content/uploads/2026/09/Yemen-5.jpg', at)).toBe(false)
+    expect(isReusedUpload('https://www.aljazeera.com/wp-content/uploads/2026/08/image.jpg', at)).toBe(false)
+    expect(isReusedUpload('https://cdn.isna.ir/d/2020/01/01/4/1.jpg', at)).toBe(false)
+    expect(isReusedUpload('https://www.alquds.co.uk/wp-content/uploads/2024/08/x.jpg', null)).toBe(false)
+  })
+  it('a story whose only photo is a reused template shows none', () => {
+    const [cluster] = groupByStoryId([article({ published_at: at, image_url: 'https://www.alquds.co.uk/wp-content/uploads/2024/08/br-20082024.jpg' })])
+    expect(storyImage(cluster)).toBeNull()
   })
 })

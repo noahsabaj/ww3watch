@@ -138,8 +138,9 @@ insert into public.pipeline_runs (started_at, finished_at, error, stats) values
 -- credit must name that outlet (Al Jazeera), not the story's lead. The RT
 -- singleton's photo URL is dead, so it must fall back to the colour field:
 -- sirv serves the SPA shell for the missing path, which no browser decodes as
--- an image. /og.png is a real file in static/.
-update public.articles set image_url = '/og.png', image_width = 1200, image_height = 630, image_fetched_at = now()
+-- an image. static/fixtures/story-photo.jpg is a plain generated photo (the
+-- site's own /og.png would now be rejected as a share card).
+update public.articles set image_url = '/fixtures/story-photo.jpg', image_width = 1280, image_height = 720, image_fetched_at = now()
   where id = '33333333-3333-4333-8333-000000000003';
 update public.articles set image_url = '/no-such-photo.jpg', image_fetched_at = now()
   where id = '33333333-3333-4333-8333-000000000008';
