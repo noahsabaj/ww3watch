@@ -2,6 +2,8 @@
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import SignalStory from '$lib/components/SignalStory.svelte'
+  import PullIndicator from '$lib/components/PullIndicator.svelte'
+  import { createPullRefresh } from '$lib/pull-refresh.svelte'
 
   let {
     clusters,
@@ -12,6 +14,7 @@
     ranked = false,
     focusId = null,
     onview,
+    onrefresh,
   }: {
     clusters: Cluster[]
     onselect?: (a: Article) => void
@@ -24,6 +27,8 @@
     focusId?: string | null
     /** The story on screen changed (not called for the first one on landing). */
     onview?: (cluster: Cluster) => void
+    /** Pull down on the first story to fetch the newest; resolves when done. */
+    onrefresh?: () => Promise<unknown>
   } = $props()
 
   // A first-time visitor sees one story and no scrollbar, so nothing says there
@@ -50,12 +55,18 @@
   // The story on screen, so the address bar (and Safari's own Share button)
   // names it rather than the homepage.
   let onScreen = 0
+  let reported = false
   function reportView(el: HTMLElement) {
     const i = Math.round(el.scrollTop / Math.max(1, el.clientHeight))
     if (i === onScreen) return
     onScreen = i
-    if (clusters[i]) onview?.(clusters[i])
+    if (clusters[i]) { reported = true; onview?.(clusters[i]) }
   }
+
+  // The first story may have changed after a refresh; the address names the new one.
+  const pullRefresh = createPullRefresh(() => scroller, () => onrefresh, () => {
+    if (onScreen === 0 && reported && clusters[0]) onview?.(clusters[0])
+  })
 
   function onscroll(e: Event) {
     reportView(e.currentTarget as HTMLElement)
@@ -66,12 +77,13 @@
   }
 </script>
 
-<div class="relative h-full min-h-0">
+<div class="relative h-full min-h-0 overflow-hidden">
+  {#if onrefresh}<PullIndicator state={pullRefresh} />{/if}
   <!-- Focusable so arrow keys and Page Down move between stories: a scrolling
        region the keyboard can't reach is an axe failure (scrollable-region-focusable). -->
   <!-- No counter, no scrollbar: one story fills the screen and a swipe is the only control. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller h-full snap-y snap-mandatory overflow-y-auto outline-none" {onscroll}>
+  <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller relative h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-ink outline-none" aria-busy={pullRefresh.refreshing} style={pullRefresh.style} {onscroll}>
     {#each clusters as cluster, i (cluster.id)}
       <SignalStory {cluster} {onselect} hint={i === 0 && !swiped && clusters.length > 1} />
     {/each}

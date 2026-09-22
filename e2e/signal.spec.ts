@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { openHome, openReader, reader, stories, storyCard } from './home'
+import { expectPullToRefresh, openHome, openReader, reader, stories, storyCard } from './home'
 
 // Below 900px the home is Signal: one story at a time, full screen.
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
@@ -65,6 +65,17 @@ test('the address follows the story on screen, so a browser share sends it', asy
   await expect(reader(page)).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL(onScreen)
+})
+
+test('pulling the first story down refreshes the feed', async ({ page }) => {
+  await expectPullToRefresh(page, page.getByLabel('Stories', { exact: true }))
+})
+
+test.describe('iPad', () => {
+  test.use({ viewport: { width: 834, height: 1194 }, hasTouch: true })
+  test('pulling the story list down refreshes the feed', async ({ page }) => {
+    await expectPullToRefresh(page, page.locator('[data-desk-rail]'))
+  })
 })
 
 test('the story scroller is keyboard reachable', async ({ page }) => {

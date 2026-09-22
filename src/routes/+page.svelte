@@ -217,6 +217,7 @@
       {lastVisitAt}
       newCount={feed.newQueue.length}
       onFlush={flushQueue}
+      onrefresh={feed.refresh}
       bind:paused={railPaused}
     />
   {:else if desk === false}
@@ -242,6 +243,7 @@
           ranked={filters.sortMode === 'top'}
           focusId={reader.selectedCluster?.id ?? null}
           onview={onSignalView}
+          onrefresh={feed.refresh}
         />
       {/key}
     </div>

@@ -15,6 +15,7 @@ import { groupByStoryId } from './cluster'
 import type { Cluster } from './cluster'
 import { clock } from './now.svelte'
 import { FEED_COLUMNS } from './feed-columns'
+import { loadFeed } from './load-feed'
 
 export type TrendingRef = { article_id: string; story_id: string | null }
 
@@ -209,6 +210,28 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     newQueue = []
   }
 
+  // Pull to refresh: the newest page again, merged over what is held. Fresh
+  // rows replace their stale copies (late cluster assignments), anything queued
+  // behind the "new stories" pill joins the feed, and paged-back rows stay.
+  // Resolves false when the fetch failed; the feed is then left as it was.
+  async function refresh(): Promise<boolean> {
+    let result: Awaited<ReturnType<typeof loadFeed>>
+    try { result = await loadFeed() } catch { result = { articles: [], trending: [], lastUpdatedAt: null, loadError: true } }
+    if (result.loadError) {
+      showToast("Couldn't refresh the feed.")
+      return false
+    }
+    const incoming = result.articles as Article[]
+    const ids = new Set(incoming.map((a) => a.id))
+    const held = [...newQueue, ...articles].filter((a) => !ids.has(a.id))
+    articles = [...incoming, ...held].slice(0, Math.max(articleCap, incoming.length))
+    newQueue = []
+    trending = result.trending
+    if (result.lastUpdatedAt) lastUpdatedAt = result.lastUpdatedAt
+    liveMessage = 'Feed refreshed.'
+    return true
+  }
+
   // "Load older": pull the next page from the server (offset against the same
   // DESC order), append the rows not already held. Appending older rows keeps
   // the list DESC; groupByStoryId re-sorts regardless. articleCap grows so a
@@ -384,6 +407,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
       hasMore = value.articles.length >= INITIAL_LIMIT
     },
     flushQueue,
+    refresh,
     loadOlder,
     recoverDeepLink,
     start,

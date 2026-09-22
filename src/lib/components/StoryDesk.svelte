@@ -10,6 +10,8 @@
   import { base } from '$app/paths'
   import DeskStory from '$lib/components/DeskStory.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
+  import PullIndicator from '$lib/components/PullIndicator.svelte'
+  import { createPullRefresh } from '$lib/pull-refresh.svelte'
 
   // The desktop home: every story in a scannable column on the left, the
   // selected one on the right in Signal's treatment, and reading happens in
@@ -26,6 +28,7 @@
     lastVisitAt,
     newCount,
     onFlush,
+    onrefresh,
     paused = $bindable(false),
   }: {
     clusters: Cluster[]
@@ -39,12 +42,15 @@
     lastVisitAt: number | null
     newCount: number
     onFlush: () => void
+    /** Pull the rail down from its top to fetch the newest (touch only). */
+    onrefresh?: () => Promise<unknown>
     paused?: boolean
   } = $props()
 
   let rail = $state<HTMLElement | null>(null)
   let pane = $state<HTMLElement | null>(null)
   let pickedId = $state<string | null>(null)
+  const pullRefresh = createPullRefresh(() => rail, () => onrefresh)
 
   // What the pane shows: the story being read (a deep link can open one that
   // isn't in the filtered list), else the one picked in the rail, else the top.
@@ -122,11 +128,15 @@
 <!-- 820px (an 11" iPad in portrait) to a wide monitor: the rail gives up width first. -->
 <div class="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
   <!-- Rail -->
+  <div class="relative min-h-0 overflow-hidden border-r border-line">
+  {#if onrefresh}<PullIndicator state={pullRefresh} />{/if}
   <nav
     bind:this={rail}
     data-desk-rail
     aria-label="Stories"
-    class="relative min-h-0 overflow-y-auto border-r border-line"
+    aria-busy={pullRefresh.refreshing}
+    class="relative h-full min-h-0 overflow-y-auto overscroll-y-contain bg-ink"
+    style={pullRefresh.style}
     onscroll={() => (paused = (rail?.scrollTop ?? 0) > 300)}
   >
     <div class="sticky top-0 z-10 flex items-center gap-1 border-b border-line bg-ink/95 px-4 py-2.5 backdrop-blur">
@@ -226,6 +236,7 @@
       </li>
     </ol>
   </nav>
+  </div>
 
   <!-- Pane -->
   <div bind:this={pane} data-desk-pane class="min-h-0 overflow-y-auto bg-ink">
