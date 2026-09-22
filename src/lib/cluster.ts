@@ -143,13 +143,29 @@ function photoArea(a: Article): number {
 // One photograph per story: the representative's if it has one, else the
 // largest among the other members. Credit always names the outlet that
 // published it — never imply TASS's photo is Reuters'.
+// Social share cards print the headline onto the image; logos fill it with a
+// wordmark. Ingest rejects them
+// (src/lib/server/image.ts, whose SHARE_CARD this mirrors); this keeps any
+// stored before that filter existed off the screen too.
+const SHARE_CARD =
+  /\/(?:imgly\/)?shar(?:e|ing)\/|\/(?:api\/)?og(?:-image)?(?:\/|\.png|$)|\/opengraph-image|\/social[-_]?(?:card|image)|\/share[-_]?(?:card|image)|\/(?:[^/]*[^a-z/])?logo[^/]*\.(?:png|jpe?g|webp|svg|gif)$/i
+
+export function isShareCard(url: string): boolean {
+  try {
+    return SHARE_CARD.test(new URL(url, 'https://x.invalid').pathname)
+  } catch {
+    return false
+  }
+}
+
 export function storyImage(cluster: Cluster): StoryPhoto | null {
-  const withPhoto = cluster.articles.filter((a): a is Article & { image_url: string } => !!a.image_url)
+  const usable = (a: Article): a is Article & { image_url: string } => !!a.image_url && !isShareCard(a.image_url)
+  const withPhoto = cluster.articles.filter(usable)
   if (withPhoto.length === 0) return null
   const rep = cluster.representative
   const chosen =
-    rep.image_url
-      ? (rep as Article & { image_url: string })
+    usable(rep)
+      ? rep
       : [...withPhoto].sort((a, b) => {
           const d = photoArea(b) - photoArea(a)
           if (d) return d

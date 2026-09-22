@@ -19,10 +19,11 @@ const TRACKER =
 // Social share cards: an image the publisher renders FROM the headline (often
 // over a photo) for link previews. As a backdrop it prints the headline twice,
 // the second copy fighting the first. RIA's /images/sharing/, Meduza's
-// /imgly/share/, generic og-image renderers. The plain photo, when a feed has
+// /imgly/share/, generic og-image renderers. Logos (TASS, Yonhap) fill the
+// band with a wordmark instead of a photo. The plain photo, when a feed has
 // one, still comes through its RSS media.
 const SHARE_CARD =
-  /\/(?:imgly\/)?shar(?:e|ing)\/|\/(?:api\/)?og(?:-image)?(?:\/|\.png|$)|\/opengraph-image|\/social[-_]?(?:card|image)|\/share[-_]?(?:card|image)/i
+  /\/(?:imgly\/)?shar(?:e|ing)\/|\/(?:api\/)?og(?:-image)?(?:\/|\.png|$)|\/opengraph-image|\/social[-_]?(?:card|image)|\/share[-_]?(?:card|image)|\/(?:[^/]*[^a-z/])?logo[^/]*\.(?:png|jpe?g|webp|svg|gif)$/i
 
 export function sanitizeImageUrl(raw: unknown, baseUrl: string): string | null {
   if (typeof raw !== 'string') return null
