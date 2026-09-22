@@ -17,7 +17,7 @@ function ts(a: Article): number {
 // Members sharing a body_hash are reprints of the same agency copy. Returns the
 // ids of every copy EXCEPT the earliest-published one (the origin), so wire
 // reprints can be badged in the UI and excluded from independent-source counts
-// (ClusterCard badges them; trending collapses them before ranking). Shared so
+// (the story pane badges them; trending collapses them before ranking). Shared so
 // the two never drift.
 export function wireDuplicateIds(articles: Article[]): Set<string> {
   const byHash = new Map<string, Article[]>()

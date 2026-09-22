@@ -70,7 +70,7 @@
   class="sticky top-0 z-30 border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]"
   style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px))"
 >
-  <div class="max-w-3xl mx-auto flex flex-wrap items-center gap-3">
+  <div class="max-w-3xl min-[820px]:max-w-none mx-auto flex flex-wrap items-center gap-3">
     <!-- Brand -->
     <div class="flex items-center gap-3 shrink-0">
       <h1 class="text-white font-bold text-lg tracking-tight">WW3Watch</h1>
@@ -82,11 +82,11 @@
       aria-label="Search headlines"
       placeholder="Search headlines..."
       bind:value={searchQuery}
-      class="hidden md:block flex-1 min-w-0 bg-[#18181b] border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+      class="hidden min-[820px]:block flex-1 max-w-xl min-w-0 bg-[#18181b] border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
     />
 
     <!-- Right actions -->
-    <div class="flex flex-wrap items-center gap-2 ml-auto md:ml-0 min-w-0">
+    <div class="flex flex-wrap items-center gap-2 ml-auto min-w-0">
       <span
         class="hidden sm:flex flex-wrap items-center gap-1.5 text-xs text-gray-400"
         title={realtimeStatus === 'SUBSCRIBED' ? 'Live updates connected' : 'Live updates reconnecting'}
@@ -109,7 +109,7 @@
       </span>
 
       <!-- Region filter button + dropdown (desktop only) -->
-      <div class="relative hidden md:block">
+      <div class="relative hidden min-[820px]:block">
         <button
           onclick={() => filterDropdownOpen = !filterDropdownOpen}
           aria-label="Filter by region, language, topic and parties involved"
@@ -181,6 +181,6 @@
   </div>
   <p class="sm:hidden max-w-3xl mx-auto text-xs text-gray-400 mt-1">{storyCount} stories{#if lastUpdatedAt} · updated {timeAgo(lastUpdatedAt, clock.now)}{/if}</p>
   {#if staleness === 'amber' || staleness === 'red'}
-    <p role="status" class="max-w-3xl mx-auto text-xs text-amber-400 mt-2">New reporting is delayed. Existing stories and original article links remain available.</p>
+    <p role="status" class="max-w-3xl min-[820px]:max-w-none mx-auto text-xs text-amber-400 mt-2">New reporting is delayed. Existing stories and original article links remain available.</p>
   {/if}
 </header>

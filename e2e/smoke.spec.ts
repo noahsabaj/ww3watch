@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
+import { openHome, openReader, reader, selectStory, stories, storyCard } from './home'
 
-// Locks in the hand-verified QA flows.
+// Locks in the hand-verified QA flows, on the story desk (Playwright's Desktop
+// Chrome is 1280px wide). Signal, the phone layout, has its own spec.
 //
 // Runs against the SEEDED fixture backend (supabase/seed.sql), not production.
 // It used to assert against live data, which meant a PR went red when the
@@ -10,18 +12,46 @@ import { test, expect } from '@playwright/test'
 //
 // The live site keeps its own watchdog in .github/workflows/prod-smoke.yml.
 
-// 64 seeded articles group into 59 story cards: one 4-member story, one
-// 3-member story, and 57 singletons.
-const STORY_CARDS = 59
+// 64 seeded articles group into 59 stories: one 4-member story, one 3-member
+// story, and 57 singletons.
+const STORIES = 59
+
+const multiSource = { hasText: /\d+ outlets/ }
+const russian = (page: import('@playwright/test').Page) => ({ has: page.getByText('RU', { exact: true }) })
+const wireStory = { hasText: 'Agency copy: ceasefire talks resume' }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
-  await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
+  await openHome(page)
 })
 
-test('feed renders every seeded story, grouped', async ({ page }) => {
-  await expect(page.locator('article')).toHaveCount(STORY_CARDS)
-  await expect(page.locator('header')).toContainText(`${STORY_CARDS} stories`)
+test('the desk lists every seeded story, grouped, and shows the first', async ({ page }) => {
+  await expect(stories(page)).toHaveCount(STORIES)
+  await expect(page.locator('header')).toContainText(`${STORIES} stories`)
+  await expect(stories(page).first()).toHaveAttribute('aria-current', 'true')
+  await expect(storyCard(page)).toHaveAttribute('data-story', (await stories(page).first().getAttribute('data-desk-story'))!)
+})
+
+test('picking a story in the rail shows it in the pane', async ({ page }) => {
+  const pane = await selectStory(page, multiSource)
+  await expect(pane.getByRole('heading', { name: /How \d+ newsrooms put it/ })).toBeVisible()
+  const view = pane.getByRole('group', { name: 'Story view' })
+  await view.getByRole('button', { name: 'Timeline' }).click()
+  await expect(pane.getByText('FIRST', { exact: true })).toBeVisible()
+  await view.getByRole('button', { name: 'By side' }).click()
+  await expect(pane.getByText('FIRST', { exact: true })).toHaveCount(0)
+})
+
+test('j and k move through stories, o reads the one selected', async ({ page }) => {
+  const second = await stories(page).nth(1).getAttribute('data-desk-story')
+  await page.keyboard.press('j')
+  await expect(stories(page).nth(1)).toHaveAttribute('aria-current', 'true')
+  await expect(stories(page).nth(1)).toBeFocused()
+  await expect(storyCard(page)).toHaveAttribute('data-story', second!)
+  await page.keyboard.press('k')
+  await expect(stories(page).first()).toHaveAttribute('aria-current', 'true')
+  await page.keyboard.press('o')
+  await expect(reader(page)).toBeVisible()
+  await expect(page).toHaveURL(/[?&]article=/)
 })
 
 test('search filters and clears', async ({ page }) => {
@@ -29,7 +59,7 @@ test('search filters and clears', async ({ page }) => {
   await search.fill('zzz-no-such-headline-zzz')
   await expect(page.getByText('No stories match your filters.')).toBeVisible()
   await search.fill('')
-  await expect(page.locator('article').first()).toBeVisible()
+  await expect(stories(page).first()).toBeVisible()
 })
 
 test('the empty-state "Clear filters" button restores the feed', async ({ page }) => {
@@ -37,7 +67,7 @@ test('the empty-state "Clear filters" button restores the feed', async ({ page }
   await search.fill('zzz-no-such-headline-zzz')
   await page.getByRole('button', { name: 'Clear filters' }).click()
   await expect(search).toHaveValue('')
-  await expect(page.locator('article').first()).toBeVisible()
+  await expect(stories(page).first()).toBeVisible()
 })
 
 test('region filter: None empties the feed, All restores it', async ({ page }) => {
@@ -47,13 +77,13 @@ test('region filter: None empties the feed, All restores it', async ({ page }) =
   await dropdown.getByRole('button', { name: 'None', exact: true }).click()
   await expect(page.getByText('No stories match your filters.')).toBeVisible()
   await dropdown.getByRole('button', { name: 'All', exact: true }).click()
-  await expect(page.locator('article').first()).toBeVisible()
+  await expect(stories(page).first()).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(dropdown).toBeHidden()
 })
 
 test('language filter excludes a language and clearing restores it', async ({ page }) => {
-  const before = await page.locator('article').count()
+  const before = await stories(page).count()
   await page.getByLabel('Filter by region').click()
   const dropdown = page.locator('#region-filter-dropdown')
   const english = dropdown.getByRole('button', { name: 'English', exact: true })
@@ -62,151 +92,140 @@ test('language filter excludes a language and clearing restores it', async ({ pa
   await expect(english).toHaveAttribute('aria-pressed', 'false')
   // The fixture is roughly half English: excluding it removes stories without
   // emptying the feed.
-  await expect.poll(() => page.locator('article').count()).toBeLessThan(before)
-  expect(await page.locator('article').count()).toBeGreaterThan(0)
+  await expect.poll(() => stories(page).count()).toBeLessThan(before)
+  expect(await stories(page).count()).toBeGreaterThan(0)
   await expect(page.locator('header')).toContainText(/of \d+ stories/)
   await english.click()
-  await expect.poll(() => page.locator('article').count()).toBe(before)
+  await expect.poll(() => stories(page).count()).toBe(before)
 })
 
-test('reader panel opens as a dialog, focuses close, Escape restores', async ({ page }) => {
-  await page.locator('article a[href]').first().click()
-  const dialog = page.getByRole('dialog')
-  await expect(dialog).toBeVisible()
+test('the reader opens in the pane, focuses close, Escape returns to the story', async ({ page }) => {
+  const story = await storyCard(page).getAttribute('data-story')
+  await openReader(page)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByLabel('Close reader')).toBeFocused()
   await page.keyboard.press('Escape')
-  await expect(dialog).toBeHidden()
+  await expect(reader(page)).toBeHidden()
+  await expect(storyCard(page)).toHaveAttribute('data-story', story!)
 })
 
 // ── Shallow routing ─────────────────────────────────────────────────────────
-// The panel lives in page.state, so the browser's history IS the open/closed
-// state. Before this, opening an article was invisible to history: Back left
-// the site instead of closing the reader, and the URL never named what you were
-// reading (which is why a separate Share button had to reconstruct the link).
+// The reader lives in page.state, so the browser's history IS the open/closed
+// state: Back closes it, the URL names what you're reading, reload reopens it.
 
-test('opening a story puts it in the URL, and Back closes the panel', async ({ page }) => {
-  await page.locator('article a[href]').first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
+test('opening a story puts it in the URL, and Back closes the reader', async ({ page }) => {
+  await openReader(page)
   await expect(page).toHaveURL(/[?&]article=[0-9a-f-]{36}/)
 
   await page.goBack()
-  await expect(page.getByRole('dialog')).toBeHidden()
+  await expect(reader(page)).toBeHidden()
   await expect(page).not.toHaveURL(/[?&]article=/)
-  // Back closed the reader rather than leaving the site — the feed is still here,
-  // and was never re-fetched.
-  await expect(page.locator('article').first()).toBeVisible()
+  // Back closed the reader rather than leaving the site.
+  await expect(stories(page).first()).toBeVisible()
 })
 
 test('reloading with ?article= reopens the same article', async ({ page }) => {
-  await page.locator('article a[href]').first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
+  await openReader(page)
   const deepLink = page.url()
   expect(deepLink).toMatch(/[?&]article=/)
 
   await page.reload()
-  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 20_000 })
+  await expect(reader(page)).toBeVisible({ timeout: 20_000 })
   await expect(page).toHaveURL(deepLink)
 })
 
 test('closing a COLD deep link stays on the site instead of navigating away', async ({ page }) => {
   // Regression guard for the one case where history.back() is the wrong close:
   // arriving directly at ?article= leaves no entry of ours behind this one.
-  await page.locator('article a[href]').first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
+  await openReader(page)
   const deepLink = page.url()
 
-  await page.goto(deepLink) // fresh load, panel opens from the param
-  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 20_000 })
+  await page.goto(deepLink) // fresh load, reader opens from the param
+  await expect(reader(page)).toBeVisible({ timeout: 20_000 })
 
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog')).toBeHidden()
-  await expect(page.locator('article').first()).toBeVisible()
+  await expect(reader(page)).toBeHidden()
+  await expect(stories(page).first()).toBeVisible()
   await expect(page).not.toHaveURL(/[?&]article=/)
 })
 
-test('switching sources inside the panel does not stack history entries', async ({ page }) => {
-  // Open a multi-source story so the in-panel timeline offers another source.
-  await page.locator('article', { has: page.getByRole('button', { name: /sources covered this/ }) })
-    .first().locator('a[href]').first().click()
-  const dialog = page.getByRole('dialog')
-  await expect(dialog).toBeVisible()
+test('switching sources inside the reader does not stack history entries', async ({ page }) => {
+  await selectStory(page, multiSource)
+  await openReader(page)
 
   const depthBefore = await page.evaluate(() => history.length)
   const firstUrl = page.url()
 
   // The timeline's other-source entries are the only dir="auto" buttons in the
-  // panel (headlines can be RTL); the close/share/translate controls are not.
-  await dialog.locator('button[dir="auto"]').first().click()
+  // reader (headlines can be RTL); the close/share/translate controls are not.
+  await reader(page).locator('button[dir="auto"]').first().click()
   await expect(page).not.toHaveURL(firstUrl)
   expect(await page.evaluate(() => history.length)).toBe(depthBefore)
 
   // So ONE Back closes the reader outright rather than walking back through
   // every source the reader happened to look at.
   await page.goBack()
-  await expect(dialog).toBeHidden()
+  await expect(reader(page)).toBeHidden()
+})
+
+test('picking another story while reading closes the reader onto that story', async ({ page }) => {
+  await openReader(page)
+  const next = await stories(page).nth(2).getAttribute('data-desk-story')
+  await stories(page).nth(2).click()
+  await expect(reader(page)).toBeHidden()
+  await expect(storyCard(page)).toHaveAttribute('data-story', next!)
+  await expect(page).not.toHaveURL(/[?&]article=/)
 })
 
 test('reading-language picker stays available when the article matches the reading language', async ({ page }) => {
   // Regression: the picker used to be gated on source_lang !== readingLang, so a
-  // reader whose language matched the article (a Russian reader on a Russian
-  // article) lost the picker AND the translate button — stranded. Seed Russian,
-  // open a Russian-source story, and assert the picker is still there.
+  // reader whose language matched the article lost the picker AND the translate
+  // button. Seed Russian, open a Russian-source story, assert the picker is there.
   await page.addInitScript(() => localStorage.setItem('reading-lang', 'ru'))
   await page.reload()
-  await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
+  await expect(stories(page).first()).toBeVisible({ timeout: 20_000 })
 
-  // The seed guarantees a Russian-language card, so this targets the exact
-  // regression case (source language == reading language) every run. The old
-  // "fall back to the first story if no RU card is on screen" branch existed
-  // only because live data might not contain one — with a fixture that branch
-  // was masking, not resilience.
-  const ruCard = page.locator('article').filter({ has: page.getByText('RU', { exact: true }) }).first()
-  await expect(ruCard).toBeVisible()
-  await ruCard.locator('a[href]').first().click()
-
-  await expect(page.getByRole('dialog')).toBeVisible()
-  // The picker renders once the reader settles (loaded or failed) — it must appear
-  // regardless of whether the article is in the reading language.
+  await selectStory(page, russian(page))
+  await openReader(page)
   await expect(page.getByLabel('Reading language')).toBeVisible({ timeout: 20_000 })
 })
 
-test('day separators render at the top of the feed', async ({ page }) => {
-  await expect(page.locator('main div', { hasText: /^(Today|Yesterday)$/ }).first()).toBeVisible()
+test('day separators head the rail', async ({ page }) => {
+  await expect(page.locator('[data-day]', { hasText: /^(Today|Yesterday)$/ }).first()).toBeVisible()
 })
 
 test('freshness readout is present and recent-ish', async ({ page }) => {
   await expect(page.locator('header')).toContainText(/updated .* ago|updated just now/)
 })
 
-test('wire reprints are badged so the source count is not overstated', async ({ page }) => {
+test('wire reprints are marked so the source count is not overstated', async ({ page }) => {
   // The seed's 3-member wire story: two outlets share a body_hash, one is
-  // original reporting. The later reprint must be badged.
-  const wireCard = page.locator('article').filter({ hasText: 'ceasefire talks resume' }).first()
-  await expect(wireCard).toBeVisible()
-  await wireCard.getByRole('button', { name: /sources covered this/ }).click()
-  await expect(wireCard.getByText('wire', { exact: true })).toHaveCount(1)
+  // original reporting. The later reprint must be marked.
+  const pane = await selectStory(page, wireStory)
+  await expect(pane.getByText('wire', { exact: true })).toHaveCount(1)
 })
 
-// ── Feed-card translation ───────────────────────────────────────────────────
-// The card offers translation only for a headline that isn't already in the
-// reading language — the same gate as the reader panel. Both directions are
-// asserted so the control can't be accidentally always-on or always-off.
+// ── Headline translation ────────────────────────────────────────────────────
+// Offered only for a headline that isn't already in the reading language — the
+// same gate as the reader. Both directions are asserted so the control can't be
+// accidentally always-on or always-off.
 
-test('feed cards offer translation only for headlines outside the reading language', async ({ page }) => {
+test('the pane offers translation only for headlines outside the reading language', async ({ page }) => {
   // Playwright's browser reports en-US, so the reading language defaults to English.
-  const ruCard = page.locator('article').filter({ has: page.getByText('RU', { exact: true }) }).first()
-  await expect(ruCard.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
+  let pane = await selectStory(page, russian(page))
+  await expect(pane.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
   // The wire story is English on every member — nothing to translate into English.
-  const enCard = page.locator('article', { hasText: 'Agency copy: ceasefire talks resume' }).first()
-  await expect(enCard).toBeVisible()
-  await expect(enCard.getByRole('button', { name: 'Translate', exact: true })).toHaveCount(0)
+  pane = await selectStory(page, wireStory)
+  await expect(pane.getByRole('button', { name: 'Translate', exact: true })).toHaveCount(0)
 
   // Flip the reading language: the gate flips with it.
   await page.addInitScript(() => localStorage.setItem('reading-lang', 'ru'))
   await page.reload()
-  await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
-  await expect(ruCard.getByRole('button', { name: 'Translate', exact: true })).toHaveCount(0)
-  await expect(enCard.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
+  await expect(stories(page).first()).toBeVisible({ timeout: 20_000 })
+  pane = await selectStory(page, russian(page))
+  await expect(pane.getByRole('button', { name: 'Translate', exact: true })).toHaveCount(0)
+  pane = await selectStory(page, wireStory)
+  await expect(pane.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
 })
 
 test('Top ranks the last 24h and always leaves a way back to Latest', async ({ page }) => {
@@ -215,11 +234,10 @@ test('Top ranks the last 24h and always leaves a way back to Latest', async ({ p
   const top = order.getByRole('button', { name: /^Top/ })
   await expect(latest).toHaveAttribute('aria-pressed', 'true')
   await top.click()
-  await expect(top).toHaveAttribute('aria-pressed', 'true')
-  // Whatever the fixture's dates, the toggle survives — an empty Top window must
-  // never strand the reader.
-  await expect(latest).toBeVisible()
-  await latest.click()
-  await expect(latest).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('article').first()).toBeVisible()
+  // Whatever the fixture's dates, a way back survives — an empty Top window
+  // must never strand the reader.
+  await expect(page.getByRole('button', { name: /^(Latest|Show latest)$/ }).first()).toBeVisible()
+  await page.getByRole('button', { name: /^(Latest|Show latest)$/ }).first().click()
+  await expect(page.getByRole('group', { name: 'Feed order' }).getByRole('button', { name: 'Latest' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(stories(page).first()).toBeVisible()
 })
