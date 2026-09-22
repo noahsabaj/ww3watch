@@ -22,6 +22,8 @@
     realtimeStatus,
     lastUpdatedAt,
     staleness,
+    homeView = $bindable('signal'),
+    onHomeView,
   }: {
     searchQuery: string
     activeRegions: Set<SourceRegion>
@@ -37,6 +39,8 @@
     realtimeStatus: string
     lastUpdatedAt: string | null
     staleness: 'ok' | 'amber' | 'red' | null
+    homeView?: 'signal' | 'list'
+    onHomeView?: (view: 'signal' | 'list') => void
   } = $props()
 
   function toggleRegion(region: SourceRegion) {
@@ -74,6 +78,18 @@
     <!-- Brand -->
     <div class="flex items-center gap-3 shrink-0">
       <h1 class="text-white font-bold text-lg tracking-tight">WW3Watch</h1>
+      {#if onHomeView}
+        <div class="flex items-center gap-0.5 rounded-full border border-gray-800 p-0.5" role="group" aria-label="Home layout">
+          {#each [['signal', 'Signal'], ['list', 'List']] as [mode, label]}
+            <button
+              type="button"
+              onclick={() => onHomeView(mode as 'signal' | 'list')}
+              aria-pressed={homeView === mode}
+              class="h-7 rounded-full px-2.5 text-[11px] font-medium transition-colors {homeView === mode ? 'bg-white text-black' : 'text-gray-500 hover:text-gray-200'}"
+            >{label}</button>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <!-- Search input (desktop only) -->

@@ -6,6 +6,7 @@
   import TopStories from '$lib/components/TopStories.svelte'
   import FilterSheet from '$lib/components/FilterSheet.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
+  import SignalFeed from '$lib/components/SignalFeed.svelte'
   import { dayKey, dayLabel } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import { createFeed, type TrendingRef } from '$lib/feed.svelte'
@@ -13,13 +14,18 @@
   import { createReaderRouting } from '$lib/deeplink.svelte'
   import type { Cluster } from '$lib/cluster'
   import { loadFeed } from '$lib/load-feed'
+  import { parseHomeView, readStoredHomeView, storeHomeView, type HomeView } from '$lib/home-view'
   import { base } from '$app/paths'
+  import { replaceState } from '$app/navigation'
+  import { page } from '$app/state'
 
   let loading = $state(true)
   let loadError = $state(false)
 
   let scrollY = $state(0)
-  let isPaused = $derived(scrollY > 300)
+  let homeView = $state<HomeView>('signal')
+  let signalEpoch = $state(0)
+  let isPaused = $derived(homeView === 'signal' || scrollY > 300)
 
   // Article list + realtime + pagination (src/lib/feed.svelte.ts), seeded once
   // from the load — later changes arrive over realtime, not through `data`.
@@ -62,8 +68,18 @@
     return -1
   })
 
+  function setHomeView(next: HomeView) {
+    homeView = next
+    storeHomeView(next)
+    const url = new URL(page.url)
+    if (next === 'signal') url.searchParams.delete('view')
+    else url.searchParams.set('view', 'list')
+    replaceState(`${url.pathname}${url.search}${url.hash}`, page.state)
+  }
+
   function flushQueue() {
     feed.flushQueue()
+    signalEpoch += 1
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
   }
@@ -98,6 +114,7 @@
   }
 
   onMount(() => {
+    homeView = parseHomeView(window.location.search, readStoredHomeView())
     filters.restoreSortMode()
     if (localStorage.getItem('pwa-install-dismissed')) {
       installDismissed = true
@@ -133,7 +150,7 @@
 
 <svelte:window bind:scrollY />
 
-<div class="min-h-screen bg-[#0a0a0b]">
+<div class={homeView === 'signal' ? 'h-dvh overflow-hidden bg-[#070809] flex flex-col' : 'min-h-screen bg-[#0a0a0b]'}>
   <Header
     bind:searchQuery={filters.searchQuery}
     bind:activeRegions={filters.activeRegions}
@@ -149,6 +166,8 @@
     realtimeStatus={feed.realtimeStatus}
     lastUpdatedAt={feed.lastUpdatedAt}
     staleness={feed.staleness}
+    bind:homeView
+    onHomeView={setHomeView}
   />
 
   <!-- Install prompt banner (mobile only, dismissible) -->
@@ -171,12 +190,13 @@
     </div>
   {/if}
 
-  <section class="max-w-3xl mx-auto px-4 py-4 text-sm text-gray-400" aria-label="About this feed">
-    <p>Follow global conflict reporting from multiple perspectives. Automated labels and story grouping do not independently verify a claim.</p>
-    <a class="inline-flex min-h-11 items-center text-blue-400 underline" href="{base}/about">How WW3Watch works</a>
-  </section>
-  <!-- Trending Now -->
-  <TopStories stories={feed.topStories} onselect={reader.openArticle} />
+  {#if homeView === 'list'}
+    <section class="max-w-3xl mx-auto px-4 py-4 text-sm text-gray-400" aria-label="About this feed">
+      <p>Follow global conflict reporting from multiple perspectives. Automated labels and story grouping do not independently verify a claim.</p>
+      <a class="inline-flex min-h-11 items-center text-blue-400 underline" href="{base}/about">How WW3Watch works</a>
+    </section>
+    <TopStories stories={feed.topStories} onselect={reader.openArticle} />
+  {/if}
 
   <!-- New articles banner -->
   {#if feed.newQueue.length > 0 && isPaused}
@@ -191,6 +211,53 @@
     </div>
   {/if}
 
+  {#if homeView === 'signal'}
+    <div class="relative min-h-0 flex-1">
+      {#if filters.clustered.length === 0}
+        <div class="py-20 text-center text-gray-500 text-sm">
+          {#if loading}
+            Loading the latest reporting…
+          {:else if loadError && feed.articles.length === 0}
+            <p class="mb-3">Couldn't load the feed.</p>
+            <button
+              onclick={() => location.reload()}
+              class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+            >
+              Retry
+            </button>
+          {:else if feed.articles.length === 0}
+            No stories yet — new ones appear here live.
+          {:else if filters.sortMode === 'top' && filters.latestClustered.length > 0}
+            <p class="mb-3">Nothing from the last 24 hours matches.</p>
+            <button
+              onclick={() => filters.setSortMode('latest')}
+              class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+            >
+              Show latest
+            </button>
+          {:else}
+            <p class="mb-3">No stories match your filters.</p>
+            <button
+              onclick={filters.clearFilters}
+              class="text-blue-400 hover:text-blue-300 border border-gray-700 hover:border-gray-500 rounded px-3 py-1.5 transition-colors"
+            >
+              Clear filters
+            </button>
+          {/if}
+        </div>
+      {:else}
+        {#key signalEpoch}
+          <SignalFeed
+            clusters={filters.clustered}
+            onselect={reader.openArticle}
+            onLoadOlder={filters.sortMode === 'latest' ? loadOlder : undefined}
+            hasMore={feed.hasMore && filters.sortMode === 'latest'}
+            loadingMore={feed.loadingMore}
+          />
+        {/key}
+      {/if}
+    </div>
+  {:else}
   <!-- Feed -->
   <main
     class="max-w-3xl mx-auto divide-y divide-gray-800/50"
@@ -280,6 +347,7 @@
       {/if}
     {/if}
   </main>
+  {/if}
 
   <!-- Mobile FAB: opens FilterSheet -->
   <button

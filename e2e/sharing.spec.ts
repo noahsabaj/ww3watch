@@ -48,7 +48,7 @@ async function setup(page: Page, native = false) {
       window.shareMock.shared.push(data)
     } : undefined })
   }, native)
-  await page.goto('/?utm_source=sharing-test')
+  await page.goto('/?view=list&utm_source=sharing-test')
   await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
 }
 

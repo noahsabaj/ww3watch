@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openList } from './helpers'
 
 // Locks in the hand-verified QA flows.
 //
@@ -15,8 +16,7 @@ import { test, expect } from '@playwright/test'
 const STORY_CARDS = 59
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
-  await expect(page.locator('article').first()).toBeVisible({ timeout: 20_000 })
+  await openList(page)
 })
 
 test('feed renders every seeded story, grouped', async ({ page }) => {

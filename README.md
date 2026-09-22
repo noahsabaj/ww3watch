@@ -14,6 +14,7 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 
 ## Features
 
+- **Signal homepage** — one story, full screen, swipe for the next theater. Original headlines, other newsrooms underneath, tap through to the in-app reader. List is one tap away.
 - **Real-time feed** — new articles, story regroupings, and trending changes push live via Supabase Realtime
 - **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event. Similarity means *same subject*, not *same event*, so nearest-story matches in the grey band (0.78–0.90) get one Jev judgment — "same news story?" — before joining
 - **Local relevance head** — a logistic-regression layer over those same embeddings, distilled monthly from Jev's verdicts, settles the confident mass of new articles on the runner for free; only the uncertain band goes to Jev, and a random ~3% audit slice of the head's confident verdicts is judged by Jev anyway, so head/Jev agreement is measured every run
