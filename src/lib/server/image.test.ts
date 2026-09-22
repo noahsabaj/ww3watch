@@ -15,6 +15,26 @@ describe('sanitizeImageUrl', () => {
     expect(sanitizeImageUrl('/photo.jpg', BASE)).toBe('https://news.example/photo.jpg')
   })
 
+  it('rejects social share cards that print the headline onto the image', () => {
+    for (const url of [
+      'https://cdnn21.img.ria.ru/images/sharing/article/2119610738.jpg?211869',
+      'https://meduza.io/imgly/share/1790102657/en/news/2026/09/22/some-story',
+      'https://news.example/api/og?title=Hello',
+      'https://news.example/og-image.png',
+      'https://news.example/opengraph-image/123',
+      'https://news.example/media/social-card/1.jpg',
+      'https://tass.com/img/blocks/common/tass_logo_share_eng.png',
+      'https://r.yna.co.kr/global/home/v01/img/yonhapnews_logo_1200x800_en01.jpg',
+    ]) expect(sanitizeImageUrl(url, BASE), url).toBeNull()
+    // Ordinary photos, including ones whose names merely contain the words.
+    for (const url of [
+      'https://cdnn21.img.ria.ru/images/07ea/09/15/2119148103_0:267:3166:2048_650x0_80.jpg',
+      'https://cdn-media.tass.ru/width/1200_4ce85301/tass/m2/en/uploads/i/20260922/1487605.jpg',
+      'https://news.example/photos/shareholders-meeting.jpg',
+      'https://news.example/photos/catalogo-2026.jpg',
+    ]) expect(sanitizeImageUrl(url, BASE), url).toBe(url)
+  })
+
   it('rejects javascript, data, credentials, trackers and audio', () => {
     expect(sanitizeImageUrl('javascript:alert(1)', BASE)).toBeNull()
     expect(sanitizeImageUrl('data:image/png;base64,xx', BASE)).toBeNull()

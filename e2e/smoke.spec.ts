@@ -27,10 +27,10 @@ test.beforeEach(async ({ page }) => {
 test('the desk lists every seeded story, grouped, and opens on the top trending one', async ({ page }) => {
   await expect(stories(page)).toHaveCount(STORIES)
   await expect(page.locator('header')).toContainText(`${STORIES} stories`)
-  // The seed's trending #1 is the 3-outlet wire story, not the newest singleton.
+  // The seed's trending #1 (rank 0) is the 4-outlet port-strike story, not the newest singleton.
   const top = await page.locator('[data-trending-story]').first().getAttribute('data-trending-story')
   await expect(storyCard(page)).toHaveAttribute('data-story', top!)
-  await expect(storyCard(page)).toContainText('ceasefire talks resume')
+  await expect(storyCard(page)).toContainText('How 4 newsrooms put it')
   await expect(page.locator(`[data-desk-story="${top}"]`)).toHaveAttribute('aria-current', 'true')
 })
 
@@ -59,7 +59,7 @@ test('j and k move through stories, o reads the one selected', async ({ page }) 
 })
 
 test('search filters and clears', async ({ page }) => {
-  const search = page.locator('header input[type="text"]')
+  const search = page.getByRole('searchbox', { name: 'Search headlines' })
   await search.fill('zzz-no-such-headline-zzz')
   await expect(page.getByText('No stories match your filters.')).toBeVisible()
   await search.fill('')
@@ -67,7 +67,7 @@ test('search filters and clears', async ({ page }) => {
 })
 
 test('the empty-state "Clear filters" button restores the feed', async ({ page }) => {
-  const search = page.locator('header input[type="text"]')
+  const search = page.getByRole('searchbox', { name: 'Search headlines' })
   await search.fill('zzz-no-such-headline-zzz')
   await page.getByRole('button', { name: 'Clear filters' }).click()
   await expect(search).toHaveValue('')
@@ -75,8 +75,8 @@ test('the empty-state "Clear filters" button restores the feed', async ({ page }
 })
 
 test('region filter: None empties the feed, All restores it', async ({ page }) => {
-  await page.getByLabel('Filter by region').click()
-  const dropdown = page.locator('#region-filter-dropdown')
+  await page.getByRole('button', { name: /^Open filters/ }).click()
+  const dropdown = page.getByRole('dialog', { name: 'Filters' })
   await expect(dropdown).toBeVisible()
   await dropdown.getByRole('button', { name: 'None', exact: true }).click()
   await expect(page.getByText('No stories match your filters.')).toBeVisible()
@@ -88,8 +88,8 @@ test('region filter: None empties the feed, All restores it', async ({ page }) =
 
 test('language filter excludes a language and clearing restores it', async ({ page }) => {
   const before = await stories(page).count()
-  await page.getByLabel('Filter by region').click()
-  const dropdown = page.locator('#region-filter-dropdown')
+  await page.getByRole('button', { name: /^Open filters/ }).click()
+  const dropdown = page.getByRole('dialog', { name: 'Filters' })
   const english = dropdown.getByRole('button', { name: 'English', exact: true })
   await expect(english).toHaveAttribute('aria-pressed', 'true')
   await english.click()
@@ -266,4 +266,49 @@ test('a photograph that will not load falls back to the colour field', async ({ 
 test('a story without a photograph stays typographic', async ({ page }) => {
   const pane = await selectStory(page, wireStory)
   await expect(pane.locator('img')).toHaveCount(0)
+})
+
+test('the pane photograph is a band above the headline, not behind it', async ({ page }) => {
+  const pane = await selectStory(page, { hasText: /\b4 outlets\b/ })
+  const img = await pane.locator('img').boundingBox()
+  const headline = await pane.locator('h2').boundingBox()
+  expect(img!.y + img!.height).toBeLessThanOrEqual(headline!.y)
+})
+
+test('the menu reaches every page and closes on Escape', async ({ page }) => {
+  await page.getByRole('button', { name: 'Menu' }).click()
+  const nav = page.getByRole('navigation', { name: 'Site navigation' })
+  for (const name of ['Trends', 'About & methodology', 'Feedback & corrections', 'Privacy']) {
+    await expect(nav.getByRole('link', { name: new RegExp(`^${name}`) })).toBeVisible()
+  }
+  await page.keyboard.press('Escape')
+  await expect(nav).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Menu' })).toBeFocused()
+})
+
+test('secondary pages share the site header, menu and footer', async ({ page }) => {
+  // Not the 404: the e2e server (sirv --single) answers unknown paths with the
+  // prerendered home page, where GitHub Pages serves the 404 fallback.
+  for (const path of ['/about', '/trends', '/privacy', '/feedback']) {
+    await page.goto(path)
+    await expect(page.getByRole('link', { name: 'WW3Watch', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible()
+    await expect(page.locator('footer')).toContainText('Open source')
+    await expect(page.locator('h1')).toHaveCount(1)
+  }
+})
+
+test('no emoji or text arrows anywhere in the interface', async ({ page }) => {
+  const { emojiInChrome } = await import('./home')
+  expect(await emojiInChrome(page)).toEqual([])
+  await page.getByRole('button', { name: 'Menu' }).click()
+  expect(await emojiInChrome(page)).toEqual([])
+  await page.keyboard.press('Escape')
+  await openReader(page)
+  expect(await emojiInChrome(page)).toEqual([])
+  for (const path of ['/about', '/trends', '/privacy', '/feedback']) {
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    expect(await emojiInChrome(page), path).toEqual([])
+  }
 })

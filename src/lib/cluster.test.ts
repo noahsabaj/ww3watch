@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupByStoryId, storyTimeline, storyImage } from './cluster'
+import { groupByStoryId, storyTimeline, storyImage, isShareCard, isReusedUpload } from './cluster'
 import type { Article } from './types'
 
 let seq = 0
@@ -191,5 +191,46 @@ describe('storyImage', () => {
     const photo = storyImage(cluster)!
     expect(photo.url).toBe('https://cdn.example/tass.jpg')
     expect(photo.sourceName).toBe('TASS')
+  })
+})
+
+describe('isShareCard', () => {
+  it('matches the same share-card URLs ingest rejects', () => {
+    expect(isShareCard('https://cdnn21.img.ria.ru/images/sharing/article/2119610738.jpg?21186970631790101859')).toBe(true)
+    expect(isShareCard('https://meduza.io/imgly/share/1790102657/en/news/2026/09/22/some-story')).toBe(true)
+    expect(isShareCard('https://cdnn21.img.ria.ru/images/07ea/09/15/2119148103_0:267:3166:2048_650x0_80.jpg')).toBe(false)
+    expect(isShareCard('https://news.example/photos/shareholders-meeting.jpg')).toBe(false)
+  })
+
+  it('a story whose only photo is a share card shows none', () => {
+    const [cluster] = groupByStoryId([article({ image_url: 'https://cdnn21.img.ria.ru/images/sharing/article/1.jpg' })])
+    expect(storyImage(cluster)).toBeNull()
+  })
+})
+
+describe('share-card pattern', () => {
+  it('matches ingest exactly, so display and pipeline never disagree', async () => {
+    const { readFileSync } = await import('node:fs')
+    const grab = (path: string) => readFileSync(path, 'utf8').match(/const SHARE_CARD =\s*(\/.*\/i)/)?.[1]
+    const display = grab('src/lib/cluster.ts')
+    expect(display).toBeTruthy()
+    expect(display).toBe(grab('src/lib/server/image.ts'))
+  })
+})
+
+describe('isReusedUpload', () => {
+  const at = '2026-09-22T15:00:00Z'
+  it('flags a WordPress upload far older than the article', () => {
+    expect(isReusedUpload('https://www.alquds.co.uk/wp-content/uploads/2024/08/br-20082024.jpg', at)).toBe(true)
+  })
+  it('keeps this month, last month and anything without a dated path', () => {
+    expect(isReusedUpload('https://www.alquds.co.uk/wp-content/uploads/2026/09/Yemen-5.jpg', at)).toBe(false)
+    expect(isReusedUpload('https://www.aljazeera.com/wp-content/uploads/2026/08/image.jpg', at)).toBe(false)
+    expect(isReusedUpload('https://cdn.isna.ir/d/2020/01/01/4/1.jpg', at)).toBe(false)
+    expect(isReusedUpload('https://www.alquds.co.uk/wp-content/uploads/2024/08/x.jpg', null)).toBe(false)
+  })
+  it('a story whose only photo is a reused template shows none', () => {
+    const [cluster] = groupByStoryId([article({ published_at: at, image_url: 'https://www.alquds.co.uk/wp-content/uploads/2024/08/br-20082024.jpg' })])
+    expect(storyImage(cluster)).toBeNull()
   })
 })

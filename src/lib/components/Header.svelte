@@ -1,21 +1,25 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import type { SourceRegion } from '$lib/types'
-  import { ALL_REGIONS, REGION_COLORS } from '$lib/types'
-  import { timeAgo, LANG_NAMES } from '$lib/utils'
+  import { timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
-  import { base } from '$app/paths'
-  import SignalFilters from '$lib/components/SignalFilters.svelte'
-  import { signalFilterActive, type Actor, type SignalFilter, type Topic } from '$lib/signals'
+  import type { Actor, SignalFilter, Topic } from '$lib/signals'
+  import type { SortMode } from '$lib/filters.svelte'
+  import Sheet from '$lib/components/Sheet.svelte'
+  import FilterPanel from '$lib/components/FilterPanel.svelte'
+  import SiteMenu from '$lib/components/SiteMenu.svelte'
 
   let {
     searchQuery = $bindable(),
     activeRegions = $bindable(),
     excludedLangs = $bindable(),
-    availableLangs,
     signalFilter = $bindable(),
+    availableLangs,
     availableTopics,
     availableActors,
-    filterDropdownOpen = $bindable(),
+    sortMode,
+    onSortMode,
+    onReset,
     storyCount,
     totalCount,
     isFiltered,
@@ -26,11 +30,13 @@
     searchQuery: string
     activeRegions: Set<SourceRegion>
     excludedLangs: Set<string>
-    availableLangs: { lang: string; count: number }[]
     signalFilter: SignalFilter
+    availableLangs: { lang: string; count: number }[]
     availableTopics: { key: Topic; count: number }[]
     availableActors: { key: Actor; count: number }[]
-    filterDropdownOpen: boolean
+    sortMode: SortMode
+    onSortMode: (mode: SortMode) => void
+    onReset: () => void
     storyCount: number
     totalCount: number
     isFiltered: boolean
@@ -39,148 +45,84 @@
     staleness: 'ok' | 'amber' | 'red' | null
   } = $props()
 
-  function toggleRegion(region: SourceRegion) {
-    const next = new Set(activeRegions)
-    if (next.has(region)) next.delete(region)
-    else next.add(region)
-    activeRegions = next
-  }
-  function selectAll() { activeRegions = new Set(ALL_REGIONS) }
-  function clearAll() { activeRegions = new Set() }
-  function toggleLang(lang: string) {
-    const next = new Set(excludedLangs)
-    if (next.has(lang)) next.delete(lang)
-    else next.add(lang)
-    excludedLangs = next
-  }
-  const filterActive = $derived(activeRegions.size < ALL_REGIONS.length || excludedLangs.size > 0 || signalFilterActive(signalFilter))
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && filterDropdownOpen) filterDropdownOpen = false
-  }
+  let filtersOpen = $state(false)
+  const live = $derived(realtimeStatus === 'SUBSCRIBED')
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+{#snippet status()}
+  <!-- One flex row, so the dot, the count and the freshness share a line box
+       (an inline-flex count next to plain inline text sat off-baseline). -->
+  <span class="inline-flex items-center gap-1.5" title={live ? 'Live updates connected' : 'Live updates reconnecting'}>
+    <span class="h-1.5 w-1.5 shrink-0 rounded-full {live ? 'bg-emerald-400 motion-safe:animate-pulse' : 'bg-fg-3'}" aria-hidden="true"></span>
+    <span>{isFiltered ? `${storyCount.toLocaleString()} of ${totalCount.toLocaleString()}` : storyCount.toLocaleString()} stories</span>
+    {#if lastUpdatedAt}
+      <span
+        class={staleness === 'red' ? 'text-red-400' : staleness === 'amber' ? 'text-amber-400' : ''}
+        title="Ingestion last completed {new Date(lastUpdatedAt).toLocaleString()} — runs about every 15 min{staleness === 'red' || staleness === 'amber' ? '. New reporting is delayed; existing stories remain available.' : ''}"
+      >· updated {timeAgo(lastUpdatedAt, clock.now)}</span>
+    {/if}
+  </span>
+{/snippet}
 
-<!-- Header — padding-top accounts for iOS notch via viewport-fit=cover.
-     Sticky so search/filter stay reachable on a very long feed. Solid bg on
-     purpose: backdrop-blur would create a containing block and shrink the
-     filter dropdown's fixed click-away backdrop to the header box. -->
+<!-- Sticky so filters and the menu stay one tap away; padding-top clears the
+     iPhone notch (viewport-fit=cover). Solid ground, no blur: the sheets are
+     fixed-position and a backdrop-filter would trap them inside the header. -->
 <header
-  class="sticky top-0 z-30 border-b border-gray-800 px-4 py-3 bg-[#0a0a0b]"
-  style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px))"
+  class="sticky top-0 z-30 border-b border-line bg-ink px-4"
+  style="padding-top: env(safe-area-inset-top, 0px)"
 >
-  <div class="max-w-3xl min-[820px]:max-w-none mx-auto flex flex-wrap items-center gap-3">
-    <!-- Brand -->
-    <div class="flex items-center gap-3 shrink-0">
-      <h1 class="text-white font-bold text-lg tracking-tight">WW3Watch</h1>
-    </div>
+  <div class="flex h-16 items-center gap-4">
+    <h1 class="shrink-0 text-lg font-bold tracking-tight text-fg">WW3Watch</h1>
 
-    <!-- Search input (desktop only) -->
     <input
-      type="text"
+      type="search"
       aria-label="Search headlines"
-      placeholder="Search headlines..."
+      placeholder="Search headlines"
       bind:value={searchQuery}
-      class="hidden min-[820px]:block flex-1 max-w-xl min-w-0 bg-[#18181b] border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+      class="field hidden max-w-md min-h-10 py-2 text-sm min-[820px]:block"
     />
 
-    <!-- Right actions -->
-    <div class="flex flex-wrap items-center gap-2 ml-auto min-w-0">
-      <span
-        class="hidden sm:flex flex-wrap items-center gap-1.5 text-xs text-gray-400"
-        title={realtimeStatus === 'SUBSCRIBED' ? 'Live updates connected' : 'Live updates reconnecting'}
-        aria-label={realtimeStatus === 'SUBSCRIBED' ? 'Live updates connected' : 'Live updates reconnecting'}
+    <div class="ml-auto flex items-center gap-1">
+      <p class="mr-3 hidden text-xs text-fg-3 min-[820px]:block" aria-live="off">{@render status()}</p>
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label={isFiltered ? 'Open filters (active)' : 'Open filters'}
+        aria-haspopup="dialog"
+        aria-expanded={filtersOpen}
+        onclick={() => (filtersOpen = true)}
       >
-        <span class="w-1.5 h-1.5 rounded-full {realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 motion-safe:animate-pulse' : 'bg-gray-600'}"></span>
-        {#if isFiltered}
-          {storyCount.toLocaleString()} of {totalCount.toLocaleString()} stories
-        {:else}
-          {storyCount.toLocaleString()} stories
-        {/if}
-        {#if lastUpdatedAt}
-          <span
-            class={staleness === 'red' ? 'text-red-400' : staleness === 'amber' ? 'text-amber-500' : 'text-gray-600'}
-            title="Ingestion last completed {new Date(lastUpdatedAt).toLocaleString()} — runs about every 15 min{staleness === 'red' || staleness === 'amber' ? '. New reporting is delayed; existing stories remain available.' : ''}"
-          >
-            · updated {timeAgo(lastUpdatedAt, clock.now)}
-          </span>
-        {/if}
-      </span>
-
-      <!-- Region filter button + dropdown (desktop only) -->
-      <div class="relative hidden min-[820px]:block">
-        <button
-          onclick={() => filterDropdownOpen = !filterDropdownOpen}
-          aria-label="Filter by region, language, topic and parties involved"
-          aria-haspopup="true"
-          aria-expanded={filterDropdownOpen}
-          aria-controls="region-filter-dropdown"
-          class="flex items-center justify-center w-7 h-7 rounded transition-colors {filterDropdownOpen || filterActive ? 'text-blue-400' : 'text-gray-600 hover:text-gray-300'}"
-        >
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-            <circle cx="9" cy="18" r="2" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
-
-        {#if filterDropdownOpen}
-          <div class="fixed inset-0 z-40" onclick={() => filterDropdownOpen = false} role="presentation"></div>
-          <div id="region-filter-dropdown" class="absolute right-0 top-full mt-2 z-50 bg-[#111113] border border-gray-700 rounded-lg p-3 w-80 shadow-xl max-h-[80vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-2.5">
-              <span class="text-[10px] text-gray-600 uppercase tracking-widest">Regions</span>
-              <div class="flex gap-1">
-                <button onclick={selectAll} class="text-xs text-gray-400 hover:text-white px-2 py-0.5 transition-colors">All</button>
-                <button onclick={clearAll} class="text-xs text-gray-400 hover:text-white px-2 py-0.5 transition-colors">None</button>
-              </div>
-            </div>
-            <div class="flex flex-wrap gap-1.5">
-              {#each ALL_REGIONS as region}
-                <button
-                  onclick={() => toggleRegion(region)}
-                  class="text-xs px-2 py-0.5 rounded font-medium transition-opacity cursor-pointer {REGION_COLORS[region]} {activeRegions.has(region) ? 'opacity-100' : 'opacity-30'}"
-                >
-                  {region}
-                </button>
-              {/each}
-            </div>
-            <!-- Language chips: exclusion toggles over whatever the loaded feed
-                 contains (nearly half of it is non-English). -->
-            <div class="mt-3 mb-2 text-[10px] text-gray-600 uppercase tracking-widest">Languages</div>
-            <div class="flex flex-wrap gap-1.5">
-              {#each availableLangs as { lang, count } (lang)}
-                <button
-                  onclick={() => toggleLang(lang)}
-                  aria-pressed={!excludedLangs.has(lang)}
-                  title="{LANG_NAMES[lang] ?? lang} · {count} {count === 1 ? 'article' : 'articles'}"
-                  class="text-xs px-2 py-0.5 rounded font-medium transition-opacity cursor-pointer bg-gray-800 text-gray-200 border border-gray-700 {excludedLangs.has(lang) ? 'opacity-30' : 'opacity-100'}"
-                >
-                  {LANG_NAMES[lang] ?? lang.toUpperCase()}
-                </button>
-              {/each}
-            </div>
-            <SignalFilters bind:filter={signalFilter} {availableTopics} {availableActors} />
-          </div>
-        {/if}
-      </div>
-
-      <details class="relative">
-        <summary class="min-h-11 min-w-11 flex items-center px-3 cursor-pointer text-sm text-gray-300">Menu</summary>
-        <nav aria-label="Site navigation" class="absolute right-0 top-full w-56 rounded border border-gray-700 bg-[#111113] p-2 shadow-xl">
-          {#each [['/trends', 'Trends'], ['/about', 'About'], ['/privacy', 'Privacy'], ['/feedback', 'Feedback & corrections']] as [path, label]}
-            <a href="{base}{path}" class="flex min-h-11 items-center px-3 text-sm text-gray-200 hover:bg-gray-800">{label}</a>
-          {/each}
-          <a href="https://github.com/noahsabaj/ww3watch" target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center px-3 text-sm text-gray-200">GitHub repository ↗</a>
-        </nav>
-      </details>
+        <Icon name="filters" size={20} />
+        {#if isFiltered}<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-accent ring-2 ring-ink" aria-hidden="true"></span>{/if}
+      </button>
+      <SiteMenu />
     </div>
   </div>
-  <p class="sm:hidden max-w-3xl mx-auto text-xs text-gray-400 mt-1">{storyCount} stories{#if lastUpdatedAt} · updated {timeAgo(lastUpdatedAt, clock.now)}{/if}</p>
+  <p class="-mt-2 pb-2.5 text-xs text-fg-3 min-[820px]:hidden">{@render status()}</p>
   {#if staleness === 'amber' || staleness === 'red'}
-    <p role="status" class="max-w-3xl min-[820px]:max-w-none mx-auto text-xs text-amber-400 mt-2">New reporting is delayed. Existing stories and original article links remain available.</p>
+    <p role="status" class="pb-2.5 text-xs text-amber-400">New reporting is delayed. Existing stories and original article links remain available.</p>
   {/if}
 </header>
+
+<Sheet bind:open={filtersOpen} title="Filters" id="feed-filters">
+  <FilterPanel
+    bind:activeRegions
+    bind:excludedLangs
+    bind:searchQuery
+    bind:signalFilter
+    {availableLangs}
+    {availableTopics}
+    {availableActors}
+    {sortMode}
+    {onSortMode}
+    showSearch
+  />
+  {#snippet footer()}
+    <div class="flex items-center justify-between gap-3">
+      <button type="button" class="action text-sm disabled:opacity-40" disabled={!isFiltered} onclick={onReset}>Reset</button>
+      <button type="button" class="btn" onclick={() => (filtersOpen = false)}>
+        Show {storyCount.toLocaleString()} {storyCount === 1 ? 'story' : 'stories'}
+      </button>
+    </div>
+  {/snippet}
+</Sheet>

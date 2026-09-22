@@ -143,13 +143,45 @@ function photoArea(a: Article): number {
 // One photograph per story: the representative's if it has one, else the
 // largest among the other members. Credit always names the outlet that
 // published it — never imply TASS's photo is Reuters'.
+// Social share cards print the headline onto the image; logos fill it with a
+// wordmark. Ingest rejects them
+// (src/lib/server/image.ts, whose SHARE_CARD this mirrors); this keeps any
+// stored before that filter existed off the screen too.
+const SHARE_CARD =
+  /\/(?:imgly\/)?shar(?:e|ing)\/|\/(?:api\/)?og(?:-image)?(?:\/|\.png|$)|\/opengraph-image|\/social[-_]?(?:card|image)|\/share[-_]?(?:card|image)|\/(?:[^/]*[^a-z/])?logo[^/]*\.(?:png|jpe?g|webp|svg|gif)$/i
+
+export function isShareCard(url: string): boolean {
+  try {
+    return SHARE_CARD.test(new URL(url, 'https://x.invalid').pathname)
+  } catch {
+    return false
+  }
+}
+
+// WordPress files an upload under /uploads/YYYY/MM/. A photo uploaded more than
+// six months before the article is a house graphic the newsroom reuses (Al-Quds
+// Al-Arabi's "breaking" card from 2024 on a 2026 story), not a picture of
+// this event.
+const STALE_UPLOAD_MONTHS = 6
+
+export function isReusedUpload(url: string, publishedAt: string | null): boolean {
+  const m = url.match(/\/uploads\/(\d{4})\/(\d{2})\//)
+  if (!m || !publishedAt) return false
+  const published = new Date(publishedAt)
+  if (Number.isNaN(published.getTime())) return false
+  const months = (published.getUTCFullYear() - Number(m[1])) * 12 + (published.getUTCMonth() + 1 - Number(m[2]))
+  return months > STALE_UPLOAD_MONTHS
+}
+
 export function storyImage(cluster: Cluster): StoryPhoto | null {
-  const withPhoto = cluster.articles.filter((a): a is Article & { image_url: string } => !!a.image_url)
+  const usable = (a: Article): a is Article & { image_url: string } =>
+    !!a.image_url && !isShareCard(a.image_url) && !isReusedUpload(a.image_url, a.published_at)
+  const withPhoto = cluster.articles.filter(usable)
   if (withPhoto.length === 0) return null
   const rep = cluster.representative
   const chosen =
-    rep.image_url
-      ? (rep as Article & { image_url: string })
+    usable(rep)
+      ? rep
       : [...withPhoto].sort((a, b) => {
           const d = photoArea(b) - photoArea(a)
           if (d) return d
