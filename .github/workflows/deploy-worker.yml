@@ -59,6 +59,6 @@ jobs:
             exit 0
           fi
           npx --yes wrangler@4 deploy
-          # Public key the site already ships with; the token needs Zone →
-          # Workers Routes: Edit on ww3watch.org for the route.
+          # Public key the site already ships with. The ww3watch.org route is set
+          # in the dashboard (see share-card/wrangler.toml), not by this deploy.
           npx --yes wrangler@4 deploy --config share-card/wrangler.toml --var "SUPABASE_ANON_KEY:$SUPABASE_ANON_KEY"

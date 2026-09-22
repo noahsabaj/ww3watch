@@ -8,9 +8,11 @@ main = "index.ts"
 compatibility_date = "2025-06-01"
 workers_dev = false
 
-# Route patterns can't name a query string, so the Worker sees every request and
-# passes anything that isn't a shared link straight to GitHub Pages.
-routes = [{ pattern = "ww3watch.org/*", zone_name = "ww3watch.org" }]
+# No routes here on purpose: the route (ww3watch.org/*, request limit set to
+# fail open) lives in the dashboard (ww3watch.org → Workers Routes), so the deploy
+# token needs no zone permissions. Route patterns can't name a query string, so
+# the Worker sees every request and passes anything that isn't a shared link
+# straight to GitHub Pages.
 
 [vars]
 SUPABASE_URL = "https://qusjbpknlduuklnfciws.supabase.co"
