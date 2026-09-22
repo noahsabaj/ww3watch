@@ -72,12 +72,37 @@ npm install
 npm run dev          # frontend (needs PUBLIC_SUPABASE_* in .env)
 npm test             # vitest
 npm run check        # svelte-check
-
-# run the ingestion pipeline once, locally:
-node --import tsx --env-file=.env scripts/run-pipeline.ts
 ```
 
 Copy `.env.example` → `.env` and fill in credentials.
+
+### Previewing changes
+
+Three ways to see a branch working before it ships, none of them visible to anyone else:
+
+| What changed | Use | Data |
+|---|---|---|
+| Pages, components, styling | `npm run dev` → http://localhost:5173 | Live production, read-only (public key, like the real site) |
+| Same, on a phone or for someone else to look at | Push the branch → `https://<branch>.ww3watch-preview.pages.dev` | Live production, read-only, behind a Cloudflare Access login |
+| Migrations, the pipeline, edge functions | Local staging, below | A copy of the last 48h of production on your machine |
+
+**Local staging** needs Docker running.
+
+```bash
+npm run staging:up         # start the local Supabase stack, apply this branch's migrations, copy in the last 48h
+npm run staging:dev        # the site against staging → http://localhost:5175
+npm run staging:pipeline   # one real ingestion run into staging (spends TypeSafe credit, like production)
+npm run staging:down       # stop and discard it
+```
+
+`staging:up` reads production with the secret key in `.env`, through a client that refuses anything but GET, and writes `.env.staging` pointing at the local stack. Re-run it after switching branches: it resets the schema to the current branch's migrations. Reader and translate need the edge functions served too: `npx supabase@2 functions serve --no-verify-jwt`.
+
+**Nothing local writes to production.** The privileged client refuses a hosted database URL unless it is running in GitHub Actions or the pipeline container ([src/lib/server/write-guard.ts](src/lib/server/write-guard.ts)). A deliberate one-off from a laptop: `WW3WATCH_ALLOW_PRODUCTION=1 npm run pipeline`.
+
+**Branch preview setup (once).** [preview.yml](.github/workflows/preview.yml) deploys every pushed branch except `main` to the Cloudflare Pages project `ww3watch-preview`, which it creates on first run.
+1. The `CLOUDFLARE_API_TOKEN` repo secret needs **Account → Cloudflare Pages → Edit** in addition to its Workers permission.
+2. Cloudflare dashboard → **Zero Trust → Access → Applications → Add → Self-hosted**. Add two public hostnames, `ww3watch-preview.pages.dev` and `*.ww3watch-preview.pages.dev`, and add a policy that allows your email.
+3. Only then: repo **Settings → Secrets and variables → Actions → Variables** → `PREVIEWS_ENABLED` = `true`. The workflow does nothing until this is set, so a preview can never go out before the login protects it.
 
 ## Tuning
 
