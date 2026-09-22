@@ -45,6 +45,17 @@ test('Signal carries no position counter or visible scrollbar', async ({ page })
   expect(await scroller.evaluate((el) => el.offsetWidth - el.clientWidth)).toBe(0)
 })
 
+test('a first visit shows a swipe cue on the first story until the reader swipes', async ({ page }) => {
+  const hint = page.locator('[data-swipe-hint]')
+  await expect(hint).toHaveCount(1)
+  await expect(stories(page).first().locator('[data-swipe-hint]')).toContainText('Swipe up for the next story')
+  await page.getByLabel('Stories', { exact: true }).evaluate((el) => el.scrollBy(0, el.clientHeight))
+  await expect(hint).toHaveCount(0)
+  await page.reload()
+  await expect(storyCard(page)).toBeVisible()
+  await expect(hint).toHaveCount(0)
+})
+
 test('the story scroller is keyboard reachable', async ({ page }) => {
   const scroller = page.getByLabel('Stories', { exact: true })
   await scroller.focus()

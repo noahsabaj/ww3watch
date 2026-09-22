@@ -12,7 +12,7 @@
   import SignalBadges from '$lib/components/SignalBadges.svelte'
   import { storyBadgeSignals } from '$lib/story'
 
-  let { cluster, onselect }: { cluster: Cluster; onselect?: (a: Article) => void } = $props()
+  let { cluster, onselect, hint = false }: { cluster: Cluster; onselect?: (a: Article) => void; hint?: boolean } = $props()
 
   const rep = $derived(cluster.representative)
   const others = $derived(cluster.articles.filter((a) => a.id !== rep.id).slice(0, 3))
@@ -116,6 +116,11 @@
     </div>
     {#if cluster.sourceCount > 1}
       <p class="mt-3 text-xs text-fg-3">Tap the headline to read it and every other newsroom's version.</p>
+    {/if}
+    {#if hint}
+      <p data-swipe-hint class="swipe-hint mt-5 flex items-center justify-center gap-1.5 text-xs text-fg-2">
+        <Icon name="arrow-up" size={14} />Swipe up for the next story
+      </p>
     {/if}
   </div>
 </article>
