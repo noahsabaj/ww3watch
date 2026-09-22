@@ -110,7 +110,8 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="grid min-h-0 flex-1 grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
+<!-- 820px (an 11" iPad in portrait) to a wide monitor: the rail gives up width first. -->
+<div class="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
   <!-- Rail -->
   <nav
     bind:this={rail}
@@ -212,7 +213,7 @@
             {sortMode === 'top' ? 'That’s every ranked story from the last 24 hours.' : 'You’ve reached the oldest stories.'}
           </p>
         {/if}
-        <p class="mt-4 text-[11px] text-gray-700">j / k to move · o to read</p>
+        <p class="mt-4 text-[11px] text-gray-700 pointer-coarse:hidden">j / k to move · o to read</p>
       </li>
     </ol>
   </nav>

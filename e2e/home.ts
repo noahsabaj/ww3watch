@@ -1,9 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
-// The home is the story desk at 900px and up, Signal below it
+// The home is the story desk at 820px and up, Signal below it
 // (src/routes/+page.svelte). These helpers name the same things in both.
 
-export const isDesk = (page: Page) => (page.viewportSize()?.width ?? 1280) >= 900
+export const isDesk = (page: Page) => (page.viewportSize()?.width ?? 1280) >= 820
 
 /** Every story in the feed: rail rows on the desk, full-screen stories in Signal. */
 export const stories = (page: Page): Locator =>

@@ -85,7 +85,7 @@
       <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070809] via-[#070809]/75 to-[#070809]/10"></div>
     </div>
   {/if}
-  <div class="relative mx-auto max-w-4xl px-10 pb-16 {photo.shown ? 'pt-64' : 'pt-14'}">
+  <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pb-16 {photo.shown ? 'pt-64' : 'pt-14'}">
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-400">{rep.source_region}</span>
       {#if repLang}
@@ -97,7 +97,7 @@
       {/if}
     </div>
 
-    <h2 dir={translation.dir} class="font-serif text-[2.6rem] leading-[1.1] font-medium tracking-tight text-white">
+    <h2 dir={translation.dir} class="font-serif text-[2rem] lg:text-[2.6rem] leading-[1.1] font-medium tracking-tight text-white">
       <a href={rep.url} target="_blank" rel="noopener noreferrer" class="hover:text-blue-200" onclick={(e) => read(e, rep)}>
         {headlineText(translation.shown?.title ?? rep.title)}
       </a>
