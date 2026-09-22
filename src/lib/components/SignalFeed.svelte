@@ -2,7 +2,8 @@
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import SignalStory from '$lib/components/SignalStory.svelte'
-  import Icon from '$lib/components/Icon.svelte'
+  import PullIndicator from '$lib/components/PullIndicator.svelte'
+  import { createPullRefresh } from '$lib/pull-refresh.svelte'
 
   let {
     clusters,
@@ -62,63 +63,9 @@
     if (clusters[i]) { reported = true; onview?.(clusters[i]) }
   }
 
-  // Pull to refresh, as in every feed app: drag the first story down and let
-  // go past the line. The first downward move at the top is claimed before the
-  // browser starts its own rubber band (after that, touchmove can no longer be
-  // cancelled), and the stories follow the finger at half speed.
-  const PULL_LINE = 64
-  const PULL_MAX = 110
-  const PULL_HOLD = 56
-  let pull = $state(0)
-  let dragging = $state(false)
-  let refreshing = $state(false)
-  $effect(() => {
-    const el = scroller
-    if (!el || !onrefresh) return
-    let startX = 0, startY = 0
-    let tracking = false
-    function start(e: TouchEvent) {
-      tracking = !refreshing && e.touches.length === 1 && el!.scrollTop <= 0
-      if (!tracking) return
-      startX = e.touches[0].clientX
-      startY = e.touches[0].clientY
-    }
-    function move(e: TouchEvent) {
-      if (!tracking) return
-      const dy = e.touches[0].clientY - startY
-      const dx = e.touches[0].clientX - startX
-      if (!dragging) {
-        if (dy === 0) return
-        if (dy < 0 || Math.abs(dx) > dy || el!.scrollTop > 0) { tracking = false; return }
-        dragging = true
-      }
-      if (e.cancelable) e.preventDefault()
-      pull = Math.min(PULL_MAX, Math.max(0, dy) / 2)
-    }
-    async function end() {
-      tracking = false
-      if (!dragging) return
-      dragging = false
-      if (pull < PULL_LINE) { pull = 0; return }
-      refreshing = true
-      pull = PULL_HOLD
-      try { await onrefresh!() } finally {
-        refreshing = false
-        pull = 0
-      }
-      // The first story may have changed; the address names the new one.
-      if (onScreen === 0 && reported && clusters[0]) onview?.(clusters[0])
-    }
-    el.addEventListener('touchstart', start, { passive: true })
-    el.addEventListener('touchmove', move, { passive: false })
-    el.addEventListener('touchend', end)
-    el.addEventListener('touchcancel', end)
-    return () => {
-      el.removeEventListener('touchstart', start)
-      el.removeEventListener('touchmove', move)
-      el.removeEventListener('touchend', end)
-      el.removeEventListener('touchcancel', end)
-    }
+  // The first story may have changed after a refresh; the address names the new one.
+  const pullRefresh = createPullRefresh(() => scroller, () => onrefresh, () => {
+    if (onScreen === 0 && reported && clusters[0]) onview?.(clusters[0])
   })
 
   function onscroll(e: Event) {
@@ -131,27 +78,12 @@
 </script>
 
 <div class="relative h-full min-h-0 overflow-hidden">
-  {#if onrefresh}
-    <!-- Behind the stories: uncovered as they are pulled down. -->
-    <div
-      data-pull-indicator
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center text-fg-2"
-      style="height: {PULL_HOLD}px; opacity: {refreshing ? 1 : Math.min(1, pull / PULL_LINE)}"
-    >
-      <span
-        class="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-panel {refreshing ? 'animate-spin' : ''} {pull >= PULL_LINE || refreshing ? 'text-accent' : ''}"
-        style={refreshing ? undefined : `transform: rotate(${(pull / PULL_LINE) * 270}deg)`}
-      >
-        <Icon name="refresh" size={15} stroke={2} />
-      </span>
-    </div>
-  {/if}
+  {#if onrefresh}<PullIndicator state={pullRefresh} />{/if}
   <!-- Focusable so arrow keys and Page Down move between stories: a scrolling
        region the keyboard can't reach is an axe failure (scrollable-region-focusable). -->
   <!-- No counter, no scrollbar: one story fills the screen and a swipe is the only control. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller relative h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-ink outline-none" aria-busy={refreshing} style="transform: {pull ? `translateY(${pull}px)` : 'none'}; transition: {dragging ? 'none' : 'transform 0.25s ease'}" {onscroll}>
+  <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller relative h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-ink outline-none" aria-busy={pullRefresh.refreshing} style={pullRefresh.style} {onscroll}>
     {#each clusters as cluster, i (cluster.id)}
       <SignalStory {cluster} {onselect} hint={i === 0 && !swiped && clusters.length > 1} />
     {/each}

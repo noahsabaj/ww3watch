@@ -217,6 +217,7 @@
       {lastVisitAt}
       newCount={feed.newQueue.length}
       onFlush={flushQueue}
+      onrefresh={feed.refresh}
       bind:paused={railPaused}
     />
   {:else if desk === false}

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { openHome, openReader, reader, stories, storyCard } from './home'
+import { expectPullToRefresh, openHome, openReader, reader, stories, storyCard } from './home'
 
 // Below 900px the home is Signal: one story at a time, full screen.
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
@@ -68,29 +68,14 @@ test('the address follows the story on screen, so a browser share sends it', asy
 })
 
 test('pulling the first story down refreshes the feed', async ({ page }) => {
-  const scroller = page.getByLabel('Stories', { exact: true })
-  const pull = (distance: number) => scroller.evaluate((el, distance) => {
-    const at = (y: number) => [new Touch({ identifier: 1, target: el, clientX: 195, clientY: y })]
-    const fire = (type: string, y: number) => el.dispatchEvent(new TouchEvent(type, {
-      bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : at(y), changedTouches: at(y) }))
-    fire('touchstart', 300)
-    for (let y = 300; y <= 300 + distance; y += 20) fire('touchmove', y)
-    fire('touchend', 300 + distance)
-  }, distance)
+  await expectPullToRefresh(page, page.getByLabel('Stories', { exact: true }))
+})
 
-  // A short pull springs back without fetching.
-  let fetched = 0
-  page.on('request', (r) => { if (r.url().includes('/rest/v1/articles')) fetched++ })
-  await pull(60)
-  await expect(scroller).toHaveCSS('transform', 'none')
-  expect(fetched).toBe(0)
-
-  const refetch = page.waitForRequest((r) => r.url().includes('/rest/v1/articles'))
-  await pull(200)
-  await refetch
-  await expect(scroller).toHaveAttribute('aria-busy', 'false')
-  await expect(scroller).toHaveCSS('transform', 'none')
-  await expect(stories(page).first()).toBeVisible()
+test.describe('iPad', () => {
+  test.use({ viewport: { width: 834, height: 1194 }, hasTouch: true })
+  test('pulling the story list down refreshes the feed', async ({ page }) => {
+    await expectPullToRefresh(page, page.locator('[data-desk-rail]'))
+  })
 })
 
 test('the story scroller is keyboard reachable', async ({ page }) => {
