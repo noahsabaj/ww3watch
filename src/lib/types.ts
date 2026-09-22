@@ -49,6 +49,11 @@ export interface Article {
   unverified?: number | null
   opinion?: number | null
   actors?: Actor[] | null
+  // Publisher photograph (RSS media or og:image). Optional: SW-cached pre-image
+  // REST rows omit it, and the pipeline leaves it null when the newsroom published none.
+  image_url?: string | null
+  image_width?: number | null
+  image_height?: number | null
   // Dropped from the feed's boot query (unused client-side) but still delivered
   // on realtime row payloads — hence optional. The pipeline/server use the
   // separate ArticleInsert shape.

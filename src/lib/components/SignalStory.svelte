@@ -6,6 +6,7 @@
   import { clock } from '$lib/now.svelte'
   import { regionWash } from '$lib/region-wash'
   import { createHeadlineTranslation } from '$lib/headline-translation.svelte'
+  import { createStoryPhoto } from '$lib/story-photo.svelte'
   import ShareControls from '$lib/components/ShareControls.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
   import { storyBadgeSignals } from '$lib/story'
@@ -17,15 +18,30 @@
   const badgeSignals = $derived(storyBadgeSignals(cluster))
   const repLang = $derived(langTag(rep.source_lang))
   const translation = createHeadlineTranslation(() => rep)
+  const photo = createStoryPhoto(() => cluster, 360)
 </script>
 
 <article
   data-signal-story
   data-story={cluster.id}
+  data-photo={photo.shown ? '1' : undefined}
   class="signal-story relative h-full snap-start overflow-hidden"
   style="--wash: {regionWash(rep.source_region)}"
 >
-  <div class="signal-grain absolute inset-0"></div>
+  {#if photo.shown}
+    <img
+      src={photo.shown.url}
+      alt=""
+      class="absolute inset-0 h-full w-full object-cover"
+      referrerpolicy="no-referrer"
+      decoding="async"
+      onerror={photo.fail}
+      onload={photo.loaded}
+    />
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/25"></div>
+  {:else}
+    <div class="signal-grain absolute inset-0"></div>
+  {/if}
   <!-- Bottom padding clears the floating filter button and the home indicator. -->
   <div
     class="relative flex h-full flex-col justify-end px-5 pt-6"
@@ -63,6 +79,9 @@
       · {cluster.sourceCount} {cluster.sourceCount === 1 ? 'source' : 'sources'}
       · {timeAgo(rep.published_at, clock.now)}
     </p>
+    {#if photo.shown}
+      <p class="mt-1 text-[11px] uppercase tracking-[0.14em] text-gray-500">Photo · {photo.shown.sourceName}</p>
+    {/if}
 
     {#if others.length > 0}
       <ul class="mt-4 space-y-1.5">

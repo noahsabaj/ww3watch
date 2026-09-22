@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupByStoryId, storyTimeline } from './cluster'
+import { groupByStoryId, storyTimeline, storyImage } from './cluster'
 import type { Article } from './types'
 
 let seq = 0
@@ -133,5 +133,63 @@ describe('storyTimeline', () => {
     expect(tl.firstAt).toBeNull()
     expect(tl.ordered.every((e) => e.offsetMs === null)).toBe(true)
     expect(tl.ordered.some((e) => e.isFirst)).toBe(false)
+  })
+})
+
+describe('storyImage', () => {
+  it('returns null when no member has a photograph', () => {
+    const [cluster] = groupByStoryId([article({ story_id: 's' }), article({ story_id: 's' })])
+    expect(storyImage(cluster)).toBeNull()
+  })
+
+  it('uses the representative\'s photo when it has one', () => {
+    const older = article({
+      story_id: 's',
+      published_at: '2026-06-10T08:00:00Z',
+      source_name: 'TASS',
+      image_url: 'https://cdn.example/tass.jpg',
+      image_width: 1600,
+      image_height: 900,
+    })
+    const newest = article({
+      story_id: 's',
+      published_at: '2026-06-10T14:00:00Z',
+      source_name: 'Reuters',
+      image_url: 'https://cdn.example/reuters.jpg',
+      image_width: 400,
+      image_height: 300,
+    })
+    const [cluster] = groupByStoryId([older, newest])
+    const photo = storyImage(cluster)!
+    expect(photo.url).toBe('https://cdn.example/reuters.jpg')
+    expect(photo.sourceName).toBe('Reuters')
+  })
+
+  it('falls back to the largest photo from another member', () => {
+    const newest = article({
+      story_id: 's',
+      published_at: '2026-06-10T14:00:00Z',
+      source_name: 'Reuters',
+    })
+    const small = article({
+      story_id: 's',
+      published_at: '2026-06-10T10:00:00Z',
+      source_name: 'AP',
+      image_url: 'https://cdn.example/ap.jpg',
+      image_width: 400,
+      image_height: 300,
+    })
+    const large = article({
+      story_id: 's',
+      published_at: '2026-06-10T09:00:00Z',
+      source_name: 'TASS',
+      image_url: 'https://cdn.example/tass.jpg',
+      image_width: 1600,
+      image_height: 900,
+    })
+    const [cluster] = groupByStoryId([newest, small, large])
+    const photo = storyImage(cluster)!
+    expect(photo.url).toBe('https://cdn.example/tass.jpg')
+    expect(photo.sourceName).toBe('TASS')
   })
 })

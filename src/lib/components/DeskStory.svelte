@@ -7,6 +7,7 @@
   import { clock } from '$lib/now.svelte'
   import { regionWash } from '$lib/region-wash'
   import { createHeadlineTranslation } from '$lib/headline-translation.svelte'
+  import { createStoryPhoto } from '$lib/story-photo.svelte'
   import { bySide, memberKind, storyBadgeSignals } from '$lib/story'
   import ShareControls from '$lib/components/ShareControls.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
@@ -18,6 +19,7 @@
 
   const rep = $derived(cluster.representative)
   const translation = createHeadlineTranslation(() => rep)
+  const photo = createStoryPhoto(() => cluster, 640)
   const badgeSignals = $derived(storyBadgeSignals(cluster))
   const repLang = $derived(langTag(rep.source_lang))
   const wireIds = $derived(wireDuplicateIds(cluster.articles))
@@ -59,9 +61,31 @@
   </li>
 {/snippet}
 
-<article data-desk-story-pane data-story={cluster.id} class="signal-story relative min-h-full" style="--wash: {regionWash(rep.source_region)}">
+<article
+  data-desk-story-pane
+  data-story={cluster.id}
+  data-photo={photo.shown ? '1' : undefined}
+  class="signal-story relative min-h-full"
+  style="--wash: {regionWash(rep.source_region)}"
+>
   <div class="signal-grain absolute inset-0"></div>
-  <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pt-14 pb-16">
+  <!-- A newsroom photograph heads the pane and fades into it; the headline
+       sits on its lower edge. Without one the region wash carries the story. -->
+  {#if photo.shown}
+    <div class="absolute inset-x-0 top-0 h-[34rem] overflow-hidden">
+      <img
+        src={photo.shown.url}
+        alt=""
+        class="h-full w-full object-cover"
+        referrerpolicy="no-referrer"
+        decoding="async"
+        onerror={photo.fail}
+        onload={photo.loaded}
+      />
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070809] via-[#070809]/75 to-[#070809]/10"></div>
+    </div>
+  {/if}
+  <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pb-16 {photo.shown ? 'pt-64' : 'pt-14'}">
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-400">{rep.source_region}</span>
       {#if repLang}
@@ -84,6 +108,9 @@
       · {timeAgo(rep.published_at, clock.now)}
       {#if cluster.sourceCount > 1 && timeline.firstAt}
         · first reported {timeAgo(new Date(timeline.firstAt).toISOString(), clock.now)}
+      {/if}
+      {#if photo.shown}
+        <span class="ml-2 text-[11px] uppercase tracking-[0.14em] text-gray-500">Photo · {photo.shown.sourceName}</span>
       {/if}
     </p>
 

@@ -90,6 +90,14 @@ export const ASSIGN_CAP = 300
 export const ASSIGN_RPC_CHUNK = 100
 export const ID_QUERY_CHUNK = 100 // .in() filters travel in the URL — keep chunks small
 
+// Publisher photographs: RSS media is stored at ingest. Remaining holes (og:image)
+// are filled on this worklist, newest first, so Signal has a real photo or the
+// region wash — never a generated image. Cap keeps the proxy budget honest.
+export const IMAGE_FILL_CAP = num('IMAGE_FILL_CAP', 60)
+export const IMAGE_FILL_CONCURRENCY = Math.max(1, num('IMAGE_FILL_CONCURRENCY', 8))
+export const IMAGE_FILL_LOOKBACK_HOURS = 48
+export const IMAGE_FILL_TIMEOUT_MS = 8000
+
 // ── Jev: relevance ──────────────────────────────────────────────────────────
 // docs/evals/2026-09-19-jev-relevance.md — 1,475 LLM-labelled titles in 7
 // languages, titles only: AUC 0.956, 87.9% agreement at this cut, and the
@@ -127,6 +135,7 @@ export function configSnapshot(): Record<string, unknown> {
     EMBED_SIM_THRESHOLD,
     STALE_WRITEOFF_HOURS, AUTO_DISABLE_AFTER,
     RUN_BUDGET_MS, CLASSIFY_BUDGET_MS,
+    IMAGE_FILL_CAP, IMAGE_FILL_CONCURRENCY, IMAGE_FILL_LOOKBACK_HOURS,
     LOW_YIELD,
   }
 }

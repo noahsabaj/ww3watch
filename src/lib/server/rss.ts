@@ -1,6 +1,7 @@
 import Parser from 'rss-parser'
 import { XMLParser } from 'fast-xml-parser'
 import { bodyHash } from './wire'
+import { dropChannelLogos, pickFeedImage } from './image'
 import type { Feed, SourceRegion } from '../types'
 
 export type ArticleInsert = {
@@ -16,6 +17,10 @@ export type ArticleInsert = {
   feed_url: string
   source_id: string | null
   body_hash: string | null
+  image_url: string | null
+  image_width: number | null
+  image_height: number | null
+  image_fetched_at: string | null
 }
 
 // 'blocked' = the origin served a non-feed (WAF "Just a moment…" challenge,
@@ -48,7 +53,15 @@ const FEED_HEADERS = {
   'Accept-Language': 'en-US,en;q=0.9',
 }
 
-const parser = new Parser()
+const parser = new Parser({
+  customFields: {
+    item: [
+      ['media:content', 'mediaContent', { keepArray: true }],
+      ['media:thumbnail', 'mediaThumbnail', { keepArray: true }],
+      ['media:group', 'mediaGroup'],
+    ],
+  },
+})
 // Tolerant second-pass parser for feeds that are XML-ish but trip rss-parser's
 // strict sax (unescaped &, stray tags). Lenient by default: no validation throw.
 const lenientParser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_', htmlEntities: true })
@@ -160,8 +173,25 @@ function articleUrl(link: string | undefined, feedUrl: string): string {
   } catch { return '' }
 }
 
+function imageFields(item: unknown, url: string, fetchedAt: string): {
+  image_url: string | null
+  image_width: number | null
+  image_height: number | null
+  image_fetched_at: string | null
+} {
+  const img = url ? pickFeedImage(item, url) : null
+  if (!img) return { image_url: null, image_width: null, image_height: null, image_fetched_at: null }
+  return {
+    image_url: img.url,
+    image_width: img.width,
+    image_height: img.height,
+    image_fetched_at: fetchedAt,
+  }
+}
+
 function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInsert[]; clamped: number }> {
   const now = Date.now()
+  const fetchedAt = new Date(now).toISOString()
   return parser.parseString(xml).then((parsed) => {
     let clamped = 0
     const articles = parsed.items
@@ -170,10 +200,11 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
         const published = item.pubDate ?? item.isoDate
         if (isClampedDate(published, now)) clamped++
         const summary = item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null
+        const url = articleUrl(item.link, feed.url)
         return {
           guid: buildGuid(item),
           title: item.title?.trim() ?? '(no title)',
-          url: articleUrl(item.link, feed.url),
+          url,
           summary,
           published_at: parseDate(published, now),
           source_name: feed.name,
@@ -183,9 +214,11 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
           feed_url: feed.url,
           source_id: feed.id ?? null,
           body_hash: bodyHash(summary),
+          ...imageFields(item, url, fetchedAt),
         }
       })
       .filter((a) => a.guid !== '' && a.url !== '')
+    dropChannelLogos(articles)
     return { articles, clamped }
   })
 }
@@ -222,6 +255,7 @@ function pickLink(item: Record<string, unknown>): string | undefined {
 // isClampedDate/bodyHash so guid, date-clamp and wire-hash behavior are identical.
 function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInsert[]; clamped: number } {
   const now = Date.now()
+  const fetchedAt = new Date(now).toISOString()
   const tree = lenientParser.parse(xml) as Record<string, any>
   const channel = tree?.rss?.channel ?? tree?.['rdf:RDF'] ?? tree?.channel
   const raw = channel?.item ?? tree?.feed?.entry ?? []
@@ -234,10 +268,11 @@ function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInser
       const summaryRaw = textOf(item.description) ?? textOf(item.summary) ?? textOf(item.content)
       const summary = summaryRaw ? summaryRaw.slice(0, 500) : null
       const link = pickLink(item)
+      const url = articleUrl(link, feed.url)
       return {
         guid: buildGuid({ guid: textOf(item.guid) ?? textOf(item.id), link }),
         title: (textOf(item.title) ?? '(no title)').trim(),
-        url: articleUrl(link, feed.url),
+        url,
         summary,
         published_at: parseDate(pubRaw, now),
         source_name: feed.name,
@@ -247,9 +282,11 @@ function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInser
         feed_url: feed.url,
         source_id: feed.id ?? null,
         body_hash: bodyHash(summary),
+        ...imageFields(item, url, fetchedAt),
       }
     })
     .filter((a) => a.guid !== '' && a.url !== '')
+  dropChannelLogos(articles)
   return { articles, clamped }
 }
 

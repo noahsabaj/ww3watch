@@ -178,6 +178,41 @@ describe('fetchFeed', () => {
     expect(result.articles[0].title).toContain('Iran')
   })
 
+  it('keeps a photograph from media:content and skips a video enclosure', async () => {
+    const rssXml = `<?xml version="1.0"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Test Feed</title>
+    <item>
+      <title>Photo story</title>
+      <link>https://example.com/photo</link>
+      <guid>https://example.com/photo</guid>
+      <pubDate>Mon, 03 Mar 2026 10:00:00 GMT</pubDate>
+      <media:content url="https://cdn.example/hero.jpg" medium="image" width="1200" height="800"/>
+    </item>
+    <item>
+      <title>Audio only</title>
+      <link>https://example.com/audio</link>
+      <guid>https://example.com/audio</guid>
+      <pubDate>Mon, 03 Mar 2026 09:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example/clip.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+  </channel>
+</rss>`
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/rss+xml' } }),
+    )
+    const result = await fetchFeed(mockFeed)
+    expect(result.error).toBeUndefined()
+    const photo = result.articles.find((a) => a.guid === 'https://example.com/photo')
+    const audio = result.articles.find((a) => a.guid === 'https://example.com/audio')
+    expect(photo?.image_url).toBe('https://cdn.example/hero.jpg')
+    expect(photo?.image_width).toBe(1200)
+    expect(photo?.image_fetched_at).toEqual(expect.any(String))
+    expect(audio?.image_url).toBeNull()
+    expect(audio?.image_fetched_at).toBeNull()
+  })
+
   it('returns parsed articles from valid RSS (via direct, no error)', async () => {
     const rssXml = `<?xml version="1.0"?>
 <rss version="2.0">

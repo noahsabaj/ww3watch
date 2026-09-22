@@ -1,0 +1,26 @@
+// The photograph a story shows, if its newsroom published one: Signal's full
+// backdrop on a phone, the head of the story pane on the desk. A hotlink the
+// publisher refuses (403, mixed content) drops back to the region wash for
+// that URL only, so a later photo for the same story still gets its chance.
+// Never a generated or stock image (docs/CONVENTIONS.md).
+//
+// Must be created during component init.
+import { storyImage, type Cluster, type StoryPhoto } from './cluster'
+
+/** minWidth: the narrowest image (natural px) worth stretching over this surface. */
+export function createStoryPhoto(getCluster: () => Cluster, minWidth: number) {
+  let brokenUrl = $state<string | null>(null)
+  const photo = $derived(storyImage(getCluster()))
+  const shown = $derived<StoryPhoto | null>(photo && photo.url !== brokenUrl ? photo : null)
+
+  return {
+    /** The photograph to show, or null for the colour field. */
+    get shown() { return shown },
+    /** Call from the <img> onerror. */
+    fail() { if (photo) brokenUrl = photo.url },
+    /** Call from the <img> onload. */
+    loaded(e: Event) {
+      if ((e.currentTarget as HTMLImageElement).naturalWidth < minWidth && photo) brokenUrl = photo.url
+    },
+  }
+}

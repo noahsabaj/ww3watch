@@ -49,6 +49,15 @@ export interface RunStats {
   signals_tokens?: number
   signals_purged?: number
   signals_error?: string
+  // images
+  images_filled?: number
+  images_none?: number
+  /** Pages we could not read this run (timeout, 403, DNS): left NULL, retried next run. */
+  images_unreadable?: number
+  /** Rows not started before the run's deadline. */
+  images_deferred?: number
+  images_failed?: number
+  images_error?: string
   // finalize
   trending?: string
   db?: Record<string, unknown>

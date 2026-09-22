@@ -241,3 +241,25 @@ test('Top ranks the last 24h and always leaves a way back to Latest', async ({ p
   await expect(page.getByRole('group', { name: 'Feed order' }).getByRole('button', { name: 'Latest' })).toHaveAttribute('aria-pressed', 'true')
   await expect(stories(page).first()).toBeVisible()
 })
+
+// ── Publisher photographs ───────────────────────────────────────────────────
+
+test('a story shows its newsroom photograph, credited to the outlet that published it', async ({ page }) => {
+  // The seed's 4-member port-strike story: only the Al Jazeera member has a photo.
+  const pane = await selectStory(page, { hasText: /\b4 outlets\b/ })
+  await expect(pane).toHaveAttribute('data-photo', '1')
+  await expect(pane.locator('img')).toBeVisible()
+  await expect(pane.getByText('Photo · Al Jazeera')).toBeVisible()
+})
+
+test('a photograph that will not load falls back to the colour field', async ({ page }) => {
+  const pane = await selectStory(page, russian(page))
+  await expect(pane.locator('img')).toHaveCount(0)
+  await expect(pane).not.toHaveAttribute('data-photo', '1')
+  await expect(pane.getByText(/^Photo ·/)).toHaveCount(0)
+})
+
+test('a story without a photograph stays typographic', async ({ page }) => {
+  const pane = await selectStory(page, wireStory)
+  await expect(pane.locator('img')).toHaveCount(0)
+})

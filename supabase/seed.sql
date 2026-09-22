@@ -132,3 +132,14 @@ insert into public.trending_log (logged_at, picks) values
 insert into public.pipeline_runs (started_at, finished_at, error, stats) values
   (now() - interval '12 minutes', now() - interval '10 minutes', null,
    '{"feeds_ok": 9, "inserted": 64, "relevant": 64, "trending": "updated:3"}'::jsonb);
+
+-- ── Publisher photographs ────────────────────────────────────────────────────
+-- The port-strike story's only photo belongs to a non-lead member, so the
+-- credit must name that outlet (Al Jazeera), not the story's lead. The RT
+-- singleton's photo URL is dead, so it must fall back to the colour field:
+-- sirv serves the SPA shell for the missing path, which no browser decodes as
+-- an image. /og.png is a real file in static/.
+update public.articles set image_url = '/og.png', image_width = 1200, image_height = 630, image_fetched_at = now()
+  where id = '33333333-3333-4333-8333-000000000003';
+update public.articles set image_url = '/no-such-photo.jpg', image_fetched_at = now()
+  where id = '33333333-3333-4333-8333-000000000008';
