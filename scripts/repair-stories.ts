@@ -5,7 +5,7 @@
 // pipeline's clustering worklist (story_id IS NULL) then re-assigns it — with the
 // pair judge — on its next runs. SAME / unsure / failed → left alone.
 //
-//   node --import tsx --env-file=.env scripts/repair-stories.ts [hours=24] [--dry]
+//   WW3WATCH_ALLOW_PRODUCTION=1 node --import tsx --env-file=.env scripts/repair-stories.ts [hours=24] [--dry]
 import { supabaseAdmin as supabase } from '../src/lib/server/supabase'
 import { judgeSameEvent, PAIR_BAND } from '../src/lib/server/jev-pairs'
 import { mapPool } from '../src/lib/server/pool'

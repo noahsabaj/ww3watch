@@ -3,7 +3,7 @@
 // large backlog (first rollout, or after changing the question set and nulling
 // signals_at) without waiting for it.
 //
-//   node --import tsx --env-file=.env scripts/backfill-signals.ts [hours=48]
+//   WW3WATCH_ALLOW_PRODUCTION=1 node --import tsx --env-file=.env scripts/backfill-signals.ts [hours=48]
 //   gh workflow run run-script.yml -f script=scripts/backfill-signals.ts
 import { supabaseAdmin as supabase } from '../src/lib/server/supabase'
 import { askSignals } from '../src/lib/server/jev-signals'

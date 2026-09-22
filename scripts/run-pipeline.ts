@@ -1,5 +1,5 @@
 // WW3Watch ingestion pipeline — runs on a schedule via GitHub Actions
-// (.github/workflows/pipeline.yml) or locally with: node --import tsx scripts/run-pipeline.ts
+// (.github/workflows/pipeline.yml), or against local staging with: npm run staging:pipeline
 //
 // This file is only the entry point. The run is src/lib/server/pipeline/run.ts
 // (fetch → dedupe → classify → persist → cluster → annotate → trending → ops);
