@@ -41,6 +41,12 @@ test('feed order lives in the filter sheet', async ({ page }) => {
   await expect(order.getByRole('button', { name: /^Top/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
+test('Signal carries no position counter or visible scrollbar', async ({ page }) => {
+  await expect(page.getByText(/^\d+ \/ \d+$/)).toHaveCount(0)
+  const scroller = page.getByLabel('Stories', { exact: true })
+  expect(await scroller.evaluate((el) => el.offsetWidth - el.clientWidth)).toBe(0)
+})
+
 test('the story scroller is keyboard reachable', async ({ page }) => {
   const scroller = page.getByLabel('Stories', { exact: true })
   await scroller.focus()

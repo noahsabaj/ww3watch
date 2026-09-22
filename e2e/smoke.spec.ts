@@ -27,10 +27,10 @@ test.beforeEach(async ({ page }) => {
 test('the desk lists every seeded story, grouped, and opens on the top trending one', async ({ page }) => {
   await expect(stories(page)).toHaveCount(STORIES)
   await expect(page.locator('header')).toContainText(`${STORIES} stories`)
-  // The seed's trending #1 is the 3-outlet wire story, not the newest singleton.
+  // The seed's trending #1 (rank 0) is the 4-outlet port-strike story, not the newest singleton.
   const top = await page.locator('[data-trending-story]').first().getAttribute('data-trending-story')
   await expect(storyCard(page)).toHaveAttribute('data-story', top!)
-  await expect(storyCard(page)).toContainText('ceasefire talks resume')
+  await expect(storyCard(page)).toContainText('How 4 newsrooms put it')
   await expect(page.locator(`[data-desk-story="${top}"]`)).toHaveAttribute('aria-current', 'true')
 })
 
