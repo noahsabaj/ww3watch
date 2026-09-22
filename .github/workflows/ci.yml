@@ -44,14 +44,45 @@ jobs:
         with:
           version: latest
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      # `supabase start` would apply supabase/migrations itself. The next step does
+      # `supabase start` would apply supabase/migrations itself. A later step does
       # that explicitly instead — file by file with ON_ERROR_STOP, so a failure
       # names the file — so the directory is hidden from the CLI's own pass.
+      #
+      # Started in the background: pulling and booting the stack is the slowest
+      # part of this job, and the site build and browser install below need no
+      # database, so they run meanwhile. "Wait for the local Supabase stack"
+      # fails the job if the start failed. Only the services the suite touches
+      # are started: the database, its REST API (kong + postgrest), realtime
+      # (the feed subscribes), auth (owns the auth schema policies reference)
+      # and postgres-meta (type generation). Dashboard, mail, image, storage,
+      # edge functions, logging and pooler are left out; nothing here calls them.
       - name: Start the local Supabase stack
         run: |
           mv supabase/migrations /tmp/ww3watch-migrations
-          supabase start
+          (supabase start -x studio,mailpit,imgproxy,storage-api,edge-runtime,logflare,vector,supavisor > /tmp/supabase-start.log 2>&1; echo $? > /tmp/supabase-start.exit) &
+
+      # The local stack's publishable key is a fixed, well-known constant —
+      # every `supabase start` anywhere produces this same value, because the
+      # local JWT secret is a documented default. It grants nothing beyond this
+      # ephemeral container.
+      - run: npm run build
+        env:
+          PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
+      # Replicate deploy.yml's fallback copy so sirv --single serves the SPA.
+      - run: test -f build/index.html || cp build/404.html build/index.html
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+
+      - name: Wait for the local Supabase stack
+        run: |
+          for _ in $(seq 1 240); do [ -f /tmp/supabase-start.exit ] && break; sleep 1; done
+          cat /tmp/supabase-start.log
           mv /tmp/ww3watch-migrations supabase/migrations
+          [ "$(cat /tmp/supabase-start.exit 2>/dev/null)" = 0 ]
 
       # Filename order is the contract migrations are written and applied under
       # (docs/CONVENTIONS.md): one baseline, then 14-digit versions.
@@ -119,21 +150,6 @@ jobs:
             /tmp/cron.txt
           retention-days: 14
 
-      # The local stack's publishable key is a fixed, well-known constant —
-      # every `supabase start` anywhere produces this same value, because the
-      # local JWT secret is a documented default. It grants nothing beyond this
-      # ephemeral container.
-      - run: npm run build
-        env:
-          PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
-      # Replicate deploy.yml's fallback copy so sirv --single serves the SPA.
-      - run: test -f build/index.html || cp build/404.html build/index.html
-      - uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
       - run: npx playwright test
 
   functions:
