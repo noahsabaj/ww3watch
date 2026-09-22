@@ -1,0 +1,84 @@
+name: Branch preview
+
+# Every branch except main gets its own private URL on Cloudflare Pages, built
+# exactly like deploy.yml builds production and reading the same live data:
+#
+#   https://<branch>.ww3watch-preview.pages.dev
+#
+# Cloudflare Access sits in front of the whole ww3watch-preview project, so only
+# allowed emails can open it (setup: README → "Previewing changes"). Previews
+# read production with the public key, exactly like the real site, so they can
+# show but never change anything. A branch that adds a migration will fail its
+# queries here until the migration is live — use local staging for those.
+on:
+  push:
+    branches-ignore: [main, sources-backup]
+    paths-ignore:
+      - 'data/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT: ww3watch-preview
+
+jobs:
+  deploy:
+    # Off until the repo variable PREVIEWS_ENABLED is 'true', which is set only
+    # after the Access application exists — so a preview is never published
+    # unprotected just because the Cloudflare token already exists for the worker.
+    if: vars.PREVIEWS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          BASE_PATH: ''
+          PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
+      # Same SPA root as deploy.yml. CNAME is GitHub Pages' custom-domain file
+      # and means nothing to Pages; drop it so the preview never claims the domain.
+      # noindex: keep previews out of search results even if a URL leaks.
+      - name: SPA root, no custom domain, no indexing
+        run: |
+          if [ ! -f build/index.html ]; then cp build/404.html build/index.html; fi
+          rm -f build/CNAME
+          printf '/*\n  X-Robots-Tag: noindex, nofollow\n' > build/_headers
+
+      # Gate at the shell level like deploy-worker.yml: without the token this
+      # warns and skips, so branches never go red before Cloudflare is set up.
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::CLOUDFLARE_API_TOKEN not set — skipping preview deploy."
+            exit 0
+          fi
+          # First run creates the project. Its production branch is main, which
+          # this workflow never deploys, so every upload is a (protected) preview.
+          npx --yes wrangler@4 pages project list | grep -q "$PROJECT" \
+            || npx --yes wrangler@4 pages project create "$PROJECT" --production-branch main
+          npx --yes wrangler@4 pages deploy build --project-name "$PROJECT" --branch "$BRANCH" --commit-dirty=true | tee /tmp/deploy.log
+          # Pages lowercases the branch and turns anything outside [a-z0-9-] into '-'.
+          alias=$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | cut -c1-28 | sed 's/-*$//')
+          echo "url=https://$alias.$PROJECT.pages.dev" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: steps.deploy.outputs.url
+        run: |
+          echo "### Preview for \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.deploy.outputs.url }} (Cloudflare Access login)" >> "$GITHUB_STEP_SUMMARY"

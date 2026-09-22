@@ -13,7 +13,11 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"pipeline": "node --import tsx scripts/run-pipeline.ts"
+		"pipeline": "node --import tsx scripts/run-pipeline.ts",
+		"staging:up": "node --env-file=.env --import tsx scripts/staging/up.ts",
+		"staging:dev": "node --env-file=.env.staging node_modules/vite/bin/vite.js dev --port 5175 --strictPort",
+		"staging:pipeline": "node --env-file=.env.staging --import tsx scripts/run-pipeline.ts",
+		"staging:down": "npx --yes supabase@2 stop --no-backup"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.60.0",

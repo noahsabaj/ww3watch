@@ -26,4 +26,7 @@ COPY tsconfig.json svelte.config.js vite.config.ts ./
 COPY scripts ./scripts
 COPY src ./src
 
+# This image is the production pipeline, so it may write to the hosted database
+# (src/lib/server/write-guard.ts refuses that for local runs otherwise).
+ENV WW3WATCH_ALLOW_PRODUCTION=1
 CMD ["node", "--import", "tsx", "scripts/run-pipeline.ts"]
