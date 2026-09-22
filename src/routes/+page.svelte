@@ -242,6 +242,7 @@
           ranked={filters.sortMode === 'top'}
           focusId={reader.selectedCluster?.id ?? null}
           onview={onSignalView}
+          onrefresh={feed.refresh}
         />
       {/key}
     </div>

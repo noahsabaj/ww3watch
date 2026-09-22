@@ -17,6 +17,7 @@
     info: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 16v-4', 'M12 8h.01'],
     filters: ['M4 7h10', 'M18 7h2', 'M4 17h4', 'M12 17h8', 'M16 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M10 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'],
     menu: ['M4 8h16', 'M4 16h16'],
+    refresh: ['M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8', 'M21 3v5h-5'],
   } as const
 
   export type IconName = keyof typeof PATHS
