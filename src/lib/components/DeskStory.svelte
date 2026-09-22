@@ -19,7 +19,7 @@
 
   const rep = $derived(cluster.representative)
   const translation = createHeadlineTranslation(() => rep)
-  const photo = createStoryPhoto(() => cluster)
+  const photo = createStoryPhoto(() => cluster, 640)
   const badgeSignals = $derived(storyBadgeSignals(cluster))
   const repLang = $derived(langTag(rep.source_lang))
   const wireIds = $derived(wireDuplicateIds(cluster.articles))
@@ -80,6 +80,7 @@
         referrerpolicy="no-referrer"
         decoding="async"
         onerror={photo.fail}
+        onload={photo.loaded}
       />
       <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#070809] via-[#070809]/75 to-[#070809]/10"></div>
     </div>

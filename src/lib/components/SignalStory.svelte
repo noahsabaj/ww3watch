@@ -18,7 +18,7 @@
   const badgeSignals = $derived(storyBadgeSignals(cluster))
   const repLang = $derived(langTag(rep.source_lang))
   const translation = createHeadlineTranslation(() => rep)
-  const photo = createStoryPhoto(() => cluster)
+  const photo = createStoryPhoto(() => cluster, 360)
 </script>
 
 <article
@@ -36,6 +36,7 @@
       referrerpolicy="no-referrer"
       decoding="async"
       onerror={photo.fail}
+      onload={photo.loaded}
     />
     <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/25"></div>
   {:else}

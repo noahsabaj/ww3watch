@@ -7,7 +7,8 @@
 // Must be created during component init.
 import { storyImage, type Cluster, type StoryPhoto } from './cluster'
 
-export function createStoryPhoto(getCluster: () => Cluster) {
+/** minWidth: the narrowest image (natural px) worth stretching over this surface. */
+export function createStoryPhoto(getCluster: () => Cluster, minWidth: number) {
   let brokenUrl = $state<string | null>(null)
   const photo = $derived(storyImage(getCluster()))
   const shown = $derived<StoryPhoto | null>(photo && photo.url !== brokenUrl ? photo : null)
@@ -17,5 +18,9 @@ export function createStoryPhoto(getCluster: () => Cluster) {
     get shown() { return shown },
     /** Call from the <img> onerror. */
     fail() { if (photo) brokenUrl = photo.url },
+    /** Call from the <img> onload. */
+    loaded(e: Event) {
+      if ((e.currentTarget as HTMLImageElement).naturalWidth < minWidth && photo) brokenUrl = photo.url
+    },
   }
 }
