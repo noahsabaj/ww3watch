@@ -64,11 +64,28 @@
         details.open = true
         details.scrollIntoView({ block: 'start' })
         details.querySelector('summary')?.focus({ preventScroll: true })
+        holdInView(details)
       }
+    }
+    // The page's live sections (region counts, recently highlighted) load after
+    // this and push the profile down by thousands of pixels. Keep it in view
+    // while they settle, until the reader scrolls on their own.
+    let release = () => {}
+    function holdInView(el: HTMLElement) {
+      release()
+      const observer = new ResizeObserver(() => el.scrollIntoView({ block: 'start' }))
+      observer.observe(document.body)
+      const stop = () => {
+        observer.disconnect(); clearTimeout(timer)
+        for (const e of ['wheel','touchstart','keydown']) window.removeEventListener(e,stop)
+      }
+      const timer = setTimeout(stop,5000)
+      for (const e of ['wheel','touchstart','keydown']) window.addEventListener(e,stop,{ passive: true })
+      release = stop
     }
     void openHash()
     window.addEventListener('hashchange',openHash)
-    return () => { active = false; window.removeEventListener('hashchange',openHash) }
+    return () => { active = false; release(); window.removeEventListener('hashchange',openHash) }
   })
 </script>
 

@@ -2,6 +2,9 @@
   import Icon from '$lib/components/Icon.svelte'
   import type { Snippet } from 'svelte'
   import { base } from '$app/paths'
+  import { afterNavigate } from '$app/navigation'
+  import { page } from '$app/state'
+  import { browser } from '$app/environment'
   import SiteMenu from '$lib/components/SiteMenu.svelte'
 
   // Every page that isn't the feed: the feed's header (wordmark home, the same
@@ -17,13 +20,32 @@
     wide?: boolean
     children: Snippet
   } = $props()
+
+  // Reached from an open article (the reader's Report and Source profile links
+  // carry ?article=): the way back is that article, not the top of the feed.
+  // Coming straight from the feed, history.back() returns to the reader's own
+  // entry; otherwise the link deep-links the article.
+  // Browser only: /about and /feedback are prerendered, and prerendering has no query string.
+  const articleId = $derived(browser ? page.url.searchParams.get('article') : null)
+  let fromFeed = false
+  afterNavigate(({ from }) => {
+    fromFeed = !!from && from.url.pathname.replace(/\/$/, '') === base
+  })
 </script>
 
 <div class="flex min-h-dvh flex-col bg-ink">
   <header class="sticky top-0 z-30 border-b border-line bg-ink px-4" style="padding-top: env(safe-area-inset-top, 0px)">
     <div class="mx-auto flex h-16 items-center gap-4 px-1 {wide ? 'max-w-6xl' : 'max-w-3xl'}">
       <a href="{base}/" class="text-lg font-bold tracking-tight text-fg">WW3Watch</a>
-      <a href="{base}/" class="action ml-auto gap-1.5 text-sm"><Icon name="arrow-left" size={15} />Latest reporting</a>
+      {#if articleId}
+        <a
+          href="{base}/?article={encodeURIComponent(articleId)}"
+          onclick={(e) => { if (fromFeed) { e.preventDefault(); history.back() } }}
+          class="action ml-auto gap-1.5 text-sm"
+        ><Icon name="arrow-left" size={15} />Back to article</a>
+      {:else}
+        <a href="{base}/" class="action ml-auto gap-1.5 text-sm"><Icon name="arrow-left" size={15} />Latest reporting</a>
+      {/if}
       <SiteMenu />
     </div>
   </header>

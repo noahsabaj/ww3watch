@@ -326,7 +326,7 @@
         {#if reader.status !== 'loading'}{@render translateControls()}{/if}
         <ShareControls {article} {cluster} />
         <a href="{base}/feedback?article={article.id}" class="action gap-1.5"><Icon name="flag" size={15} />Report</a>
-        <a href="{base}/about{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="action gap-1.5"><Icon name="info" size={15} />Source profile</a>
+        <a href="{base}/about?article={article.id}{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="action gap-1.5"><Icon name="info" size={15} />Source profile</a>
       </div>
 
       {#if reader.status === 'loading'}

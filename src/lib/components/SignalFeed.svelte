@@ -10,6 +10,7 @@
     hasMore,
     loadingMore,
     ranked = false,
+    focusId = null,
   }: {
     clusters: Cluster[]
     onselect?: (a: Article) => void
@@ -18,6 +19,8 @@
     loadingMore: boolean
     /** Top order: the list ends at the 24h window, not at the oldest story. */
     ranked?: boolean
+    /** The story the open reader belongs to. */
+    focusId?: string | null
   } = $props()
 
   // A first-time visitor sees one story and no scrollbar, so nothing says there
@@ -27,7 +30,22 @@
   $effect(() => {
     try { swiped = localStorage.getItem(HINT_KEY) === '1' } catch { swiped = false }
   })
+  // The story behind the open reader sits under it, so closing the reader lands
+  // on that story, even when the reader was opened by a link or by coming back
+  // from Report or Source profile, when the feed has just remounted at the top.
+  let scroller = $state<HTMLElement | null>(null)
+  let jumpedAt = -Infinity
+  $effect(() => {
+    if (!focusId || !scroller) return
+    void clusters.length
+    const story = scroller.querySelector<HTMLElement>(`[data-story="${CSS.escape(focusId)}"]`)
+    if (!story || Math.abs(story.offsetTop - scroller.scrollTop) < 2) return
+    jumpedAt = performance.now()
+    scroller.scrollTo({ top: story.offsetTop, behavior: 'instant' })
+  })
+
   function onscroll(e: Event) {
+    if (performance.now() - jumpedAt < 500) return
     if (swiped || (e.currentTarget as HTMLElement).scrollTop < 48) return
     swiped = true
     try { localStorage.setItem(HINT_KEY, '1') } catch { /* private mode */ }
@@ -39,7 +57,7 @@
        region the keyboard can't reach is an axe failure (scrollable-region-focusable). -->
   <!-- No counter, no scrollbar: one story fills the screen and a swipe is the only control. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div tabindex="0" aria-label="Stories" class="signal-scroller h-full snap-y snap-mandatory overflow-y-auto outline-none" {onscroll}>
+  <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller h-full snap-y snap-mandatory overflow-y-auto outline-none" {onscroll}>
     {#each clusters as cluster, i (cluster.id)}
       <SignalStory {cluster} {onselect} hint={i === 0 && !swiped && clusters.length > 1} />
     {/each}
