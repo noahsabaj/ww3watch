@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte'
   import type { Cluster } from '$lib/cluster'
   import { storyTimeline, wireDuplicateIds } from '$lib/cluster'
   import type { Article } from '$lib/types'
@@ -132,8 +133,8 @@
           type="button"
           onclick={translation.toggle}
           aria-busy={translation.busy}
-          class="action {translation.failed ? '!text-amber-400' : '!text-accent'}"
-        >{translation.label}</button>
+          class="action gap-1.5 {translation.failed ? '!text-amber-400' : '!text-accent'}"
+        ><Icon name="translate" size={15} />{translation.label}</button>
       {/if}
       <ShareControls article={rep} {cluster} />
     </div>
