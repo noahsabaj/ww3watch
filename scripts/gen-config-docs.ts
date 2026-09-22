@@ -38,6 +38,9 @@ const NOTES: Record<string, string> = {
   AUTO_DISABLE_AFTER: 'consecutive failed fetches before a source is switched off',
   RUN_BUDGET_MS: 'the run bounds itself below the job timeout',
   CLASSIFY_BUDGET_MS: 'share of the run budget classification may use',
+  IMAGE_FILL_CAP: 'most articles missing a photo that get an og:image fetch per run',
+  IMAGE_FILL_CONCURRENCY: 'parallel page fetches for og:image',
+  IMAGE_FILL_LOOKBACK_HOURS: 'how far back the image-fill worklist looks',
   LOW_YIELD: 'feeds reported as low-yield: ≥ minItems judged, ≤ maxPct accepted',
 }
 

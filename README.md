@@ -14,7 +14,7 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 
 ## Features
 
-- **Signal on phones, the story desk on wide screens** — on a phone, one story at a time, full screen: swipe for the next, tap through to the reader. On a desktop, every story in a column beside the selected one, with each newsroom's headline side by side (by region, state media split out, or as a timeline) and the reader opening in place. `j`/`k` move, `o` reads
+- **Signal on phones, the story desk on wide screens** — on a phone, one story at a time, full screen: swipe for the next, tap through to the reader. On a desktop, every story in a column beside the selected one, with each newsroom's headline side by side (by region, state media split out, or as a timeline) and the reader opening in place. `j`/`k` move, `o` reads. A story shows a publisher photograph when a newsroom attached one, credited to that outlet; otherwise a colour field, never a generated image
 - **Real-time feed** — new articles, story regroupings, and trending changes push live via Supabase Realtime
 - **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event. Similarity means *same subject*, not *same event*, so nearest-story matches in the grey band (0.78–0.90) get one Jev judgment — "same news story?" — before joining
 - **Local relevance head** — a logistic-regression layer over those same embeddings, distilled monthly from Jev's verdicts, settles the confident mass of new articles on the runner for free; only the uncertain band goes to Jev, and a random ~3% audit slice of the head's confident verdicts is judged by Jev anyway, so head/Jev agreement is measured every run
@@ -55,6 +55,7 @@ GitHub Actions (self-chained, ~every 15 min) Browser (static SPA on GitHub Pages
     judge grey-band story pairs (Jev)
     assign stories (pgvector RPC) ──► stories
     annotate signals (Jev, worklist)
+    fill missing photos (RSS media already stored; og:image for the rest)
     recompute trending (Jev judgments, code-weighed)
   pg_cron (daily): retention prune
 ```
@@ -110,6 +111,9 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `AUTO_DISABLE_AFTER` | `200` | consecutive failed fetches before a source is switched off |
 | `RUN_BUDGET_MS` | `900000` | the run bounds itself below the job timeout |
 | `CLASSIFY_BUDGET_MS` | `540000` | share of the run budget classification may use |
+| `IMAGE_FILL_CAP` | `60` | most articles missing a photo that get an og:image fetch per run |
+| `IMAGE_FILL_CONCURRENCY` | `8` | parallel page fetches for og:image |
+| `IMAGE_FILL_LOOKBACK_HOURS` | `48` | how far back the image-fill worklist looks |
 | `LOW_YIELD` | `{"days":7,"minItems":100,"maxPct":2}` | feeds reported as low-yield: ≥ minItems judged, ≤ maxPct accepted |
 | `MAJOR_SEVERITY` | `0.55` | "major" badge, Major-only filter, major-events RSS, /trends |
 | `SIGNAL_YES` | `0.7` | a yes/no signal at or above this shows as a badge |

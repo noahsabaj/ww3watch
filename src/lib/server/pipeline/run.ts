@@ -10,6 +10,7 @@ import { embedAndAssignClusters, mergeStories } from './clustering'
 import { enrichSignals } from './signals'
 import { classifyFresh } from './classify'
 import { checkOpsHealth, reportLowYield, previousRunJevDown } from './ops'
+import { fillMissingImages } from './images'
 import { timed as timedStage, type RunStats } from './stats'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
@@ -24,6 +25,9 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   // Before trending, which ranks on these.
   await timed('signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
   stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS))
+  // After trending: photographs are cosmetic and must never spend the budget
+  // that ranking needs.
+  await timed('images', () => fillMissingImages(stats, startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
   await reportLowYield(stats)
   stats.total_ms = Date.now() - startedAt

@@ -128,3 +128,32 @@ export function groupByStoryId(articles: Article[]): Cluster[] {
     })
     .sort((a, b) => ts(b.representative) - ts(a.representative))
 }
+
+export interface StoryPhoto {
+  url: string
+  sourceName: string
+  /** The cluster member the photograph actually belongs to. */
+  article: Article
+}
+
+function photoArea(a: Article): number {
+  return (a.image_width ?? 0) * (a.image_height ?? 0)
+}
+
+// One photograph per story: the representative's if it has one, else the
+// largest among the other members. Credit always names the outlet that
+// published it — never imply TASS's photo is Reuters'.
+export function storyImage(cluster: Cluster): StoryPhoto | null {
+  const withPhoto = cluster.articles.filter((a): a is Article & { image_url: string } => !!a.image_url)
+  if (withPhoto.length === 0) return null
+  const rep = cluster.representative
+  const chosen =
+    rep.image_url
+      ? (rep as Article & { image_url: string })
+      : [...withPhoto].sort((a, b) => {
+          const d = photoArea(b) - photoArea(a)
+          if (d) return d
+          return (b.published_at ?? '').localeCompare(a.published_at ?? '')
+        })[0]
+  return { url: chosen.image_url, sourceName: chosen.source_name, article: chosen }
+}

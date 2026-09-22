@@ -46,3 +46,12 @@ test('the story scroller is keyboard reachable', async ({ page }) => {
   await scroller.focus()
   await expect(scroller).toBeFocused()
 })
+
+test('Signal carries the newsroom photograph and its credit, and falls back without one', async ({ page }) => {
+  const withPhoto = page.locator('[data-signal-story]').filter({ hasText: /\b4 sources\b/ })
+  await expect(withPhoto).toHaveAttribute('data-photo', '1')
+  await expect(withPhoto.getByText('Photo · Al Jazeera')).toBeAttached()
+  const broken = page.locator('[data-signal-story]').filter({ has: page.getByText('RU', { exact: true }) }).first()
+  await broken.scrollIntoViewIfNeeded()
+  await expect(broken.locator('img')).toHaveCount(0)
+})
