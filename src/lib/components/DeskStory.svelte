@@ -61,7 +61,7 @@
 
 <article data-desk-story-pane data-story={cluster.id} class="signal-story relative min-h-full" style="--wash: {regionWash(rep.source_region)}">
   <div class="signal-grain absolute inset-0"></div>
-  <div class="relative mx-auto max-w-4xl px-10 pt-14 pb-16">
+  <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pt-14 pb-16">
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-400">{rep.source_region}</span>
       {#if repLang}
@@ -73,7 +73,7 @@
       {/if}
     </div>
 
-    <h2 dir={translation.dir} class="font-serif text-[2.6rem] leading-[1.1] font-medium tracking-tight text-white">
+    <h2 dir={translation.dir} class="font-serif text-[2rem] lg:text-[2.6rem] leading-[1.1] font-medium tracking-tight text-white">
       <a href={rep.url} target="_blank" rel="noopener noreferrer" class="hover:text-blue-200" onclick={(e) => read(e, rep)}>
         {headlineText(translation.shown?.title ?? rep.title)}
       </a>

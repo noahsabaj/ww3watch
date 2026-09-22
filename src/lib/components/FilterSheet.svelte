@@ -80,7 +80,7 @@
 {#if open}
   <!-- Backdrop -->
   <div
-    class="fixed inset-0 bg-black/60 z-60 min-[900px]:hidden"
+    class="fixed inset-0 bg-black/60 z-60 min-[820px]:hidden"
     onclick={() => open = false}
     role="presentation"
   ></div>
@@ -92,7 +92,7 @@
     aria-modal="true"
     aria-label="Search, region, language and topic filters"
     tabindex="-1"
-    class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 min-[900px]:hidden max-h-[85vh] overflow-y-auto"
+    class="fixed bottom-0 left-0 right-0 z-70 bg-[#111113] rounded-t-2xl border-t border-gray-800 min-[820px]:hidden max-h-[85vh] overflow-y-auto"
     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
   >
     <!-- Drag handle -->

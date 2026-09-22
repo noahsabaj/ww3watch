@@ -15,7 +15,7 @@
   // column, the selected one beside it) on anything wide enough to scan. The
   // feed is loaded client-side, so nothing story-shaped renders before the
   // layout is known and neither shape flashes the other.
-  const DESK_QUERY = '(min-width: 900px)'
+  const DESK_QUERY = '(min-width: 820px)'
   let desk = $state<boolean | null>(null)
 
   let loading = $state(true)
@@ -243,7 +243,7 @@
 
   <!-- Phone filters: a floating button opens the sheet. The desk has them in the header. -->
   <button
-    class="fixed right-4 z-30 min-[900px]:hidden w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
+    class="fixed right-4 z-30 min-[820px]:hidden w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-colors"
     style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px))"
     onclick={() => filterSheetOpen = true}
     aria-label={filters.isFiltered ? 'Open filters (active)' : 'Open filters'}

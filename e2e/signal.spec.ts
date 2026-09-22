@@ -46,3 +46,15 @@ test('the story scroller is keyboard reachable', async ({ page }) => {
   await scroller.focus()
   await expect(scroller).toBeFocused()
 })
+
+// Every iPad but the mini gets the desk: an 11" iPad in portrait is 820-834px
+// wide; a 13" is 1032px portrait and 1376px landscape.
+for (const [width, height, layout] of [[744, 1133, 'signal'], [820, 1180, 'desk'], [834, 1194, 'desk'], [1032, 1376, 'desk']] as const) {
+  test.describe(`${width}px tablet`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true })
+    test(`gets ${layout === 'desk' ? 'the story desk' : 'Signal'}`, async ({ page }) => {
+      await expect(page.locator(layout === 'desk' ? '[data-desk-rail]' : '[data-signal-story]').first()).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    })
+  })
+}
