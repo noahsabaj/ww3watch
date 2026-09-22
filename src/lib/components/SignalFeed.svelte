@@ -34,7 +34,7 @@
   // on that story, even when the reader was opened by a link or by coming back
   // from Report or Source profile, when the feed has just remounted at the top.
   let scroller = $state<HTMLElement | null>(null)
-  let jumpedAt = 0
+  let jumpedAt = -Infinity
   $effect(() => {
     if (!focusId || !scroller) return
     void clusters.length

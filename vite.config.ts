@@ -38,6 +38,11 @@ export default defineConfig({
         // than a bundled module — it was 61% of the audit and almost nobody
         // opens it.)
         globIgnores: ['**/og.png'],
+        // Every page is one static file whatever its query string, so match the
+        // precache ignoring all of it. Otherwise /feedback?article=… misses the
+        // precached /feedback and the navigation fallback serves the home page
+        // under that URL (a reload of Report showed the feed).
+        ignoreURLParametersMatching: [/.*/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
