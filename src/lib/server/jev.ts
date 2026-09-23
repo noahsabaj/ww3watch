@@ -13,6 +13,14 @@ const ENDPOINT = 'https://api.typesafe.ai/v1/systemone'
 // version's probabilities, and an alias moves without a change on our side.
 export const JEV_MODEL = process.env.JEV_MODEL || 'jev-1.13.0'
 
+// Refusals that happen before any work: bad key, no credits, forbidden, rate
+// limited, overloaded. TypeSafe bills none of them, so their reservation
+// settles at zero. Anything else without a usage figure (a timeout, a 5xx, a
+// body we could not read) keeps its worst-case reservation: it may have run.
+// On 2026-09-23 every call got 402 for hours, and each kept its worst case:
+// $8.58 of the $15 monthly cap spent on calls TypeSafe never charged for.
+const UNBILLED = new Set([401, 402, 403, 429, 529])
+
 export interface JevArticle {
   title: string
   summary: string | null
@@ -103,7 +111,8 @@ export async function callJev(state: unknown, questions: Record<string, unknown>
       signal: AbortSignal.timeout(15000),
     })
     data = await res.clone().json().catch(() => null)
-    await settle(data?.usage?.input_tokens)
+    const used = data?.usage?.input_tokens
+    await settle(used == null && UNBILLED.has(res.status) ? 0 : used)
     } catch (error) { await settle(); throw error }
     if ((res.status === 429 || res.status === 529) && attempt < MAX_RETRIES) {
       const retryAfter = Number(res.headers.get('retry-after'))
