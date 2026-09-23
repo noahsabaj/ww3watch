@@ -29,12 +29,6 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-
       # The suite runs against a SEEDED local backend, not production. Asserting
       # against live data meant a PR went red when the ingestion pipeline was
       # having a bad morning, and a red CI that might not be your fault is a red
@@ -48,10 +42,11 @@ jobs:
       # that explicitly instead — file by file with ON_ERROR_STOP, so a failure
       # names the file — so the directory is hidden from the CLI's own pass.
       #
-      # Started in the background: pulling and booting the stack is the slowest
-      # part of this job, and the site build and browser install below need no
-      # database, so they run meanwhile. "Wait for the local Supabase stack"
-      # fails the job if the start failed. Only the services the suite touches
+      # Started first and in the background: pulling and booting the stack is
+      # the slowest part of this job (~50s), and installing packages, the site
+      # build and the browser install below need no database, so they all run
+      # meanwhile. "Wait for the local Supabase stack" fails the job if the
+      # start failed. Only the services the suite touches
       # are started: the database, its REST API (kong + postgrest), realtime
       # (the feed subscribes), auth (owns the auth schema policies reference)
       # and postgres-meta (type generation). Dashboard, mail, image, storage,
@@ -60,6 +55,21 @@ jobs:
         run: |
           mv supabase/migrations /tmp/ww3watch-migrations
           (supabase start -x studio,mailpit,imgproxy,storage-api,edge-runtime,logflare,vector,supavisor > /tmp/supabase-start.log 2>&1; echo $? > /tmp/supabase-start.exit) &
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # The browser (and its system libraries) installs in the background while
+      # the site builds; neither needs the other.
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}
+      - name: Install the test browser (background)
+        run: (npx playwright install --with-deps chromium > /tmp/playwright-install.log 2>&1; echo $? > /tmp/playwright-install.exit) &
 
       # The local stack's publishable key is a fixed, well-known constant —
       # every `supabase start` anywhere produces this same value, because the
@@ -71,11 +81,11 @@ jobs:
           PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
       # Replicate deploy.yml's fallback copy so sirv --single serves the SPA.
       - run: test -f build/index.html || cp build/404.html build/index.html
-      - uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
+      - name: Wait for the test browser
+        run: |
+          for _ in $(seq 1 300); do [ -f /tmp/playwright-install.exit ] && break; sleep 1; done
+          cat /tmp/playwright-install.log
+          [ "$(cat /tmp/playwright-install.exit 2>/dev/null)" = 0 ]
 
       - name: Wait for the local Supabase stack
         run: |
@@ -108,31 +118,10 @@ jobs:
 
       # Type-check the repo against types generated from THIS database — the one
       # just built from supabase/migrations — not the committed copy. A migration
-      # that renames or retypes something a caller uses fails here even when
-      # src/lib/database.types.ts was not regenerated. The header comment is
+      # that renames or retypes something a caller uses fails the browser-test
+      # step below, which runs the check alongside the suite (they need neither
+      # each other nor more than the 4 cores between them). The header comment is
       # re-attached so the file stays self-describing if someone copies it out.
-      - name: Type-check against the migrated schema
-        # svelte-check resolves $env/static/public, so it needs the same two
-        # PUBLIC_ values the build step below is given.
-        env:
-          PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
-        run: |
-          set -euo pipefail
-          head -n 9 src/lib/database.types.ts > /tmp/header.ts
-          supabase gen types typescript --local --schema public > /tmp/generated.ts
-          cat /tmp/header.ts /tmp/generated.ts > src/lib/database.types.ts
-          npm run check
-          # The hosted generator adds an `__InternalSupabase` block (PostgREST
-          # version) that the local one omits. Compare everything except that, so
-          # a warning here always means a real schema difference.
-          strip() { sed '/__InternalSupabase: {/,/^  }$/d; /Allows to automatically instantiate createClient/d; /instead of createClient<Database/d' "$1"; }
-          git show HEAD:src/lib/database.types.ts > /tmp/committed.ts
-          if ! diff -B <(strip /tmp/committed.ts) <(strip src/lib/database.types.ts) > /tmp/types.diff; then
-            echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
-            cat /tmp/types.diff
-          fi
-
       # The schema these migrations actually build, as an artifact: the canonical
       # answer to "what does a fresh database look like?", diffable across PRs.
       - name: Dump the migrated schema
@@ -150,7 +139,39 @@ jobs:
             /tmp/cron.txt
           retention-days: 14
 
-      - run: npx playwright test
+      - name: Browser tests, and the type-check against the migrated schema
+        # The type-check needs types generated from the database just migrated;
+        # the browser tests need neither, so both run at once.
+        # svelte-check resolves $env/static/public, so it needs the same two
+        # PUBLIC_ values the build step was given.
+        env:
+          PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
+        run: |
+          (
+            set -euo pipefail
+            head -n 9 src/lib/database.types.ts > /tmp/header.ts
+            supabase gen types typescript --local --schema public > /tmp/generated.ts
+            cat /tmp/header.ts /tmp/generated.ts > src/lib/database.types.ts
+            # The hosted generator adds an `__InternalSupabase` block (PostgREST
+            # version) that the local one omits. Compare everything except that, so
+            # a warning here always means a real schema difference.
+            strip() { sed '/__InternalSupabase: {/,/^  }$/d; /Allows to automatically instantiate createClient/d; /instead of createClient<Database/d' "$1"; }
+            git show HEAD:src/lib/database.types.ts > /tmp/committed.ts
+            if ! diff -B <(strip /tmp/committed.ts) <(strip src/lib/database.types.ts) > /tmp/types.diff; then
+              echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
+              cat /tmp/types.diff
+            fi
+            npm run check
+          ) > /tmp/check.log 2>&1 &
+          check=$!
+          npx playwright test && tests=0 || tests=$?
+          wait "$check" && checked=0 || checked=$?
+          echo "::group::Types from the migrated schema, and the type-check (exit $checked)"
+          cat /tmp/check.log
+          echo "::endgroup::"
+          if [ "$checked" != 0 ]; then echo "::error::npm run check failed against the migrated schema (log above)"; fi
+          [ "$tests" = 0 ] && [ "$checked" = 0 ]
 
   functions:
     runs-on: ubuntu-latest
