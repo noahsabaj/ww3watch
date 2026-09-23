@@ -4,16 +4,16 @@
   import { storyTimeline, wireDuplicateIds } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_BORDER } from '$lib/types'
-  import { headlineText, langTag, offsetLabel, timeAgo } from '$lib/utils'
+  import { headlineText, langTag, offsetLabel, plainClick, timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import { regionWash } from '$lib/region-wash'
   import { createHeadlineTranslation } from '$lib/headline-translation.svelte'
   import { createStoryPhoto } from '$lib/story-photo.svelte'
-  import { bySide, memberKind, storyBadgeSignals } from '$lib/story'
+  import { bySide, memberKind } from '$lib/story'
   import ShareControls from '$lib/components/ShareControls.svelte'
-  import SignalBadges from '$lib/components/SignalBadges.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
-  import TheaterTag from '$lib/components/TheaterTag.svelte'
+  import StoryKicker from '$lib/components/StoryKicker.svelte'
+  import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
 
   // The desk's right pane: one story, Signal's treatment, with the thing a wide
   // screen has room for — every newsroom's headline side by side.
@@ -31,8 +31,6 @@
   const rep = $derived(cluster.representative)
   const translation = createHeadlineTranslation(() => rep)
   const photo = createStoryPhoto(() => cluster, 640)
-  const badgeSignals = $derived(storyBadgeSignals(cluster))
-  const repLang = $derived(langTag(rep.source_lang))
   const wireIds = $derived(wireDuplicateIds(cluster.articles))
   const timeline = $derived(storyTimeline(cluster.articles))
   const sides = $derived(bySide(cluster.articles))
@@ -42,9 +40,8 @@
   const KIND_LABEL = { statement: 'statement', analysis: 'analysis' } as const
 
   function read(e: MouseEvent, a: Article) {
-    // Plain click reads in the pane; modified clicks fall through to the href
-    // so open-in-new-tab keeps working.
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    // Plain click reads in the pane; modified clicks open the original.
+    if (!plainClick(e)) return
     e.preventDefault()
     onread(a)
   }
@@ -85,30 +82,12 @@
        sits on top of one. Without a photo the region wash carries the story. -->
   {#if photo.shown}
     <div class="relative h-[26rem] overflow-hidden">
-      <img
-        src={photo.shown.url}
-        alt=""
-        class="h-full w-full object-cover"
-        referrerpolicy="no-referrer"
-        decoding="async"
-        onerror={photo.fail}
-        onload={photo.loaded}
-      />
+      <StoryPhotoImg {photo} class="h-full w-full object-cover" />
       <div class="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#070809] to-transparent"></div>
     </div>
   {/if}
   <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pb-16 {photo.shown ? 'pt-6' : 'pt-14'}">
-    <div class="mb-4 flex flex-wrap items-center gap-2">
-      <TheaterTag {cluster} onpick={ontheater} />
-      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg-2">{rep.source_region} outlet</span>
-      {#if repLang}
-        <span class="text-[9px] font-mono uppercase tracking-wide text-fg-3 border border-line rounded px-1">{repLang}</span>
-      {/if}
-      <SignalBadges article={badgeSignals} />
-      {#if translation.shown}
-        <span class="text-[10px] font-medium uppercase tracking-[0.12em] text-fg-3">Translated</span>
-      {/if}
-    </div>
+    <StoryKicker {cluster} translated={!!translation.shown} {ontheater} class="mb-4" />
 
     <h2 dir={translation.dir} class="font-serif text-[2rem] lg:text-[2.6rem] leading-[1.1] font-medium tracking-tight text-fg">
       <a href={rep.url} target="_blank" rel="noopener noreferrer" class="hover:text-fg" onclick={(e) => read(e, rep)}>

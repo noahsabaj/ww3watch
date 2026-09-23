@@ -100,3 +100,9 @@ export function headlineText(value: string): string {
     return point > 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff) ? String.fromCodePoint(point) : entity
   })
 }
+
+/** A plain click on a link we handle in the app (open the reader). With a
+ *  modifier held the browser's own behaviour, a new tab or window, wins. */
+export function plainClick(e: MouseEvent): boolean {
+  return !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+}

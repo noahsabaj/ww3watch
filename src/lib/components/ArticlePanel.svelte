@@ -15,10 +15,12 @@
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
+  import { modal } from '$lib/modal'
 
   // inline: the desk's story pane hosts the reader in place (no backdrop, no
   // focus trap, the page keeps scrolling). Otherwise it is a modal dialog over
-  // Signal on a phone.
+  // Signal on a phone. Either way Escape closes it and focus starts on Close
+  // (src/lib/modal.ts).
   let { article, cluster = null, onclose, onselect, inline = false }: {
     article: Article | null
     cluster?: Cluster | null
@@ -130,55 +132,6 @@
     }
   })
 
-  $effect(() => {
-    if (inline) return
-    document.body.style.overflow = article ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  })
-
-  // ── Dialog focus management ────────────────────────────────────────────────
-  let panelEl = $state<HTMLElement | null>(null)
-  let closeBtn = $state<HTMLButtonElement | null>(null)
-  let previouslyFocused: Element | null = null
-  // Plain closure var (not $state): the in-panel source list swaps `article`
-  // without closing, so focus logic must act only on open/close EDGES.
-  let wasOpen = false
-
-  $effect(() => {
-    const open = !!article
-    if (open && !wasOpen) {
-      previouslyFocused = document.activeElement
-      closeBtn?.focus()
-    } else if (!open && wasOpen) {
-      const el = previouslyFocused as HTMLElement | null
-      // Realtime churn can unmount the originating button — only restore if alive.
-      if (el?.isConnected && typeof el.focus === 'function') el.focus()
-      previouslyFocused = null
-    }
-    wasOpen = open
-  })
-
-  function trapFocus(e: KeyboardEvent) {
-    if (inline || e.key !== 'Tab' || !panelEl) return
-    const focusables = panelEl.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    )
-    if (focusables.length === 0) return
-    const first = focusables[0]
-    const last = focusables[focusables.length - 1]
-    const active = document.activeElement
-    if (e.shiftKey && active === first) {
-      e.preventDefault()
-      last.focus()
-    } else if (!e.shiftKey && (active === last || !panelEl.contains(active))) {
-      e.preventDefault()
-      first.focus()
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && article) onclose()
-  }
 
   // Plain text for the translate payload — HTML-heavy input made the LLM emit
   // broken JSON (escaping every attribute quote) and 502 on real articles.
@@ -217,7 +170,6 @@
 
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
 
 {#if article}
   <!-- Reading-language picker (set once, remembered) + a Translate action. The
@@ -265,12 +217,11 @@
   <!-- Modal: a dialog (div, not aside — a modal isn't complementary content).
        Inline: a labelled region of the story pane. -->
   <div
-    bind:this={panelEl}
     role={inline ? 'region' : 'dialog'}
     aria-modal={inline ? undefined : 'true'}
     aria-label="Article reader"
     tabindex="-1"
-    onkeydown={trapFocus}
+    {@attach modal({ onclose: () => onclose(), trap: !inline, lockScroll: !inline })}
     class={inline
       ? 'h-full bg-ink flex flex-col'
       : 'panel-slide fixed top-0 right-0 h-full w-full md:w-[45%] lg:w-[38%] bg-ink border-l border-line z-50 flex flex-col'}
@@ -279,7 +230,7 @@
     <!-- Top bar: the way back, and the way out to the publisher. -->
     <div class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line px-2">
       <button
-        bind:this={closeBtn}
+        data-autofocus
         onclick={onclose}
         class={inline ? 'action px-3 text-sm' : 'icon-btn'}
         aria-label="Close reader"

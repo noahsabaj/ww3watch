@@ -2,6 +2,7 @@
   import type { TheaterSummary } from '$lib/theaters'
   import { headlineText } from '$lib/utils'
   import { createStoryPhoto } from '$lib/story-photo.svelte'
+  import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
 
   // One theater on the Theaters page: its name and how busy it is, the story
   // leading it, and that story's photograph beside the words, never under them.
@@ -30,16 +31,5 @@
       <span class="mt-1.5 block text-[10px] font-medium uppercase tracking-[0.12em] text-amber-400">{summary.major} major</span>
     {/if}
   </span>
-  {#if photo.shown}
-    <img
-      src={photo.shown.url}
-      alt=""
-      class="h-16 w-16 shrink-0 rounded-lg object-cover"
-      referrerpolicy="no-referrer"
-      decoding="async"
-      loading="lazy"
-      onerror={photo.fail}
-      onload={photo.loaded}
-    />
-  {/if}
+  <StoryPhotoImg {photo} lazy class="h-16 w-16 shrink-0 rounded-lg object-cover" />
 </button>

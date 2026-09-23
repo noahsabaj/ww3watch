@@ -9,6 +9,7 @@
   import TheaterBar from '$lib/components/TheaterBar.svelte'
   import { theaterBoard, theaterById, theaterOf } from '$lib/theaters'
   import { clock } from '$lib/now.svelte'
+  import { load, save } from '$lib/saved'
   import { createFeed } from '$lib/feed.svelte'
   import { createSearch } from '$lib/search.svelte'
   import { createReaderRouting } from '$lib/deeplink.svelte'
@@ -123,7 +124,7 @@
 
   function dismissInstall() {
     installDismissed = true
-    localStorage.setItem('pwa-install-dismissed', '1')
+    save('installDismissed', '1')
   }
 
   // In the iPhone home-screen app the page draws under the translucent status
@@ -153,13 +154,11 @@
     const onMedia = (e: MediaQueryListEvent) => { desk = e.matches }
     media.addEventListener('change', onMedia)
 
-    if (localStorage.getItem('pwa-install-dismissed')) {
-      installDismissed = true
-    }
+    installDismissed = load('installDismissed') !== null
 
-    const prevVisit = Number(localStorage.getItem('ww3-last-visit'))
+    const prevVisit = Number(load('lastVisit'))
     lastVisitAt = Number.isFinite(prevVisit) && prevVisit > 0 ? prevVisit : null
-    localStorage.setItem('ww3-last-visit', String(Date.now()))
+    save('lastVisit', String(Date.now()))
 
     function onBeforeInstallPrompt(e: Event) {
       e.preventDefault()

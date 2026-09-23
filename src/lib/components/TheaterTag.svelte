@@ -17,7 +17,7 @@
       data-theater-tag={theater.id}
       onclick={() => onpick(theater.id)}
       aria-label="Show only {theater.label} stories"
-      class="inline-flex min-h-7 items-center gap-1 rounded-full border border-accent/35 py-0.5 pr-2 pl-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-accent transition-colors hover:bg-accent/10"
+      class="place-chip min-h-7 gap-1 py-0.5 pr-2 pl-2.5 text-[11px] font-medium uppercase tracking-[0.16em] hover:bg-accent/10"
     >{theater.label}<Icon name="chevron-right" size={12} stroke={2.2} /></button>
   {:else}
     <span data-theater-tag={theater.id} class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg">{theater.label}</span>

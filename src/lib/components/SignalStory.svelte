@@ -3,15 +3,14 @@
   import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_COLORS } from '$lib/types'
-  import { headlineText, langTag, timeAgo } from '$lib/utils'
+  import { headlineText, plainClick, timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import { regionWash } from '$lib/region-wash'
   import { createHeadlineTranslation } from '$lib/headline-translation.svelte'
   import { createStoryPhoto } from '$lib/story-photo.svelte'
   import ShareControls from '$lib/components/ShareControls.svelte'
-  import SignalBadges from '$lib/components/SignalBadges.svelte'
-  import { storyBadgeSignals } from '$lib/story'
-  import TheaterTag from '$lib/components/TheaterTag.svelte'
+  import StoryKicker from '$lib/components/StoryKicker.svelte'
+  import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
   import { tips } from '$lib/tips.svelte'
 
   let {
@@ -29,8 +28,6 @@
 
   const rep = $derived(cluster.representative)
   const others = $derived(cluster.articles.filter((a) => a.id !== rep.id).slice(0, 3))
-  const badgeSignals = $derived(storyBadgeSignals(cluster))
-  const repLang = $derived(langTag(rep.source_lang))
   const translation = createHeadlineTranslation(() => rep)
   const photo = createStoryPhoto(() => cluster, 360)
   $effect(tips.load)
@@ -49,15 +46,7 @@
        of words on one surface are unreadable. -->
   {#if photo.shown}
     <div class="relative min-h-0 flex-1 overflow-hidden">
-      <img
-        src={photo.shown.url}
-        alt=""
-        class="absolute inset-0 h-full w-full object-cover"
-        referrerpolicy="no-referrer"
-        decoding="async"
-        onerror={photo.fail}
-        onload={photo.loaded}
-      />
+      <StoryPhotoImg {photo} class="absolute inset-0 h-full w-full object-cover" />
       <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#070809] to-transparent"></div>
     </div>
   {:else}
@@ -68,17 +57,7 @@
     class="relative flex shrink-0 flex-col justify-end px-5 {photo.shown ? 'bg-ink pt-4' : 'h-full pt-6'}"
     style="padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px))"
   >
-    <div class="mb-3 flex flex-wrap items-center gap-2">
-      <TheaterTag {cluster} onpick={ontheater} />
-      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg-2">{rep.source_region} outlet</span>
-      {#if repLang}
-        <span class="text-[9px] font-mono uppercase tracking-wide text-fg-3 border border-line rounded px-1">{repLang}</span>
-      {/if}
-      <SignalBadges article={badgeSignals} />
-      {#if translation.shown}
-        <span class="text-[10px] font-medium uppercase tracking-[0.12em] text-fg-3">Translated</span>
-      {/if}
-    </div>
+    <StoryKicker {cluster} translated={!!translation.shown} {ontheater} class="mb-3" />
 
     <a
       href={rep.url}
@@ -87,7 +66,7 @@
       dir={translation.dir}
       class="font-serif text-[2rem] leading-[1.12] font-medium tracking-tight text-fg hover:text-fg"
       onclick={(e) => {
-        if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        if (onselect && plainClick(e)) {
           e.preventDefault()
           if (cluster.sourceCount > 1) tips.done('read-story')
           onselect(rep)

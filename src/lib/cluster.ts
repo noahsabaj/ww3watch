@@ -10,9 +10,11 @@ export interface Cluster {
   sourceCount: number
 }
 
-function ts(a: Article): number {
-  return a.published_at ? new Date(a.published_at).getTime() : 0
+/** When an article was published, in ms; 0 when the feed gave no date. */
+export function publishedAt(a: Pick<Article, 'published_at'>): number {
+  return a.published_at ? Date.parse(a.published_at) || 0 : 0
 }
+const ts = publishedAt
 
 // Members sharing a body_hash are reprints of the same agency copy. Returns the
 // ids of every copy EXCEPT the earliest-published one (the origin), so wire

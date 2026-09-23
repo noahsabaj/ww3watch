@@ -1,11 +1,12 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte'
   import type { Snippet } from 'svelte'
+  import { modal } from '$lib/modal'
 
   // One surface for everything that opens over the page (the site menu):
   // a bottom sheet on a phone, a panel under the header's right edge on a
-  // wide screen. Focus moves into it on open and back on close; Escape and a
-  // tap outside close it; Tab stays inside.
+  // wide screen. Keyboard and focus behaviour is src/lib/modal.ts; a tap
+  // outside also closes it.
   let {
     open = $bindable(false),
     title,
@@ -20,46 +21,17 @@
     footer?: Snippet
   } = $props()
 
-  let sheet = $state<HTMLElement | null>(null)
-  let previouslyFocused: Element | null = null
-  let wasOpen = false
-
-  $effect(() => {
-    if (open && !wasOpen) {
-      previouslyFocused = document.activeElement
-      queueMicrotask(() => sheet?.focus())
-    } else if (!open && wasOpen) {
-      const el = previouslyFocused as HTMLElement | null
-      if (el?.isConnected && typeof el.focus === 'function') el.focus()
-      previouslyFocused = null
-    }
-    wasOpen = open
-  })
-
-  function onKeydown(e: KeyboardEvent) {
-    if (!open) return
-    if (e.key === 'Escape') { e.preventDefault(); open = false; return }
-    if (e.key !== 'Tab' || !sheet) return
-    const controls = [...sheet.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')]
-      .filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null)
-    const first = controls[0]
-    const last = controls.at(-1)
-    if (e.shiftKey && (document.activeElement === first || document.activeElement === sheet)) { e.preventDefault(); last?.focus() }
-    else if (!e.shiftKey && (document.activeElement === last || document.activeElement === sheet)) { e.preventDefault(); first?.focus() }
-  }
 </script>
-
-<svelte:window onkeydown={onKeydown} />
 
 {#if open}
   <div class="sheet-backdrop fixed inset-0 z-[60] bg-black/60 min-[820px]:bg-transparent" onclick={() => (open = false)} role="presentation"></div>
   <div
-    bind:this={sheet}
     {id}
     role="dialog"
     aria-modal="true"
     aria-label={title}
     tabindex="-1"
+    {@attach modal({ onclose: () => (open = false) })}
     class="sheet fixed z-[70] flex flex-col overflow-hidden border-line bg-panel shadow-2xl shadow-black/60 outline-none
       inset-x-0 bottom-0 max-h-[88dvh] rounded-t-[1.75rem] border-t
       min-[820px]:inset-x-auto min-[820px]:bottom-auto min-[820px]:right-4 min-[820px]:top-[4.25rem] min-[820px]:w-[25rem] min-[820px]:max-h-[calc(100dvh-5.5rem)] min-[820px]:rounded-2xl min-[820px]:border"

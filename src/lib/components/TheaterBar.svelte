@@ -12,7 +12,7 @@
     type="button"
     onclick={onclear}
     aria-label="Stop showing only {theater.label}"
-    class="inline-flex min-h-8 items-center gap-2 rounded-full border border-accent/35 bg-accent/15 px-3 text-sm text-accent"
+    class="place-chip min-h-8 gap-2 bg-accent/15 px-3 text-sm"
   >
     {theater.label}<Icon name="close" size={13} stroke={2.2} />
   </button>
