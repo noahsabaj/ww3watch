@@ -141,7 +141,11 @@
   })
 </script>
 
-<div class="h-dvh overflow-hidden bg-ink flex flex-col">
+<!-- fixed inset-0, not h-dvh: in the home-screen app (black-translucent status
+     bar) iOS computes viewport units without the status bar the page draws
+     under, so a 100dvh page stopped about 60px above the bottom of the screen.
+     A fixed box pinned to all four edges fills the real screen everywhere. -->
+<div class="fixed inset-0 overflow-hidden bg-ink flex flex-col">
   <Header
     bind:searchQuery={filters.searchQuery}
     bind:activeRegions={filters.activeRegions}
