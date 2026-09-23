@@ -14,18 +14,41 @@ import { JEV_MODEL, jevState } from '../jev'
 // answers: ask once per state, and give a copy of an annotated article its
 // answers instead of asking again.
 const stateKey = (a: { title: string; summary: string | null; source_lang: string }) => JSON.stringify(jevState(a))
-const TITLE_CHUNK = 25 // titles travel in the URL too, and are longer than ids
+// The lookup's titles travel in the request URL, percent-encoded: a Persian or
+// Arabic headline is ~6 bytes a character there. 25 titles a request reached
+// tens of kilobytes, which the gateway refused ("fetch failed") on every run
+// from 2026-09-23 16:00, and with it the whole signals stage. Chunks are
+// bounded by encoded length instead.
+const TITLE_URL_BUDGET = 4000
+const TITLE_CHUNK_MAX = 25
+
+export function titleChunks(titles: string[]): string[][] {
+  const chunks: string[][] = []
+  let chunk: string[] = []
+  let size = 0
+  for (const t of titles) {
+    const len = encodeURIComponent(t).length
+    if (chunk.length > 0 && (size + len > TITLE_URL_BUDGET || chunk.length >= TITLE_CHUNK_MAX)) {
+      chunks.push(chunk)
+      chunk = []
+      size = 0
+    }
+    chunk.push(t)
+    size += len
+  }
+  if (chunk.length > 0) chunks.push(chunk)
+  return chunks
+}
 
 type Pending = { id: string; guid: string; title: string; summary: string | null; source_lang: string; jev_relevant: number | null }
 
 async function annotatedCopies(pending: Pending[], since: string): Promise<Map<string, ArticleSignals>> {
   const found = new Map<string, ArticleSignals>()
-  const titles = [...new Set(pending.map((a) => a.title))]
-  for (let i = 0; i < titles.length; i += TITLE_CHUNK) {
+  for (const chunk of titleChunks([...new Set(pending.map((a) => a.title))])) {
     const { data, error } = await supabaseAdmin
       .from('articles')
       .select('title, summary, source_lang, topic, severity, claim, unverified, opinion, actors, jev_relevant')
-      .in('title', titles.slice(i, i + TITLE_CHUNK))
+      .in('title', chunk)
       .not('signals_at', 'is', null)
       .gte('fetched_at', since)
     if (error) throw new Error(`copy lookup failed: ${JSON.stringify(error)}`)
@@ -71,7 +94,13 @@ export async function enrichSignals(stats: RunStats, deadlineMs: number): Promis
     }
 
     // One question per distinct state; copies of an annotated article need none.
-    const known = await annotatedCopies(pending, new Date(Date.now() - 7 * 86400_000).toISOString())
+    // Reuse is a saving, never a gate: if the lookup fails, every article is
+    // asked, as before copies were reused.
+    const known = await annotatedCopies(pending, new Date(Date.now() - 7 * 86400_000).toISOString()).catch((err) => {
+      console.error('[pipeline] signals copy lookup failed (asking Jev for every article):', err)
+      stats.signals_copy_error = String(err).slice(0, 300)
+      return new Map<string, ArticleSignals>()
+    })
     const groups = new Map<string, Pending[]>()
     for (const a of pending) {
       const key = stateKey(a)
