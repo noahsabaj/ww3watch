@@ -4,6 +4,7 @@
   import SignalStory from '$lib/components/SignalStory.svelte'
   import PullIndicator from '$lib/components/PullIndicator.svelte'
   import { createPullRefresh } from '$lib/pull-refresh.svelte'
+  import { tips } from '$lib/tips.svelte'
 
   let {
     clusters,
@@ -36,11 +37,9 @@
 
   // A first-time visitor sees one story and no scrollbar, so nothing says there
   // is more. The first story carries a swipe cue until they have swiped once.
-  const HINT_KEY = 'ww3-swiped'
-  let swiped = $state(true)
-  $effect(() => {
-    try { swiped = localStorage.getItem(HINT_KEY) === '1' } catch { swiped = false }
-  })
+  // (src/lib/tips.svelte.ts)
+  $effect(tips.load)
+
   // The story behind the open reader sits under it, so closing the reader lands
   // on that story, even when the reader was opened by a link or by coming back
   // from Report or Source profile, when the feed has just remounted at the top.
@@ -87,9 +86,7 @@
   function onscroll(e: Event) {
     reportView(e.currentTarget as HTMLElement)
     if (performance.now() - jumpedAt < 500) return
-    if (swiped || (e.currentTarget as HTMLElement).scrollTop < 48) return
-    swiped = true
-    try { localStorage.setItem(HINT_KEY, '1') } catch { /* private mode */ }
+    if ((e.currentTarget as HTMLElement).scrollTop >= 48) tips.done('swipe')
   }
 </script>
 
@@ -101,7 +98,7 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller relative h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-ink outline-none" aria-busy={pullRefresh.refreshing} style={pullRefresh.style} {onscroll}>
     {#each clusters as cluster, i (cluster.id)}
-      <SignalStory {cluster} {onselect} ontheater={ontheater && ((id) => ontheater(id, cluster.id))} hint={i === 0 && !swiped && clusters.length > 1} />
+      <SignalStory {cluster} {onselect} ontheater={ontheater && ((id) => ontheater(id, cluster.id))} hint={i === 0 && tips.shown('swipe') && clusters.length > 1} />
     {/each}
     {#if hasMore}
       <div class="flex h-full snap-start items-center justify-center px-6 text-center">
