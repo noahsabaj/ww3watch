@@ -12,6 +12,7 @@
   import SignalBadges from '$lib/components/SignalBadges.svelte'
   import { storyBadgeSignals } from '$lib/story'
   import TheaterTag from '$lib/components/TheaterTag.svelte'
+  import { loadReadTip, markReadTipSeen, readTip } from '$lib/read-tip.svelte'
 
   let {
     cluster,
@@ -32,6 +33,7 @@
   const repLang = $derived(langTag(rep.source_lang))
   const translation = createHeadlineTranslation(() => rep)
   const photo = createStoryPhoto(() => cluster, 360)
+  $effect(loadReadTip)
 </script>
 
 <article
@@ -87,6 +89,7 @@
       onclick={(e) => {
         if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
           e.preventDefault()
+          if (cluster.sourceCount > 1) markReadTipSeen()
           onselect(rep)
         }
       }}
@@ -127,8 +130,8 @@
       {/if}
       <ShareControls article={rep} {cluster} />
     </div>
-    {#if cluster.sourceCount > 1}
-      <p class="mt-3 text-xs text-fg-3">Tap the headline to read it and every other newsroom's version.</p>
+    {#if cluster.sourceCount > 1 && !readTip.seen}
+      <p data-read-tip class="mt-3 text-xs text-fg-3">Tap the headline to read it and every other newsroom's version.</p>
     {/if}
     {#if hint}
       <p data-swipe-hint class="swipe-hint mt-5 flex items-center justify-center gap-1.5 text-xs text-fg-2">
