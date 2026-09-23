@@ -50,11 +50,15 @@
       <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#070809] to-transparent"></div>
     </div>
   {:else}
+    <!-- Without a photo the story starts at the top like a text story, the
+         outlet's summary in the space a photo would take, and a thin bar in
+         the region's colour marks the top edge. -->
     <div class="signal-grain absolute inset-0"></div>
+    <div class="absolute inset-x-0 top-0 h-0.5 {REGION_COLORS[rep.source_region]?.split(' ')[0] ?? 'bg-gray-500'}"></div>
   {/if}
   <!-- Bottom padding clears the home indicator. -->
   <div
-    class="relative flex shrink-0 flex-col justify-end px-5 {photo.shown ? 'bg-ink pt-4' : 'h-full pt-6'}"
+    class="relative flex shrink-0 flex-col px-5 {photo.shown ? 'justify-end bg-ink pt-4' : 'h-full pt-10'}"
     style="padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px))"
   >
     <StoryKicker {cluster} translated={!!translation.shown} {ontheater} class="mb-3" />
@@ -83,6 +87,10 @@
     </p>
     {#if photo.shown}
       <p class="mt-1 text-[11px] uppercase tracking-[0.14em] text-fg-3">Photo · {photo.shown.sourceName}</p>
+    {:else if translation.shown?.summary ?? rep.summary}
+      <p data-story-summary dir={translation.dir} class="mt-4 text-[15px] leading-relaxed text-fg-2 line-clamp-5">
+        {translation.shown?.summary ?? rep.summary}
+      </p>
     {/if}
 
     {#if others.length > 0}
@@ -113,7 +121,7 @@
       <p data-read-tip class="mt-3 text-xs text-fg-3">Tap the headline to read it and every other newsroom's version.</p>
     {/if}
     {#if hint}
-      <p data-swipe-hint class="swipe-hint mt-5 flex items-center justify-center gap-1.5 text-xs text-fg-2">
+      <p data-swipe-hint class="swipe-hint {photo.shown ? 'mt-5' : 'mt-auto pt-5'} flex items-center justify-center gap-1.5 text-xs text-fg-2">
         <Icon name="arrow-up" size={14} />Swipe up for the next story
       </p>
     {/if}

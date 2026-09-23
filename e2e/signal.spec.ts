@@ -135,6 +135,16 @@ test('Signal carries the newsroom photograph and its credit, and falls back with
   await expect(broken.locator('img')).toHaveCount(0)
 })
 
+test('a story without a photograph starts at the top, its summary in the photo’s place', async ({ page }) => {
+  const story = page.locator('[data-signal-story]:not([data-photo])').filter({ has: page.locator('[data-story-summary]') }).first()
+  await story.scrollIntoViewIfNeeded()
+  const frame = await story.boundingBox()
+  const headline = await story.locator('a[href]').first().boundingBox()
+  expect(frame && headline).toBeTruthy()
+  // In the top third of the screen, not pinned above the home indicator.
+  expect(headline!.y - frame!.y).toBeLessThan(frame!.height / 3)
+})
+
 // Every iPad but the mini gets the desk: an 11" iPad in portrait is 820-834px
 // wide; a 13" is 1032px portrait and 1376px landscape.
 for (const [width, height, layout] of [[744, 1133, 'signal'], [820, 1180, 'desk'], [834, 1194, 'desk'], [1032, 1376, 'desk']] as const) {

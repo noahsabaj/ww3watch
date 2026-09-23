@@ -1,6 +1,6 @@
 // src/lib/server/rss.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildGuid, fetchFeed, parseDate, isClampedDate } from './rss'
+import { buildGuid, feedSummary, fetchFeed, parseDate, isClampedDate } from './rss'
 import type { Feed } from '../types'
 
 const mockFeed: Feed = { name: 'Test', url: 'https://example.com/rss', region: 'US/Western', lang: 'en' }
@@ -59,6 +59,20 @@ describe('isClampedDate', () => {
   it('is true for far-future and ancient dates', () => {
     expect(isClampedDate(at(2 * DAY), NOW)).toBe(true)
     expect(isClampedDate(at(-400 * DAY), NOW)).toBe(true)
+  })
+})
+
+describe('feedSummary', () => {
+  it("drops WordPress's \"The post … appeared first on …\" footer", () => {
+    expect(feedSummary('Diplomats were briefed on 66 projects. The post Board of Peace unveils plan appeared first on The Times of Israel.'))
+      .toBe('Diplomats were briefed on 66 projects.')
+  })
+
+  it('leaves other summaries alone, capped at 500 characters', () => {
+    expect(feedSummary('The post office reopened on Monday.')).toBe('The post office reopened on Monday.')
+    expect(feedSummary('x'.repeat(600))).toHaveLength(500)
+    expect(feedSummary(undefined)).toBeNull()
+    expect(feedSummary('The post Title appeared first on Site.')).toBeNull()
   })
 })
 
