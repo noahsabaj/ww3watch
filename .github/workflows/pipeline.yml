@@ -54,7 +54,8 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # Embedding model cache. Restore/save are split on purpose: the save step
+      # Model cache: title embeddings and the photo check's image model.
+      # Restore/save are split on purpose: the save step
       # is gated on the sentinel embeddings.ts writes only after a successful
       # init + smoke embed — a partial download must never poison the immutable
       # key (that would mean re-downloading from HF ~96×/day, or worse, a
@@ -63,7 +64,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ~/.cache/ww3watch-transformers
-          key: me5b-q8-1ec9243
+          key: me5b-q8-1ec9243+clip32-q8-d15189d
 
       - id: run
         run: npm run pipeline
@@ -93,14 +94,17 @@ jobs:
       - id: model-ok
         if: steps.model-cache.outputs.cache-hit != 'true'
         run: |
-          if ls ~/.cache/ww3watch-transformers/.ok-* >/dev/null 2>&1; then
+          # Both models must have loaded and passed their probe (embeddings.ts,
+          # photo-check.ts) before the immutable key is written.
+          if ls ~/.cache/ww3watch-transformers/.ok-me5b-* >/dev/null 2>&1 &&
+             ls ~/.cache/ww3watch-transformers/.ok-clip32-* >/dev/null 2>&1; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.model-ok.outputs.ok == 'true'
         uses: actions/cache/save@v5
         with:
           path: ~/.cache/ww3watch-transformers
-          key: me5b-q8-1ec9243
+          key: me5b-q8-1ec9243+clip32-q8-d15189d
 
       # Push, don't pull: the freshness readout requires someone to LOOK at the
       # site. File (or append to) a single pipeline-failure issue so breakage

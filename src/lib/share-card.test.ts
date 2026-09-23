@@ -10,7 +10,8 @@ describe('shareCard', () => {
   it('names the story, its source count and the publisher photo', () => {
     const card = shareCard('story', 's1', null, [
       row({ id: 'a', title: 'Older &amp; English', source_name: 'BBC', published_at: '2026-09-22T09:00:00Z',
-        image_url: 'https://bbc.example/photo.jpg', image_width: 1200, image_height: 800 }),
+        image_url: 'https://bbc.example/photo.jpg',
+        image_verdict: 'photo', image_width: 1200, image_height: 800 }),
       row({ id: 'b', title: 'Newest', source_name: 'Reuters' }),
       row({ id: 'c', title: 'Also', source_name: 'TASS', source_lang: 'ru', published_at: '2026-09-22T08:00:00Z' }),
     ])!
@@ -29,8 +30,8 @@ describe('shareCard', () => {
   })
 
   it('keeps a shared article\'s own headline and photo', () => {
-    const target = row({ id: 't', title: 'Mine', source_name: 'AP', image_url: 'https://ap.example/p.jpg', published_at: '2026-09-22T01:00:00Z' })
-    const card = shareCard('article', 't', target, [row({ id: 'n', image_url: 'https://r.example/n.jpg' }), target])!
+    const target = row({ id: 't', title: 'Mine', source_name: 'AP', image_url: 'https://ap.example/p.jpg', image_verdict: 'photo', published_at: '2026-09-22T01:00:00Z' })
+    const card = shareCard('article', 't', target, [row({ id: 'n', image_url: 'https://r.example/n.jpg', image_verdict: 'photo' }), target])!
     expect(card.title).toBe('Mine')
     expect(card.image?.url).toBe('https://ap.example/p.jpg')
     expect(card.url).toBe('https://ww3watch.org/?article=t')
@@ -38,7 +39,7 @@ describe('shareCard', () => {
   })
 
   it('never uses a share card or logo as the photo', () => {
-    const card = shareCard('article', 't', row({ id: 't', image_url: 'https://ria.example/images/sharing/article/1.jpg' }), [])!
+    const card = shareCard('article', 't', row({ id: 't', image_url: 'https://ria.example/images/sharing/article/1.jpg', image_verdict: 'photo' }), [])!
     expect(card.image).toBeNull()
     expect(card.description).toBe('Reported by Reuters. Read it on WW3Watch.')
   })

@@ -11,8 +11,12 @@ on:
         required: true
         type: string
 
+# Queued with the pipeline so two writers never race, except the photo check,
+# which writes only image_verdict / image_hash (nothing else touches them). In
+# the pipeline's queue it waited behind each run and was then bumped by the next
+# scheduled one, twice.
 concurrency:
-  group: ww3watch-pipeline
+  group: ${{ inputs.script == 'scripts/check-photos.ts' && 'ww3watch-photo-check' || 'ww3watch-pipeline' }}
   cancel-in-progress: false
 
 jobs:

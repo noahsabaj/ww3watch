@@ -11,6 +11,10 @@ import {
 const BASE = 'https://news.example/story'
 
 describe('sanitizeImageUrl', () => {
+  it('unescapes an HTML-escaped query string', () => {
+    expect(sanitizeImageUrl('https://i0.wp.com/x.jpeg?fit=770%2C468&amp;ssl=1', BASE)).toBe('https://i0.wp.com/x.jpeg?fit=770%2C468&ssl=1')
+  })
+
   it('resolves relative URLs against the article', () => {
     expect(sanitizeImageUrl('/photo.jpg', BASE)).toBe('https://news.example/photo.jpg')
   })

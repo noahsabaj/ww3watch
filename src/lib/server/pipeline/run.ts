@@ -11,6 +11,7 @@ import { enrichSignals } from './signals'
 import { classifyFresh } from './classify'
 import { checkOpsHealth, reportLowYield, previousRunJevDown } from './ops'
 import { fillMissingImages } from './images'
+import { checkPhotos } from './photo-check'
 import { timed as timedStage, type RunStats } from './stats'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
@@ -28,6 +29,9 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   // After trending: photographs are cosmetic and must never spend the budget
   // that ranking needs.
   await timed('images', () => fillMissingImages(stats, startedAt + RUN_BUDGET_MS))
+  // After the fill, so a photo found this run is also checked this run; the
+  // site shows none until it has been (photo-check.ts).
+  await timed('photo_check', () => checkPhotos(stats, startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
   await reportLowYield(stats)
   stats.total_ms = Date.now() - startedAt
