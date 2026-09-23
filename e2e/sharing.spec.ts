@@ -52,7 +52,7 @@ async function setup(page: Page, native = false) {
   await openHome(page, '/?utm_source=sharing-test')
 }
 
-test('card copies a clean story link without changing filters, reader or history; link opens cold', async ({ page }) => {
+test('card copies a clean story link without changing the search, reader or history; link opens cold', async ({ page }) => {
   await setup(page)
   const card = await selectStory(page, { hasText: 'ceasefire talks resume' })
   const originalUrl = page.url()

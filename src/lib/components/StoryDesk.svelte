@@ -57,7 +57,7 @@
   })
 
   // Before anything is picked, open on a story worth the pane: the top trending
-  // one that survives the filters, else the newest covered by more than one
+  // one that matches the search, else the newest covered by more than one
   // outlet (the side-by-side is the point), else simply the newest.
   const opening = $derived(
     trending.map((t) => clusters.find((c) => c.id === t.id)).find(Boolean) ??

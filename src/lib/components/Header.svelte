@@ -1,22 +1,12 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte'
-  import type { SourceRegion } from '$lib/types'
+  import { tick } from 'svelte'
   import { timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
-  import type { Actor, SignalFilter, Topic } from '$lib/signals'
-  import Sheet from '$lib/components/Sheet.svelte'
-  import FilterPanel from '$lib/components/FilterPanel.svelte'
   import SiteMenu from '$lib/components/SiteMenu.svelte'
 
   let {
     searchQuery = $bindable(),
-    activeRegions = $bindable(),
-    excludedLangs = $bindable(),
-    signalFilter = $bindable(),
-    availableLangs,
-    availableTopics,
-    availableActors,
-    onReset,
     storyCount,
     totalCount,
     isFiltered,
@@ -25,13 +15,6 @@
     staleness,
   }: {
     searchQuery: string
-    activeRegions: Set<SourceRegion>
-    excludedLangs: Set<string>
-    signalFilter: SignalFilter
-    availableLangs: { lang: string; count: number }[]
-    availableTopics: { key: Topic; count: number }[]
-    availableActors: { key: Actor; count: number }[]
-    onReset: () => void
     storyCount: number
     totalCount: number
     isFiltered: boolean
@@ -40,8 +23,22 @@
     staleness: 'ok' | 'amber' | 'red' | null
   } = $props()
 
-  let filtersOpen = $state(false)
   const live = $derived(realtimeStatus === 'SUBSCRIBED')
+
+  // Phones: the magnifying glass swaps the header row for a search field, and
+  // Cancel clears the search and puts the row back. Wider screens keep the
+  // field in the header.
+  let searching = $state(false)
+  let phoneField = $state<HTMLInputElement | null>(null)
+  async function openSearch() {
+    searching = true
+    await tick()
+    phoneField?.focus()
+  }
+  function cancelSearch() {
+    searchQuery = ''
+    searching = false
+  }
 </script>
 
 {#snippet status()}
@@ -59,14 +56,32 @@
   </span>
 {/snippet}
 
-<!-- Sticky so filters and the menu stay one tap away; padding-top clears the
+<!-- Sticky so search and the menu stay one tap away; padding-top clears the
      iPhone notch (viewport-fit=cover). Solid ground, no blur: the sheets are
      fixed-position and a backdrop-filter would trap them inside the header. -->
 <header
   class="sticky top-0 z-30 border-b border-line bg-ink px-4"
   style="padding-top: env(safe-area-inset-top, 0px)"
 >
-  <div class="flex h-16 items-center gap-4">
+  {#if searching}
+    <div class="flex h-16 items-center gap-3 min-[820px]:hidden">
+      <label class="field flex min-h-10 flex-1 items-center gap-2 py-0">
+        <Icon name="search" size={16} class="text-fg-3" />
+        <input
+          bind:this={phoneField}
+          type="search"
+          aria-label="Search headlines"
+          placeholder="Search headlines"
+          enterkeyhint="search"
+          bind:value={searchQuery}
+          onkeydown={(e) => { if (e.key === 'Escape') cancelSearch() }}
+          class="min-w-0 flex-1 bg-transparent py-2 text-base text-fg outline-none placeholder:text-fg-3 [&::-webkit-search-cancel-button]:hidden"
+        />
+      </label>
+      <button type="button" class="action -mr-1 px-2 text-[15px] text-accent" onclick={cancelSearch}>Cancel</button>
+    </div>
+  {/if}
+  <div class="h-16 items-center gap-4 {searching ? 'hidden min-[820px]:flex' : 'flex'}">
     <h1 class="shrink-0 text-lg font-bold tracking-tight text-fg">WW3Watch</h1>
 
     <input
@@ -81,14 +96,12 @@
       <p class="mr-3 hidden text-xs text-fg-3 min-[820px]:block" aria-live="off">{@render status()}</p>
       <button
         type="button"
-        class="icon-btn"
-        aria-label={isFiltered ? 'Open filters (active)' : 'Open filters'}
-        aria-haspopup="dialog"
-        aria-expanded={filtersOpen}
-        onclick={() => (filtersOpen = true)}
+        class="icon-btn min-[820px]:hidden"
+        aria-label="Search headlines"
+        aria-expanded={searching}
+        onclick={openSearch}
       >
-        <Icon name="filters" size={20} />
-        {#if isFiltered}<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-accent ring-2 ring-ink" aria-hidden="true"></span>{/if}
+        <Icon name="search" size={20} />
       </button>
       <SiteMenu />
     </div>
@@ -98,24 +111,3 @@
     <p role="status" class="pb-2.5 text-xs text-amber-400">New reporting is delayed. Existing stories and original article links remain available.</p>
   {/if}
 </header>
-
-<Sheet bind:open={filtersOpen} title="Filters" id="feed-filters">
-  <FilterPanel
-    bind:activeRegions
-    bind:excludedLangs
-    bind:searchQuery
-    bind:signalFilter
-    {availableLangs}
-    {availableTopics}
-    {availableActors}
-    showSearch
-  />
-  {#snippet footer()}
-    <div class="flex items-center justify-between gap-3">
-      <button type="button" class="action text-sm disabled:opacity-40" disabled={!isFiltered} onclick={onReset}>Reset</button>
-      <button type="button" class="btn" onclick={() => (filtersOpen = false)}>
-        Show {storyCount.toLocaleString()} {storyCount === 1 ? 'story' : 'stories'}
-      </button>
-    </div>
-  {/snippet}
-</Sheet>

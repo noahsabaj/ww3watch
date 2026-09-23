@@ -6,7 +6,7 @@
   import SignalFeed from '$lib/components/SignalFeed.svelte'
   import StoryDesk from '$lib/components/StoryDesk.svelte'
   import { createFeed } from '$lib/feed.svelte'
-  import { createFilters } from '$lib/filters.svelte'
+  import { createSearch } from '$lib/search.svelte'
   import { createReaderRouting } from '$lib/deeplink.svelte'
   import { loadFeed } from '$lib/load-feed'
   import { shareTarget } from '$lib/share'
@@ -42,8 +42,8 @@
     })),
     { isPaused: () => isPaused },
   )
-  // Search / region / language / signal filters + sort (src/lib/filters.svelte.ts).
-  const filters = createFilters(() => feed.articles)
+  // Headline search, the feed's only narrowing (src/lib/search.svelte.ts).
+  const search = createSearch(() => feed.articles)
   // Reader shallow routing + ?article= / ?story= deep links
   // (src/lib/deeplink.svelte.ts). Must run during init: it registers an $effect
   // and an afterNavigate callback.
@@ -142,17 +142,10 @@
 
 <div class="h-dvh overflow-hidden bg-ink flex flex-col">
   <Header
-    bind:searchQuery={filters.searchQuery}
-    bind:activeRegions={filters.activeRegions}
-    bind:excludedLangs={filters.excludedLangs}
-    availableLangs={filters.availableLangs}
-    bind:signalFilter={filters.signalFilter}
-    availableTopics={filters.availableTopics}
-    availableActors={filters.availableActors}
-    onReset={filters.clearFilters}
-    storyCount={filters.clustered.length}
-    totalCount={Math.max(feed.allClustered.length, filters.clustered.length)}
-    isFiltered={filters.isFiltered}
+    bind:searchQuery={search.query}
+    storyCount={search.clustered.length}
+    totalCount={Math.max(feed.allClustered.length, search.clustered.length)}
+    isFiltered={search.active}
     realtimeStatus={feed.realtimeStatus}
     lastUpdatedAt={feed.lastUpdatedAt}
     staleness={feed.staleness}
@@ -169,7 +162,7 @@
     </div>
   {/if}
 
-  {#if filters.clustered.length === 0}
+  {#if search.clustered.length === 0}
     <div class="flex-1 px-6 py-24 text-center text-sm text-fg-3">
       {#if loading || desk === null}
         Loading the latest reporting…
@@ -184,18 +177,18 @@
       {:else if feed.articles.length === 0}
         No stories yet — new ones appear here live.
       {:else}
-        <p class="mb-4 font-serif text-xl text-fg">No stories match your filters.</p>
+        <p class="mb-4 font-serif text-xl text-fg">No stories match “{search.query.trim()}”.</p>
         <button
-          onclick={filters.clearFilters}
+          onclick={search.clear}
           class="btn-ghost"
         >
-          Clear filters
+          Clear search
         </button>
       {/if}
     </div>
   {:else if desk}
     <StoryDesk
-      clusters={filters.clustered}
+      clusters={search.clustered}
       trending={feed.topStories}
       {reader}
       hasMore={feed.hasMore}
@@ -222,7 +215,7 @@
     <div class="relative min-h-0 flex-1">
       {#key signalEpoch}
         <SignalFeed
-          clusters={filters.clustered}
+          clusters={search.clustered}
           onselect={reader.openArticle}
           onLoadOlder={loadOlder}
           hasMore={feed.hasMore}

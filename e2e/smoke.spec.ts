@@ -58,49 +58,24 @@ test('j and k move through stories, o reads the one selected', async ({ page }) 
   await expect(page).toHaveURL(/[?&]article=/)
 })
 
-test('search filters and clears', async ({ page }) => {
+test('search narrows the feed and clears', async ({ page }) => {
   const search = page.getByRole('searchbox', { name: 'Search headlines' })
   await search.fill('zzz-no-such-headline-zzz')
-  await expect(page.getByText('No stories match your filters.')).toBeVisible()
+  await expect(page.getByText('No stories match “zzz-no-such-headline-zzz”.')).toBeVisible()
   await search.fill('')
   await expect(stories(page).first()).toBeVisible()
 })
 
-test('the empty-state "Clear filters" button restores the feed', async ({ page }) => {
+test('the empty-state "Clear search" button restores the feed', async ({ page }) => {
   const search = page.getByRole('searchbox', { name: 'Search headlines' })
   await search.fill('zzz-no-such-headline-zzz')
-  await page.getByRole('button', { name: 'Clear filters' }).click()
+  await page.getByRole('button', { name: 'Clear search' }).click()
   await expect(search).toHaveValue('')
   await expect(stories(page).first()).toBeVisible()
 })
 
-test('region filter: None empties the feed, All restores it', async ({ page }) => {
-  await page.getByRole('button', { name: /^Open filters/ }).click()
-  const dropdown = page.getByRole('dialog', { name: 'Filters' })
-  await expect(dropdown).toBeVisible()
-  await dropdown.getByRole('button', { name: 'None', exact: true }).click()
-  await expect(page.getByText('No stories match your filters.')).toBeVisible()
-  await dropdown.getByRole('button', { name: 'All', exact: true }).click()
-  await expect(stories(page).first()).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(dropdown).toBeHidden()
-})
-
-test('language filter excludes a language and clearing restores it', async ({ page }) => {
-  const before = await stories(page).count()
-  await page.getByRole('button', { name: /^Open filters/ }).click()
-  const dropdown = page.getByRole('dialog', { name: 'Filters' })
-  const english = dropdown.getByRole('button', { name: 'English', exact: true })
-  await expect(english).toHaveAttribute('aria-pressed', 'true')
-  await english.click()
-  await expect(english).toHaveAttribute('aria-pressed', 'false')
-  // The fixture is roughly half English: excluding it removes stories without
-  // emptying the feed.
-  await expect.poll(() => stories(page).count()).toBeLessThan(before)
-  expect(await stories(page).count()).toBeGreaterThan(0)
-  await expect(page.locator('header')).toContainText(/of \d+ stories/)
-  await english.click()
-  await expect.poll(() => stories(page).count()).toBe(before)
+test('search is the only way to narrow the feed', async ({ page }) => {
+  await expect(page.getByRole('button', { name: /filters/i })).toHaveCount(0)
 })
 
 test('the reader opens in the pane, focuses close, Escape returns to the story', async ({ page }) => {
