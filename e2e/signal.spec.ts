@@ -41,6 +41,20 @@ test('the search button opens a field; Cancel clears it and restores the feed', 
   await expect(storyCard(page)).toBeVisible()
 })
 
+test('the read tip shows until a covered story is opened, then stays gone', async ({ page }) => {
+  const tip = page.locator('[data-read-tip]')
+  const covered = stories(page).filter({ has: tip }).first()
+  await expect(covered).toContainText('Tap the headline to read it and every other newsroom')
+  await covered.locator('a.font-serif').click()
+  await expect(reader(page)).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(reader(page)).toBeHidden()
+  await expect(tip).toHaveCount(0)
+  await page.reload()
+  await expect(storyCard(page)).toBeVisible()
+  await expect(tip).toHaveCount(0)
+})
+
 test('Signal carries no position counter or visible scrollbar', async ({ page }) => {
   await expect(page.getByText(/^\d+ \/ \d+$/)).toHaveCount(0)
   const scroller = page.getByLabel('Stories', { exact: true })

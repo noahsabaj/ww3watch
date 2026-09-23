@@ -11,8 +11,21 @@
   import ShareControls from '$lib/components/ShareControls.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
   import { storyBadgeSignals } from '$lib/story'
+  import TheaterTag from '$lib/components/TheaterTag.svelte'
+  import { tips } from '$lib/tips.svelte'
 
-  let { cluster, onselect, hint = false }: { cluster: Cluster; onselect?: (a: Article) => void; hint?: boolean } = $props()
+  let {
+    cluster,
+    onselect,
+    ontheater,
+    hint = false,
+  }: {
+    cluster: Cluster
+    onselect?: (a: Article) => void
+    /** Narrow the feed to this story's theater; absent once it is narrowed. */
+    ontheater?: (id: string) => void
+    hint?: boolean
+  } = $props()
 
   const rep = $derived(cluster.representative)
   const others = $derived(cluster.articles.filter((a) => a.id !== rep.id).slice(0, 3))
@@ -20,6 +33,7 @@
   const repLang = $derived(langTag(rep.source_lang))
   const translation = createHeadlineTranslation(() => rep)
   const photo = createStoryPhoto(() => cluster, 360)
+  $effect(tips.load)
 </script>
 
 <article
@@ -55,7 +69,8 @@
     style="padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px))"
   >
     <div class="mb-3 flex flex-wrap items-center gap-2">
-      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg-2">{rep.source_region}</span>
+      <TheaterTag {cluster} onpick={ontheater} />
+      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg-2">{rep.source_region} outlet</span>
       {#if repLang}
         <span class="text-[9px] font-mono uppercase tracking-wide text-fg-3 border border-line rounded px-1">{repLang}</span>
       {/if}
@@ -74,6 +89,7 @@
       onclick={(e) => {
         if (onselect && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
           e.preventDefault()
+          if (cluster.sourceCount > 1) tips.done('read-story')
           onselect(rep)
         }
       }}
@@ -114,8 +130,8 @@
       {/if}
       <ShareControls article={rep} {cluster} />
     </div>
-    {#if cluster.sourceCount > 1}
-      <p class="mt-3 text-xs text-fg-3">Tap the headline to read it and every other newsroom's version.</p>
+    {#if cluster.sourceCount > 1 && tips.shown('read-story')}
+      <p data-read-tip class="mt-3 text-xs text-fg-3">Tap the headline to read it and every other newsroom's version.</p>
     {/if}
     {#if hint}
       <p data-swipe-hint class="swipe-hint mt-5 flex items-center justify-center gap-1.5 text-xs text-fg-2">
