@@ -90,25 +90,39 @@ export function photoScorer(): Promise<EmblemScorer> {
   return (scorerPromise ??= loadScorer())
 }
 
-// The model scores one image at a time. Once real images reached it (#159),
-// the process aborted natively on the runner ("free(): double free", exit 134):
-// after ~850 images in the backfill and within the first pipeline run. Six
-// concurrent calls into one ONNX session is the likeliest cause, so downloads
-// and hashing still run six at a time and only the model call waits its turn.
-// The pipeline also runs this stage in its own process (photo-check-isolated.ts),
+// One image's native work at a time: its hash, then the model. Once real images
+// reached the check (#159) the process aborted natively on the runner
+// ("free(): double free", "malloc(): unaligned tcache chunk", SIGSEGV) in 11 of
+// 14 pipeline runs and in 3 of 3 backfills (the longest judged 730 images, then
+// died in its third pass). Queueing only the model call (#165) changed nothing:
+// ONNX Runtime's Node binding already runs the model on the main thread, one
+// call at a time. What did overlap was sharp (libvips) on Node's thread pool,
+// for other images and for this image's hash, and that is where a core dump
+// caught the abort: inside libvips on a thread-pool thread, with ONNX Runtime
+// idle. With each image's native work in turn, a backfill judged the whole
+// backlog (1,214 images) without a crash. It is no slower: over the same images,
+// read-only, 450 took 82s this way and 81s the old way, since the model was
+// already the one-at-a-time part. Downloads still run six at a time. The
+// pipeline also runs this stage in its own process (photo-check-isolated.ts),
 // so if anything still crashes, only this stage is lost.
-export function oneAtATime(scorer: EmblemScorer): EmblemScorer {
+export function oneAtATime<A, R>(fn: (arg: A) => Promise<R>): (arg: A) => Promise<R> {
   let queue: Promise<unknown> = Promise.resolve()
-  return (image) => {
-    const next = queue.then(() => scorer(image))
+  return (arg) => {
+    const next = queue.then(() => fn(arg))
     queue = next.catch(() => {})
     return next
   }
 }
 
-export async function judgeImage(image: Buffer, scorer: EmblemScorer): Promise<{ verdict: Verdict; hash: string }> {
-  const [hash, emblem] = await Promise.all([differenceHash(image), scorer(image)])
-  return { hash, verdict: emblem >= EMBLEM_MIN ? 'emblem' : 'photo' }
+export async function judgeImage(
+  image: Buffer,
+  scorer: EmblemScorer,
+  hash: (image: Buffer) => Promise<string> = differenceHash,
+): Promise<{ verdict: Verdict; hash: string }> {
+  // One after the other, never together (see oneAtATime).
+  const hashed = await hash(image)
+  const emblem = await scorer(image)
+  return { hash: hashed, verdict: emblem >= EMBLEM_MIN ? 'emblem' : 'photo' }
 }
 
 type Row = { id: string; image_url: string }
@@ -116,7 +130,12 @@ type Row = { id: string; image_url: string }
 export async function checkPhotos(
   stats: RunStats,
   deadlineMs: number,
-  deps: { scorer?: EmblemScorer; fetch?: (url: string) => Promise<Buffer | null>; cap?: number } = {},
+  deps: {
+    scorer?: EmblemScorer
+    hash?: (image: Buffer) => Promise<string>
+    fetch?: (url: string) => Promise<Buffer | null>
+    cap?: number
+  } = {},
 ): Promise<void> {
   try {
     const since = new Date(Date.now() - IMAGE_CHECK_LOOKBACK_HOURS * 3600_000).toISOString()
@@ -132,7 +151,8 @@ export async function checkPhotos(
     const rows = (data ?? []) as Row[]
     if (rows.length === 0) return
 
-    const scorer = oneAtATime(deps.scorer ?? (await photoScorer()))
+    const scorer = deps.scorer ?? (await photoScorer())
+    const judge = oneAtATime((image: Buffer) => judgeImage(image, scorer, deps.hash))
     const download = deps.fetch ?? fetchImage
     const hashes = new Set<string>()
     const result = await mapPool(
@@ -141,7 +161,7 @@ export async function checkPhotos(
       async (row) => {
         const image = await download(row.image_url)
         if (!image) return null
-        const { verdict, hash } = await judgeImage(image, scorer)
+        const { verdict, hash } = await judge(image)
         const { error: updateError } = await supabaseAdmin
           .from('articles')
           .update({ image_verdict: verdict, image_hash: hash })

@@ -67,6 +67,18 @@ describe('judgeImage', () => {
     expect((await judgeImage(img, async () => EMBLEM_MIN - 0.01)).verdict).toBe('photo')
   })
 
+  it('hashes, then calls the model, never both at once', async () => {
+    const steps: string[] = []
+    const step = (name: string, value: unknown) => async () => {
+      steps.push(`${name} start`)
+      await new Promise((r) => setTimeout(r, 5))
+      steps.push(`${name} end`)
+      return value
+    }
+    await judgeImage(pictures['a.jpg'], step('model', 0.1) as () => Promise<number>, step('hash', '0') as () => Promise<string>)
+    expect(steps).toEqual(['hash start', 'hash end', 'model start', 'model end'])
+  })
+
   it('hashes the same picture the same at any size, and different pictures differently', async () => {
     const big = await sharp(pictures['a.jpg']).resize(640, 400).jpeg({ quality: 60 }).toBuffer()
     expect(await differenceHash(big)).toBe(await differenceHash(pictures['a.jpg']))
@@ -117,17 +129,31 @@ describe('checkPhotos', () => {
     expect(stats.photos_unreadable).toBe(1)
   })
 
-  it('calls the model one image at a time, though downloads run in parallel', async () => {
+  it('hashes and calls the model for one image at a time, though downloads run in parallel', async () => {
     db.rows = [row('1', 's1', 'a.jpg'), row('2', 's2', 'b.jpg'), row('3', 's3', 'card.jpg'), row('4', 's4', 'emblem.jpg')]
-    let active = 0, most = 0
-    const slow = async (image: Buffer) => {
-      most = Math.max(most, ++active)
-      await new Promise((r) => setTimeout(r, 5))
-      active--
-      return scorer(image)
+    const pause = () => new Promise((r) => setTimeout(r, 5))
+    let downloading = 0, mostDownloads = 0, native = 0, mostNative = 0
+    const busy = async <T>(fn: () => Promise<T>): Promise<T> => {
+      mostNative = Math.max(mostNative, ++native)
+      await pause()
+      try {
+        return await fn()
+      } finally {
+        native--
+      }
     }
-    await checkPhotos({}, Date.now() + 10_000, { scorer: slow, fetch: fetchPicture })
-    expect(most).toBe(1)
+    await checkPhotos({}, Date.now() + 10_000, {
+      fetch: async (url) => {
+        mostDownloads = Math.max(mostDownloads, ++downloading)
+        await pause()
+        downloading--
+        return fetchPicture(url)
+      },
+      hash: (image) => busy(() => differenceHash(image)),
+      scorer: (image) => busy(() => scorer(image)),
+    })
+    expect(mostDownloads).toBeGreaterThan(1)
+    expect(mostNative).toBe(1)
     expect(db.rows.map((r) => r.image_verdict)).toEqual(['photo', 'photo', 'photo', 'emblem'])
   })
 
