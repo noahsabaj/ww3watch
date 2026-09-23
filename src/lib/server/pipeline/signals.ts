@@ -15,10 +15,11 @@ import { JEV_MODEL, jevState } from '../jev'
 // answers instead of asking again.
 const stateKey = (a: { title: string; summary: string | null; source_lang: string }) => JSON.stringify(jevState(a))
 // The lookup's titles travel in the request URL, percent-encoded: a Persian or
-// Arabic headline is ~6 bytes a character there. 25 titles a request reached
-// tens of kilobytes, which the gateway refused ("fetch failed") on every run
-// from 2026-09-23 16:00, and with it the whole signals stage. Chunks are
-// bounded by encoded length instead.
+// Arabic headline is ~6 bytes a character there, and the response echoes the
+// query back in a header. 25 titles a request pushed that header past Node's
+// 16KB limit (undici HeadersOverflowError, "fetch failed") on every run from
+// 2026-09-23 16:00, and with it the whole signals stage. Chunks are bounded
+// by encoded length instead.
 const TITLE_URL_BUDGET = 4000
 const TITLE_CHUNK_MAX = 25
 
