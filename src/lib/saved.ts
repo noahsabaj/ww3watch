@@ -13,6 +13,8 @@ export const SAVED = {
   /** Teaching tips already learned (tips.svelte.ts). Keys kept as first shipped. */
   tipSwipe: 'ww3-swiped',
   tipReadStory: 'ww3-read-tip-seen',
+  /** A copy of the latest stories, so the app opens without waiting (feed-snapshot.ts). */
+  feedSnapshot: 'ww3-feed-snapshot',
 } as const
 export type SavedKey = keyof typeof SAVED
 
