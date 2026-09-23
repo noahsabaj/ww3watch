@@ -6,10 +6,19 @@ const state = vi.hoisted(() => ({
   merges: [] as Array<{ p_from: string; p_into: string }>,
   reelected: [] as string[][],
   p: {} as Record<string, number>,
+  remembered: [] as Array<{ rep_a: string; rep_b: string; verdict: string }>,
+  forgotBefore: null as string | null,
 }))
 
 vi.mock('../supabase', () => ({
   supabaseAdmin: {
+    from: (table: string) => {
+      if (table !== 'story_merge_judged') throw new Error(`unexpected table ${table}`)
+      return {
+        delete: () => ({ lt: (_col: string, v: string) => { state.forgotBefore = v; return Promise.resolve({ error: null }) } }),
+        upsert: (rows: typeof state.remembered) => { state.remembered.push(...rows); return Promise.resolve({ error: null }) },
+      }
+    },
     rpc: (name: string, params: Record<string, unknown>) => {
       if (name === 'story_merge_candidates') return Promise.resolve({ data: state.candidates, error: null })
       if (name === 'merge_stories') {
@@ -36,7 +45,8 @@ import { mergeStories } from './clustering'
 import type { RunStats } from './stats'
 
 const pair = (a: string, b: string, aCount: number, bCount: number, sim: number) => ({
-  r_a: a, r_b: b, r_a_title: a, r_b_title: b, r_a_count: aCount, r_b_count: bCount, r_sim: sim,
+  r_a: a, r_b: b, r_a_rep: `rep-${a}`, r_b_rep: `rep-${b}`,
+  r_a_title: a, r_b_title: b, r_a_count: aCount, r_b_count: bCount, r_sim: sim,
 })
 
 beforeEach(() => {
@@ -45,6 +55,8 @@ beforeEach(() => {
   state.merges = []
   state.reelected = []
   state.p = {}
+  state.remembered = []
+  state.forgotBefore = null
 })
 
 describe('mergeStories', () => {
@@ -91,5 +103,27 @@ describe('mergeStories', () => {
     await expect(mergeStories(stats)).resolves.toBeUndefined()
     expect(state.merges).toEqual([{ p_from: 'p', p_into: 'q' }])
     expect(stats.merge_error).toBeUndefined()
+  })
+
+  it('remembers different and unsure pairs by their representatives, never a same', async () => {
+    state.candidates = [pair('d', 'c', 1, 1, 0.95), pair('u', 'v', 1, 1, 0.9), pair('s', 't', 1, 2, 0.88), pair('w', 'x', 1, 1, 0.85)]
+    state.verdicts = { 'd|c': 'different', 's|t': 'same', 'w|x': 'same' }
+    state.p = { 'w|x': 0.75 }
+    await mergeStories({})
+    expect(state.remembered).toEqual([
+      { rep_a: 'rep-c', rep_b: 'rep-d', verdict: 'different' },
+      { rep_a: 'rep-u', rep_b: 'rep-v', verdict: 'unsure' },
+      // Below the merge bar: asked about once, like unsure.
+      { rep_a: 'rep-w', rep_b: 'rep-x', verdict: 'unsure' },
+    ])
+    expect(state.merges).toEqual([{ p_from: 's', p_into: 't' }])
+  })
+
+  it('forgets pairs older than twice the merge window', async () => {
+    const before = Date.now()
+    await mergeStories({})
+    const cutoff = Date.parse(state.forgotBefore!)
+    expect(before - cutoff).toBeGreaterThanOrEqual(48 * 3600_000 - 1000)
+    expect(before - cutoff).toBeLessThanOrEqual(48 * 3600_000 + 1000)
   })
 })
