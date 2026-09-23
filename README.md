@@ -21,7 +21,7 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 - **Jev, the final relevance judge** — everything the head doesn't settle goes to [TypeSafe's Jev](https://docs.typesafe.ai), a decision model that returns calibrated probabilities for typed questions and cannot generate text. Its verdict is final at P(relevant) ≥ 0.5; there is no generative model behind it. If a Jev call fails or the run is out of time, the article gets no verdict and simply stays new for the next run
 - **Per-article signals** — one Jev request per accepted article: topic, severity, statement-vs-event, unconfirmed, analysis, and the parties involved. They drive the *Major only* / topic / *Involving* filters and the card badges
 - **Trending Now** — Jev judges each candidate story's severity, novelty and talk-only-ness; code weighs those against exact corroboration counts (`src/lib/server/trending-jev.ts`). Updating live
-- **Top view, story badges, "By side"** — the feed can be ranked by importance (severity × independent corroboration × recency, `src/lib/story.ts`) instead of time; a story is badged *major* if any independent source reports a significant event and *unconfirmed* only if every one of them hedges; an expanded story can be read as a timeline or grouped by region, state media split out
+- **Story badges, "By side"** — a story is badged *major* if any independent source reports a significant event and *unconfirmed* only if every one of them hedges; an expanded story can be read as a timeline or grouped by region, state media split out
 - **Trends + major-events feed** — [/trends](https://ww3watch.org/trends): stories per day involving each party over 30 days, and how many were major; the RSS feed takes `?major=1` for significant events only
 - **Wire detection** — near-identical copies inside a story are marked, so "12 sources" doesn't overstate independent confirmation
 - **In-app reader + translation** — cached extraction (survives link rot), on-demand translation into your reading language (set once; defaults from your browser locale), the original one click away
@@ -143,7 +143,6 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `MAJOR_SEVERITY` | `0.55` | "major" badge, Major-only filter, major-events RSS, /trends |
 | `SIGNAL_YES` | `0.7` | a yes/no signal at or above this shows as a badge |
 | `TRENDING_WEIGHTS` | `{"severity":0.45,"corroboration":0.3,"fresh":0.25,"talkPenalty":0.15}` | trending score = weighted Jev judgments + corroboration − talk penalty |
-| `IMPORTANCE` | `{"severity":0.5,"corroboration":0.3,"recency":0.2,"talkPenalty":0.15,"halfLifeHours":8}` | "Top" ordering of the feed |
 
 <!-- config:end -->
 
