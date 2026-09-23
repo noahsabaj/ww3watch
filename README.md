@@ -44,7 +44,7 @@ Free-tier everywhere except Jev (pay-per-token, roughly $0.50/day at this volume
 ## Architecture
 
 ```
-GitHub Actions (self-chained, ~every 15 min) Browser (static SPA on GitHub Pages)
+GitHub Actions (self-chained, ~every 5 min)  Browser (static SPA on GitHub Pages)
   scripts/run-pipeline.ts                      +page.ts ── anon read ──► Supabase
     roster ◄── sources table (health ──►)       realtime ◄── INSERT/UPDATE events
     fetch feeds (direct → CF proxy)             ArticlePanel ──► Edge Functions
@@ -133,7 +133,7 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `ASSIGN_LOOKBACK_HOURS` | `24` | how far back the clustering worklist looks |
 | `EMBED_SIM_THRESHOLD` | `0.83` | decides only the pairs Jev was unsure about or could not be asked about |
 | `STALE_WRITEOFF_HOURS` | `48` | an unjudged article older than this is written off |
-| `AUTO_DISABLE_AFTER` | `200` | consecutive failed fetches before a source is switched off |
+| `AUTO_DISABLE_AFTER` | `600` | consecutive failed fetches before a source is switched off |
 | `RUN_BUDGET_MS` | `900000` | the run bounds itself below the job timeout |
 | `CLASSIFY_BUDGET_MS` | `540000` | share of the run budget classification may use |
 | `IMAGE_FILL_CAP` | `60` | most articles missing a photo that get an og:image fetch per run |
@@ -164,7 +164,7 @@ One-time setup (all free tier):
 3. **GitHub**
    - Repo **Settings → Secrets and variables → Actions** → add: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (the `sb_secret_…` key), `SUPABASE_ACCESS_TOKEN` (function deploys), `TYPESAFE_API_KEY` (the pipeline's Jev key — required), `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, and (optional) `FEED_PROXY_URL` + `FEED_PROXY_SECRET`. For translation add `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` — the pipeline does not read them; [deploy-functions.yml](.github/workflows/deploy-functions.yml) syncs them to the `translate` function. `TRANSLATE_LLM_BASE_URL` / `TRANSLATE_LLM_API_KEY` / `TRANSLATE_LLM_MODEL`, when set, take precedence over them (translation sends a few large requests, so a bigger per-request token cap matters more than RPM).
    - **Settings → Pages** → Source = **GitHub Actions**.
-   - Push to `main`: [deploy.yml](.github/workflows/deploy.yml) publishes the site; [pipeline.yml](.github/workflows/pipeline.yml) ingests about every 15 min — each run dispatches the next, and the cron is only the backstop that restarts the chain, since GitHub throttles a bare `*/15` schedule to a handful of runs a day (or run it manually via **Actions → Ingestion pipeline → Run workflow**; cancelling a run stops the chain until the cron restarts it).
+   - Push to `main`: [deploy.yml](.github/workflows/deploy.yml) publishes the site; [pipeline.yml](.github/workflows/pipeline.yml) ingests about every 5 min — each run dispatches the next, and the cron is only the backstop that restarts the chain, since GitHub throttles a bare `*/15` schedule to a handful of runs a day (or run it manually via **Actions → Ingestion pipeline → Run workflow**; cancelling a run stops the chain until the cron restarts it).
 4. **Feed proxy (optional but recommended)** — many news-site WAFs block GitHub Actions' datacenter IPs, killing most feeds. The pipeline therefore fetches **proxy-first** (with a direct fallback) through the Cloudflare Worker in [cloudflare/feed-proxy.js](cloudflare/feed-proxy.js) when configured. Setup:
    - Add `FEED_PROXY_URL` + `FEED_PROXY_SECRET` to the GitHub Actions secrets above, and set the Worker secret to the same value: `wrangler secret put FEED_PROXY_SECRET`.
    - For automatic Worker deploys, add `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets — then [deploy-worker.yml](.github/workflows/deploy-worker.yml) deploys [cloudflare/](cloudflare/) (config in [cloudflare/wrangler.toml](cloudflare/wrangler.toml)) on every push to `main` that touches it, and dry-run-validates PRs. Without the token the deploy step warns and skips, so you can also deploy by hand: `npx wrangler deploy` from `cloudflare/`. Free tier covers it. DB schema lives in [supabase/migrations](supabase/migrations).

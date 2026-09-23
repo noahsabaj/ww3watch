@@ -74,11 +74,11 @@ export const HEAD_AUDIT_RATE = num('HEAD_AUDIT_RATE', 0.03)
 export const HEAD_REJECT_BELOW = num('HEAD_REJECT_BELOW', 0.235)
 export const HEAD_ACCEPT_ABOVE = num('HEAD_ACCEPT_ABOVE', 0)
 // Consecutive failed fetches after which a source is switched off. With a run
-// every ~15 min this is roughly two days of solid failure — a moved feed URL or
+// every ~5 min this is roughly two days of solid failure — a moved feed URL or
 // a WAF that now blocks the runner and the proxy alike, not a bad afternoon.
 // Disabled sources are listed in stats.sources_disabled and the workflow files
 // a feed-health issue so a person re-curates (curation is SQL, not commits).
-export const AUTO_DISABLE_AFTER = num('AUTO_DISABLE_AFTER', 200)
+export const AUTO_DISABLE_AFTER = num('AUTO_DISABLE_AFTER', 600)
 // Past the cap, an article this old is written off unjudged rather than deferred
 // forever. Sized against what the product can actually show: the feed serves the
 // newest 500 articles, which even at a healthy accept rate is well under a day

@@ -14,6 +14,15 @@
 //
 // Usage: GET {worker-url}?url=<encoded feed url>  with header  x-proxy-key: <secret>
 
+function conditional(headers) {
+  const out = {}
+  for (const h of ['if-none-match', 'if-modified-since']) {
+    const v = headers.get(h)
+    if (v) out[h] = v
+  }
+  return out
+}
+
 export default {
   async fetch(request, env) {
     if (request.headers.get('x-proxy-key') !== env.FEED_PROXY_SECRET) {
@@ -54,6 +63,9 @@ export default {
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
           'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
           'Accept-Language': 'en-US,en;q=0.9',
+          // Conditional requests from the pipeline pass through, so a feed
+          // that has not changed answers 304 with no body.
+          ...conditional(request.headers),
         },
         redirect: 'follow',
         signal: AbortSignal.timeout(10000),
@@ -65,10 +77,16 @@ export default {
       // As bytes, never text(): decoding as UTF-8 replaced every invalid byte,
       // which corrupted every image the photo check fetched (138 of ~150 per
       // run failed to decode) and any feed not encoded in UTF-8.
+      const validators = {}
+      for (const h of ['etag', 'last-modified']) {
+        const v = upstream.headers.get(h)
+        if (v) validators[h] = v
+      }
+      if (upstream.status === 304) return new Response(null, { status: 304, headers: validators })
       const body = await upstream.arrayBuffer()
       return new Response(body, {
         status: upstream.status,
-        headers: { 'content-type': upstream.headers.get('content-type') ?? 'application/octet-stream' },
+        headers: { 'content-type': upstream.headers.get('content-type') ?? 'application/octet-stream', ...validators },
       })
     } catch (err) {
       return new Response(`upstream fetch failed: ${err?.name ?? 'error'}: ${err?.message ?? ''}`.slice(0, 200), {

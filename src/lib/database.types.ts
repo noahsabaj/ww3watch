@@ -420,6 +420,8 @@ export type Database = {
           affiliation: string | null
           consecutive_failures: number
           enabled: boolean
+          feed_etag: string | null
+          feed_last_modified: string | null
           id: string
           lang: string
           last_error: string | null
@@ -435,6 +437,8 @@ export type Database = {
           affiliation?: string | null
           consecutive_failures?: number
           enabled?: boolean
+          feed_etag?: string | null
+          feed_last_modified?: string | null
           id?: string
           lang: string
           last_error?: string | null
@@ -450,6 +454,8 @@ export type Database = {
           affiliation?: string | null
           consecutive_failures?: number
           enabled?: boolean
+          feed_etag?: string | null
+          feed_last_modified?: string | null
           id?: string
           lang?: string
           last_error?: string | null

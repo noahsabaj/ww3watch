@@ -66,7 +66,8 @@ export async function run(stats: RunStats): Promise<void> {
   // 1. Load the roster from the DB, then fetch every feed in parallel;
   //    failures are recorded (and proxy-retried), never silently dropped.
   const sources = await timed('roster', () => loadSources())
-  const settled = await timed('fetch', () => Promise.allSettled(sources.map((feed) => fetchFeed(feed))))
+  const settled = await timed('fetch', () => Promise.allSettled(sources.map((feed) =>
+    fetchFeed(feed, { etag: feed.feed_etag ?? null, lastModified: feed.feed_last_modified ?? null }))))
   const results: FeedFetchResult[] = settled.map((s, i) =>
     s.status === 'fulfilled'
       ? s.value
