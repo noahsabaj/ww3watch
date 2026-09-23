@@ -1,4 +1,4 @@
-// Feed filters + ordering, extracted from routes/+page.svelte.
+// Feed filters, extracted from routes/+page.svelte.
 //
 // Two halves:
 //   • PURE helpers (filterArticles, orderClusters, the chip counters …) — plain
@@ -10,13 +10,9 @@
 //     initialisation.
 import type { Article, SourceRegion } from './types'
 import { ALL_REGIONS } from './types'
-import { importance } from './story'
 import { ALL_TOPICS, emptySignalFilter, matchesSignals, signalFilterActive, type Actor, type SignalFilter, type Topic } from './signals'
 import { groupByStoryId } from './cluster'
 import type { Cluster } from './cluster'
-import { clock } from './now.svelte'
-
-export type SortMode = 'latest' | 'top'
 
 export interface FilterCriteria {
   searchQuery: string
@@ -24,10 +20,6 @@ export interface FilterCriteria {
   excludedLangs: Set<string>
   signalFilter: SignalFilter
 }
-
-export const TOP_WINDOW_MS = 24 * 3_600_000
-
-const SORT_STORAGE_KEY = 'feed-sort'
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
 
@@ -47,16 +39,6 @@ export function filterArticles(articles: Article[], f: FilterCriteria): Article[
   })
 }
 
-// The 'top' ordering: stories whose newest member is inside the last
-// TOP_WINDOW_MS, ranked by importance. Undated stories never qualify.
-export function rankTop(latestClustered: Cluster[], now: number): Cluster[] {
-  const newest = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : null)
-  return latestClustered
-    .filter((c) => { const t = newest(c); return t !== null && now - t < TOP_WINDOW_MS })
-    .map((c) => ({ c, score: importance(c.articles, newest(c), now) }))
-    .sort((a, b) => b.score - a.score)
-    .map((x) => x.c)
-}
 
 // Languages present in the loaded feed, most common first — the chips the
 // filter UI offers. Counted over the unfiltered list so a chip never
@@ -97,10 +79,6 @@ export function createFilters(getArticles: () => Article[]) {
   let excludedLangs = $state(new Set<string>())
   let signalFilter = $state<SignalFilter>(emptySignalFilter())
 
-  // Feed order. 'latest' is the chronological feed. 'top' ranks the last day's
-  // stories by importance (severity, corroboration, recency — src/lib/story.ts):
-  // the same ingredients as Trending, over everything instead of the top three.
-  let sortMode = $state<SortMode>('latest')
 
   const criteria: FilterCriteria = {
     get searchQuery() { return searchQuery },
@@ -116,19 +94,7 @@ export function createFilters(getArticles: () => Article[]) {
   let availableActors = $derived(countActors(getArticles()))
 
   let filtered = $derived(filterArticles(getArticles(), criteria))
-  let latestClustered = $derived(groupByStoryId(filtered))
-  // Time-derived: 'top' reads the shared clock so its window slides.
-  let clustered = $derived(sortMode === 'latest' ? latestClustered : rankTop(latestClustered, clock.now))
-
-  function setSortMode(mode: SortMode) {
-    sortMode = mode
-    try { localStorage.setItem(SORT_STORAGE_KEY, mode) } catch { /* private mode */ }
-  }
-
-  /** Read the persisted sort mode. Browser-only — call from onMount. */
-  function restoreSortMode() {
-    try { if (localStorage.getItem(SORT_STORAGE_KEY) === 'top') sortMode = 'top' } catch { /* private mode */ }
-  }
+  let clustered = $derived(groupByStoryId(filtered))
 
   function clearFilters() {
     searchQuery = ''
@@ -146,17 +112,12 @@ export function createFilters(getArticles: () => Article[]) {
     set excludedLangs(v: Set<string>) { excludedLangs = v },
     get signalFilter() { return signalFilter },
     set signalFilter(v: SignalFilter) { signalFilter = v },
-    get sortMode() { return sortMode },
     get isFiltered() { return isFiltered },
     get availableLangs() { return availableLangs },
     get availableTopics() { return availableTopics },
     get availableActors() { return availableActors },
-    /** Filtered articles grouped into stories, chronological (DESC). */
-    get latestClustered() { return latestClustered },
-    /** What the feed renders: latestClustered, or its Top · 24h ranking. */
+    /** Filtered articles grouped into stories, newest first. */
     get clustered() { return clustered },
-    setSortMode,
-    restoreSortMode,
     clearFilters,
   }
 }

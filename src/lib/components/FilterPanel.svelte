@@ -3,7 +3,6 @@
   import { ALL_REGIONS, REGION_COLORS } from '$lib/types'
   import { LANG_NAMES } from '$lib/utils'
   import { ACTORS, TOPICS, type Actor, type SignalFilter, type Topic } from '$lib/signals'
-  import type { SortMode } from '$lib/filters.svelte'
 
   // Every way to narrow the feed, in one place: the phone's filter sheet and
   // the desk's filter panel render exactly this. Regions carry their colour as
@@ -16,8 +15,6 @@
     availableLangs,
     availableTopics,
     availableActors,
-    sortMode,
-    onSortMode,
     showSearch = false,
   }: {
     activeRegions: Set<SourceRegion>
@@ -27,8 +24,6 @@
     availableLangs: { lang: string; count: number }[]
     availableTopics: { key: Topic; count: number }[]
     availableActors: { key: Actor; count: number }[]
-    sortMode: SortMode
-    onSortMode: (mode: SortMode) => void
     showSearch?: boolean
   } = $props()
 
@@ -59,21 +54,6 @@
 </script>
 
 <div class="space-y-6 pt-3">
-  <section>
-    <h3 class="label mb-2.5">Order</h3>
-    <div class="flex gap-2" role="group" aria-label="Feed order">
-      {#each [['latest', 'Latest'], ['top', 'Top · 24h']] as [mode, label] (mode)}
-        <button
-          type="button"
-          class="pill"
-          aria-pressed={sortMode === mode}
-          title={mode === 'top' ? 'The last 24 hours, ranked by severity, independent corroboration and recency' : 'Newest first'}
-          onclick={() => onSortMode(mode as SortMode)}
-        >{label}</button>
-      {/each}
-    </div>
-  </section>
-
   {#if showSearch}
     <!-- The desk has search in its header; the panel's copy is for phones. -->
     <section class="min-[820px]:hidden">

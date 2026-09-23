@@ -4,7 +4,6 @@
   import { timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import type { Actor, SignalFilter, Topic } from '$lib/signals'
-  import type { SortMode } from '$lib/filters.svelte'
   import Sheet from '$lib/components/Sheet.svelte'
   import FilterPanel from '$lib/components/FilterPanel.svelte'
   import SiteMenu from '$lib/components/SiteMenu.svelte'
@@ -17,8 +16,6 @@
     availableLangs,
     availableTopics,
     availableActors,
-    sortMode,
-    onSortMode,
     onReset,
     storyCount,
     totalCount,
@@ -34,8 +31,6 @@
     availableLangs: { lang: string; count: number }[]
     availableTopics: { key: Topic; count: number }[]
     availableActors: { key: Actor; count: number }[]
-    sortMode: SortMode
-    onSortMode: (mode: SortMode) => void
     onReset: () => void
     storyCount: number
     totalCount: number
@@ -113,8 +108,6 @@
     {availableLangs}
     {availableTopics}
     {availableActors}
-    {sortMode}
-    {onSortMode}
     showSearch
   />
   {#snippet footer()}

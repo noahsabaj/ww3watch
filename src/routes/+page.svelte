@@ -108,7 +108,6 @@
     const onMedia = (e: MediaQueryListEvent) => { desk = e.matches }
     media.addEventListener('change', onMedia)
 
-    filters.restoreSortMode()
     if (localStorage.getItem('pwa-install-dismissed')) {
       installDismissed = true
     }
@@ -150,8 +149,6 @@
     bind:signalFilter={filters.signalFilter}
     availableTopics={filters.availableTopics}
     availableActors={filters.availableActors}
-    sortMode={filters.sortMode}
-    onSortMode={filters.setSortMode}
     onReset={filters.clearFilters}
     storyCount={filters.clustered.length}
     totalCount={Math.max(feed.allClustered.length, filters.clustered.length)}
@@ -186,14 +183,6 @@
         </button>
       {:else if feed.articles.length === 0}
         No stories yet — new ones appear here live.
-      {:else if filters.sortMode === 'top' && filters.latestClustered.length > 0}
-        <p class="mb-4 font-serif text-xl text-fg">Nothing from the last 24 hours matches.</p>
-        <button
-          onclick={() => filters.setSortMode('latest')}
-          class="btn-ghost"
-        >
-          Show latest
-        </button>
       {:else}
         <p class="mb-4 font-serif text-xl text-fg">No stories match your filters.</p>
         <button
@@ -209,8 +198,6 @@
       clusters={filters.clustered}
       trending={feed.topStories}
       {reader}
-      sortMode={filters.sortMode}
-      onSortMode={filters.setSortMode}
       hasMore={feed.hasMore}
       loadingMore={feed.loadingMore}
       onLoadOlder={loadOlder}
@@ -237,10 +224,9 @@
         <SignalFeed
           clusters={filters.clustered}
           onselect={reader.openArticle}
-          onLoadOlder={filters.sortMode === 'latest' ? loadOlder : undefined}
-          hasMore={feed.hasMore && filters.sortMode === 'latest'}
+          onLoadOlder={loadOlder}
+          hasMore={feed.hasMore}
           loadingMore={feed.loadingMore}
-          ranked={filters.sortMode === 'top'}
           focusId={reader.selectedCluster?.id ?? null}
           onview={onSignalView}
           onrefresh={feed.refresh}

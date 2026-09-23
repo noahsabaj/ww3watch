@@ -232,20 +232,6 @@ test('the pane offers translation only for headlines outside the reading languag
   await expect(pane.getByRole('button', { name: 'Translate', exact: true })).toBeVisible()
 })
 
-test('Top ranks the last 24h and always leaves a way back to Latest', async ({ page }) => {
-  const order = page.getByRole('group', { name: 'Feed order' })
-  const latest = order.getByRole('button', { name: 'Latest' })
-  const top = order.getByRole('button', { name: /^Top/ })
-  await expect(latest).toHaveAttribute('aria-pressed', 'true')
-  await top.click()
-  // Whatever the fixture's dates, a way back survives — an empty Top window
-  // must never strand the reader.
-  await expect(page.getByRole('button', { name: /^(Latest|Show latest)$/ }).first()).toBeVisible()
-  await page.getByRole('button', { name: /^(Latest|Show latest)$/ }).first().click()
-  await expect(page.getByRole('group', { name: 'Feed order' }).getByRole('button', { name: 'Latest' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(stories(page).first()).toBeVisible()
-})
-
 // ── Publisher photographs ───────────────────────────────────────────────────
 
 test('a story shows its newsroom photograph, credited to the outlet that published it', async ({ page }) => {

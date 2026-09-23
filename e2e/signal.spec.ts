@@ -31,14 +31,6 @@ test('filters and the menu live in the header, with nothing floating over storie
   expect(floating).toBe(0)
 })
 
-test('feed order lives in the filter sheet', async ({ page }) => {
-  await page.getByRole('button', { name: /^Open filters/ }).click()
-  const order = page.getByRole('dialog').getByRole('group', { name: 'Feed order' })
-  await expect(order.getByRole('button', { name: 'Latest' })).toHaveAttribute('aria-pressed', 'true')
-  await order.getByRole('button', { name: /^Top/ }).click()
-  await expect(order.getByRole('button', { name: /^Top/ })).toHaveAttribute('aria-pressed', 'true')
-})
-
 test('Signal carries no position counter or visible scrollbar', async ({ page }) => {
   await expect(page.getByText(/^\d+ \/ \d+$/)).toHaveCount(0)
   const scroller = page.getByLabel('Stories', { exact: true })

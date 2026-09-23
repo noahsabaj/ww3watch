@@ -4,13 +4,11 @@ import { ALL_REGIONS } from './types'
 import { ALL_TOPICS, emptySignalFilter } from './signals'
 import { groupByStoryId } from './cluster'
 import {
-  TOP_WINDOW_MS,
   countActors,
   countLangs,
   countTopics,
   filterArticles,
   isFilterActive,
-  rankTop,
   type FilterCriteria,
 } from './filters.svelte'
 
@@ -115,56 +113,6 @@ describe('filterArticles', () => {
   it('returns an empty list for empty input', () => {
     expect(filterArticles([], criteria())).toEqual([])
     expect(filterArticles([], criteria({ searchQuery: 'x' }))).toEqual([])
-  })
-})
-
-describe('rankTop', () => {
-  it('keeps only stories whose newest member is inside the last 24h', () => {
-    const fresh = art({ published_at: hoursAgo(2) })
-    const edge = art({ published_at: new Date(NOW - TOP_WINDOW_MS + 1).toISOString() })
-    const boundary = art({ published_at: new Date(NOW - TOP_WINDOW_MS).toISOString() })
-    const old = art({ published_at: hoursAgo(30) })
-    const undated = art({ published_at: null })
-    const ids = rankTop(groupByStoryId([fresh, edge, boundary, old, undated]), NOW).map((c) => c.id).sort()
-    expect(ids).toEqual([fresh.id, edge.id].sort())
-  })
-
-  it('judges a story by its newest member, not its oldest', () => {
-    const members = [
-      art({ story_id: 's1', published_at: hoursAgo(40) }),
-      art({ story_id: 's1', published_at: hoursAgo(3) }),
-    ]
-    const ranked = rankTop(groupByStoryId(members), NOW)
-    expect(ranked).toHaveLength(1)
-    expect(ranked[0].articles).toHaveLength(2)
-  })
-
-  it('orders by importance rather than recency', () => {
-    const minorNewest = art({ published_at: hoursAgo(1), severity: 0.05 })
-    const majorOlder = art({ published_at: hoursAgo(6), severity: 0.95 })
-    const latest = groupByStoryId([minorNewest, majorOlder])
-    expect(latest.map((c) => c.id)).toEqual([minorNewest.id, majorOlder.id]) // chronological input
-    expect(rankTop(latest, NOW).map((c) => c.id)).toEqual([majorOlder.id, minorNewest.id])
-  })
-
-  it('does not mutate its input', () => {
-    const latest = groupByStoryId([art({ severity: 0.05 }), art({ published_at: hoursAgo(6), severity: 0.95 })])
-    const before = latest.map((c) => c.id)
-    rankTop(latest, NOW)
-    expect(latest.map((c) => c.id)).toEqual(before)
-  })
-
-  it('is empty when nothing is recent, and for empty input', () => {
-    expect(rankTop(groupByStoryId([art({ published_at: hoursAgo(25) }), art({ published_at: hoursAgo(90) })]), NOW)).toEqual([])
-    expect(rankTop([], NOW)).toEqual([])
-  })
-
-  it('composes with filterArticles: Top ranks only what survived the filters', () => {
-    const ruRecent = art({ source_region: 'Russian', published_at: hoursAgo(2) })
-    const ruOld = art({ source_region: 'Russian', published_at: hoursAgo(50) })
-    const usRecent = art({ published_at: hoursAgo(2), severity: 0.95 })
-    const filtered = filterArticles([ruRecent, ruOld, usRecent], criteria({ activeRegions: new Set<SourceRegion>(['Russian']) }))
-    expect(rankTop(groupByStoryId(filtered), NOW).map((c) => c.id)).toEqual([ruRecent.id])
   })
 })
 
