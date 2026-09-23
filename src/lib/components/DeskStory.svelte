@@ -9,11 +9,12 @@
   import { regionWash } from '$lib/region-wash'
   import { createHeadlineTranslation } from '$lib/headline-translation.svelte'
   import { createStoryPhoto } from '$lib/story-photo.svelte'
-  import { bySide, memberKind } from '$lib/story'
+  import { byOutlet, bySide, memberKind } from '$lib/story'
   import ShareControls from '$lib/components/ShareControls.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import StoryKicker from '$lib/components/StoryKicker.svelte'
   import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
+  import OutletFold from '$lib/components/OutletFold.svelte'
 
   // The desk's right pane: one story, Signal's treatment, with the thing a wide
   // screen has room for — every newsroom's headline side by side.
@@ -34,6 +35,8 @@
   const wireIds = $derived(wireDuplicateIds(cluster.articles))
   const timeline = $derived(storyTimeline(cluster.articles))
   const sides = $derived(bySide(cluster.articles))
+  const timelineEntry = $derived(new Map(timeline.ordered.map((e) => [e.article.id, e])))
+  const timelineRows = $derived(byOutlet(timeline.ordered.map((e) => e.article), 'first'))
 
   // "By side" is the point of the product; "Timeline" answers who had it first.
   let view = $state<'sides' | 'timeline'>('sides')
@@ -152,13 +155,16 @@
         {#if view === 'sides'}
           <div class="space-y-6">
             {#each sides as side (side.region + (side.affiliation ?? ''))}
+              {@const rows = byOutlet(side.articles, 'newest')}
               <div>
                 <p class="mb-2 text-[11px] uppercase tracking-[0.14em] text-fg-3">
-                  {side.region}{side.affiliation === 'state' ? ' · state media' : ''} <span class="text-fg-3">· {side.articles.length}</span>
+                  {side.region}{side.affiliation === 'state' ? ' · state media' : ''} <span class="text-fg-3">· {rows.length}</span>
                 </p>
                 <ul class="grid gap-2 xl:grid-cols-2">
-                  {#each side.articles as article (article.id)}
-                    {@render outlet(article, '', false)}
+                  {#each rows as row (row.lead.id)}
+                    <OutletFold {row} class="xl:col-span-2">
+                      {#snippet item(article)}{@render outlet(article, '', false)}{/snippet}
+                    </OutletFold>
                   {/each}
                 </ul>
               </div>
@@ -166,8 +172,13 @@
           </div>
         {:else}
           <ul class="grid gap-2">
-            {#each timeline.ordered as entry (entry.article.id)}
-              {@render outlet(entry.article, entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : '', entry.isFirst)}
+            {#each timelineRows as row (row.lead.id)}
+              <OutletFold {row}>
+                {#snippet item(article)}
+                  {@const entry = timelineEntry.get(article.id)!}
+                  {@render outlet(article, entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : '', entry.isFirst)}
+                {/snippet}
+              </OutletFold>
             {/each}
           </ul>
         {/if}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Article } from './types'
-import { bySide, corroboration, memberKind, storySignals } from './story'
+import { byOutlet, bySide, corroboration, memberKind, storySignals } from './story'
 
 let n = 0
 function art(o: Partial<Article> = {}): Article {
@@ -73,5 +73,33 @@ describe('bySide', () => {
       ['Iranian', null, 1],
       ['Israeli', null, 1],
     ])
+  })
+})
+
+describe('byOutlet', () => {
+  const at = (h: number) => `2026-09-23T${String(h).padStart(2, '0')}:00:00Z`
+  const ria1 = art({ source_name: 'RIA Novosti', published_at: at(10) })
+  const tass = art({ source_name: 'TASS', published_at: at(11) })
+  const ria2 = art({ source_name: 'RIA Novosti', published_at: at(12) })
+  const ria3 = art({ source_name: 'RIA Novosti', published_at: at(13) })
+  const chronological = [ria1, tass, ria2, ria3]
+
+  it("folds an outlet's reports under its newest", () => {
+    const rows = byOutlet([ria3, ria2, tass, ria1], 'newest')
+    expect(rows.map((r) => r.lead)).toEqual([ria3, tass])
+    expect(rows[0].more).toEqual([ria1, ria2])
+    expect(rows[1].more).toEqual([])
+  })
+
+  it('leads with the first report for a timeline, keeping the input order', () => {
+    const rows = byOutlet(chronological, 'first')
+    expect(rows.map((r) => r.lead)).toEqual([ria1, tass])
+    expect(rows[0].more).toEqual([ria2, ria3])
+  })
+
+  it('never leads with an undated report', () => {
+    const undated = art({ source_name: 'TASS', published_at: null })
+    expect(byOutlet([undated, tass], 'newest')[0].lead).toBe(tass)
+    expect(byOutlet([undated, tass], 'first')[0].lead).toBe(tass)
   })
 })

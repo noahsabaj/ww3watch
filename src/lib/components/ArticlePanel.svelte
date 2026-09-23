@@ -15,6 +15,8 @@
   import RegionBadge from '$lib/components/RegionBadge.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
+  import OutletFold from '$lib/components/OutletFold.svelte'
+  import { byOutlet } from '$lib/story'
   import { modal } from '$lib/modal'
 
   // inline: the desk's story pane hosts the reader in place (no backdrop, no
@@ -91,6 +93,9 @@
 
   // Chronological "who reported first" timeline for the in-panel source list.
   const clusterTimeline = $derived(cluster && cluster.sourceCount > 1 ? storyTimeline(cluster.articles) : null)
+  // One row per outlet at its first report; its later ones fold beneath it.
+  const timelineEntry = $derived(new Map(clusterTimeline?.ordered.map((e) => [e.article.id, e]) ?? []))
+  const timelineRows = $derived(clusterTimeline ? byOutlet(clusterTimeline.ordered.map((e) => e.article), 'first') : [])
 
   // Keyed on the URL, not the article object: the feed replaces a row's object
   // on a realtime cluster-assignment patch, and re-reading the same article
@@ -333,34 +338,40 @@
           </h2>
           <!-- Chronological: oldest first, the original report tagged. -->
           <ol class="space-y-1">
-            {#each clusterTimeline.ordered as entry (entry.article.id)}
-              <li class="flex items-start gap-3 rounded-lg px-2 py-2 {entry.article.id === article.id ? 'bg-white/[0.04]' : ''}">
-                <span class="w-11 shrink-0 pt-0.5 text-right font-mono text-[10px] {entry.isFirst ? 'text-amber-300' : 'text-fg-3'}">
-                  {entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : ''}
-                </span>
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-3">
-                    <RegionBadge region={entry.article.source_region} size="sm" />
-                    <span class="text-fg-2">{entry.article.source_name}</span>
-                    {#if langTag(entry.article.source_lang)}<span class="font-mono uppercase">{langTag(entry.article.source_lang)}</span>{/if}
-                    <AffiliationBadge affiliation={entry.article.source_affiliation} />
-                    {#if entry.isWire}
-                      <span class="tag" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
-                    {/if}
-                  </div>
-                  {#if entry.article.id === article.id}
-                    <p dir="auto" class="mt-1 text-[14px] leading-snug text-fg">{entry.article.title} <span class="text-accent">· reading</span></p>
-                  {:else}
-                    <button
-                      onclick={() => onselect?.(entry.article)}
-                      dir="auto"
-                      class="mt-1 block text-start text-[14px] leading-snug text-fg-2 transition-colors hover:text-fg"
-                    >
-                      {entry.article.title}
-                    </button>
-                  {/if}
-                </div>
-              </li>
+            {#each timelineRows as row (row.lead.id)}
+              <!-- The outlet being read opens folded out, so its row is never hidden. -->
+              <OutletFold {row} open={row.more.some((a) => a.id === article.id)} class="pl-[3.25rem]">
+                {#snippet item(member)}
+                  {@const entry = timelineEntry.get(member.id)!}
+                  <li class="flex items-start gap-3 rounded-lg px-2 py-2 {entry.article.id === article.id ? 'bg-white/[0.04]' : ''}">
+                    <span class="w-11 shrink-0 pt-0.5 text-right font-mono text-[10px] {entry.isFirst ? 'text-amber-300' : 'text-fg-3'}">
+                      {entry.isFirst ? 'FIRST' : entry.offsetMs !== null ? offsetLabel(entry.offsetMs) : ''}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-3">
+                        <RegionBadge region={entry.article.source_region} size="sm" />
+                        <span class="text-fg-2">{entry.article.source_name}</span>
+                        {#if langTag(entry.article.source_lang)}<span class="font-mono uppercase">{langTag(entry.article.source_lang)}</span>{/if}
+                        <AffiliationBadge affiliation={entry.article.source_affiliation} />
+                        {#if entry.isWire}
+                          <span class="tag" title="Near-identical to an earlier article in this story — likely syndicated wire copy">wire</span>
+                        {/if}
+                      </div>
+                      {#if entry.article.id === article.id}
+                        <p dir="auto" class="mt-1 text-[14px] leading-snug text-fg">{entry.article.title} <span class="text-accent">· reading</span></p>
+                      {:else}
+                        <button
+                          onclick={() => onselect?.(entry.article)}
+                          dir="auto"
+                          class="mt-1 block text-start text-[14px] leading-snug text-fg-2 transition-colors hover:text-fg"
+                        >
+                          {entry.article.title}
+                        </button>
+                      {/if}
+                    </div>
+                  </li>
+                {/snippet}
+              </OutletFold>
             {/each}
           </ol>
         </section>

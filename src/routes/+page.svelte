@@ -106,6 +106,13 @@
     if (!isPaused && untrack(() => feed.newQueue.length) > 0) feed.flushQueue()
   })
 
+  // Narrowing to the phone layout (an iPad window made narrower than 820px) takes the
+  // order afresh: the desk takes arrivals straight into its rail, and the order
+  // taken at load would rank them against a stale clock.
+  $effect(() => {
+    if (desk === false) untrack(() => feed.rerank())
+  })
+
   async function loadOlder() {
     // The large list re-render below blurs the focused control; if the user
     // drove this from the keyboard, restore focus afterward.
@@ -254,7 +261,7 @@
       loadingMore={feed.loadingMore}
       onLoadOlder={loadOlder}
       {lastVisitAt}
-      newCount={feed.newQueue.length}
+      newCount={feed.newStoryCount}
       onFlush={flushQueue}
       onrefresh={feed.refresh}
       {theaters}
@@ -264,13 +271,13 @@
     />
   {:else if desk === false}
     <!-- New articles banner -->
-    {#if feed.newQueue.length > 0}
+    {#if feed.newStoryCount > 0}
       <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc({theater ? '9.5rem' : '6.5rem'} + env(safe-area-inset-top, 0px))">
         <button
           onclick={flushQueue}
           class="btn min-h-9 gap-1.5 px-4 text-[13px] shadow-lg shadow-black/50"
         >
-          <Icon name="arrow-up" size={14} />{feed.newQueue.length} new {feed.newQueue.length === 1 ? 'story' : 'stories'}
+          <Icon name="arrow-up" size={14} />{feed.newStoryCount} new {feed.newStoryCount === 1 ? 'story' : 'stories'}
         </button>
       </div>
     {/if}

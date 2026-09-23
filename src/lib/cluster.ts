@@ -157,23 +157,20 @@ export function groupByStoryId(articles: Article[], langs: readonly string[] = [
 // a single outlet posted a minute ago; after a day, order is close to
 // newest-first. Score = outlets / (hours since the newest report + 2)^1.5.
 //
-// `at` is when the order was taken (load, pull to refresh), not the ticking
-// clock, so the feed never reshuffles under a reader. Stories that gained a
-// report after it (the "new stories" pill) are the exception: they lead,
-// newest first, until the next refresh ranks them.
+// `at` is when the order was taken (load, pull to refresh, the "new stories"
+// pill, switching to the phone layout), not the ticking clock, so the feed
+// never reshuffles under a reader.
 const RANK_OFFSET_H = 2
 const RANK_GRAVITY = 1.5
 
 export function rankStories(clusters: Cluster[], at: number): Cluster[] {
-  const fresh: Cluster[] = []
-  const rest: Array<{ c: Cluster; score: number }> = []
-  for (const c of clusters) {
-    if (c.articles.some((a) => a.fetched_at && Date.parse(a.fetched_at) > at)) { fresh.push(c); continue }
-    const hours = Math.max(0, at - c.updatedAt) / 3_600_000
-    rest.push({ c, score: c.updatedAt > 0 ? c.sourceCount / (hours + RANK_OFFSET_H) ** RANK_GRAVITY : 0 })
-  }
-  rest.sort((x, y) => y.score - x.score || y.c.updatedAt - x.c.updatedAt)
-  return [...fresh.sort((x, y) => y.updatedAt - x.updatedAt), ...rest.map((r) => r.c)]
+  return clusters
+    .map((c) => {
+      const hours = Math.max(0, at - c.updatedAt) / 3_600_000
+      return { c, score: c.updatedAt > 0 ? c.sourceCount / (hours + RANK_OFFSET_H) ** RANK_GRAVITY : 0 }
+    })
+    .sort((x, y) => y.score - x.score || y.c.updatedAt - x.c.updatedAt)
+    .map((r) => r.c)
 }
 
 export interface StoryPhoto {

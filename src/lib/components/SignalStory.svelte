@@ -12,6 +12,7 @@
   import StoryKicker from '$lib/components/StoryKicker.svelte'
   import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
   import { tips } from '$lib/tips.svelte'
+  import { byOutlet } from '$lib/story'
 
   let {
     cluster,
@@ -27,7 +28,11 @@
   } = $props()
 
   const rep = $derived(cluster.representative)
-  const others = $derived(cluster.articles.filter((a) => a.id !== rep.id).slice(0, 3))
+  // Up to three other newsrooms, one line each: an outlet that filed the story
+  // ten times still gets one line, and the headline's own outlet none.
+  const others = $derived(
+    byOutlet(cluster.articles.filter((a) => a.source_name !== rep.source_name), 'newest').slice(0, 3).map((r) => r.lead),
+  )
   const translation = createHeadlineTranslation(() => rep)
   const photo = createStoryPhoto(() => cluster, 360)
   $effect(tips.load)
