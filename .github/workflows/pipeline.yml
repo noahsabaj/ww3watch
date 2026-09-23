@@ -19,7 +19,10 @@ env:
   # Target seconds between consecutive job starts. The chain step sleeps the
   # remainder of this after the run's work, so a quick run doesn't turn into a
   # tight loop of LLM calls — and a slow one dispatches immediately.
-  CADENCE_SECONDS: 900
+  # 300 (was 900, 2026-09-23): a run's work takes ~2.5 min, and publication to
+  # ingestion had a median of 18 min, half of it waiting for the next run.
+  # Jev is asked per article, so more frequent runs cost about the same.
+  CADENCE_SECONDS: 300
 
 concurrency:
   group: ww3watch-pipeline
@@ -41,8 +44,8 @@ jobs:
     # ignoring its budget — and it now alerts, because a timeout reports
     # "cancelled" and the alert step below no longer keys on failure() alone.
     # Must cover setup + the run budget + the chain step's pacing sleep, which
-    # is CADENCE_SECONDS measured from job start (so at most ~15 min total
-    # before the dispatch, plus setup).
+    # ends CADENCE_SECONDS after job start; a run that uses its whole 15-min
+    # RUN_BUDGET_MS dispatches at once, so at most ~15 min plus setup.
     timeout-minutes: 20
     steps:
       - id: clock
@@ -152,7 +155,7 @@ jobs:
 
       # Feeds that fetch fine but yield ~nothing (source_yield RPC). One open
       # feed-health issue at a time; it is only commented on when the list
-      # changes, so a standing list does not get a comment every 15 minutes.
+      # changes, so a standing list does not get a comment every run.
       # (The "changed" test — a marker of the sorted source names — is in
       # scripts/ci/issues.ts.)
       - name: File feed-health issue for low-yield sources
@@ -224,9 +227,9 @@ jobs:
       # GitHub disables scheduled workflows after 60 days of repo inactivity;
       # re-enabling via the API resets that timer without a dummy commit. Gated
       # to ~once a week (Monday, hour 00 UTC) so it's a handful of idempotent
-      # calls, not one per 15-min run. (backup.yml's weekly commit also resets it.)
+      # calls, not one per run. (backup.yml's weekly commit also resets it.)
       # Not gated on the schedule event any more: chained runs are
-      # workflow_dispatch, and with a run every 15 min one of them always lands
+      # workflow_dispatch, and with a run every 5 min several always land
       # in the Monday 00:xx window.
       - name: Keepalive — re-arm scheduled workflows
         env:

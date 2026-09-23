@@ -12,6 +12,8 @@ export interface RunStats {
   feeds_failed?: number
   feeds_direct?: number
   feeds_proxy?: number
+  /** Feeds that answered 304 Not Modified to a conditional request. */
+  feeds_not_modified?: number
   fail_kinds?: Record<string, number>
   dates_clamped?: number
   sources_disabled?: string[]

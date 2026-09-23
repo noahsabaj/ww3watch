@@ -30,9 +30,21 @@ export type ArticleInsert = {
 export const FEED_ERROR_KINDS = ['http', 'timeout', 'parse', 'network', 'blocked'] as const
 export type FeedErrorKind = (typeof FEED_ERROR_KINDS)[number]
 
+/** A feed's cache validators from its last full response (sources.feed_etag,
+ *  sources.feed_last_modified), sent back as If-None-Match / If-Modified-Since. */
+export interface Validators {
+  etag: string | null
+  lastModified: string | null
+}
+export const NO_VALIDATORS: Validators = { etag: null, lastModified: null }
+
 export interface FeedFetchResult {
   feed: Feed
   articles: ArticleInsert[]
+  /** The feed answered 304: nothing changed since the validators we sent. */
+  notModified?: boolean
+  /** What to send next run (absent on failure: keep the stored ones). */
+  validators?: Validators
   /** which path produced the result (or was attempted last on failure) */
   via: 'direct' | 'proxy'
   /** count of items whose pubDate parsed but was clamped out of range (telemetry) */
@@ -122,7 +134,30 @@ export function isClampedDate(pubDate: string | undefined, nowMs: number = Date.
 
 // ── Fetching ─────────────────────────────────────────────────────────────────
 
-async function fetchXml(url: string, headers: Record<string, string>, timeoutMs: number): Promise<{ text: string; contentType: string }> {
+// Conditional requests: about 40% of the roster answers 304 Not Modified to a
+// repeat request carrying its validators (69 of 169 feeds, surveyed
+// 2026-09-23), which skips downloading, parsing and de-duplicating a feed that
+// has not changed since the last run. Feeds that send neither header are
+// fetched in full as before.
+function conditionalHeaders(v: Validators): Record<string, string> {
+  const h: Record<string, string> = {}
+  if (v.etag) h['If-None-Match'] = v.etag
+  if (v.lastModified) h['If-Modified-Since'] = v.lastModified
+  return h
+}
+
+function validatorsOf(response: Response, fallback: Validators): Validators {
+  return {
+    etag: response.headers.get('etag')?.slice(0, 500) ?? fallback.etag,
+    lastModified: response.headers.get('last-modified')?.slice(0, 100) ?? fallback.lastModified,
+  }
+}
+
+type Fetched =
+  | { notModified: true; validators: Validators }
+  | { notModified?: false; text: string; contentType: string; validators: Validators }
+
+async function fetchXml(url: string, headers: Record<string, string>, timeoutMs: number, sent: Validators = NO_VALIDATORS): Promise<Fetched> {
   let response: Response
   try {
     response = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) })
@@ -132,8 +167,18 @@ async function fetchXml(url: string, headers: Record<string, string>, timeoutMs:
     }
     throw new FeedError('network', err instanceof Error ? `${err.name}: ${err.message}` : String(err))
   }
+  if (response.status === 304 && (sent.etag || sent.lastModified)) {
+    await response.body?.cancel().catch(() => {})
+    return { notModified: true, validators: validatorsOf(response, sent) }
+  }
   if (!response.ok) throw new FeedError('http', `HTTP ${response.status}`)
-  return { text: await response.text(), contentType: response.headers.get('content-type') ?? 'unknown' }
+  return {
+    text: await response.text(),
+    contentType: response.headers.get('content-type') ?? 'unknown',
+    // A full response's own headers only: a feed that stopped sending them
+    // stops getting conditional requests.
+    validators: validatorsOf(response, NO_VALIDATORS),
+  }
 }
 
 // Many news-site WAFs block GitHub Actions' datacenter IPs (proven 2026-06: the
@@ -148,8 +193,9 @@ function proxyConfig(): { url: string; secret: string } | null {
 
 // Cap concurrent proxy calls so the whole roster doesn't burst-fire the Worker
 // from one runner. The proxy is now the PRIMARY path (proxy-first), so this is
-// raised from 10 → 20: ~200 feeds × ~96 runs/day ≈ 18.5k subrequests/day, well
-// under the free tier's 100k. Tiny semaphore — not worth a dependency.
+// raised from 10 → 20. Feeds are ~174 proxy requests a run: at a run every 5
+// minutes ≈ 50k/day, plus ~11k/day of page and photo fetches that scale with
+// articles, not runs — ~61% of the free tier's 100k. Tiny semaphore — not worth a dependency.
 const PROXY_CONCURRENCY = 20
 let proxyActive = 0
 const proxyWaiters: Array<() => void> = []
@@ -320,11 +366,12 @@ function looksLikeNonFeed(body: string, contentType: string): boolean {
   return true
 }
 
-async function fetchAndParse(
-  feed: Feed,
-  doFetch: () => Promise<{ text: string; contentType: string }>,
-): Promise<{ articles: ArticleInsert[]; clamped: number }> {
-  const { text: raw, contentType } = await doFetch()
+type Parsed = { articles: ArticleInsert[]; clamped: number; notModified?: boolean; validators: Validators }
+
+async function fetchAndParse(feed: Feed, doFetch: () => Promise<Fetched>): Promise<Parsed> {
+  const fetched = await doFetch()
+  if (fetched.notModified) return { articles: [], clamped: 0, notModified: true, validators: fetched.validators }
+  const { text: raw, contentType, validators } = fetched
   const text = stripLeading(raw)
   const head = () => text.slice(0, 100).replace(/\s+/g, ' ')
 
@@ -335,13 +382,13 @@ async function fetchAndParse(
   }
 
   try {
-    return await parseArticles(feed, text)
+    return { ...(await parseArticles(feed, text)), validators }
   } catch (err) {
     // rss-parser is strict; some valid-ish feeds carry unescaped & or stray tags.
     // Retry once with the tolerant parser before giving up.
     try {
       const lenient = parseArticlesLenient(feed, text)
-      if (lenient.articles.length > 0) return lenient
+      if (lenient.articles.length > 0) return { ...lenient, validators }
     } catch {
       // fall through to the parse error
     }
@@ -350,16 +397,17 @@ async function fetchAndParse(
   }
 }
 
-const fetchDirect = (feed: Feed) => fetchAndParse(feed, () => fetchXml(feed.url, FEED_HEADERS, FEED_TIMEOUT_MS))
+const fetchDirect = (feed: Feed, sent: Validators) =>
+  fetchAndParse(feed, () => fetchXml(feed.url, { ...FEED_HEADERS, ...conditionalHeaders(sent) }, FEED_TIMEOUT_MS, sent))
 
-export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
+export async function fetchFeed(feed: Feed, sent: Validators = NO_VALIDATORS): Promise<FeedFetchResult> {
   const proxy = proxyConfig()
 
   // No proxy configured ⇒ plain direct fetch (local dev / proxy-less runs).
   if (!proxy) {
     try {
-      const { articles, clamped } = await fetchDirect(feed)
-      return { feed, via: 'direct', articles, clamped }
+      const { articles, clamped, notModified, validators } = await fetchDirect(feed, sent)
+      return { feed, via: 'direct', articles, clamped, notModified, validators }
     } catch (err) {
       const e = err instanceof FeedError ? err : new FeedError('network', String(err))
       return { feed, via: 'direct', articles: [], error: { kind: e.kind, detail: e.detail } }
@@ -372,23 +420,24 @@ export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
   // so coverage never regresses if the Worker is down.
   let proxyError: FeedError
   try {
-    const { articles, clamped } = await withProxySlot(() =>
+    const { articles, clamped, notModified, validators } = await withProxySlot(() =>
       fetchAndParse(feed, () =>
         fetchXml(
           `${proxy.url}?url=${encodeURIComponent(feed.url)}`,
-          { ...FEED_HEADERS, 'x-proxy-key': proxy.secret },
+          { ...FEED_HEADERS, ...conditionalHeaders(sent), 'x-proxy-key': proxy.secret },
           PROXY_TIMEOUT_MS,
+          sent,
         ),
       ),
     )
-    return { feed, via: 'proxy', articles, clamped }
+    return { feed, via: 'proxy', articles, clamped, notModified, validators }
   } catch (err) {
     proxyError = err instanceof FeedError ? err : new FeedError('network', String(err))
   }
 
   try {
-    const { articles, clamped } = await fetchDirect(feed)
-    return { feed, via: 'direct', articles, clamped }
+    const { articles, clamped, notModified, validators } = await fetchDirect(feed, sent)
+    return { feed, via: 'direct', articles, clamped, notModified, validators }
   } catch (err) {
     const directError = err instanceof FeedError ? err : new FeedError('network', String(err))
     // Report the PROXY failure kind — the Worker is the primary egress, so its

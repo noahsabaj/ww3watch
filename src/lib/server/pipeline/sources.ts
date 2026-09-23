@@ -11,6 +11,8 @@ export type SourceRow = Feed & {
   enabled: boolean
   consecutive_failures: number
   updated_at: string
+  feed_etag?: string | null
+  feed_last_modified?: string | null
 }
 
 // The roster lives in the DB (sources table). A failed/empty roster query must
@@ -41,6 +43,9 @@ export async function updateSourceHealth(results: FeedFetchResult[]): Promise<st
     via: r.via,
     error_kind: r.error?.kind ?? null,
     error_detail: r.error?.detail.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').slice(0, 300) ?? null,
+    // Next run's If-None-Match / If-Modified-Since (rss.ts); a failure keeps the stored pair.
+    etag: r.validators?.etag ?? null,
+    last_modified: r.validators?.lastModified ?? null,
   }))
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const { data, error } = await supabaseAdmin.rpc('record_source_health', {
@@ -66,6 +71,7 @@ export async function updateSourceHealth(results: FeedFetchResult[]): Promise<st
 
 export function logFeedSummary(results: FeedFetchResult[]) {
   const ok = results.filter((r) => !r.error)
+  const notModified = ok.filter((r) => r.notModified).length
   const direct = ok.filter((r) => r.via === 'direct').length
   const proxy = ok.filter((r) => r.via === 'proxy').length
   const failed = results.filter((r) => r.error)
@@ -78,7 +84,7 @@ export function logFeedSummary(results: FeedFetchResult[]) {
 
   const kindSummary = FEED_ERROR_KINDS.map((k) => `${k}=${byKind[k]}`).join(' ')
   console.log(
-    `[pipeline] feeds ok ${ok.length}/${results.length} (direct ${direct}, proxy ${proxy}) | failed ${failed.length}: ${kindSummary}`,
+    `[pipeline] feeds ok ${ok.length}/${results.length} (direct ${direct}, proxy ${proxy}, unchanged ${notModified}) | failed ${failed.length}: ${kindSummary}`,
   )
   for (const r of failed) {
     console.log(`[feed-fail] ${r.feed.name} [${r.feed.region}] ${r.error!.kind}: ${r.error!.detail}`)
@@ -89,6 +95,7 @@ export function logFeedSummary(results: FeedFetchResult[]) {
     feeds_ok: ok.length,
     feeds_direct: direct,
     feeds_proxy: proxy,
+    feeds_not_modified: notModified,
     feeds_failed: failed.length,
     fail_kinds: byKind,
     dates_clamped: datesClamped,

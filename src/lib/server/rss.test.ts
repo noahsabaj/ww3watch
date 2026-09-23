@@ -166,6 +166,32 @@ describe('fetchFeed', () => {
     expect(headers['Accept-Language']).toBe('en-US,en;q=0.9')
   })
 
+  it('keeps a full response\'s validators and sends them back next time', async () => {
+    const xml = '<rss version="2.0"><channel><title>T</title><item><title>A</title><link>https://x/1</link><guid>g1</guid></item></channel></rss>'
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(xml, {
+      status: 200, headers: { 'Content-Type': 'application/rss+xml', ETag: '"v1"', 'Last-Modified': 'Wed, 23 Sep 2026 18:00:00 GMT' },
+    }))
+    const first = await fetchFeed(mockFeed)
+    expect(first.validators).toEqual({ etag: '"v1"', lastModified: 'Wed, 23 Sep 2026 18:00:00 GMT' })
+    expect(first.notModified).toBeUndefined()
+
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 304 }))
+    const second = await fetchFeed(mockFeed, first.validators)
+    const headers = (spy.mock.calls.at(-1)![1] as RequestInit).headers as Record<string, string>
+    expect(headers['If-None-Match']).toBe('"v1"')
+    expect(headers['If-Modified-Since']).toBe('Wed, 23 Sep 2026 18:00:00 GMT')
+    expect(second).toMatchObject({ notModified: true, articles: [], validators: first.validators })
+    expect(second.error).toBeUndefined()
+  })
+
+  it('sends no conditional headers without validators, and treats an unasked-for 304 as an error', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 304 }))
+    const result = await fetchFeed(mockFeed)
+    const headers = (spy.mock.calls[0][1] as RequestInit).headers as Record<string, string>
+    expect(headers['If-None-Match']).toBeUndefined()
+    expect(result.error?.kind).toBe('http')
+  })
+
   it('tolerates a leading-whitespace feed (Non-whitespace-before-first-tag cluster)', async () => {
     const rssXml = `\n\n   <?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
       <item><title>Lead ws</title><link>https://x/1</link><guid>https://x/1</guid></item></channel></rss>`
