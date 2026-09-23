@@ -123,7 +123,7 @@
           judges three things: how consequential the event is, whether it is a new development, and whether it is
           only talk. Code weighs those against how many independent sources, regions and languages carry the
           story. The weights are in the source, not in a prompt.</li>
-        <li><strong>Tags</strong> — "major", "statement", "analysis", "unconfirmed", the topic and the parties
+        <li><strong>Tags</strong> — "major", "statement", "analysis", "unconfirmed" and the parties
           involved are the same kind of judgment, made once per article from its headline and summary. They are a
           classifier's reading, not an editor's — they label stories and feed the Trends page; they hide nothing
           and change nothing you read.</li>

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { compareRuns, type RegressionRow } from './jev-regression'
 
-const row = (title: string, relevant: number, severity = 0.2, topic = 'armed_conflict'): RegressionRow => ({ title, lang: 'en', relevant, severity, topic })
+const row = (title: string, relevant: number, severity = 0.2): RegressionRow => ({ title, lang: 'en', relevant, severity })
 const many = (n: number) => Array.from({ length: n }, (_, i) => row(`t${i}`, 0.9))
 
 describe('compareRuns', () => {

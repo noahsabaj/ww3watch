@@ -205,7 +205,7 @@ describe('updateTrending', () => {
     mockedRank.mockResolvedValue(picks(0, 1, 2))
     const deadline = Date.now() + 60_000
     await updateTrending(deadline)
-    expect(mockedRank).toHaveBeenCalledWith(expect.anything(), 3, deadline)
+    expect(mockedRank).toHaveBeenCalledWith(expect.anything(), 3, deadline, expect.anything(), expect.anything())
   })
 
   it('reports an exhausted run budget as deferred:budget, without asking Jev', async () => {

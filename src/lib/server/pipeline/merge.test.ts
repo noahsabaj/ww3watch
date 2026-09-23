@@ -41,7 +41,7 @@ vi.mock('../jev-pairs', () => ({
   },
 }))
 
-import { mergeStories } from './clustering'
+import { mergeMemoryFromGrouping, mergeStories } from './clustering'
 import type { RunStats } from './stats'
 
 const pair = (a: string, b: string, aCount: number, bCount: number, sim: number) => ({
@@ -153,5 +153,23 @@ describe('tallyBySim', () => {
       '0.90': { same: 1, different: 0, unsure: 0 },
       '0.86': { same: 0, different: 0, unsure: 1 },
     })
+  })
+})
+
+describe('mergeMemoryFromGrouping', () => {
+  const j = (articleId: string, repId: string | null, sim: number, verdict: 'same' | 'different' | 'unsure') => ({ articleId, repId, sim, verdict })
+
+  it('remembers a "different" at or above the merge floor under both representatives, lowest id first', () => {
+    expect(mergeMemoryFromGrouping([j('b-article', 'a-rep', 0.86, 'different')], 0.85))
+      .toEqual([{ rep_a: 'a-rep', rep_b: 'b-article', verdict: 'different' }])
+  })
+
+  it('leaves out what the merge pass would never ask: below its floor, joined, unsure, or no representative', () => {
+    expect(mergeMemoryFromGrouping([
+      j('x', 'r', 0.84, 'different'),
+      j('x', 'r', 0.88, 'same'),
+      j('x', 'r', 0.88, 'unsure'),
+      j('x', null, 0.88, 'different'),
+    ], 0.85)).toEqual([])
   })
 })

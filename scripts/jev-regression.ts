@@ -25,7 +25,7 @@ async function ask(rows: Array<{ title: string; lang: string }>): Promise<Regres
   const asked = await mapPool(rows, CONCURRENCY, async (r) => {
     const s = await askSignals({ title: r.title, summary: null, source_lang: r.lang })
     if (s.jev_relevant === null) throw new Error('no relevance answer')
-    return { title: r.title, lang: r.lang, relevant: +s.jev_relevant.toFixed(3), topic: s.topic, severity: s.severity === null ? null : +s.severity.toFixed(3) }
+    return { title: r.title, lang: r.lang, relevant: +s.jev_relevant.toFixed(3), severity: s.severity === null ? null : +s.severity.toFixed(3) }
   })
   const out: RegressionRow[] = asked.done.map((d) => d.value)
   const failed = asked.failed.length

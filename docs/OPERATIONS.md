@@ -29,8 +29,12 @@ feature requires a paid plan.
 
 ## Spending and stale ingestion
 
-The planning target is $20/month excluding the domain: $15 classification, $3
-translation and $2 unallocated reserve. This is not a promise covering unknown
+The planning target is $25/month excluding the domain: $20 classification, $3
+translation and $2 unallocated reserve. Classification went from $15 to $20 on
+2026-09-23: with every stage working it measured ~$0.65-0.71 a day before that
+day's zero-regression cuts (reused Trending judgments, no unread topic question,
+no merge re-asks), ~$17-18 a month after them, so $15 would have stopped
+judging late in each month. This is not a promise covering unknown
 provider charges, database egress, taxes or other projects on shared accounts.
 Keep GitHub Pages and Supabase on their current free plans.
 

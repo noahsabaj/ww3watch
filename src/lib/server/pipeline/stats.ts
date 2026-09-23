@@ -40,6 +40,11 @@ export interface RunStats {
   reps_reelected?: number
   stories_merged?: number
   merge_pairs_judged?: number
+  /** Grouping's "different" verdicts the merge pass then did not ask again (clustering.ts). */
+  merge_pairs_remembered?: number
+  /** Trending candidates asked, and unchanged ones whose earlier answers were reused (trending-jev.ts). */
+  trending_asked?: number
+  trending_reused?: number
   merge_error?: string
   pairs_judged?: number
   pairs_same?: number

@@ -1,8 +1,10 @@
 import { callJev, jevState, jevQuestions, type JevArticle } from './jev'
-import { ACTORS, ALL_ACTORS, ALL_TOPICS, SEVERITY_LEVELS, SIGNAL_YES, TOPICS, type Actor, type ArticleSignals, type Topic } from '../signals'
+import { ACTORS, ALL_ACTORS, SEVERITY_LEVELS, SIGNAL_YES, type Actor, type ArticleSignals } from '../signals'
 
 // What this costs is almost entirely the QUESTIONS (the state is one headline):
-// ~2,550 input tokens with everything, ~1,800 without the relevance question.
+// ~2,550 input tokens with everything, ~1,800 without the relevance question,
+// before the topic question was dropped (2026-09-23): nothing had read its
+// answer since the topic filter went (#139), and it was ~11% of every request.
 // So the relevance question is only asked when nobody has asked it yet — the
 // local head's accepts. For an article Jev itself accepted minutes earlier, the
 // same question over the same state would buy the same number again.
@@ -13,11 +15,6 @@ import { ACTORS, ALL_ACTORS, ALL_TOPICS, SEVERITY_LEVELS, SIGNAL_YES, TOPICS, ty
 // (https://docs.typesafe.ai/patterns/fan-out). Each is narrow and literal on
 // purpose: Jev answers the question as written, not the one that was meant.
 const annotationQuestions: Record<string, unknown> = {
-  topic: {
-    type: 'choice',
-    instructions: 'Which one subject best describes what `article` reports?',
-    criteria: Object.fromEntries(ALL_TOPICS.map((t) => [t, TOPICS[t].what])),
-  },
   severity: {
     type: 'score',
     instructions: {
@@ -77,11 +74,11 @@ export async function askSignals(
 ): Promise<ArticleSignals & { inputTokens: number }> {
   const questions = knownRelevant === null ? signalQuestions : annotationQuestions
   const { answers, inputTokens } = await callJev(jevState(article), questions, deadlineMs)
-  const topic = answers.topic?.choice
   const score = num(answers.severity?.score)
   const actors: Actor[] = ALL_ACTORS.filter((k) => (num(answers[`actor_${k}`]?.noul) ?? 0) >= SIGNAL_YES)
   return {
-    topic: topic && topic in TOPICS ? (topic as Topic) : null,
+    // No longer asked (see top of file); the column keeps older rows' values.
+    topic: null,
     severity: score === null ? null : Math.min(1, Math.max(0, score / (SEVERITY_LEVELS.length - 1))),
     claim: num(answers.claim?.noul),
     unverified: num(answers.unverified?.noul),
