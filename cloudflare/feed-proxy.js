@@ -62,7 +62,10 @@ export default {
       // through surfaces a mid-stream origin reset to the caller as an opaque
       // "TypeError: fetch failed". Reading it now turns that into a clean,
       // diagnosable 502 and lets a slow body finish within our budget.
-      const body = await upstream.text()
+      // As bytes, never text(): decoding as UTF-8 replaced every invalid byte,
+      // which corrupted every image the photo check fetched (138 of ~150 per
+      // run failed to decode) and any feed not encoded in UTF-8.
+      const body = await upstream.arrayBuffer()
       return new Response(body, {
         status: upstream.status,
         headers: { 'content-type': upstream.headers.get('content-type') ?? 'application/octet-stream' },
