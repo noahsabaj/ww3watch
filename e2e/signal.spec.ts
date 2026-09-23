@@ -90,6 +90,17 @@ test('the address follows the story on screen, so a browser share sends it', asy
   await expect(page).toHaveURL(onScreen)
 })
 
+test('reopening the app shows the stories it already had, without waiting on the network', async ({ page }) => {
+  await expect(storyCard(page)).toBeVisible()
+  // The page saves its copy when it is put away; a reload does that too.
+  await page.route('**/rest/v1/articles?*', async (route) => {
+    await new Promise((r) => setTimeout(r, 5000))
+    await route.continue()
+  })
+  await page.reload()
+  await expect(storyCard(page)).toBeVisible({ timeout: 2000 })
+})
+
 test('pulling the first story down refreshes the feed', async ({ page }) => {
   await expectPullToRefresh(page, page.getByLabel('Stories', { exact: true }))
 })

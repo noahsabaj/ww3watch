@@ -5,7 +5,7 @@
 
 <PageShell title="Privacy" lede="No visitor accounts, no advertising trackers, no visitor analytics.">
   <div class="page-prose">
-  <p>WW3Watch has no visitor accounts, advertising trackers or visitor analytics. Your browser stores your reading language, whether you dismissed the install prompt, your last-visit time and which tips you have already used, all locally. You can remove them through your browser's site-data settings.</p>
+  <p>WW3Watch has no visitor accounts, advertising trackers or visitor analytics. Your browser stores your reading language, whether you dismissed the install prompt, your last-visit time, which tips you have already used and a copy of the latest stories so the app opens without waiting, all locally. You can remove them through your browser's site-data settings.</p>
   <h2 class="mt-10 mb-3 font-serif text-2xl text-fg">Requests and security</h2>
   <p>GitHub hosts this site and Supabase provides its data and functions. These providers receive network information, including your IP address, when your browser connects. WW3Watch stores daily keyed identifiers, rather than raw IP addresses, for abuse prevention. These expire after 48 hours and are removed by hourly cleanup. Provider infrastructure logs are governed by their own policies.</p>
   <h2 class="mt-10 mb-3 font-serif text-2xl text-fg">Articles and translation</h2>

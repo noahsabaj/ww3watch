@@ -198,6 +198,15 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     clearTimeout(realtimeFlushTimer)
     realtimeFlushTimer = setTimeout(applyRealtime, 500)
   }
+  // New rows join the feed directly, or queue behind the "new stories" pill
+  // while the reader is away from the top. isPaused (scrollY>300) is read at
+  // arrival time, so a mid-burst scroll wins.
+  function receive(fresh: Article[]) {
+    if (fresh.length === 0) return
+    if (options.isPaused()) newQueue = [...fresh, ...newQueue]
+    else articles = [...fresh, ...articles].slice(0, articleCap)
+  }
+
   function applyRealtime() {
     if (pendingInserts.length > 0) {
       const incoming = pendingInserts
@@ -206,11 +215,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
       const known = new Set<string>([...articles, ...newQueue].map((a) => a.id))
       const fresh: Article[] = []
       for (const a of incoming) if (!known.has(a.id)) { known.add(a.id); fresh.push(a) }
-      if (fresh.length > 0) {
-        // isPaused (scrollY>300) read at flush time, so a mid-burst scroll wins.
-        if (options.isPaused()) newQueue = [...fresh, ...newQueue]
-        else articles = [...fresh, ...articles].slice(0, articleCap)
-      }
+      receive(fresh)
     }
     if (pendingUpdates.size > 0) {
       const updates = pendingUpdates
@@ -431,6 +436,25 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
       serverOffset = value.articles.length
       hasMore = value.articles.length >= INITIAL_LIMIT
       rankedAt = orderTime(articles)
+    },
+    /** Fold a fresh load into a feed first shown from the phone's saved copy
+     *  (feed-snapshot.ts). Nothing moves under the reader: rows it holds are
+     *  patched in place (late story assignments, photo verdicts) and new ones
+     *  arrive exactly as live ones do. */
+    adopt(value: FeedInitial) {
+      const byId = new Map(value.articles.map((a) => [a.id, a]))
+      articles = articles.map((a) => byId.get(a.id) ?? a)
+      newQueue = newQueue.map((a) => byId.get(a.id) ?? a)
+      const known = new Set([...articles, ...newQueue].map((a) => a.id))
+      receive(value.articles.filter((a) => !known.has(a.id)))
+      trending = value.trending
+      if (value.lastUpdatedAt) lastUpdatedAt = value.lastUpdatedAt
+      serverOffset = value.articles.length
+      hasMore = value.articles.length >= INITIAL_LIMIT
+    },
+    /** What to save for the next open (feed-snapshot.ts). */
+    snapshot(): FeedInitial {
+      return { articles: articles.slice(0, INITIAL_LIMIT), trending, lastUpdatedAt }
     },
     flushQueue,
     /** Take the phone feed's order again from what is held now. */

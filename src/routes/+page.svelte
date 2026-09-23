@@ -14,6 +14,7 @@
   import { createSearch } from '$lib/search.svelte'
   import { createReaderRouting } from '$lib/deeplink.svelte'
   import { loadFeed } from '$lib/load-feed'
+  import { loadSnapshot, saveSnapshot } from '$lib/feed-snapshot'
   import { shareTarget } from '$lib/share'
   import { replaceState } from '$app/navigation'
   import { base } from '$app/paths'
@@ -176,17 +177,40 @@
     }
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
 
+    // Reopened within half an hour: show the stories this phone already has
+    // straight away, and let the fresh load add what is new behind the pill.
+    const saved = loadSnapshot()
+    if (saved) {
+      feed.initialize(saved)
+      loading = false
+      feed.start()
+    }
     let cancelled = false
     void loadFeed().then(result => {
       if (cancelled) return
+      if (saved) {
+        // A failed refresh keeps the saved copy on screen; the header's
+        // "updated Xm ago" already says how current it is.
+        if (!result.loadError) feed.adopt(result)
+        return
+      }
       feed.initialize(result)
       loadError = result.loadError
       loading = false
       feed.start()
-    }).catch(() => { if (!cancelled) { loadError = true; loading = false } })
+    }).catch(() => { if (!cancelled && !saved) { loadError = true; loading = false } })
+
+    // Kept when the page is put away (the home-screen app goes to the
+    // background), which covers every later change: realtime, refreshes, paging.
+    const keep = () => saveSnapshot(feed.snapshot())
+    const onHidden = () => { if (document.visibilityState === 'hidden') keep() }
+    document.addEventListener('visibilitychange', onHidden)
+    addEventListener('pagehide', keep)
 
     return () => {
       cancelled = true
+      document.removeEventListener('visibilitychange', onHidden)
+      removeEventListener('pagehide', keep)
       media.removeEventListener('change', onMedia)
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       removeEventListener('resize', fitScreen)

@@ -207,6 +207,15 @@
       var(--color-ink);
   }
 
+  /* Signal holds every loaded story (~300, each a screen tall) and shows one.
+     The browser skips layout and paint for the ones off screen; their size is
+     already fixed (h-full), so scrolling and snapping are unchanged. A full
+     relayout of the feed took 32.6ms without this and 5.6ms with it (median
+     of 9, desktop CPU, 2026-09-23). */
+  [data-signal-story] {
+    content-visibility: auto;
+  }
+
   .swipe-hint {
     animation: swipe-hint-in 0.6s 1.2s both, swipe-hint-nudge 2.4s 1.8s ease-in-out infinite;
   }
