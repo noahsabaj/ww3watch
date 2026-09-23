@@ -501,6 +501,27 @@ export type Database = {
           },
         ]
       }
+      story_merge_judged: {
+        Row: {
+          judged_at: string
+          rep_a: string
+          rep_b: string
+          verdict: string
+        }
+        Insert: {
+          judged_at?: string
+          rep_a: string
+          rep_b: string
+          verdict: string
+        }
+        Update: {
+          judged_at?: string
+          rep_a?: string
+          rep_b?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
       trending: {
         Row: {
           article_id: string
@@ -750,9 +771,11 @@ export type Database = {
         Returns: {
           r_a: string
           r_a_count: number
+          r_a_rep: string
           r_a_title: string
           r_b: string
           r_b_count: number
+          r_b_rep: string
           r_b_title: string
           r_sim: number
         }[]

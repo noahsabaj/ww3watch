@@ -168,8 +168,18 @@ export async function embedAndAssignClusters(stats: RunStats): Promise<void> {
 // representatives of active stories, ask Jev about the close pairs, fold the
 // smaller into the larger. Same contract as the rest of this file: failure never
 // fails the run, and "unsure" changes nothing.
+//
+// A pair is asked about once. "Different" and "unsure" are remembered in
+// story_merge_judged under the two representatives, so the next run asks about
+// the next-closest pairs instead of the same ones again; a story that elects a
+// new representative has changed, and makes a new pair. "Same" is not
+// remembered: it merges now, or is asked again next run.
 export async function mergeStories(stats: RunStats): Promise<void> {
   try {
+    // Nothing older than the window can be a candidate again.
+    const forget = new Date(Date.now() - 2 * STORY_MERGE.hours * 3600_000).toISOString()
+    await supabaseAdmin.from('story_merge_judged').delete().lt('judged_at', forget)
+
     const { data, error } = await supabaseAdmin.rpc('story_merge_candidates', {
       p_hours: STORY_MERGE.hours, p_min_sim: STORY_MERGE.minSim, p_limit: STORY_MERGE.candidates,
     })
@@ -178,6 +188,21 @@ export async function mergeStories(stats: RunStats): Promise<void> {
     if (pairs.length === 0) return
     const judged = await mapPool(pairs, JEV_CONCURRENCY, (p) => judgeSameEvent(p.r_a_title, p.r_b_title))
     bump(stats, 'merge_pairs_judged', judged.done.length)
+
+    const settled = judged.done
+      .filter((j) => !(j.value.verdict === 'same' && j.value.p >= STORY_MERGE.minP))
+      .map(({ item: p, value }) => ({
+        rep_a: p.r_a_rep < p.r_b_rep ? p.r_a_rep : p.r_b_rep,
+        rep_b: p.r_a_rep < p.r_b_rep ? p.r_b_rep : p.r_a_rep,
+        // A "same" below the merge bar is as good as unsure.
+        verdict: value.verdict === 'different' ? 'different' : 'unsure',
+      }))
+    if (settled.length > 0) {
+      const { error: memoryError } = await supabaseAdmin
+        .from('story_merge_judged')
+        .upsert(settled, { onConflict: 'rep_a,rep_b', ignoreDuplicates: true })
+      if (memoryError) console.error('[pipeline] story_merge_judged write failed (non-fatal):', memoryError)
+    }
 
     // Highest similarity first (the RPC's order); a story already folded away —
     // or folded INTO — this run is left for the next run, when its
