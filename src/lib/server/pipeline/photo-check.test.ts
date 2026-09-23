@@ -31,7 +31,7 @@ vi.mock('../supabase', () => {
   return { supabaseAdmin: { from: () => query(() => db.rows) } }
 })
 
-import { checkPhotos, differenceHash, judgeImage, EMBLEM_MIN } from './photo-check'
+import { checkPhotos, differenceHash, judgeImage, EMBLEM_MIN, REUSE_MIN } from './photo-check'
 import type { RunStats } from './stats'
 
 const now = new Date().toISOString()
@@ -85,28 +85,29 @@ describe('checkPhotos', () => {
     expect(stats).toMatchObject({ photos_ok: 1, photos_emblem: 1 })
   })
 
-  it('retires a picture on three different stories, but not one two stories share', async () => {
-    db.rows = [
-      row('1', 's1', 'card.jpg'), row('2', 's2', 'card.jpg'), row('3', null, 'card.jpg'),
-      row('4', 's4', 'b.jpg'), row('5', 's5', 'b.jpg'),
-    ]
+  const onStories = (n: number, url: string, from = 1) =>
+    Array.from({ length: n }, (_, i) => row(`${url}-${from + i}`, `s${from + i}`, url))
+
+  it('retires a picture on REUSE_MIN different stories, but not one fewer share', async () => {
+    db.rows = [...onStories(REUSE_MIN, 'card.jpg'), ...onStories(REUSE_MIN - 1, 'b.jpg', 100)]
     const stats = await run()
-    expect(db.rows.map((r) => r.image_verdict)).toEqual(['reused', 'reused', 'reused', 'photo', 'photo'])
-    expect(stats.photos_reused).toBe(3)
+    expect(db.rows.filter((r) => r.image_url === 'card.jpg').every((r) => r.image_verdict === 'reused')).toBe(true)
+    expect(db.rows.filter((r) => r.image_url === 'b.jpg').every((r) => r.image_verdict === 'photo')).toBe(true)
+    expect(stats.photos_reused).toBe(REUSE_MIN)
   })
 
   it('counts one story carrying the picture several times as one', async () => {
-    db.rows = [row('1', 's1', 'card.jpg'), row('2', 's1', 'card.jpg'), row('3', 's2', 'card.jpg')]
+    db.rows = [...onStories(REUSE_MIN - 1, 'card.jpg'), row('dup', 's1', 'card.jpg')]
     await run()
     expect(db.rows.every((r) => r.image_verdict === 'photo')).toBe(true)
   })
 
-  it('catches a third story that arrives in a later run', async () => {
-    db.rows = [row('1', 's1', 'card.jpg'), row('2', 's2', 'card.jpg')]
+  it('catches the story that tips a picture over, in a later run', async () => {
+    db.rows = onStories(REUSE_MIN - 1, 'card.jpg')
     await run()
-    db.rows.push(row('3', 's3', 'card.jpg'))
+    db.rows.push(row('late', 'late', 'card.jpg'))
     await run()
-    expect(db.rows.map((r) => r.image_verdict)).toEqual(['reused', 'reused', 'reused'])
+    expect(db.rows.every((r) => r.image_verdict === 'reused')).toBe(true)
   })
 
   it('leaves an image it could not download unchecked for the next run', async () => {

@@ -8,11 +8,12 @@
 //     CLIP model scores "a logo, emblem or seal" against "a photograph". The
 //     three emblems scored 0.993-0.994; the highest photograph (a Saudi flag
 //     on a pole) 0.934. EMBLEM_MIN sits between, nearer the emblems.
-//   - reuse: one picture on many unrelated stories (Arutz Sheva's "Breaking
-//     News" card on 11, a Middle East Eye UN General Assembly photo on 11 about
-//     oil prices, Gaza and more). A picture on REUSE_MIN or more different
-//     stories says nothing about any of them. Two stories sharing a wire photo
-//     is normal and stays.
+//   - reuse: one picture on many unrelated stories. Over 48 hours of production
+//     house pictures sat on 8 (The Print's default image), 25 (Arutz Sheva's
+//     "Breaking News" card) and 34 stories (one Middle East Eye UN General
+//     Assembly photo, on oil prices, Gaza and more), while a real photo of one
+//     event sat on at most 5 (the same meeting reported as several stories).
+//     REUSE_MIN sits between.
 //
 // An image we cannot download stays unchecked and is tried again next run;
 // IMAGE_CHECK_LOOKBACK_HOURS retires it.
@@ -33,7 +34,7 @@ export const PHOTO_CACHE_SENTINEL = join(EMBEDDINGS_CACHE_DIR, `.ok-clip32-q8@${
 // The labels are part of the calibration: change one and re-measure EMBLEM_MIN.
 const LABELS = ['a photograph', 'a logo, emblem or seal', 'a graphic with a TV channel logo and text'] as const
 export const EMBLEM_MIN = 0.97
-export const REUSE_MIN = 3
+export const REUSE_MIN = 6
 export const IMAGE_CHECK_CAP = 150
 export const IMAGE_CHECK_CONCURRENCY = 6
 export const IMAGE_CHECK_LOOKBACK_HOURS = 48
