@@ -11,11 +11,12 @@
 // onMount and stop() from its cleanup.
 import { supabase } from './supabase'
 import type { Article } from './types'
-import { groupByStoryId } from './cluster'
+import { groupByStoryId, pickRepresentative } from './cluster'
 import type { Cluster } from './cluster'
 import { clock } from './now.svelte'
 import { FEED_COLUMNS } from './feed-columns'
 import { loadFeed } from './load-feed'
+import { leadLangs } from './prefs.svelte'
 
 export type TrendingRef = { article_id: string; story_id: string | null }
 
@@ -64,7 +65,15 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
 
   // allClustered uses the full (unfiltered) article list — see the "Two
   // separate cluster passes" note above.
-  let allClustered = $derived(groupByStoryId(articles))
+  let allClustered = $derived(groupByStoryId(articles, leadLangs()))
+
+  // When the phone feed's order was taken (src/lib/cluster.ts rankStories):
+  // on load and on pull to refresh, never on the ticking clock. Never earlier
+  // than the newest row held, so a device clock running behind the server
+  // doesn't read the rows it just loaded as arrivals.
+  const orderTime = (rows: Article[]) =>
+    Math.max(Date.now(), ...rows.map((a) => Date.parse(a.fetched_at) || 0))
+  let rankedAt = $state(orderTime(initial.articles))
 
   let staleness = $derived.by((): 'ok' | 'amber' | 'red' | null => {
     if (!lastUpdatedAt) return null
@@ -125,11 +134,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     // something else happened to invalidate the derivation. Time-derived values
     // read the shared clock (docs/CONVENTIONS.md).
     return allClustered
-      .filter(c =>
-        c.representative.published_at
-          ? clock.now - new Date(c.representative.published_at).getTime() < TOP_STORIES_WINDOW_MS
-          : false
-      )
+      .filter(c => c.updatedAt > 0 && clock.now - c.updatedAt < TOP_STORIES_WINDOW_MS)
       .sort((a, b) => b.sourceCount - a.sourceCount)
       .slice(0, 3)
   })
@@ -226,6 +231,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     const held = [...newQueue, ...articles].filter((a) => !ids.has(a.id))
     articles = [...incoming, ...held].slice(0, Math.max(articleCap, incoming.length))
     newQueue = []
+    rankedAt = orderTime(articles)
     trending = result.trending
     if (result.lastUpdatedAt) lastUpdatedAt = result.lastUpdatedAt
     liveMessage = 'Feed refreshed.'
@@ -305,9 +311,8 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
       const known = new Set(articles.map((a) => a.id))
       const fresh = list.filter((a) => !known.has(a.id))
       if (fresh.length > 0) articles = [...articles, ...fresh]
-      // Newest member is the representative (matches groupByStoryId).
-      const rep = list.reduce((best, a) =>
-        ((a.published_at ?? '') > (best.published_at ?? '') ? a : best), list[0])
+      // The same headline groupByStoryId will pick.
+      const rep = pickRepresentative(list, leadLangs())
       open(rep.id, storyId)
     }
   }
@@ -389,6 +394,8 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     get newQueue() { return newQueue },
     /** Every loaded article grouped into stories (unfiltered). */
     get allClustered() { return allClustered },
+    /** When the phone feed was last ranked (load or pull to refresh). */
+    get rankedAt() { return rankedAt },
     /** The Trending Now selection (pipeline picks, or the fallback window). */
     get topStories() { return topStories },
     get lastUpdatedAt() { return lastUpdatedAt },
@@ -405,6 +412,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
       lastUpdatedAt = value.lastUpdatedAt
       serverOffset = value.articles.length
       hasMore = value.articles.length >= INITIAL_LIMIT
+      rankedAt = orderTime(articles)
     },
     flushQueue,
     refresh,

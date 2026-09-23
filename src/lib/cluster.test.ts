@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupByStoryId, storyTimeline, storyImage, isShareCard, isReusedUpload } from './cluster'
+import { groupByStoryId, pickRepresentative, rankStories, storyTimeline, storyImage, isShareCard, isReusedUpload, type Cluster } from './cluster'
 import type { Article } from './types'
 
 let seq = 0
@@ -81,6 +81,85 @@ describe('groupByStoryId', () => {
     const undated = article({ story_id: 's-undated', published_at: null })
     const clusters = groupByStoryId([oldest, undated, newest])
     expect(clusters.map((c) => c.id)).toEqual(['s-new', 's-old', 's-undated'])
+  })
+})
+
+describe('pickRepresentative', () => {
+  const at = (h: number) => new Date(Date.UTC(2026, 8, 23, 12) - h * 3_600_000).toISOString()
+
+  it('is the newest member when no language is preferred', () => {
+    const old = article({ published_at: at(2) })
+    const newest = article({ published_at: at(0), source_lang: 'fa' })
+    expect(pickRepresentative([old, newest])).toBe(newest)
+  })
+
+  it("prefers the newest member in the reader's language when it is nearly as new", () => {
+    const fa = article({ published_at: at(0), source_lang: 'fa' })
+    const en = article({ published_at: at(3), source_lang: 'en' })
+    const enOlder = article({ published_at: at(5), source_lang: 'en' })
+    expect(pickRepresentative([fa, enOlder, en], ['en'])).toBe(en)
+  })
+
+  it('keeps the newest when the readable headline is more than six hours behind it', () => {
+    const fa = article({ published_at: at(0), source_lang: 'fa' })
+    const en = article({ published_at: at(7), source_lang: 'en' })
+    expect(pickRepresentative([fa, en], ['en'])).toBe(fa)
+  })
+
+  it('tries the reading language before English', () => {
+    const de = article({ published_at: at(2), source_lang: 'de' })
+    const en = article({ published_at: at(1), source_lang: 'en' })
+    const ar = article({ published_at: at(0), source_lang: 'ar' })
+    expect(pickRepresentative([de, en, ar], ['de', 'en'])).toBe(de)
+  })
+
+  it('leads the story in groupByStoryId, which still orders by the newest report', () => {
+    const fa = article({ story_id: 's', published_at: at(0), source_lang: 'fa' })
+    const en = article({ story_id: 's', published_at: at(1), source_lang: 'en' })
+    const other = article({ published_at: at(0.5) })
+    const [first, second] = groupByStoryId([other, en, fa], ['en'])
+    expect(first.id).toBe('s')
+    expect(first.representative).toBe(en)
+    expect(first.articles[0]).toBe(en)
+    expect(first.updatedAt).toBe(Date.parse(at(0)))
+    expect(second.id).toBe(other.id)
+  })
+})
+
+describe('rankStories', () => {
+  const now = Date.UTC(2026, 8, 23, 12)
+  const story = (id: string, outlets: number, hoursAgo: number, fetchedAfter = false): Cluster => {
+    const published = new Date(now - hoursAgo * 3_600_000).toISOString()
+    const fetched = new Date(now + (fetchedAfter ? 60_000 : -60_000)).toISOString()
+    const articles = Array.from({ length: outlets }, (_, i) =>
+      article({ story_id: id, source_name: `${id}-${i}`, published_at: published, fetched_at: fetched }))
+    return groupByStoryId(articles)[0]
+  }
+  const ids = (cs: Cluster[]) => cs.map((c) => c.id)
+
+  it('leads with wide coverage over a lone, newer report', () => {
+    const lone = story('lone', 1, 0.1)
+    const wide = story('wide', 5, 3)
+    expect(ids(rankStories([lone, wide], now))).toEqual(['wide', 'lone'])
+  })
+
+  it('lets a big story sink as it ages', () => {
+    const stale = story('stale', 10, 30)
+    const lone = story('lone', 1, 0.5)
+    expect(ids(rankStories([stale, lone], now))).toEqual(['lone', 'stale'])
+  })
+
+  it('puts arrivals since the order was taken first, newest first', () => {
+    const wide = story('wide', 8, 1)
+    const late1 = story('late1', 1, 0.2, true)
+    const late2 = story('late2', 1, 0.1, true)
+    expect(ids(rankStories([wide, late1, late2], now))).toEqual(['late2', 'late1', 'wide'])
+  })
+
+  it('sends undated stories to the end', () => {
+    const undated = groupByStoryId([article({ published_at: null, fetched_at: '2026-09-23T11:00:00Z' })])[0]
+    const lone = story('lone', 1, 20)
+    expect(ids(rankStories([undated, lone], now))).toEqual(['lone', undated.id])
   })
 })
 

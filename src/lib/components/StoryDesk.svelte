@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte'
-  import { publishedAt, type Cluster } from '$lib/cluster'
+  import type { Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_BORDER } from '$lib/types'
   import { dayKey, dayLabel, headlineText, langTag, timeAgo } from '$lib/utils'
@@ -79,9 +79,12 @@
   )
 
   // "New since your last visit": the first story older than the last visit.
+  // The rail is newest first by a story's latest report; its day headings follow that.
+  const updated = (c: Cluster) => (c.updatedAt > 0 ? new Date(c.updatedAt).toISOString() : null)
+
   const lastVisitIndex = $derived.by(() => {
     if (lastVisitAt === null) return -1
-    const t = (c: Cluster) => publishedAt(c.representative)
+    const t = (c: Cluster) => c.updatedAt
     for (let i = 1; i < clusters.length; i++) {
       if (t(clusters[i - 1]) > lastVisitAt && t(clusters[i]) <= lastVisitAt) return i
     }
@@ -248,8 +251,8 @@
       {#each clusters as c, i (c.id)}
         {@const rep = c.representative}
         {@const active = selected?.id === c.id}
-        {#if (i === 0 || dayKey(rep.published_at, clock.now) !== dayKey(clusters[i - 1].representative.published_at, clock.now))}
-          <li aria-hidden="true" class="label px-4 pt-5 pb-1" data-day>{dayLabel(rep.published_at, clock.now)}</li>
+        {#if (i === 0 || dayKey(updated(c), clock.now) !== dayKey(updated(clusters[i - 1]), clock.now))}
+          <li aria-hidden="true" class="label px-4 pt-5 pb-1" data-day>{dayLabel(updated(c), clock.now)}</li>
         {/if}
         {#if i === lastVisitIndex}
           <li role="separator" class="label px-4 py-2 !text-accent"><span class="inline-flex items-center gap-1.5">New since your last visit<Icon name="arrow-up" size={12} /></span></li>
