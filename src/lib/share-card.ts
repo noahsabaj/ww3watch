@@ -65,6 +65,7 @@ export function shareCard(
     representative: rep as Article,
     articles: [rep, ...all.filter((a) => a.id !== rep.id)] as Article[],
     sourceCount: names.length,
+    updatedAt: 0,
   })
 
   return {

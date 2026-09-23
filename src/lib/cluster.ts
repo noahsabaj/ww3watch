@@ -8,6 +8,8 @@ export interface Cluster {
   representative: Article
   articles: Article[]
   sourceCount: number
+  /** When its newest member was published, in ms; 0 when none is dated. */
+  updatedAt: number
 }
 
 /** When an article was published, in ms; 0 when the feed gave no date. */
@@ -96,6 +98,25 @@ export function storyTimeline(articles: Article[]): StoryTimeline {
   }
 }
 
+// A story's headline: its newest member, unless a member in a language the
+// reader reads (their reading language, then English) is nearly as new. A
+// story Farsi, Arabic and Russian outlets led but Reuters also covered is
+// headed by Reuters' headline, which the reader can read without translating.
+// "Nearly as new": within LEAD_LANG_WINDOW_MS, so an update (a rising death
+// toll) is never buried under an older headline in the preferred language.
+const LEAD_LANG_WINDOW_MS = 6 * 60 * 60 * 1000
+
+export function pickRepresentative(group: Article[], langs: readonly string[] = []): Article {
+  const newest = group.reduce((best, a) => (ts(a) > ts(best) ? a : best), group[0])
+  const floor = ts(newest) - LEAD_LANG_WINDOW_MS
+  for (const lang of langs) {
+    if (newest.source_lang === lang) return newest
+    const readable = group.filter((a) => a.source_lang === lang && ts(a) > 0 && ts(a) >= floor)
+    if (readable.length > 0) return readable.reduce((best, a) => (ts(a) > ts(best) ? a : best))
+  }
+  return newest
+}
+
 // Groups articles by their pipeline-assigned story_id (multilingual embedding
 // clustering, assign_story_by_embedding). Articles without one — junk-titled
 // or not-yet-assigned rows — render as singletons by design; there is no
@@ -104,11 +125,10 @@ export function storyTimeline(articles: Article[]): StoryTimeline {
 // `?? a.id` also tolerates story_id === undefined: the service worker can
 // serve cached pre-stories REST rows for a session after a deploy.
 //
-// Representative = newest member by published_at (display choice — matches
-// the feed's day-separator assumption), kept at articles[0] (consumers render
-// articles.slice(1) as "the others"). Output sorted by representative
-// published_at DESC, nulls last.
-export function groupByStoryId(articles: Article[]): Cluster[] {
+// Representative: pickRepresentative, kept at articles[0] (consumers render
+// articles.slice(1) as "the others"). Output sorted by the newest member's
+// published_at DESC (updatedAt), undated last.
+export function groupByStoryId(articles: Article[], langs: readonly string[] = []): Cluster[] {
   const groups = new Map<string, Article[]>()
   for (const a of articles) {
     const key = a.story_id ?? a.id
@@ -119,16 +139,41 @@ export function groupByStoryId(articles: Article[]): Cluster[] {
 
   return [...groups.entries()]
     .map(([key, group]) => {
-      const representative = group.reduce((best, a) => (ts(a) > ts(best) ? a : best), group[0])
+      const representative = pickRepresentative(group, langs)
       return {
         id: key,
         storyId: group[0].story_id ?? null,
         representative,
         articles: [representative, ...group.filter((a) => a !== representative)],
         sourceCount: new Set(group.map((a) => a.source_name)).size,
+        updatedAt: Math.max(...group.map(ts)),
       }
     })
-    .sort((a, b) => ts(b.representative) - ts(a.representative))
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+}
+
+// The phone feed's order: stories more outlets covered lead, and each sinks
+// as it ages. A story ten outlets carried six hours ago still sits above one
+// a single outlet posted a minute ago; after a day, order is close to
+// newest-first. Score = outlets / (hours since the newest report + 2)^1.5.
+//
+// `at` is when the order was taken (load, pull to refresh), not the ticking
+// clock, so the feed never reshuffles under a reader. Stories that gained a
+// report after it (the "new stories" pill) are the exception: they lead,
+// newest first, until the next refresh ranks them.
+const RANK_OFFSET_H = 2
+const RANK_GRAVITY = 1.5
+
+export function rankStories(clusters: Cluster[], at: number): Cluster[] {
+  const fresh: Cluster[] = []
+  const rest: Array<{ c: Cluster; score: number }> = []
+  for (const c of clusters) {
+    if (c.articles.some((a) => a.fetched_at && Date.parse(a.fetched_at) > at)) { fresh.push(c); continue }
+    const hours = Math.max(0, at - c.updatedAt) / 3_600_000
+    rest.push({ c, score: c.updatedAt > 0 ? c.sourceCount / (hours + RANK_OFFSET_H) ** RANK_GRAVITY : 0 })
+  }
+  rest.sort((x, y) => y.score - x.score || y.c.updatedAt - x.c.updatedAt)
+  return [...fresh.sort((x, y) => y.updatedAt - x.updatedAt), ...rest.map((r) => r.c)]
 }
 
 export interface StoryPhoto {

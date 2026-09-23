@@ -18,6 +18,12 @@ function initialLang(): string {
 // inside reactive expressions; mutate via setReadingLang.
 export const prefs = $state({ readingLang: initialLang() })
 
+/** Languages a story's headline is preferred in: the reading language, then
+ *  English (src/lib/cluster.ts pickRepresentative). Reactive. */
+export function leadLangs(): string[] {
+  return prefs.readingLang === 'en' ? ['en'] : [prefs.readingLang, 'en']
+}
+
 export function setReadingLang(lang: string): void {
   prefs.readingLang = lang
   save('readingLang', lang)
