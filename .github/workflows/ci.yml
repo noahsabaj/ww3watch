@@ -62,6 +62,15 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # The browser (and its system libraries) installs in the background while
+      # the site builds; neither needs the other.
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}
+      - name: Install the test browser (background)
+        run: (npx playwright install --with-deps chromium > /tmp/playwright-install.log 2>&1; echo $? > /tmp/playwright-install.exit) &
+
       # The local stack's publishable key is a fixed, well-known constant —
       # every `supabase start` anywhere produces this same value, because the
       # local JWT secret is a documented default. It grants nothing beyond this
@@ -72,11 +81,11 @@ jobs:
           PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
       # Replicate deploy.yml's fallback copy so sirv --single serves the SPA.
       - run: test -f build/index.html || cp build/404.html build/index.html
-      - uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
+      - name: Wait for the test browser
+        run: |
+          for _ in $(seq 1 300); do [ -f /tmp/playwright-install.exit ] && break; sleep 1; done
+          cat /tmp/playwright-install.log
+          [ "$(cat /tmp/playwright-install.exit 2>/dev/null)" = 0 ]
 
       - name: Wait for the local Supabase stack
         run: |
