@@ -6,6 +6,7 @@
 // the page remounts. Call it during component initialisation.
 import type { Article } from './types'
 import { groupByStoryId } from './cluster'
+import { leadLangs } from './prefs.svelte'
 
 /** Title or summary contains the query, ignoring case and surrounding spaces. */
 export function searchArticles(articles: Article[], query: string): Article[] {
@@ -18,7 +19,7 @@ export function searchArticles(articles: Article[], query: string): Article[] {
 export function createSearch(getArticles: () => Article[]) {
   let query = $state('')
   const active = $derived(query.trim() !== '')
-  const clustered = $derived(groupByStoryId(searchArticles(getArticles(), query)))
+  const clustered = $derived(groupByStoryId(searchArticles(getArticles(), query), leadLangs()))
 
   return {
     get query() { return query },

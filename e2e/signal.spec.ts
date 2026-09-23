@@ -14,6 +14,13 @@ test('a phone gets Signal, not the desk', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
 })
 
+test('the feed leads with the story most outlets covered, not the newest lone report', async ({ page }) => {
+  // Seed: four outlets carried the port strike two hours ago; single-outlet
+  // reports are as new as 12 minutes.
+  await expect(stories(page).first()).toContainText('Strike reported on northern port facility')
+  await expect(stories(page).first()).toContainText('4 sources')
+})
+
 test('tapping a headline opens the reader as a dialog', async ({ page }) => {
   await openReader(page)
   await expect(page.getByRole('dialog', { name: 'Article reader' })).toBeVisible()

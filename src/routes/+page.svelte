@@ -17,7 +17,7 @@
   import { shareTarget } from '$lib/share'
   import { replaceState } from '$app/navigation'
   import { base } from '$app/paths'
-  import type { Cluster } from '$lib/cluster'
+  import { rankStories, type Cluster } from '$lib/cluster'
 
   // One home, two shapes, chosen by the screen rather than a toggle: Signal (one
   // story at a time, full screen) on a phone; the story desk (every story in a
@@ -60,11 +60,14 @@
   let theatersOpen = $state(false)
   const theater = $derived(theaterById(theaterId))
   const theaters = $derived(theaterBoard(feed.allClustered, clock.now))
-  const stories = $derived(theater ? search.clustered.filter((c) => theaterOf(c) === theater) : search.clustered)
+  // The phone feed leads with what the most outlets covered (rankStories); the
+  // desk's rail stays newest first under its own Trending section.
+  const ordered = $derived(desk === false ? rankStories(search.clustered, feed.rankedAt) : search.clustered)
+  const stories = $derived(theater ? ordered.filter((c) => theaterOf(c) === theater) : ordered)
   // Narrowing and widening keep the reader on the story they were looking at:
   // tapping a story's place stays on that story, and "All stories" lands on the
   // one they had swiped to. Picked from the Theaters page, a theater starts at
-  // its newest.
+  // its top story.
   let viewing: string | null = null
   let landOn = $state<string | null>(null)
   function pickTheater(id: string | null, from: string | null = null) {
