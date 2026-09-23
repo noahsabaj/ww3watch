@@ -2,11 +2,12 @@
   import Icon from '$lib/components/Icon.svelte'
   import TheaterRow from '$lib/components/TheaterRow.svelte'
   import type { TheaterSummary } from '$lib/theaters'
+  import { modal } from '$lib/modal'
 
   // A phone's overview of where things are happening: one row per theater,
   // busiest first. Picking one closes the page onto that theater's stories.
   // Full screen rather than a sheet, because it is a place you go, not a
-  // setting you change. Focus moves in on open and back on close; Tab stays in.
+  // setting you change. Keyboard and focus behaviour is src/lib/modal.ts.
   let {
     open = $bindable(false),
     board,
@@ -17,54 +18,25 @@
     onpick: (id: string) => void
   } = $props()
 
-  let page = $state<HTMLElement | null>(null)
-  let backBtn = $state<HTMLButtonElement | null>(null)
-  let previouslyFocused: Element | null = null
-  let wasOpen = false
-
-  $effect(() => {
-    if (open && !wasOpen) {
-      previouslyFocused = document.activeElement
-      queueMicrotask(() => backBtn?.focus())
-    } else if (!open && wasOpen) {
-      const el = previouslyFocused as HTMLElement | null
-      if (el?.isConnected && typeof el.focus === 'function') el.focus()
-      previouslyFocused = null
-    }
-    wasOpen = open
-  })
-
-  function onKeydown(e: KeyboardEvent) {
-    if (!open) return
-    if (e.key === 'Escape') { e.preventDefault(); open = false; return }
-    if (e.key !== 'Tab' || !page) return
-    const controls = [...page.querySelectorAll<HTMLElement>('button')]
-    const first = controls[0]
-    const last = controls.at(-1)
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus() }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
-  }
-
   function pick(id: string) {
     onpick(id)
     open = false
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
-
 {#if open}
   <div
-    bind:this={page}
     data-theaters-page
     role="dialog"
     aria-modal="true"
     aria-labelledby="theaters-title"
+    tabindex="-1"
+    {@attach modal({ onclose: () => (open = false) })}
     class="theaters fixed inset-0 z-50 flex flex-col bg-ink"
     style="padding-top: env(safe-area-inset-top, 0px)"
   >
     <div class="flex h-14 shrink-0 items-center px-2">
-      <button bind:this={backBtn} type="button" class="action min-h-10 gap-1 px-2 text-[15px]" onclick={() => (open = false)}>
+      <button data-autofocus type="button" class="action min-h-10 gap-1 px-2 text-[15px]" onclick={() => (open = false)}>
         <Icon name="chevron-left" size={20} />Stories
       </button>
     </div>

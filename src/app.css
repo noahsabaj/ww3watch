@@ -81,6 +81,16 @@
     background: rgb(255 255 255 / 0.07);
   }
 
+  /* A place the feed can narrow to (Theaters): accent outline, never a fill. */
+  .place-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid rgb(143 180 245 / 0.35);
+    color: var(--color-accent);
+    transition: background-color 150ms;
+  }
+
   /* The one filled button: white on ink. */
   .btn {
     display: inline-flex;

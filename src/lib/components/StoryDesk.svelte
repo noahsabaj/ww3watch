@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte'
-  import type { Cluster } from '$lib/cluster'
+  import { publishedAt, type Cluster } from '$lib/cluster'
   import type { Article } from '$lib/types'
   import { REGION_BORDER } from '$lib/types'
   import { dayKey, dayLabel, headlineText, langTag, timeAgo } from '$lib/utils'
@@ -10,6 +10,7 @@
   import DeskStory from '$lib/components/DeskStory.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import PullIndicator from '$lib/components/PullIndicator.svelte'
+  import FeedEnd from '$lib/components/FeedEnd.svelte'
   import { createPullRefresh } from '$lib/pull-refresh.svelte'
   import type { TheaterSummary } from '$lib/theaters'
   import { untrack } from 'svelte'
@@ -80,7 +81,7 @@
   // "New since your last visit": the first story older than the last visit.
   const lastVisitIndex = $derived.by(() => {
     if (lastVisitAt === null) return -1
-    const t = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : 0)
+    const t = (c: Cluster) => publishedAt(c.representative)
     for (let i = 1; i < clusters.length; i++) {
       if (t(clusters[i - 1]) > lastVisitAt && t(clusters[i]) <= lastVisitAt) return i
     }
@@ -275,19 +276,7 @@
         </li>
       {/each}
       <li class="px-4 pt-6 text-center">
-        {#if hasMore}
-          <button
-            id="feed-load-older"
-            type="button"
-            onclick={onLoadOlder}
-            aria-disabled={loadingMore}
-            class="btn-ghost text-sm aria-disabled:opacity-50"
-          >{loadingMore ? 'Loading…' : 'Load older stories'}</button>
-        {:else}
-          <p id="feed-end" tabindex="-1" class="text-xs text-fg-3 outline-none">
-            You’ve reached the oldest stories.
-          </p>
-        {/if}
+        <FeedEnd {hasMore} {loadingMore} {onLoadOlder} />
         <p class="mt-4 text-[11px] text-fg-3 pointer-coarse:hidden">j / k to move · o to read</p>
       </li>
     </ol>

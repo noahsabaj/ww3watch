@@ -2,16 +2,16 @@
 // retired for good once this reader has done the thing it teaches. A tip that
 // stays up after it has been learned only gets in the way.
 //
-// To add one: name it here with its storage key, show it while
+// To add one: give it a key in saved.ts, name it here, show it while
 // `tips.shown(id)`, and call `tips.done(id)` where the reader does the thing.
+import { load, save, type SavedKey } from './saved'
 
-// Storage keys are kept as first shipped, so a returning reader isn't re-taught.
 const TIPS = {
   /** "Swipe up for the next story" on Signal's first story: done on the first swipe. */
-  swipe: 'ww3-swiped',
+  swipe: 'tipSwipe',
   /** "Tap the headline to read it and every other newsroom's version": done on opening a covered story. */
-  'read-story': 'ww3-read-tip-seen',
-} as const
+  'read-story': 'tipReadStory',
+} as const satisfies Record<string, SavedKey>
 export type TipId = keyof typeof TIPS
 const IDS = Object.keys(TIPS) as TipId[]
 
@@ -25,9 +25,7 @@ export const tips = {
   load() {
     if (loaded) return
     loaded = true
-    for (const id of IDS) {
-      try { learned[id] = localStorage.getItem(TIPS[id]) === '1' } catch { learned[id] = false }
-    }
+    for (const id of IDS) learned[id] = load(TIPS[id]) === '1'
   },
   /** The tip should still be on screen. */
   shown(id: TipId): boolean {
@@ -37,6 +35,6 @@ export const tips = {
   done(id: TipId) {
     if (learned[id]) return
     learned[id] = true
-    try { localStorage.setItem(TIPS[id], '1') } catch { /* private mode: retired for this visit */ }
+    save(TIPS[id], '1')
   },
 }

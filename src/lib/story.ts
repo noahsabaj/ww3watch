@@ -3,7 +3,7 @@
 // and the pipeline's trending ranker, so "how corroborated" and "how important"
 // mean one thing everywhere. Nothing here may import server-only code.
 import type { Article } from './types'
-import { wireDuplicateIds, type Cluster } from './cluster'
+import { publishedAt, wireDuplicateIds, type Cluster } from './cluster'
 import { isClaim, isMajor, isOpinion, isUnverified, MAJOR_SEVERITY, type ArticleSignals } from './signals'
 
 // Counting is code's job, not a model's. Log-scaled: the step from 1 source to 3
@@ -94,7 +94,7 @@ export function bySide(articles: Article[]): SideGroup[] {
     if (g) g.articles.push(a)
     else groups.set(key, { region: a.source_region, affiliation, articles: [a] })
   }
-  const t = (a: Article) => (a.published_at ? Date.parse(a.published_at) : Infinity)
+  const t = (a: Article) => publishedAt(a) || Infinity // undated last
   for (const g of groups.values()) g.articles.sort((x, y) => t(x) - t(y))
   return [...groups.values()].sort((x, y) => y.articles.length - x.articles.length || x.region.localeCompare(y.region))
 }

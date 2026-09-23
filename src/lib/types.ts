@@ -2,24 +2,26 @@
 
 // ── Single source of truth for regions ──────────────────────────────────────
 // To add a new region: add one entry here. Everything else is derived.
+// color/border: the dot and bar classes; wash: the RGB a story's surface is
+// tinted with when its lead outlet is from here (region-wash.ts).
 export const REGIONS = {
-  'US/Western':          { color: 'bg-blue-600 text-white',    border: 'border-blue-600'    },
-  'UK':                  { color: 'bg-blue-400 text-white',    border: 'border-blue-400'    },
-  'European':            { color: 'bg-indigo-500 text-white',  border: 'border-indigo-500'  },
-  'Israeli':             { color: 'bg-orange-500 text-white',  border: 'border-orange-500'  },
+  'US/Western':          { color: 'bg-blue-600 text-white',    border: 'border-blue-600', wash: '59, 99, 180' },
+  'UK':                  { color: 'bg-blue-400 text-white',    border: 'border-blue-400', wash: '80, 130, 190' },
+  'European':            { color: 'bg-indigo-500 text-white',  border: 'border-indigo-500', wash: '90, 96, 170' },
+  'Israeli':             { color: 'bg-orange-500 text-white',  border: 'border-orange-500', wash: '196, 112, 62' },
   // Geography only — the state/independent split lives in sources.affiliation now
   // (collapsed from the former Iranian State/Independent/Local buckets in PR-B).
-  'Iranian':             { color: 'bg-red-700 text-white',     border: 'border-red-700'     },
-  'Arab/Gulf':           { color: 'bg-teal-600 text-white',    border: 'border-teal-600'    },
-  'Kurdish':             { color: 'bg-purple-600 text-white',  border: 'border-purple-600'  },
-  'Turkish':             { color: 'bg-slate-500 text-white',   border: 'border-slate-500'   },
-  'Russian':             { color: 'bg-rose-700 text-white',    border: 'border-rose-700'    },
-  'Ukrainian':           { color: 'bg-yellow-500 text-black',  border: 'border-yellow-500'  },
-  'Chinese':             { color: 'bg-red-500 text-white',     border: 'border-red-500'     },
-  'South Asian':         { color: 'bg-emerald-600 text-white', border: 'border-emerald-600' },
-  'East Asian':          { color: 'bg-cyan-600 text-white',    border: 'border-cyan-600'    },
-  'African':             { color: 'bg-lime-600 text-white',    border: 'border-lime-600'    },
-  'Independent/OSINT':   { color: 'bg-gray-600 text-white',    border: 'border-gray-600'    },
+  'Iranian':             { color: 'bg-red-700 text-white',     border: 'border-red-700', wash: '150, 58, 58' },
+  'Arab/Gulf':           { color: 'bg-teal-600 text-white',    border: 'border-teal-600', wash: '46, 128, 128' },
+  'Kurdish':             { color: 'bg-purple-600 text-white',  border: 'border-purple-600', wash: '120, 80, 160' },
+  'Turkish':             { color: 'bg-slate-500 text-white',   border: 'border-slate-500', wash: '160, 96, 80' },
+  'Russian':             { color: 'bg-rose-700 text-white',    border: 'border-rose-700', wash: '160, 70, 80' },
+  'Ukrainian':           { color: 'bg-yellow-500 text-black',  border: 'border-yellow-500', wash: '180, 150, 50' },
+  'Chinese':             { color: 'bg-red-500 text-white',     border: 'border-red-500', wash: '170, 60, 60' },
+  'South Asian':         { color: 'bg-emerald-600 text-white', border: 'border-emerald-600', wash: '70, 140, 110' },
+  'East Asian':          { color: 'bg-cyan-600 text-white',    border: 'border-cyan-600', wash: '50, 140, 150' },
+  'African':             { color: 'bg-lime-600 text-white',    border: 'border-lime-600', wash: '90, 140, 80' },
+  'Independent/OSINT':   { color: 'bg-gray-600 text-white',    border: 'border-gray-600', wash: '120, 118, 110' },
 } as const
 
 export type SourceRegion = keyof typeof REGIONS

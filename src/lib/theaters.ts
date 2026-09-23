@@ -2,7 +2,7 @@
 // ("Ukraine", "Korean Peninsula"), not which country's newsroom filed it. Built
 // entirely from the actors Jev already tags on every article (src/lib/signals.ts),
 // so there is nothing new to classify or store.
-import type { Cluster } from './cluster'
+import { publishedAt, type Cluster } from './cluster'
 import type { Actor } from './signals'
 import { isMajor } from './signals'
 
@@ -78,7 +78,7 @@ export interface TheaterSummary {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const at = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : 0)
+const at = (c: Cluster) => publishedAt(c.representative)
 
 // Widest coverage leads; among equals, one an English-language outlet also
 // reported, so the row can be read without translating it.

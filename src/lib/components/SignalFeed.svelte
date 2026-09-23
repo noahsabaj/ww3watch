@@ -3,6 +3,7 @@
   import type { Article } from '$lib/types'
   import SignalStory from '$lib/components/SignalStory.svelte'
   import PullIndicator from '$lib/components/PullIndicator.svelte'
+  import FeedEnd from '$lib/components/FeedEnd.svelte'
   import { createPullRefresh } from '$lib/pull-refresh.svelte'
   import { tips } from '$lib/tips.svelte'
 
@@ -100,22 +101,6 @@
     {#each clusters as cluster, i (cluster.id)}
       <SignalStory {cluster} {onselect} ontheater={ontheater && ((id) => ontheater(id, cluster.id))} hint={i === 0 && tips.shown('swipe') && clusters.length > 1} />
     {/each}
-    {#if hasMore}
-      <div class="flex h-full snap-start items-center justify-center px-6 text-center">
-        <button
-          id="feed-load-older"
-          type="button"
-          onclick={() => onLoadOlder?.()}
-          aria-disabled={loadingMore}
-          class="btn-ghost text-sm aria-disabled:opacity-50"
-        >
-          {loadingMore ? 'Loading…' : 'Load older stories'}
-        </button>
-      </div>
-    {:else}
-      <p id="feed-end" tabindex="-1" class="flex h-full snap-start items-center justify-center px-6 text-center text-xs text-fg-3 outline-none">
-        You’ve reached the oldest stories.
-      </p>
-    {/if}
+    <FeedEnd {hasMore} {loadingMore} {onLoadOlder} class="flex h-full snap-start items-center justify-center px-6 text-center" />
   </div>
 </div>
