@@ -57,6 +57,8 @@ export interface RunStats {
   signals_reused?: number
   signals_purged?: number
   signals_error?: string
+  /** The copy lookup failed; every article was asked instead (signals.ts). */
+  signals_copy_error?: string
   // images
   images_filled?: number
   images_none?: number

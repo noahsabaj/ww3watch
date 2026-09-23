@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
   asked: [] as Array<{ title: string; knownRelevant: number | null }>,
   applied: [] as Array<Record<string, unknown>>,
   purged: [] as string[],
+  lookupFails: false,
 }))
 
 vi.mock('../supabase', () => ({
@@ -20,7 +21,9 @@ vi.mock('../supabase', () => ({
         in: (_col: string, titles: string[]) => { q.titles = titles; return q },
         titles: [] as string[],
         then: (resolve: (v: unknown) => void) =>
-          resolve({ data: worklist ? state.pending : state.annotated.filter((d) => q.titles.includes(d.title as string)), error: null }),
+          resolve(!worklist && state.lookupFails
+            ? { data: null, error: { message: 'TypeError: fetch failed' } }
+            : { data: worklist ? state.pending : state.annotated.filter((d) => q.titles.includes(d.title as string)), error: null }),
       }
       return q
     },
@@ -49,7 +52,7 @@ vi.mock('../jev-signals', () => ({
   },
 }))
 
-import { enrichSignals } from './signals'
+import { enrichSignals, titleChunks } from './signals'
 import type { RunStats } from './stats'
 
 let n = 0
@@ -62,9 +65,36 @@ beforeEach(() => {
   state.asked = []
   state.applied = []
   state.purged = []
+  state.lookupFails = false
+})
+
+describe('titleChunks', () => {
+  it('keeps each lookup URL short: Persian headlines split long before 25 a request', () => {
+    const fa = Array.from({ length: 25 }, (_, i) => `خبر مهم یک مقام ایرانی درباره مذاکرات ایران و آمریکا ${i}`)
+    const chunks = titleChunks(fa)
+    expect(chunks.flat()).toEqual(fa)
+    expect(chunks.length).toBeGreaterThan(1)
+    for (const c of chunks) expect(c.map((t) => encodeURIComponent(t).length).reduce((a, b) => a + b)).toBeLessThanOrEqual(4000)
+  })
+
+  it('still caps short titles at 25 a request, and never drops an overlong one', () => {
+    expect(titleChunks(Array.from({ length: 30 }, (_, i) => `t${i}`)).map((c) => c.length)).toEqual([25, 5])
+    const long = 'x'.repeat(5000)
+    expect(titleChunks([long, 'a'])).toEqual([[long], ['a']])
+  })
 })
 
 describe('enrichSignals', () => {
+  it('annotates everything by asking when the copy lookup fails, instead of failing the stage', async () => {
+    state.lookupFails = true
+    state.pending = [row('Strike on port'), row('Other story')]
+    const stats: RunStats = {}
+    await enrichSignals(stats, Date.now() + 60_000)
+    expect(state.applied).toHaveLength(2)
+    expect(stats.signals_error).toBeUndefined()
+    expect(stats.signals_copy_error).toContain('fetch failed')
+  })
+
   it('asks once for copies that share a headline, summary and language, and annotates them all', async () => {
     state.pending = [row('Strike on port'), row('Strike on port'), row('Strike on port', { source_lang: 'fr' }), row('Other story')]
     const stats: RunStats = {}
