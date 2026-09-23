@@ -22,21 +22,23 @@ test('tapping a headline opens the reader as a dialog', async ({ page }) => {
   await expect(stories(page).first()).toBeVisible()
 })
 
-test('filters and the menu live in the header, with nothing floating over stories', async ({ page }) => {
+test('search and the menu live in the header, with nothing floating over stories', async ({ page }) => {
   const header = page.locator('header')
-  await expect(header.getByRole('button', { name: /^Open filters/ })).toBeVisible()
+  await expect(header.getByRole('button', { name: 'Search headlines' })).toBeVisible()
   await expect(header.getByRole('button', { name: 'Menu' })).toBeVisible()
   const floating = await page.evaluate(() =>
     [...document.querySelectorAll('button, a')].filter((el) => getComputedStyle(el).position === 'fixed').length)
   expect(floating).toBe(0)
 })
 
-test('feed order lives in the filter sheet', async ({ page }) => {
-  await page.getByRole('button', { name: /^Open filters/ }).click()
-  const order = page.getByRole('dialog').getByRole('group', { name: 'Feed order' })
-  await expect(order.getByRole('button', { name: 'Latest' })).toHaveAttribute('aria-pressed', 'true')
-  await order.getByRole('button', { name: /^Top/ }).click()
-  await expect(order.getByRole('button', { name: /^Top/ })).toHaveAttribute('aria-pressed', 'true')
+test('the search button opens a field; Cancel clears it and restores the feed', async ({ page }) => {
+  await page.getByRole('button', { name: 'Search headlines' }).click()
+  const field = page.getByRole('searchbox', { name: 'Search headlines' })
+  await field.fill('zzz-no-such-headline-zzz')
+  await expect(page.getByText('No stories match “zzz-no-such-headline-zzz”.')).toBeVisible()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(field).toBeHidden()
+  await expect(storyCard(page)).toBeVisible()
 })
 
 test('Signal carries no position counter or visible scrollbar', async ({ page }) => {

@@ -51,9 +51,9 @@ export const SEVERITY_LEVELS = [
   'A significant event: a deadly strike or attack, a major offensive, mass casualties, a ceasefire collapsing, one state openly escalating against another',
   'An event with global consequences: war between states beginning or widening, nuclear use, test or direct nuclear threat, a head of state killed or overthrown, great powers clashing directly',
 ] as const
-/** "Major only" cut: at or above a significant event. */
+/** The "major" badge: at or above a significant event. */
 export const MAJOR_SEVERITY = 0.55
-/** A Noul at or above this reads as yes for badges and filters. */
+/** A Noul at or above this reads as yes for badges. */
 export const SIGNAL_YES = 0.7
 
 // A `type`, not an `interface`, so it is assignable to the generated `Json` that
@@ -78,42 +78,3 @@ export const isMajor = (a: Pick<ArticleSignals, 'severity'>): boolean => (a.seve
 export const isClaim = (a: Pick<ArticleSignals, 'claim'>): boolean => (a.claim ?? 0) >= SIGNAL_YES
 export const isUnverified = (a: Pick<ArticleSignals, 'unverified'>): boolean => (a.unverified ?? 0) >= SIGNAL_YES
 export const isOpinion = (a: Pick<ArticleSignals, 'opinion'>): boolean => (a.opinion ?? 0) >= SIGNAL_YES
-
-// ── Reader-side filtering ────────────────────────────────────────────────────
-// Topics and actors are INCLUSION sets: empty means "everything", picking chips
-// narrows. (Regions are the opposite — all on, toggle off — because there are
-// few of them and a reader usually wants most. Nobody wants to untick 19 actors
-// to see one.)
-export interface SignalFilter {
-  majorOnly: boolean
-  hideOpinion: boolean
-  hideClaims: boolean
-  topics: Set<Topic>
-  actors: Set<Actor>
-}
-
-export const emptySignalFilter = (): SignalFilter => ({
-  majorOnly: false,
-  hideOpinion: false,
-  hideClaims: false,
-  topics: new Set(),
-  actors: new Set(),
-})
-
-export const signalFilterActive = (f: SignalFilter): boolean =>
-  f.majorOnly || f.hideOpinion || f.hideClaims || f.topics.size > 0 || f.actors.size > 0
-
-type Signalled = Partial<Pick<ArticleSignals, 'topic' | 'severity' | 'claim' | 'opinion' | 'actors'>>
-
-// An article Jev has not annotated yet has no signals. It passes the HIDE
-// filters (nothing is known against it) and fails the NARROWING ones (nothing
-// is known for it) — so a brand-new article never vanishes from the default
-// feed, and never pollutes "Major only".
-export function matchesSignals(a: Signalled, f: SignalFilter): boolean {
-  if (f.majorOnly && !isMajor({ severity: a.severity ?? null })) return false
-  if (f.hideOpinion && isOpinion({ opinion: a.opinion ?? null })) return false
-  if (f.hideClaims && isClaim({ claim: a.claim ?? null })) return false
-  if (f.topics.size > 0 && !(a.topic && f.topics.has(a.topic))) return false
-  if (f.actors.size > 0 && !(a.actors ?? []).some((k) => f.actors.has(k))) return false
-  return true
-}

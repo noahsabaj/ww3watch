@@ -2,7 +2,7 @@
   import Icon from '$lib/components/Icon.svelte'
   import type { Snippet } from 'svelte'
 
-  // One surface for everything that opens over the page (filters, the menu):
+  // One surface for everything that opens over the page (the site menu):
   // a bottom sheet on a phone, a panel under the header's right edge on a
   // wide screen. Focus moves into it on open and back on close; Escape and a
   // tap outside close it; Tab stays inside.

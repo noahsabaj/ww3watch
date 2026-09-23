@@ -11,7 +11,6 @@
     onLoadOlder,
     hasMore,
     loadingMore,
-    ranked = false,
     focusId = null,
     onview,
     onrefresh,
@@ -21,8 +20,6 @@
     onLoadOlder?: () => Promise<void>
     hasMore: boolean
     loadingMore: boolean
-    /** Top order: the list ends at the 24h window, not at the oldest story. */
-    ranked?: boolean
     /** The story the open reader belongs to. */
     focusId?: string | null
     /** The story on screen changed (not called for the first one on landing). */
@@ -101,7 +98,7 @@
       </div>
     {:else}
       <p id="feed-end" tabindex="-1" class="flex h-full snap-start items-center justify-center px-6 text-center text-xs text-fg-3 outline-none">
-        {ranked ? 'That’s every ranked story from the last 24 hours.' : 'You’ve reached the oldest stories.'}
+        You’ve reached the oldest stories.
       </p>
     {/if}
   </div>

@@ -75,23 +75,6 @@ export function storyBadgeSignals(cluster: Cluster): Partial<ArticleSignals> {
   }
 }
 
-// "Top" ordering for the feed. Same ingredients as trending (severity,
-// corroboration, a penalty for talk), plus recency — trending looks at a 4-hour
-// window where everything is fresh; the feed spans days.
-export const IMPORTANCE = { severity: 0.5, corroboration: 0.3, recency: 0.2, talkPenalty: 0.15, halfLifeHours: 8 }
-
-export function importance(articles: Article[], newestAt: number | null, now: number): number {
-  const s = storySignals(articles)
-  const ageH = newestAt ? Math.max(0, (now - newestAt) / 3_600_000) : 48
-  const recency = Math.pow(0.5, ageH / IMPORTANCE.halfLifeHours)
-  return (
-    IMPORTANCE.severity * (s.topSeverity ?? 0) +
-    IMPORTANCE.corroboration * corroboration(s) +
-    IMPORTANCE.recency * recency -
-    (s.talkOnly ? IMPORTANCE.talkPenalty : 0)
-  )
-}
-
 export interface SideGroup {
   /** Region label, plus the affiliation when every member of the group shares one. */
   region: string

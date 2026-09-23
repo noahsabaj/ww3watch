@@ -6,7 +6,6 @@
   import { dayKey, dayLabel, headlineText, langTag, timeAgo } from '$lib/utils'
   import { clock } from '$lib/now.svelte'
   import type { ReaderRouting } from '$lib/deeplink.svelte'
-  import type { SortMode } from '$lib/filters.svelte'
   import { base } from '$app/paths'
   import DeskStory from '$lib/components/DeskStory.svelte'
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
@@ -20,8 +19,6 @@
     clusters,
     trending,
     reader,
-    sortMode,
-    onSortMode,
     hasMore,
     loadingMore,
     onLoadOlder,
@@ -34,8 +31,6 @@
     clusters: Cluster[]
     trending: Cluster[]
     reader: ReaderRouting
-    sortMode: SortMode
-    onSortMode: (mode: SortMode) => void
     hasMore: boolean
     loadingMore: boolean
     onLoadOlder: () => Promise<void>
@@ -62,7 +57,7 @@
   })
 
   // Before anything is picked, open on a story worth the pane: the top trending
-  // one that survives the filters, else the newest covered by more than one
+  // one that matches the search, else the newest covered by more than one
   // outlet (the side-by-side is the point), else simply the newest.
   const opening = $derived(
     trending.map((t) => clusters.find((c) => c.id === t.id)).find(Boolean) ??
@@ -70,10 +65,9 @@
       clusters[0],
   )
 
-  // "New since your last visit": the first story older than the last visit, in
-  // Latest only (Top isn't in time order).
+  // "New since your last visit": the first story older than the last visit.
   const lastVisitIndex = $derived.by(() => {
-    if (lastVisitAt === null || sortMode === 'top') return -1
+    if (lastVisitAt === null) return -1
     const t = (c: Cluster) => (c.representative.published_at ? Date.parse(c.representative.published_at) : 0)
     for (let i = 1; i < clusters.length; i++) {
       if (t(clusters[i - 1]) > lastVisitAt && t(clusters[i]) <= lastVisitAt) return i
@@ -139,24 +133,14 @@
     style={pullRefresh.style}
     onscroll={() => (paused = (rail?.scrollTop ?? 0) > 300)}
   >
-    <div class="sticky top-0 z-10 flex items-center gap-1 border-b border-line bg-ink/95 px-4 py-2.5 backdrop-blur">
-      <div class="flex items-center gap-1" role="group" aria-label="Feed order">
-        {#each [['latest', 'Latest'], ['top', 'Top · 24h']] as [mode, label] (mode)}
-          <button
-            type="button"
-            onclick={() => onSortMode(mode as SortMode)}
-            aria-pressed={sortMode === mode}
-            title={mode === 'top' ? 'The last 24 hours, ranked by severity, independent corroboration and recency' : 'Newest first'}
-            class="pill min-h-8 px-3 text-xs"
-          >{label}</button>
-        {/each}
-      </div>
-      {#if newCount > 0 && paused}
-        <button type="button" onclick={flush} class="btn ml-auto min-h-8 px-3 text-xs">
-          <Icon name="arrow-up" size={14} />{newCount} new
+    <!-- Stories that arrived while the rail was scrolled down wait here. -->
+    {#if newCount > 0 && paused}
+      <div class="sticky top-0 z-10 flex justify-center border-b border-line bg-ink/95 px-4 py-2 backdrop-blur">
+        <button type="button" onclick={flush} class="btn min-h-8 px-3 text-xs">
+          <Icon name="arrow-up" size={14} />{newCount} new {newCount === 1 ? 'story' : 'stories'}
         </button>
-      {/if}
-    </div>
+      </div>
+    {/if}
 
     {#if lastVisitAt === null}
       <section class="border-b border-line px-4 py-3 text-xs leading-relaxed text-fg-2" aria-label="About this feed">
@@ -191,7 +175,7 @@
       {#each clusters as c, i (c.id)}
         {@const rep = c.representative}
         {@const active = selected?.id === c.id}
-        {#if sortMode === 'latest' && (i === 0 || dayKey(rep.published_at, clock.now) !== dayKey(clusters[i - 1].representative.published_at, clock.now))}
+        {#if (i === 0 || dayKey(rep.published_at, clock.now) !== dayKey(clusters[i - 1].representative.published_at, clock.now))}
           <li aria-hidden="true" class="label px-4 pt-5 pb-1" data-day>{dayLabel(rep.published_at, clock.now)}</li>
         {/if}
         {#if i === lastVisitIndex}
@@ -219,7 +203,7 @@
         </li>
       {/each}
       <li class="px-4 pt-6 text-center">
-        {#if hasMore && sortMode === 'latest'}
+        {#if hasMore}
           <button
             id="feed-load-older"
             type="button"
@@ -229,7 +213,7 @@
           >{loadingMore ? 'Loading…' : 'Load older stories'}</button>
         {:else}
           <p id="feed-end" tabindex="-1" class="text-xs text-fg-3 outline-none">
-            {sortMode === 'top' ? 'That’s every ranked story from the last 24 hours.' : 'You’ve reached the oldest stories.'}
+            You’ve reached the oldest stories.
           </p>
         {/if}
         <p class="mt-4 text-[11px] text-fg-3 pointer-coarse:hidden">j / k to move · o to read</p>
