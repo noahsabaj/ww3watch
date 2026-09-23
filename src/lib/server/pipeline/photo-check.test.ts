@@ -31,7 +31,7 @@ vi.mock('../supabase', () => {
   return { supabaseAdmin: { from: () => query(() => db.rows) } }
 })
 
-import { checkPhotos, differenceHash, judgeImage, EMBLEM_MIN, REUSE_MIN } from './photo-check'
+import { checkPhotos, differenceHash, judgeImage, oneAtATime, EMBLEM_MIN, REUSE_MIN } from './photo-check'
 import type { RunStats } from './stats'
 
 const now = new Date().toISOString()
@@ -115,6 +115,26 @@ describe('checkPhotos', () => {
     const stats = await run()
     expect(db.rows[0].image_verdict).toBeNull()
     expect(stats.photos_unreadable).toBe(1)
+  })
+
+  it('calls the model one image at a time, though downloads run in parallel', async () => {
+    db.rows = [row('1', 's1', 'a.jpg'), row('2', 's2', 'b.jpg'), row('3', 's3', 'card.jpg'), row('4', 's4', 'emblem.jpg')]
+    let active = 0, most = 0
+    const slow = async (image: Buffer) => {
+      most = Math.max(most, ++active)
+      await new Promise((r) => setTimeout(r, 5))
+      active--
+      return scorer(image)
+    }
+    await checkPhotos({}, Date.now() + 10_000, { scorer: slow, fetch: fetchPicture })
+    expect(most).toBe(1)
+    expect(db.rows.map((r) => r.image_verdict)).toEqual(['photo', 'photo', 'photo', 'emblem'])
+  })
+
+  it('keeps the queue moving after a failed call', async () => {
+    const flaky = oneAtATime(async (image: Buffer) => { if (image.length === 1) throw new Error('bad'); return 0.1 })
+    await expect(flaky(Buffer.from([1]))).rejects.toThrow('bad')
+    await expect(flaky(Buffer.from([1, 2]))).resolves.toBe(0.1)
   })
 
   it('never judges an article without an image, or one already judged', async () => {

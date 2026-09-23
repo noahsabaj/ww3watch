@@ -4,10 +4,23 @@
 // photos back straight after the check first ships.
 //
 //   gh workflow run run-script.yml -f script=scripts/check-photos.ts
+//
+// With `--once <deadline-ms>` it is the pipeline's photo stage instead: one
+// run's share, stats printed on one line for the parent to merge
+// (src/lib/server/pipeline/photo-check-isolated.ts).
 import { checkPhotos } from '../src/lib/server/pipeline/photo-check'
+import { PHOTO_STATS_PREFIX } from '../src/lib/server/pipeline/photo-check-isolated'
 import type { RunStats } from '../src/lib/server/pipeline/stats'
 
+async function once(deadlineMs: number) {
+  const stats: RunStats = {}
+  await checkPhotos(stats, deadlineMs)
+  console.log(PHOTO_STATS_PREFIX + JSON.stringify(stats))
+}
+
 async function main() {
+  const at = process.argv.indexOf('--once')
+  if (at >= 0) return once(Number(process.argv[at + 1]) || Date.now() + 5 * 60_000)
   for (let pass = 1; pass <= 20; pass++) {
     const stats: RunStats = {}
     await checkPhotos(stats, Date.now() + 10 * 60_000, { cap: 400 })
