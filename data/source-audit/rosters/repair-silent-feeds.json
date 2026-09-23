@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "id": "repair-silent-feeds",
+  "reviewedAt": "2026-09-23",
+  "changes": [
+    {
+      "sourceId": "faa96f08-002a-49fc-9504-0533e9337e88",
+      "before": {
+        "url": "http://feeds.feedburner.com/cfr_main",
+        "name": "CFR",
+        "region": "Independent/OSINT",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://www.cfr.org/feed",
+        "name": "CFR",
+        "region": "Independent/OSINT",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "The FeedBurner mirror still answers but stopped in March 2022, so every item is a duplicate and nothing reaches the site. CFR's own latest-content feed is current. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.cfr.org/feed",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+      ]
+    },
+    {
+      "sourceId": "8c2945df-6b2d-47bc-a227-bc6a54d73fb8",
+      "before": {
+        "url": "https://www.hindustantimes.com/feeds/rss/world/rssfeed.xml",
+        "name": "Hindustan Times",
+        "region": "South Asian",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml",
+        "name": "Hindustan Times",
+        "region": "South Asian",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "The catalogued world feed returns an empty channel. The publisher's RSS directory lists its world news section at this path. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.hindustantimes.com/rss",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+      ]
+    },
+    {
+      "sourceId": "57ff2adf-7a0a-4c1e-b91a-bac7787c7e95",
+      "before": {
+        "url": "https://www.hurriyetdailynews.com/rss",
+        "name": "Hurriyet Daily",
+        "region": "Turkish",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://www.hurriyetdailynews.com/rss/world",
+        "name": "Hurriyet Daily",
+        "region": "Turkish",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "The catalogued root feed returns an empty channel. The publisher serves section feeds at /rss/<section>; the world section is current (its middle-east section barely updates). Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.hurriyetdailynews.com/rss/world",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+      ]
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "before": {
+        "url": "https://www.jpost.com/Rss/RssFeedsHeadlines.aspx",
+        "name": "Jerusalem Post",
+        "region": "Israeli",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "after": {
+        "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+        "name": "Jerusalem Post",
+        "region": "Israeli",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": null
+      },
+      "reason": "The catalogued headlines feed still answers but stopped in June 2025, so every item is a duplicate. The publisher's RSS directory lists the front-page feed, which is current. Two production-path probes more than 15 minutes apart returned items. The editorial review and its limitations are recorded in the source profile.",
+      "evidence": [
+        "https://www.jpost.com/rss",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+      ]
+    },
+    {
+      "sourceId": "bf7b7201-c1cc-4e76-b850-c6f26375f31d",
+      "before": {
+        "url": "https://www.xinhuanet.com/english/rss/worldrss.xml",
+        "name": "Xinhua",
+        "region": "Chinese",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.xinhuanet.com/english/rss/worldrss.xml",
+        "name": "Xinhua",
+        "region": "Chinese",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "reason": "The feed answers but its newest item is from January 2018; Xinhua's RSS directory lists only feeds that stopped in 2017-18. No current publisher-hosted feed was found, so the source is disabled operationally, not editorially: its review stands, and it can return once the publisher serves a current feed that passes two production-path probes.",
+      "evidence": [
+        "https://www.xinhuanet.com/english/rss/worldrss.xml",
+        "https://english.news.cn/rss/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+      ]
+    },
+    {
+      "sourceId": "76a6a89d-f3ed-4c62-821b-6460e53c5611",
+      "before": {
+        "url": "http://www.xinhuanet.com/world/news_world.xml",
+        "name": "Xinhua 新华 国际",
+        "region": "Chinese",
+        "lang": "zh",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "http://www.xinhuanet.com/world/news_world.xml",
+        "name": "Xinhua 新华 国际",
+        "region": "Chinese",
+        "lang": "zh",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "reason": "The feed answers but its newest item is from December 2022; every news.cn and xinhuanet.com channel feed stopped then. No current publisher-hosted feed was found, so the source is disabled operationally, not editorially: its review stands, and it can return once the publisher serves a current feed that passes two production-path probes.",
+      "evidence": [
+        "http://www.xinhuanet.com/world/news_world.xml",
+        "https://english.news.cn/rss/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+      ]
+    },
+    {
+      "sourceId": "b5e30fa3-969f-44e9-9c21-e9a377ec2110",
+      "before": {
+        "url": "https://english.news.cn/rss/worldrss.xml",
+        "name": "Xinhua Middle East",
+        "region": "Arab/Gulf",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://english.news.cn/rss/worldrss.xml",
+        "name": "Xinhua Middle East",
+        "region": "Arab/Gulf",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "reason": "The feed answers with the same frozen content as Xinhua's English world feed, newest item January 2018. No current publisher-hosted feed was found, so the source is disabled operationally, not editorially: its review stands, and it can return once the publisher serves a current feed that passes two production-path probes.",
+      "evidence": [
+        "https://english.news.cn/rss/worldrss.xml",
+        "https://english.news.cn/rss/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+      ]
+    },
+    {
+      "sourceId": "a771770d-5d5a-4635-94e0-83636ca7554d",
+      "before": {
+        "url": "https://www.globaltimes.cn/rss/outbrain.xml",
+        "name": "Global Times",
+        "region": "Chinese",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "https://www.globaltimes.cn/rss/outbrain.xml",
+        "name": "Global Times",
+        "region": "Chinese",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "reason": "Only the channel date updates; the newest item is from August 2026 and one item arrived in seven days. Every other Global Times RSS path returns 404. No current publisher-hosted feed was found, so the source is disabled operationally, not editorially: its review stands, and it can return once the publisher serves a current feed that passes two production-path probes.",
+      "evidence": [
+        "https://www.globaltimes.cn/rss/outbrain.xml",
+        "https://www.globaltimes.cn/rss/outbrain.xml",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+      ]
+    },
+    {
+      "sourceId": "95367176-3529-4a43-8480-2642f4044909",
+      "before": {
+        "url": "http://www.people.com.cn/rss/world.xml",
+        "name": "People's Daily 人民网 国际",
+        "region": "Chinese",
+        "lang": "zh",
+        "enabled": true,
+        "affiliation": "state"
+      },
+      "after": {
+        "url": "http://www.people.com.cn/rss/world.xml",
+        "name": "People's Daily 人民网 国际",
+        "region": "Chinese",
+        "lang": "zh",
+        "enabled": false,
+        "affiliation": "state"
+      },
+      "reason": "The feed answers but every people.com.cn feed froze on 2025-06-05. No current publisher-hosted feed was found, so the source is disabled operationally, not editorially: its review stands, and it can return once the publisher serves a current feed that passes two production-path probes.",
+      "evidence": [
+        "http://www.people.com.cn/rss/world.xml",
+        "http://www.people.com.cn/rss/",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+      ]
+    },
+    {
+      "sourceId": "86b90414-8b86-4871-89f5-d3fd90f3e847",
+      "before": {
+        "url": "https://www.voanews.com/api/zrbopl-vomx-tpeovm_",
+        "name": "Voice of America",
+        "region": "US/Western",
+        "lang": "en",
+        "enabled": true,
+        "affiliation": "public"
+      },
+      "after": {
+        "url": "https://www.voanews.com/api/zrbopl-vomx-tpeovm_",
+        "name": "Voice of America",
+        "region": "US/Western",
+        "lang": "en",
+        "enabled": false,
+        "affiliation": "public"
+      },
+      "reason": "All 25 feeds in VOA's RSS directory stop at 2025-03-15, and the English homepage still shows March 2025 stories. No current publisher-hosted feed was found, so the source is disabled operationally, not editorially: its review stands, and it can return once the publisher serves a current feed that passes two production-path probes.",
+      "evidence": [
+        "https://www.voanews.com/api/zrbopl-vomx-tpeovm_",
+        "https://www.voanews.com/rssfeeds",
+        "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  closeOpen, disabledSourcesIssue, fileOrComment, lowYieldIssue, lowYieldMarker, resolvedComment, LABELS,
+  closeOpen, disabledSourcesIssue, fileOrComment, lowYieldIssue, lowYieldMarker, resolvedComment, silentIssue, LABELS,
 } from './issues'
 import { fakeGh } from './fake-gh'
 
@@ -178,5 +178,25 @@ describe('closeOpen', () => {
     const { gh, calls } = fakeGh([[['issue', 'list'], open(11)]])
     await closeOpen(gh, { label: 'prod-smoke-failure', comment: 'c' })
     expect(calls.some((c) => c[0] === 'label' || c[1] === 'create')).toBe(false)
+  })
+})
+
+describe('silentIssue', () => {
+  const SILENT = 'Xinhua: last item never\nGlobal Times: last item 2026-08-23'
+
+  it('names the silent feeds under their own title and a marker of the sorted names', () => {
+    const o = silentIssue(SILENT)
+    expect(o.label).toBe(LABELS.feedHealth)
+    expect(o.title).toBe('Feed sources gone silent — re-curation suggested')
+    expect(o.search).toBe('gone silent in:title')
+    expect(o.dedupeMarker).toBe('<!-- silent: Global Times,Xinhua, -->')
+    expect(o.body).toContain('- Xinhua: last item never\n- Global Times: last item 2026-08-23')
+  })
+
+  it('files separately from the low-yield issue', async () => {
+    const { gh, calls } = fakeGh([[['issue', 'list'], none]])
+    const o = silentIssue(SILENT)
+    expect((await fileOrComment(gh, o)).action).toBe('created')
+    expect(calls[1]).toEqual(['issue', 'list', '--label', 'feed-health', '--state', 'open', '--search', 'gone silent in:title', '--json', 'number'])
   })
 })

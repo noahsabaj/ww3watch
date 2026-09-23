@@ -140,6 +140,7 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `IMAGE_FILL_CONCURRENCY` | `8` | parallel page fetches for og:image |
 | `IMAGE_FILL_LOOKBACK_HOURS` | `48` | how far back the image-fill worklist looks |
 | `LOW_YIELD` | `{"days":7,"minItems":100,"maxPct":2}` | feeds reported as low-yield: ≥ minItems judged, ≤ maxPct accepted |
+| `SILENT` | `{"days":7,"maxItems":2}` | feeds reported as silent: fetched fine, ≤ maxItems new items in days (a stale file) |
 | `MAJOR_SEVERITY` | `0.55` | "major" badge, Major-only filter, major-events RSS, /trends |
 | `SIGNAL_YES` | `0.7` | a yes/no signal at or above this shows as a badge |
 | `TRENDING_WEIGHTS` | `{"severity":0.45,"corroboration":0.3,"fresh":0.25,"talkPenalty":0.15}` | trending score = weighted Jev judgments + corroboration − talk penalty |

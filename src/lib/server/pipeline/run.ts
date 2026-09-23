@@ -9,7 +9,7 @@ import { loadSources, updateSourceHealth, logFeedSummary } from './sources'
 import { embedAndAssignClusters, mergeStories } from './clustering'
 import { enrichSignals } from './signals'
 import { classifyFresh } from './classify'
-import { checkOpsHealth, reportLowYield, previousRunJevDown } from './ops'
+import { checkOpsHealth, reportLowYield, reportSilentFeeds, previousRunJevDown } from './ops'
 import { fillMissingImages } from './images'
 import { checkPhotos } from './photo-check'
 import { timed as timedStage, type RunStats } from './stats'
@@ -34,6 +34,7 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await timed('photo_check', () => checkPhotos(stats, startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
   await reportLowYield(stats)
+  await reportSilentFeeds(stats)
   stats.total_ms = Date.now() - startedAt
   console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(stats.timings ?? {})}`)
 

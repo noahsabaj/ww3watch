@@ -162,6 +162,13 @@ jobs:
           LOW_YIELD: ${{ steps.run.outputs.low_yield_sources }}
         run: node --import tsx scripts/ci/issues.ts low-yield
 
+      - name: File feed-health issue for silent sources
+        if: ${{ !cancelled() && steps.run.outputs.silent_sources != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SILENT: ${{ steps.run.outputs.silent_sources }}
+        run: node --import tsx scripts/ci/issues.ts silent
+
       # success() ⇒ every earlier step passed, `npm ci` included.
       - name: Resolve alert on success
         if: success()

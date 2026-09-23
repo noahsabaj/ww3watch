@@ -40,6 +40,7 @@ const NOTES: Record<string, string> = {
   IMAGE_FILL_CONCURRENCY: 'parallel page fetches for og:image',
   IMAGE_FILL_LOOKBACK_HOURS: 'how far back the image-fill worklist looks',
   LOW_YIELD: 'feeds reported as low-yield: ≥ minItems judged, ≤ maxPct accepted',
+  SILENT: 'feeds reported as silent: fetched fine, ≤ maxItems new items in days (a stale file)',
 }
 
 function table(): string {

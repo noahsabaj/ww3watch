@@ -727,6 +727,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      silent_sources: {
+        Args: { p_days: number; p_max_items: number }
+        Returns: {
+          r_last_item: string
+          r_name: string
+        }[]
+      }
       source_yield: {
         Args: { p_days: number; p_max_pct: number; p_min_items: number }
         Returns: {

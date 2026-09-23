@@ -323,6 +323,78 @@
       "itemCount": 100,
       "via": "proxy",
       "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35558271967"
+    },
+    {
+      "sourceId": "faa96f08-002a-49fc-9504-0533e9337e88",
+      "url": "https://www.cfr.org/feed",
+      "checkedAt": "2026-09-23T06:02:00.409Z",
+      "error": null,
+      "itemCount": 24,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+    },
+    {
+      "sourceId": "8c2945df-6b2d-47bc-a227-bc6a54d73fb8",
+      "url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml",
+      "checkedAt": "2026-09-23T06:02:00.467Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+      "checkedAt": "2026-09-23T06:02:00.926Z",
+      "error": null,
+      "itemCount": 26,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+    },
+    {
+      "sourceId": "57ff2adf-7a0a-4c1e-b91a-bac7787c7e95",
+      "url": "https://www.hurriyetdailynews.com/rss/world",
+      "checkedAt": "2026-09-23T06:02:00.530Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35824850514"
+    },
+    {
+      "sourceId": "faa96f08-002a-49fc-9504-0533e9337e88",
+      "url": "https://www.cfr.org/feed",
+      "checkedAt": "2026-09-23T06:19:34.885Z",
+      "error": null,
+      "itemCount": 24,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+    },
+    {
+      "sourceId": "8c2945df-6b2d-47bc-a227-bc6a54d73fb8",
+      "url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml",
+      "checkedAt": "2026-09-23T06:19:35.051Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+    },
+    {
+      "sourceId": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
+      "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+      "checkedAt": "2026-09-23T06:19:35.405Z",
+      "error": null,
+      "itemCount": 26,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+    },
+    {
+      "sourceId": "57ff2adf-7a0a-4c1e-b91a-bac7787c7e95",
+      "url": "https://www.hurriyetdailynews.com/rss/world",
+      "checkedAt": "2026-09-23T06:19:35.132Z",
+      "error": null,
+      "itemCount": 100,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
     }
   ]
 }
