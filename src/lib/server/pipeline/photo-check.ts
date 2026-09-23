@@ -90,6 +90,22 @@ export function photoScorer(): Promise<EmblemScorer> {
   return (scorerPromise ??= loadScorer())
 }
 
+// The model scores one image at a time. Once real images reached it (#159),
+// the process aborted natively on the runner ("free(): double free", exit 134):
+// after ~850 images in the backfill and within the first pipeline run. Six
+// concurrent calls into one ONNX session is the likeliest cause, so downloads
+// and hashing still run six at a time and only the model call waits its turn.
+// The pipeline also runs this stage in its own process (photo-check-isolated.ts),
+// so if anything still crashes, only this stage is lost.
+export function oneAtATime(scorer: EmblemScorer): EmblemScorer {
+  let queue: Promise<unknown> = Promise.resolve()
+  return (image) => {
+    const next = queue.then(() => scorer(image))
+    queue = next.catch(() => {})
+    return next
+  }
+}
+
 export async function judgeImage(image: Buffer, scorer: EmblemScorer): Promise<{ verdict: Verdict; hash: string }> {
   const [hash, emblem] = await Promise.all([differenceHash(image), scorer(image)])
   return { hash, verdict: emblem >= EMBLEM_MIN ? 'emblem' : 'photo' }
@@ -116,7 +132,7 @@ export async function checkPhotos(
     const rows = (data ?? []) as Row[]
     if (rows.length === 0) return
 
-    const scorer = deps.scorer ?? (await photoScorer())
+    const scorer = oneAtATime(deps.scorer ?? (await photoScorer()))
     const download = deps.fetch ?? fetchImage
     const hashes = new Set<string>()
     const result = await mapPool(

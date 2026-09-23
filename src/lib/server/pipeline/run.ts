@@ -11,7 +11,7 @@ import { enrichSignals } from './signals'
 import { classifyFresh } from './classify'
 import { checkOpsHealth, reportLowYield, reportSilentFeeds, previousRunJevDown } from './ops'
 import { fillMissingImages } from './images'
-import { checkPhotos } from './photo-check'
+import { checkPhotosIsolated } from './photo-check-isolated'
 import { timed as timedStage, type RunStats } from './stats'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
@@ -31,7 +31,7 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await timed('images', () => fillMissingImages(stats, startedAt + RUN_BUDGET_MS))
   // After the fill, so a photo found this run is also checked this run; the
   // site shows none until it has been (photo-check.ts).
-  await timed('photo_check', () => checkPhotos(stats, startedAt + RUN_BUDGET_MS))
+  await timed('photo_check', () => checkPhotosIsolated(stats, startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
   await reportLowYield(stats)
   await reportSilentFeeds(stats)
