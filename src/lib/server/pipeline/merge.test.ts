@@ -127,3 +127,31 @@ describe('mergeStories', () => {
     expect(before - cutoff).toBeLessThanOrEqual(48 * 3600_000 + 1000)
   })
 })
+
+describe('tallyBySim', () => {
+  it('counts each verdict under its 0.02 similarity step', async () => {
+    const { tallyBySim } = await import('./stats')
+    const stats: RunStats = {}
+    tallyBySim(stats, 'pairs_by_sim', 0.781, 'different')
+    tallyBySim(stats, 'pairs_by_sim', 0.799, 'different')
+    tallyBySim(stats, 'pairs_by_sim', 0.8, 'same')
+    tallyBySim(stats, 'pairs_by_sim', 0.86, 'unsure')
+    expect(stats.pairs_by_sim).toEqual({
+      '0.78': { same: 0, different: 2, unsure: 0 },
+      '0.80': { same: 1, different: 0, unsure: 0 },
+      '0.86': { same: 0, different: 0, unsure: 1 },
+    })
+  })
+
+  it('records the merge pass by similarity, a sub-bar "same" as unsure', async () => {
+    state.candidates = [pair('a', 'b', 1, 2, 0.91), pair('c', 'd', 1, 1, 0.87)]
+    state.verdicts = { 'a|b': 'same', 'c|d': 'same' }
+    state.p = { 'c|d': 0.75 }
+    const stats: RunStats = {}
+    await mergeStories(stats)
+    expect(stats.merge_by_sim).toEqual({
+      '0.90': { same: 1, different: 0, unsure: 0 },
+      '0.86': { same: 0, different: 0, unsure: 1 },
+    })
+  })
+})

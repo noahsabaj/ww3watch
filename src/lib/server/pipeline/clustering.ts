@@ -6,7 +6,7 @@ import { mapPool } from '../pool'
 import { supabaseAdmin } from '../supabase'
 import { STORY_MERGE } from '../config'
 import { ASSIGN_CAP, ASSIGN_LOOKBACK_HOURS, ASSIGN_RPC_CHUNK, ID_QUERY_CHUNK, JEV_CONCURRENCY, PAIR_BAND, PAIR_CHUNK } from '../config'
-import { bump, type RunStats } from './stats'
+import { bump, tallyBySim, type RunStats } from './stats'
 
 // Embeds unassigned recent titles and assigns stories via the
 // assign_story_by_embedding RPC (star linkage against story representatives,
@@ -33,7 +33,7 @@ type AssignItem = {
 // threshold alone.
 async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>, stats: RunStats): Promise<void> {
   try {
-    const grey: Array<{ item: AssignItem; storyId: string; repTitle: string }> = []
+    const grey: Array<{ item: AssignItem; storyId: string; repTitle: string; sim: number }> = []
     for (let i = 0; i < items.length; i += ASSIGN_RPC_CHUNK) {
       const { data, error } = await supabaseAdmin.rpc('nearest_story_candidates', {
         p_items: items.slice(i, i + ASSIGN_RPC_CHUNK).map(({ id, published_at, embedding }) => ({ id, published_at, embedding })),
@@ -44,12 +44,13 @@ async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>
       for (const r of data ?? []) {
         const item = byId.get(r.r_article_id)
         if (!item || !r.r_story_id || !r.r_rep_title || r.r_sim === null) continue
-        if (r.r_sim >= PAIR_BAND.lo && r.r_sim < PAIR_BAND.hi) grey.push({ item, storyId: r.r_story_id, repTitle: r.r_rep_title })
+        if (r.r_sim >= PAIR_BAND.lo && r.r_sim < PAIR_BAND.hi) grey.push({ item, storyId: r.r_story_id, repTitle: r.r_rep_title, sim: r.r_sim })
       }
     }
     let same = 0, different = 0, unsure = 0
     const judged = await mapPool(grey, JEV_CONCURRENCY, (g) => judgeSameEvent(titleById.get(g.item.id) ?? '', g.repTitle))
     for (const { item: g, value } of judged.done) {
+      tallyBySim(stats, 'pairs_by_sim', g.sim, value.verdict)
       if (value.verdict === 'same') { g.item.join_story = g.storyId; same++ }
       else if (value.verdict === 'different') { g.item.avoid_story = g.storyId; g.item.min_sim = PAIR_BAND.hi; different++ }
       else unsure++
@@ -188,6 +189,10 @@ export async function mergeStories(stats: RunStats): Promise<void> {
     if (pairs.length === 0) return
     const judged = await mapPool(pairs, JEV_CONCURRENCY, (p) => judgeSameEvent(p.r_a_title, p.r_b_title))
     bump(stats, 'merge_pairs_judged', judged.done.length)
+
+    for (const { item: p, value } of judged.done) {
+      tallyBySim(stats, 'merge_by_sim', p.r_sim, value.verdict === 'same' && value.p < STORY_MERGE.minP ? 'unsure' : value.verdict)
+    }
 
     const settled = judged.done
       .filter((j) => !(j.value.verdict === 'same' && j.value.p >= STORY_MERGE.minP))
