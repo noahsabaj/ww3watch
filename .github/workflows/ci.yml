@@ -122,22 +122,6 @@ jobs:
       # step below, which runs the check alongside the suite (they need neither
       # each other nor more than the 4 cores between them). The header comment is
       # re-attached so the file stays self-describing if someone copies it out.
-      - name: Generate types from the migrated schema
-        run: |
-          set -euo pipefail
-          head -n 9 src/lib/database.types.ts > /tmp/header.ts
-          supabase gen types typescript --local --schema public > /tmp/generated.ts
-          cat /tmp/header.ts /tmp/generated.ts > src/lib/database.types.ts
-          # The hosted generator adds an `__InternalSupabase` block (PostgREST
-          # version) that the local one omits. Compare everything except that, so
-          # a warning here always means a real schema difference.
-          strip() { sed '/__InternalSupabase: {/,/^  }$/d; /Allows to automatically instantiate createClient/d; /instead of createClient<Database/d' "$1"; }
-          git show HEAD:src/lib/database.types.ts > /tmp/committed.ts
-          if ! diff -B <(strip /tmp/committed.ts) <(strip src/lib/database.types.ts) > /tmp/types.diff; then
-            echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
-            cat /tmp/types.diff
-          fi
-
       # The schema these migrations actually build, as an artifact: the canonical
       # answer to "what does a fresh database look like?", diffable across PRs.
       - name: Dump the migrated schema
@@ -156,17 +140,34 @@ jobs:
           retention-days: 14
 
       - name: Browser tests, and the type-check against the migrated schema
+        # The type-check needs types generated from the database just migrated;
+        # the browser tests need neither, so both run at once.
         # svelte-check resolves $env/static/public, so it needs the same two
         # PUBLIC_ values the build step was given.
         env:
           PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
         run: |
-          npm run check > /tmp/check.log 2>&1 &
+          (
+            set -euo pipefail
+            head -n 9 src/lib/database.types.ts > /tmp/header.ts
+            supabase gen types typescript --local --schema public > /tmp/generated.ts
+            cat /tmp/header.ts /tmp/generated.ts > src/lib/database.types.ts
+            # The hosted generator adds an `__InternalSupabase` block (PostgREST
+            # version) that the local one omits. Compare everything except that, so
+            # a warning here always means a real schema difference.
+            strip() { sed '/__InternalSupabase: {/,/^  }$/d; /Allows to automatically instantiate createClient/d; /instead of createClient<Database/d' "$1"; }
+            git show HEAD:src/lib/database.types.ts > /tmp/committed.ts
+            if ! diff -B <(strip /tmp/committed.ts) <(strip src/lib/database.types.ts) > /tmp/types.diff; then
+              echo "::warning file=src/lib/database.types.ts::committed types differ from the migrated schema — regenerate (see the file header)"
+              cat /tmp/types.diff
+            fi
+            npm run check
+          ) > /tmp/check.log 2>&1 &
           check=$!
           npx playwright test && tests=0 || tests=$?
           wait "$check" && checked=0 || checked=$?
-          echo "::group::Type-check against the migrated schema (exit $checked)"
+          echo "::group::Types from the migrated schema, and the type-check (exit $checked)"
           cat /tmp/check.log
           echo "::endgroup::"
           if [ "$checked" != 0 ]; then echo "::error::npm run check failed against the migrated schema (log above)"; fi
