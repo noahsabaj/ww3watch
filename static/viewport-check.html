@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070809">
+<title>Viewport check</title>
+<!-- Temporary diagnostic for the empty band under stories in iPhone Safari. Not linked; removed before merge. -->
+<style>
+  html,body{margin:0;background:#070809;color:#e8eaed;font:14px/1.4 -apple-system,system-ui,sans-serif;overflow:hidden}
+  .frame{position:fixed;left:0;width:34%;display:flex;align-items:flex-end;justify-content:center;font-weight:700;color:#000;font-size:12px}
+  #dvh{top:0;height:100dvh;left:0;background:#ef4444}
+  #lvh{top:0;height:100lvh;left:33%;background:#22c55e;z-index:-1}
+  #fix{top:0;bottom:0;left:66%;background:#3b82f6}
+  .scroller{position:fixed;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;z-index:2}
+  .page{height:100%;scroll-snap-align:start;display:flex;align-items:center;justify-content:center}
+  #out{background:rgba(0,0,0,.85);padding:14px 16px;border-radius:12px;font:13px/1.5 ui-monospace,Menlo,monospace;white-space:pre;border:1px solid #333}
+</style></head><body>
+<div class="frame" id="dvh">100dvh</div><div class="frame" id="lvh">100lvh</div><div class="frame" id="fix">fixed</div>
+<div class="scroller" id="s"><div class="page"><div id="out"></div></div><div class="page"><div>swipe back up</div></div></div>
+<div id="probe" style="position:fixed;top:env(safe-area-inset-top);bottom:env(safe-area-inset-bottom)"></div>
+<script>
+  const q = (id) => document.getElementById(id).getBoundingClientRect()
+  function show() {
+    const p = q('probe')
+    document.getElementById('out').textContent = [
+      'screen          ' + screen.width + ' x ' + screen.height,
+      'innerHeight     ' + innerHeight,
+      'visualViewport  ' + Math.round(visualViewport.height),
+      'red 100dvh      ' + Math.round(q('dvh').height),
+      'green 100lvh    ' + Math.round(q('lvh').height),
+      'blue fixed      ' + Math.round(q('fix').height),
+      'safe top/bottom ' + Math.round(p.top) + ' / ' + Math.round(innerHeight - p.bottom),
+      'standalone      ' + (navigator.standalone ? 'yes' : 'no'),
+      navigator.userAgent.match(/OS [\d_]+/)?.[0]?.replace(/_/g, '.') ?? '',
+    ].join('\n')
+  }
+  show(); addEventListener('resize', show); visualViewport.addEventListener('resize', show); setInterval(show, 500)
+</script></body></html>
