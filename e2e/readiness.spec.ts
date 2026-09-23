@@ -28,7 +28,7 @@ test('public pages have unique initial HTML metadata', async ({ request }) => {
 })
 
 for (const width of [320, 390, 430]) {
-  test(`phone navigation and filters fit at ${width}px`, async ({ page }) => {
+  test(`phone navigation and search fit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/')
     await expect(page.locator('article').first()).toBeVisible()
@@ -37,13 +37,12 @@ for (const width of [320, 390, 430]) {
     await expect(page.getByRole('navigation', { name: 'Site navigation' })).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(page.getByRole('navigation', { name: 'Site navigation' })).toBeHidden()
-    await page.getByRole('button', { name: 'Open filters' }).click()
-    const sheet = page.getByRole('dialog')
-    await expect(sheet.getByLabel('Search headlines', { exact: true })).toBeVisible()
-    await page.keyboard.press('Shift+Tab')
-    expect(await sheet.evaluate(el => el.contains(document.activeElement))).toBe(true)
-    await sheet.getByRole('button', { name: 'Close', exact: true }).click()
-    await expect(sheet).toBeHidden()
-    await expect(page.getByRole('button', { name: 'Open filters' })).toBeFocused()
+    await page.getByRole('button', { name: 'Search headlines' }).click()
+    const field = page.getByRole('searchbox', { name: 'Search headlines' })
+    await expect(field).toBeFocused()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(field).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible()
   })
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Article } from './types'
-import { bySide, corroboration, importance, memberKind, storySignals } from './story'
+import { bySide, corroboration, memberKind, storySignals } from './story'
 
 let n = 0
 function art(o: Partial<Article> = {}): Article {
@@ -54,17 +54,7 @@ describe('storySignals', () => {
   })
 })
 
-describe('importance', () => {
-  const now = Date.parse('2026-09-19T12:00:00Z')
-  it('puts a corroborated major event above a fresher lone statement', () => {
-    const strike = [event({ source_region: 'Russian', source_lang: 'ru' }), event({ source_region: 'Ukrainian', source_lang: 'uk' }), event()]
-    const threat = [statement()]
-    expect(importance(strike, now - 6 * 3_600_000, now)).toBeGreaterThan(importance(threat, now - 600_000, now))
-  })
-  it('decays: the same story is worth less a day later', () => {
-    const s = [event(), event()]
-    expect(importance(s, now - 3_600_000, now)).toBeGreaterThan(importance(s, now - 25 * 3_600_000, now))
-  })
+describe('corroboration', () => {
   it('saturates corroboration', () => {
     expect(corroboration({ independent: 500, regions: 50, langs: 50 })).toBeCloseTo(1)
   })
