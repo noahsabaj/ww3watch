@@ -1,14 +1,5 @@
 [
   {
-    "id": "ea8f2e46-714b-4ba7-9e05-f0d35c59000c",
-    "name": "SANA (Syria)",
-    "region": "Arab/Gulf",
-    "lang": "en",
-    "affiliation": "state",
-    "url": "https://sana.sy/en/feed/?post_type=post",
-    "evidenceUrl": "https://sana.sy/en/"
-  },
-  {
     "id": "faa96f08-002a-49fc-9504-0533e9337e88",
     "name": "CFR",
     "region": "Independent/OSINT",
