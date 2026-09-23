@@ -80,6 +80,25 @@ test.describe('iPad', () => {
   })
 })
 
+test.describe('iPhone home-screen app', () => {
+  // iOS reports the standalone app's viewport one status bar (62px here) short
+  // of the screen it draws on; the frame must reach the real bottom anyway.
+  test.use({ viewport: { width: 440, height: 894 } })
+  test('the feed reaches the bottom of the screen, not of the short viewport', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'standalone', { value: true })
+      Object.defineProperty(screen, 'width', { value: 440 })
+      Object.defineProperty(screen, 'height', { value: 956 })
+    })
+    await page.reload()
+    await expect(storyCard(page)).toBeVisible()
+    await expect.poll(() => page.locator('[data-app-frame]').evaluate((el) => el.getBoundingClientRect().height)).toBe(956)
+  })
+  test('in the browser the frame keeps to the viewport', async ({ page }) => {
+    expect(await page.locator('[data-app-frame]').evaluate((el) => el.getBoundingClientRect().height)).toBe(894)
+  })
+})
+
 test('the story scroller is keyboard reachable', async ({ page }) => {
   const scroller = page.getByLabel('Stories', { exact: true })
   await scroller.focus()

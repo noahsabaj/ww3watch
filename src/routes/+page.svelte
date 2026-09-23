@@ -102,7 +102,28 @@
     localStorage.setItem('pwa-install-dismissed', '1')
   }
 
+  // In the iPhone home-screen app the page draws under the translucent status
+  // bar, but iOS still reports a viewport one status bar shorter than the
+  // screen, so a frame pinned to the viewport stopped ~60px above the bottom
+  // and left an empty band under every story. Viewport units and fixed
+  // positioning both inherit that short viewport; the screen size does not.
+  // Only a full-screen standalone app is touched, and only when it falls short.
+  let frame = $state<HTMLElement | null>(null)
+  function fitScreen() {
+    if (!frame || !(navigator as Navigator & { standalone?: boolean }).standalone) return
+    const portrait = innerHeight >= innerWidth
+    const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height)
+    const across = portrait ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height)
+    frame.style.height = ''
+    // An iPad in Split View or Stage Manager is narrower than the screen on purpose.
+    if (Math.abs(innerWidth - across) > 1) return
+    if (full > frame.getBoundingClientRect().height + 1) frame.style.height = `${full}px`
+  }
+
   onMount(() => {
+    fitScreen()
+    addEventListener('resize', fitScreen)
+    addEventListener('orientationchange', fitScreen)
     const media = window.matchMedia(DESK_QUERY)
     desk = media.matches
     const onMedia = (e: MediaQueryListEvent) => { desk = e.matches }
@@ -135,16 +156,16 @@
       cancelled = true
       media.removeEventListener('change', onMedia)
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      removeEventListener('resize', fitScreen)
+      removeEventListener('orientationchange', fitScreen)
       feed.stop()
     }
   })
 </script>
 
-<!-- fixed inset-0, not h-dvh: in the home-screen app (black-translucent status
-     bar) iOS computes viewport units without the status bar the page draws
-     under, so a 100dvh page stopped about 60px above the bottom of the screen.
-     A fixed box pinned to all four edges fills the real screen everywhere. -->
-<div class="fixed inset-0 overflow-hidden bg-ink flex flex-col">
+<!-- Pinned to the viewport's edges; in the iPhone home-screen app fitScreen()
+     stretches it to the real screen (see there). -->
+<div bind:this={frame} data-app-frame class="fixed inset-0 overflow-hidden bg-ink flex flex-col">
   <Header
     bind:searchQuery={search.query}
     storyCount={search.clustered.length}
