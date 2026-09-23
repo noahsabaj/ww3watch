@@ -45,10 +45,16 @@ export interface RunStats {
   pairs_unsure?: number
   pairs_failed?: number
   pairs_error?: string
+  /** Grey-band join verdicts per 0.02 similarity step ("0.80": {same, different, unsure}). */
+  pairs_by_sim?: SimTally
+  /** Merge-pass verdicts per 0.02 similarity step; "same" counts only merge-grade ones. */
+  merge_by_sim?: SimTally
   // signals
   signals_applied?: number
   signals_failed?: number
   signals_tokens?: number
+  /** Exact copies (same headline, summary, language) given another article's answers. */
+  signals_reused?: number
   signals_purged?: number
   signals_error?: string
   // images
@@ -75,6 +81,17 @@ export interface RunStats {
   trending?: string
   db?: Record<string, unknown>
   total_ms?: number
+}
+
+export type SimTally = Record<string, { same: number; different: number; unsure: number }>
+
+/** Count one Jev same-event verdict under its similarity step, so the bands can
+ *  be moved on evidence (a week of runs, summed from pipeline_runs.stats). */
+export function tallyBySim(stats: RunStats, key: 'pairs_by_sim' | 'merge_by_sim', sim: number, verdict: 'same' | 'different' | 'unsure'): void {
+  const step = (Math.floor(sim * 50 + 1e-9) / 50).toFixed(2)
+  const tally = (stats[key] ??= {})
+  const row = (tally[step] ??= { same: 0, different: 0, unsure: 0 })
+  row[verdict]++
 }
 
 /** Keys whose value is a running count. */

@@ -120,7 +120,7 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `PAIR_YES` | `0.7` | P(same) to join a story |
 | `PAIR_NO` | `0.3` | P(same) at or below this rules the story out |
 | `PAIR_CHUNK` | `20` | articles judged + assigned per chunk, so later ones see stories earlier ones created |
-| `STORY_MERGE` | `{"hours":24,"minSim":0.8,"minP":0.8,"candidates":60,"maxPerRun":15}` | story-merge pass: window, candidate similarity, P(same) needed, caps |
+| `STORY_MERGE` | `{"hours":24,"minSim":0.85,"minP":0.8,"candidates":60,"maxPerRun":15}` | story-merge pass: window, candidate similarity, P(same) needed, caps |
 | `HEAD_POOL_CAP` | `2000` | most new articles the local head scores per run |
 | `HEAD_AUDIT_RATE` | `0.03` | share of the head's confident verdicts Jev judges anyway (agreement is recorded) |
 | `HEAD_REJECT_BELOW` | `0.235` |  |

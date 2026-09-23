@@ -121,7 +121,14 @@ export const PAIR_BAND = { lo: num('JEV_PAIR_LO', 0.78), hi: num('JEV_PAIR_HI', 
 // `minP` is stricter than PAIR_YES on purpose: a wrong JOIN misfiles one article,
 // a wrong MERGE misfiles a whole story. On a prod dry run the verdicts between
 // 0.7 and 0.8 were the debatable ones (a daily roundup vs. one incident in it).
-export const STORY_MERGE = { hours: 24, minSim: num('STORY_MERGE_MIN_SIM', 0.8), minP: num('STORY_MERGE_MIN_P', 0.8), candidates: 60, maxPerRun: 15 }
+//
+// minSim 0.85, not 0.8 (2026-09-23): every merge in the 2026-09-20..22 logs was
+// at 0.886 or above, and pairs between 0.8 and 0.85 sit inside PAIR_BAND, where
+// each article was already judged against the other story when it arrived. At
+// 0.8 the pass asked Jev 60 pairs every run (5,760 a day, ~35% of all Jev
+// tokens) for ~50 merges; 0.85 keeps 5% of those pairs. stats.merge_by_sim
+// records the verdicts per similarity step, to move it again on evidence.
+export const STORY_MERGE = { hours: 24, minSim: num('STORY_MERGE_MIN_SIM', 0.85), minP: num('STORY_MERGE_MIN_P', 0.8), candidates: 60, maxPerRun: 15 }
 export const PAIR_YES = num('JEV_PAIR_YES', 0.7)
 export const PAIR_NO = num('JEV_PAIR_NO', 0.3)
 

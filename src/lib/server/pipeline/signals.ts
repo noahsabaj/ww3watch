@@ -6,7 +6,38 @@ import type { ArticleSignals } from '../../signals'
 import { PURGE_BELOW, PURGE_CAP_PER_RUN, SIGNALS_CAP, SIGNALS_CONCURRENCY, SIGNALS_LOOKBACK_HOURS, UPSERT_BATCH } from '../config'
 import { bump, type RunStats } from './stats'
 import { writeVerdicts } from './persist'
-import { JEV_MODEL } from '../jev'
+import { JEV_MODEL, jevState } from '../jev'
+
+// Wire copies and cross-posts: the same headline, summary and language under
+// another outlet or feed (~2% of accepted articles, most arriving runs after
+// the first). Jev sees exactly jevState(), so the same state gets the same
+// answers: ask once per state, and give a copy of an annotated article its
+// answers instead of asking again.
+const stateKey = (a: { title: string; summary: string | null; source_lang: string }) => JSON.stringify(jevState(a))
+const TITLE_CHUNK = 25 // titles travel in the URL too, and are longer than ids
+
+type Pending = { id: string; guid: string; title: string; summary: string | null; source_lang: string; jev_relevant: number | null }
+
+async function annotatedCopies(pending: Pending[], since: string): Promise<Map<string, ArticleSignals>> {
+  const found = new Map<string, ArticleSignals>()
+  const titles = [...new Set(pending.map((a) => a.title))]
+  for (let i = 0; i < titles.length; i += TITLE_CHUNK) {
+    const { data, error } = await supabaseAdmin
+      .from('articles')
+      .select('title, summary, source_lang, topic, severity, claim, unverified, opinion, actors, jev_relevant')
+      .in('title', titles.slice(i, i + TITLE_CHUNK))
+      .not('signals_at', 'is', null)
+      .gte('fetched_at', since)
+    if (error) throw new Error(`copy lookup failed: ${JSON.stringify(error)}`)
+    for (const d of data ?? []) {
+      found.set(stateKey(d), {
+        topic: d.topic, severity: d.severity, claim: d.claim, unverified: d.unverified, opinion: d.opinion,
+        actors: d.actors ?? [], jev_relevant: d.jev_relevant,
+      } as ArticleSignals)
+    }
+  }
+  return found
+}
 
 // Annotate accepted articles that have no signals yet (signals_at IS NULL).
 // Same contract as clustering: failure never fails the run, the rows stay on
@@ -28,17 +59,39 @@ export async function enrichSignals(stats: RunStats, deadlineMs: number): Promis
     const irrelevant: string[] = []
     const purgeP = new Map<string, { guid: string; p: number; lang: string | null }>()
     let tokens = 0
+    let reused = 0
+    const take = (a: Pending, signals: ArticleSignals) => {
+      // A copy keeps its own Jev relevance when classification already asked.
+      const own = { ...signals, jev_relevant: a.jev_relevant ?? signals.jev_relevant }
+      items.push({ id: a.id, ...own })
+      if (a.jev_relevant == null && own.jev_relevant !== null && own.jev_relevant < PURGE_BELOW) {
+        irrelevant.push(a.id)
+        purgeP.set(a.id, { guid: a.guid, p: own.jev_relevant, lang: a.source_lang })
+      }
+    }
+
+    // One question per distinct state; copies of an annotated article need none.
+    const known = await annotatedCopies(pending, new Date(Date.now() - 7 * 86400_000).toISOString())
+    const groups = new Map<string, Pending[]>()
+    for (const a of pending) {
+      const key = stateKey(a)
+      const done = known.get(key)
+      if (done) { take(a, done); reused++; continue }
+      const g = groups.get(key)
+      if (g) g.push(a)
+      else groups.set(key, [a])
+    }
     // jev_relevant is already set for articles Jev itself accepted; only the
-    // head's accepts still need the relevance question.
-    const asked = await mapPool(pending, SIGNALS_CONCURRENCY, (a) => askSignals(a, deadlineMs, a.jev_relevant ?? null), { deadlineMs })
-    for (const { item: a, value } of asked.done) {
+    // head's accepts still need the relevance question. A group asks it unless
+    // one of its copies already has Jev's answer.
+    const leaders = [...groups.values()].map((g) => g.find((a) => a.jev_relevant != null) ?? g[0])
+    const asked = await mapPool(leaders, SIGNALS_CONCURRENCY, (a) => askSignals(a, deadlineMs, a.jev_relevant ?? null), { deadlineMs })
+    for (const { item: leader, value } of asked.done) {
       const { inputTokens, ...signals } = value
       tokens += inputTokens
-      items.push({ id: a.id, ...signals })
-      if (a.jev_relevant == null && signals.jev_relevant !== null && signals.jev_relevant < PURGE_BELOW) {
-        irrelevant.push(a.id)
-        purgeP.set(a.id, { guid: a.guid, p: signals.jev_relevant, lang: a.source_lang })
-      }
+      const group = groups.get(stateKey(leader))!
+      for (const a of group) take(a, signals)
+      reused += group.length - 1
     }
     const failed = asked.failed.length
     asked.failed.slice(0, 3).forEach(({ error }) =>
@@ -70,7 +123,8 @@ export async function enrichSignals(stats: RunStats, deadlineMs: number): Promis
     bump(stats, 'signals_applied', applied)
     bump(stats, 'signals_failed', failed)
     bump(stats, 'signals_tokens', tokens)
-    console.log(`[pipeline] signals: ${applied} articles annotated (${failed} failed, ${pending.length - items.length - failed} left for next run)`)
+    bump(stats, 'signals_reused', reused)
+    console.log(`[pipeline] signals: ${applied} articles annotated, ${reused} of them copies answered without asking (${failed} failed, ${pending.length - items.length - failed} left for next run)`)
   } catch (err) {
     console.error('[pipeline] signals FAILED (articles stay un-annotated; next run self-heals):', err)
     stats.signals_error = String(err).slice(0, 300)
