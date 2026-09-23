@@ -549,6 +549,30 @@ export type Database = {
         }
         Relationships: []
       }
+      trending_judgments: {
+        Row: {
+          fresh: number
+          judged_at: string
+          severity: number
+          state_key: string
+          talk: number
+        }
+        Insert: {
+          fresh: number
+          judged_at?: string
+          severity: number
+          state_key: string
+          talk: number
+        }
+        Update: {
+          fresh?: number
+          judged_at?: string
+          severity?: number
+          state_key?: string
+          talk?: number
+        }
+        Relationships: []
+      }
       trending_log: {
         Row: {
           id: number
@@ -714,6 +738,7 @@ export type Database = {
         Args: { p_items: Json; p_window_hours: number }
         Returns: {
           r_article_id: string
+          r_rep_id: string
           r_rep_title: string
           r_sim: number
           r_story_id: string

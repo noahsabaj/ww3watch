@@ -10,7 +10,6 @@ export interface RegressionRow {
   title: string
   lang: string
   relevant: number
-  topic: string | null
   severity: number | null
 }
 
@@ -20,7 +19,6 @@ export interface RegressionReport {
   relevanceFlips: number
   /** Articles that crossed the "major" cut in either direction. */
   majorFlips: number
-  topicChanges: number
   meanAbsRelevantDelta: number
   ok: boolean
 }
@@ -29,21 +27,19 @@ export const LIMITS = { relevanceFlipRate: 0.03, majorFlipRate: 0.05 }
 
 export function compareRuns(baseline: RegressionRow[], current: RegressionRow[], relevanceThreshold: number): RegressionReport {
   const byTitle = new Map(current.map((r) => [r.title, r]))
-  let n = 0, relevanceFlips = 0, majorFlips = 0, topicChanges = 0, absDelta = 0
+  let n = 0, relevanceFlips = 0, majorFlips = 0, absDelta = 0
   for (const b of baseline) {
     const c = byTitle.get(b.title)
     if (!c) continue
     n++
     if (b.relevant >= relevanceThreshold !== c.relevant >= relevanceThreshold) relevanceFlips++
     if ((b.severity ?? 0) >= MAJOR_SEVERITY !== (c.severity ?? 0) >= MAJOR_SEVERITY) majorFlips++
-    if (b.topic !== c.topic) topicChanges++
     absDelta += Math.abs(b.relevant - c.relevant)
   }
   return {
     n,
     relevanceFlips,
     majorFlips,
-    topicChanges,
     meanAbsRelevantDelta: n ? absDelta / n : 0,
     // A comparison that could not match most of the baseline proves nothing.
     ok: n >= baseline.length * 0.9 && relevanceFlips <= n * LIMITS.relevanceFlipRate && majorFlips <= n * LIMITS.majorFlipRate,

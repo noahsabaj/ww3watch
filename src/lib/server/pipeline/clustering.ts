@@ -1,7 +1,7 @@
 // Story grouping: embed unassigned titles, judge grey-band candidates with Jev,
 // assign via the pgvector RPC, re-elect representatives.
 import { embedTitles, shouldEmbed, EMBEDDING_MODEL_TAG, EMBED_SIM_THRESHOLD, EMBED_WINDOW_HOURS } from '../embeddings'
-import { judgeSameEvent } from '../jev-pairs'
+import { judgeSameEvent, type PairVerdict } from '../jev-pairs'
 import { mapPool } from '../pool'
 import { supabaseAdmin } from '../supabase'
 import { STORY_MERGE } from '../config'
@@ -31,9 +31,26 @@ type AssignItem = {
 // Called per chronological chunk (PAIR_CHUNK), so candidates include stories
 // created earlier in the same run; only items inside one chunk still meet by
 // threshold alone.
+// Grouping's "different" verdicts that the merge pass would ask again. At or
+// above the merge floor, a "different" article starts a story led by itself,
+// so the merge pass's next candidate is the same two headlines, minutes later
+// in the same run (~10 of its 60 questions a run, 2026-09-23). Written where
+// the merge pass looks: story_merge_judged, keyed by the two representatives.
+export function mergeMemoryFromGrouping(
+  judged: Array<{ articleId: string; repId: string | null; sim: number; verdict: PairVerdict }>,
+  minSim: number,
+): Array<{ rep_a: string; rep_b: string; verdict: 'different' }> {
+  return judged
+    .filter((j) => j.verdict === 'different' && j.sim >= minSim && j.repId && j.repId !== j.articleId)
+    .map((j) => {
+      const [rep_a, rep_b] = j.articleId < j.repId! ? [j.articleId, j.repId!] : [j.repId!, j.articleId]
+      return { rep_a, rep_b, verdict: 'different' as const }
+    })
+}
+
 async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>, stats: RunStats): Promise<void> {
   try {
-    const grey: Array<{ item: AssignItem; storyId: string; repTitle: string; sim: number }> = []
+    const grey: Array<{ item: AssignItem; storyId: string; repId: string | null; repTitle: string; sim: number }> = []
     for (let i = 0; i < items.length; i += ASSIGN_RPC_CHUNK) {
       const { data, error } = await supabaseAdmin.rpc('nearest_story_candidates', {
         p_items: items.slice(i, i + ASSIGN_RPC_CHUNK).map(({ id, published_at, embedding }) => ({ id, published_at, embedding })),
@@ -44,7 +61,7 @@ async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>
       for (const r of data ?? []) {
         const item = byId.get(r.r_article_id)
         if (!item || !r.r_story_id || !r.r_rep_title || r.r_sim === null) continue
-        if (r.r_sim >= PAIR_BAND.lo && r.r_sim < PAIR_BAND.hi) grey.push({ item, storyId: r.r_story_id, repTitle: r.r_rep_title, sim: r.r_sim })
+        if (r.r_sim >= PAIR_BAND.lo && r.r_sim < PAIR_BAND.hi) grey.push({ item, storyId: r.r_story_id, repId: r.r_rep_id ?? null, repTitle: r.r_rep_title, sim: r.r_sim })
       }
     }
     let same = 0, different = 0, unsure = 0
@@ -54,6 +71,17 @@ async function judgeGreyBand(items: AssignItem[], titleById: Map<string, string>
       if (value.verdict === 'same') { g.item.join_story = g.storyId; same++ }
       else if (value.verdict === 'different') { g.item.avoid_story = g.storyId; g.item.min_sim = PAIR_BAND.hi; different++ }
       else unsure++
+    }
+    const remember = mergeMemoryFromGrouping(
+      judged.done.map(({ item: g, value }) => ({ articleId: g.item.id, repId: g.repId, sim: g.sim, verdict: value.verdict })),
+      STORY_MERGE.minSim,
+    )
+    if (remember.length > 0) {
+      const { error: memoryError } = await supabaseAdmin
+        .from('story_merge_judged')
+        .upsert(remember, { onConflict: 'rep_a,rep_b', ignoreDuplicates: true })
+      if (memoryError) console.error('[pipeline] story_merge_judged write failed (non-fatal):', memoryError)
+      else bump(stats, 'merge_pairs_remembered', remember.length)
     }
     const failed = judged.failed.length
     bump(stats, 'pairs_judged', grey.length)

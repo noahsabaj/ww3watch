@@ -18,5 +18,5 @@ try {
   assert.equal(concurrent.filter(r=>r.error==='busy').length,14)
   console.log('Concurrent reservations respect both spending and provider concurrency limits.')
 } finally {
-  await sql(clear+"update public.ai_budgets set model=null,input_per_million=null,output_per_million=null,pricing_verified_at=null,monthly_usd=15,max_concurrent=16 where service='classification';")
+  await sql(clear+"update public.ai_budgets set model=null,input_per_million=null,output_per_million=null,pricing_verified_at=null,monthly_usd=20,max_concurrent=16 where service='classification';")
 }

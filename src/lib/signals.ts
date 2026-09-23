@@ -4,17 +4,16 @@
 // journalist wrote (docs/CONVENTIONS.md). Shared by the pipeline and the client,
 // so nothing here may import server-only code.
 
-export const TOPICS = {
-  armed_conflict: { label: 'Combat', what: 'War, battles, strikes, shelling, military operations, or casualties of fighting' },
-  terrorism_or_assassination: { label: 'Terror & assassination', what: 'Terror attacks, targeted killings, hostage-taking' },
-  coup_or_unrest: { label: 'Coups & unrest', what: 'Coups, violent regime change, armed uprisings, violently suppressed protests' },
-  nuclear_or_missiles: { label: 'Nuclear & missiles', what: 'Nuclear programmes or threats, missile tests, weapons of mass destruction' },
-  military_posture: { label: 'Military posture', what: 'Mobilisation, deployments, exercises, arms deals and weapons deliveries, defence budgets' },
-  conflict_diplomacy: { label: 'Diplomacy & sanctions', what: 'Sanctions, ultimatums, ceasefire or peace talks, alliances, UN action about a conflict' },
-  other: { label: 'Other', what: 'Anything else: domestic politics, economy, society, or background with no conflict event' },
-} as const
-export type Topic = keyof typeof TOPICS
-export const ALL_TOPICS = Object.keys(TOPICS) as Topic[]
+// Jev's one-subject topic, asked until 2026-09-23. Nothing read it after the
+// topic filter went (#139), so it is no longer asked; older rows keep a value.
+export type Topic =
+  | 'armed_conflict'
+  | 'terrorism_or_assassination'
+  | 'coup_or_unrest'
+  | 'nuclear_or_missiles'
+  | 'military_posture'
+  | 'conflict_diplomacy'
+  | 'other'
 
 // Parties a reader filters by. `who` is what Jev is asked about, so it names the
 // state AND the armed groups a reader would file under it.

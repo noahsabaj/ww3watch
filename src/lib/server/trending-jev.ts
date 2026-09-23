@@ -1,4 +1,5 @@
-import { callJev } from './jev'
+import { createHash } from 'node:crypto'
+import { callJev, JEV_MODEL } from './jev'
 import { SEVERITY_LEVELS } from '../signals'
 import { corroboration } from '../story'
 
@@ -61,9 +62,24 @@ export function trendingScore(c: TrendingCandidate, j: StoryJudgment): number {
   )
 }
 
+const stateOf = (c: TrendingCandidate) => ({ story: { headline: c.headline, other_headlines: c.otherHeadlines.slice(0, 4) } })
+
+// A story that hasn't changed since the last ranking would be asked the same
+// three questions about the same headlines again: 19 of the top 20 candidates
+// were unchanged over 15 minutes (2026-09-23). Answers are kept by exactly what
+// Jev is asked — model, questions and state — so a reused answer is the answer
+// to the identical question, and a new wording or model pin asks afresh.
+export function judgmentKey(c: TrendingCandidate): string {
+  return createHash('sha256').update(JSON.stringify({ model: JEV_MODEL, questions, state: stateOf(c) })).digest('hex')
+}
+
+export interface JudgmentCache {
+  get(keys: string[]): Promise<Map<string, StoryJudgment>>
+  put(entries: Array<{ key: string; judgment: StoryJudgment }>): Promise<void>
+}
+
 async function judge(c: TrendingCandidate, deadlineMs?: number): Promise<StoryJudgment> {
-  const state = { story: { headline: c.headline, other_headlines: c.otherHeadlines.slice(0, 4) } }
-  const { answers } = await callJev(state, questions, deadlineMs)
+  const { answers } = await callJev(stateOf(c), questions, deadlineMs)
   const score = Number(answers.severity?.score)
   const fresh = Number(answers.fresh?.noul)
   const talk = Number(answers.talk?.noul)
@@ -80,8 +96,27 @@ export async function rankWithJev(
   candidates: TrendingCandidate[],
   pick: number,
   deadlineMs?: number,
+  cache?: JudgmentCache,
+  counts?: { asked: number; reused: number },
 ): Promise<{ indices: number[]; scores: number[] } | null> {
-  const settled = await Promise.allSettled(candidates.map((c) => judge(c, deadlineMs)))
+  const keys = candidates.map(judgmentKey)
+  // The cache only ever saves a call; if it can't be read, everything is asked.
+  const known = cache
+    ? await cache.get(keys).catch((err) => {
+        console.warn('[trending] judgment cache unavailable, asking every candidate:', err)
+        return new Map<string, StoryJudgment>()
+      })
+    : new Map<string, StoryJudgment>()
+  const settled = await Promise.allSettled(candidates.map((c, i) => {
+    const hit = known.get(keys[i])
+    return hit ? Promise.resolve(hit) : judge(c, deadlineMs)
+  }))
+  const asked = settled.flatMap((r, i) => (r.status === 'fulfilled' && !known.has(keys[i]) ? [{ key: keys[i], judgment: r.value }] : []))
+  if (counts) {
+    counts.reused += candidates.filter((_, i) => known.has(keys[i])).length
+    counts.asked += candidates.length - candidates.filter((_, i) => known.has(keys[i])).length
+  }
+  if (cache && asked.length > 0) await cache.put(asked).catch((err) => console.warn('[trending] judgment cache write failed:', err))
   const ranked = settled
     .map((r, i) => (r.status === 'fulfilled' ? { i, score: trendingScore(candidates[i], r.value) } : null))
     .filter((x): x is { i: number; score: number } => x !== null)

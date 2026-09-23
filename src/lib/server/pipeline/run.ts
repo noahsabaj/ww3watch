@@ -25,7 +25,7 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await timed('merge', () => mergeStories(stats))
   // Before trending, which ranks on these.
   await timed('signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
-  stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS))
+  stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS, stats))
   // After trending: photographs are cosmetic and must never spend the budget
   // that ranking needs.
   await timed('images', () => fillMissingImages(stats, startedAt + RUN_BUDGET_MS))

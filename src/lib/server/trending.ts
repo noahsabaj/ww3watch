@@ -1,7 +1,8 @@
 import { groupByStoryId, wireDuplicateIds } from '../cluster'
 import type { Cluster } from '../cluster'
 import { supabaseAdmin } from './supabase'
-import { rankWithJev } from './trending-jev'
+import { rankWithJev, type JudgmentCache, type StoryJudgment } from './trending-jev'
+import { bump, type RunStats } from './pipeline/stats'
 
 const TRENDING_WINDOW_HOURS = 4
 const CANDIDATE_LIMIT = 20                      // max clusters to judge
@@ -16,6 +17,31 @@ export const TRENDING_MIN_INTERVAL_MS = 10 * 60_000
 // (stats.trending='error:rpc') and nothing said a word; the site showed no
 // Trending section the whole time.
 export const TRENDING_STUCK_MS = 6 * 3600_000
+
+// Reused Trending judgments (trending-jev.ts judgmentKey) live as long as a
+// story can stay in the 4-hour window, and a little more.
+const JUDGMENT_TTL_MS = 6 * 3600_000
+
+const judgmentCache: JudgmentCache = {
+  async get(keys) {
+    const since = new Date(Date.now() - JUDGMENT_TTL_MS).toISOString()
+    const { data, error } = await supabaseAdmin
+      .from('trending_judgments')
+      .select('state_key, severity, fresh, talk')
+      .in('state_key', keys)
+      .gte('judged_at', since)
+    if (error) throw new Error(error.message)
+    return new Map((data ?? []).map((r): [string, StoryJudgment] => [r.state_key, { severity: r.severity, fresh: r.fresh, talk: r.talk }]))
+  },
+  async put(entries) {
+    await supabaseAdmin.from('trending_judgments').delete().lt('judged_at', new Date(Date.now() - JUDGMENT_TTL_MS).toISOString())
+    const { error } = await supabaseAdmin.from('trending_judgments').upsert(
+      entries.map((e) => ({ state_key: e.key, ...e.judgment, judged_at: new Date().toISOString() })),
+      { onConflict: 'state_key' },
+    )
+    if (error) throw new Error(error.message)
+  },
+}
 
 // When the current selection was written (null = no selection). Null on a query
 // error too: the caller treats "can't read it" the same as "never written",
@@ -52,7 +78,7 @@ export function trendingStuck(status: string, lastSelectedAt: string | null, now
 // 149s here, and a larger retry-after would have pushed the job back into the
 // 20-minute kill the budget exists to prevent. Curation is the most deferrable
 // work in the run — a stale selection for one cycle beats losing the inserts.
-export async function updateTrending(deadlineMs?: number): Promise<string> {
+export async function updateTrending(deadlineMs?: number, stats?: RunStats): Promise<string> {
   const lastSelectedAt = await lastTrendingSelectedAt()
   if (lastSelectedAt && Date.now() - new Date(lastSelectedAt).getTime() < TRENDING_MIN_INTERVAL_MS) {
     console.log(`[trending] selection from ${lastSelectedAt} is fresh, skipping`)
@@ -113,6 +139,7 @@ export async function updateTrending(deadlineMs?: number): Promise<string> {
   // Three narrow judgments per story from Jev, weighed in code against the
   // corroboration counts computed above (trending-jev.ts). On failure the
   // previous selection stays: a wrong top-three is worse than a stale one.
+  const counts = { asked: 0, reused: 0 }
   const ranked = await rankWithJev(
     scored.map((s) => ({
       headline: s.c.representative.title,
@@ -131,10 +158,17 @@ export async function updateTrending(deadlineMs?: number): Promise<string> {
     })),
     PICK_COUNT,
     deadlineMs,
+    judgmentCache,
+    counts,
   ).catch((err) => {
     console.error('[trending] jev ranking failed:', err)
     return null
   })
+  console.log(`[trending] ${counts.asked} candidate(s) asked, ${counts.reused} unchanged and reused`)
+  if (stats) {
+    bump(stats, 'trending_asked', counts.asked)
+    bump(stats, 'trending_reused', counts.reused)
+  }
   if (!ranked) {
     console.error('[trending] too few candidates judged, keeping previous selection')
     return 'error:jev'

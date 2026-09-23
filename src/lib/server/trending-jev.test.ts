@@ -53,3 +53,44 @@ describe('rankWithJev', () => {
     expect(await rankWithJev([c('broken'), c('broken'), c('big')], 2)).toBeNull()
   })
 })
+
+describe('rankWithJev with a judgment cache', () => {
+  const answer = new Response(JSON.stringify({ answers: { severity: { score: 2 }, fresh: { noul: 0.9 }, talk: { noul: 0.1 } }, usage: { input_tokens: 1 } }))
+
+  it('asks only about stories whose headlines changed, and keeps what it asked', async () => {
+    vi.resetModules()
+    vi.stubEnv('TYPESAFE_API_KEY', 'test')
+    const { rankWithJev, judgmentKey } = await import('./trending-jev')
+    const story = (headline: string, others: string[] = []) => ({ headline, otherHeadlines: others, independent: 3, regions: 2, langs: 2 })
+    const same = story('Strike on port', ['Port hit overnight'])
+    const changed = story('Strike on port', ['Port hit overnight', 'New: toll rises'])
+    const fresh = story('Ceasefire talks resume')
+    const stored = new Map([[judgmentKey(same), { severity: 0.67, fresh: 0.8, talk: 0.1 }]])
+    const put: string[] = []
+    const cache = {
+      get: async (keys: string[]) => new Map(keys.filter((k) => stored.has(k)).map((k) => [k, stored.get(k)!])),
+      put: async (entries: Array<{ key: string }>) => { put.push(...entries.map((e) => e.key)) },
+    }
+    const fetch = vi.fn(async () => answer.clone())
+    vi.stubGlobal('fetch', fetch)
+    const counts = { asked: 0, reused: 0 }
+    expect(await rankWithJev([same, changed, fresh], 2, undefined, cache, counts)).not.toBeNull()
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(counts).toEqual({ asked: 2, reused: 1 })
+    expect(put.sort()).toEqual([judgmentKey(changed), judgmentKey(fresh)].sort())
+    expect(judgmentKey(changed)).not.toBe(judgmentKey(same))
+  })
+
+  it('asks everything when the cache cannot be read', async () => {
+    vi.resetModules()
+    vi.stubEnv('TYPESAFE_API_KEY', 'test')
+    const { rankWithJev } = await import('./trending-jev')
+    const story = (headline: string) => ({ headline, otherHeadlines: [], independent: 3, regions: 2, langs: 2 })
+    const fetch = vi.fn(async () => answer.clone())
+    vi.stubGlobal('fetch', fetch)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const cache = { get: async () => { throw new Error('down') }, put: async () => {} }
+    expect(await rankWithJev([story('a'), story('b'), story('c')], 2, undefined, cache)).not.toBeNull()
+    expect(fetch).toHaveBeenCalledTimes(3)
+  })
+})
