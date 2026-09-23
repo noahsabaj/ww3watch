@@ -70,58 +70,78 @@ export function isFetchableArticleUrl(href: string): boolean {
   return true
 }
 
-async function readCapped(res: Response): Promise<string> {
-  if (!res.body) return ''
+async function readCapped(res: Response, maxBytes: number): Promise<Buffer> {
+  if (!res.body) return Buffer.alloc(0)
   const reader = res.body.getReader()
   const chunks: Uint8Array[] = []
   let size = 0
-  while (size < MAX_PAGE_BYTES) {
+  while (size < maxBytes) {
     const { done, value } = await reader.read()
     if (done) break
     chunks.push(value)
     size += value.byteLength
   }
   await reader.cancel().catch(() => {})
-  return new TextDecoder().decode(Buffer.concat(chunks).subarray(0, MAX_PAGE_BYTES))
+  return Buffer.concat(chunks).subarray(0, maxBytes)
 }
 
-async function fetchDirect(url: string): Promise<string | null> {
+type Fetch = { headers: Record<string, string>; maxBytes: number }
+
+async function fetchDirect(url: string, opts: Fetch): Promise<Buffer | null> {
   let href = url
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     if (!isFetchableArticleUrl(href)) return null
-    const res = await fetch(href, { headers: PAGE_HEADERS, redirect: 'manual', signal: AbortSignal.timeout(IMAGE_FILL_TIMEOUT_MS) })
+    const res = await fetch(href, { headers: opts.headers, redirect: 'manual', signal: AbortSignal.timeout(IMAGE_FILL_TIMEOUT_MS) })
     const next = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null
     if (next) {
       await res.body?.cancel().catch(() => {})
       href = new URL(next, href).toString()
       continue
     }
-    return res.ok ? readCapped(res) : null
+    if (res.ok) return readCapped(res, opts.maxBytes)
+    await res.body?.cancel().catch(() => {})
+    return null
   }
   return null
 }
 
-/** The page's HTML, or null when we could not read it (not a verdict). */
-async function fetchHtml(url: string): Promise<string | null> {
+/** The body at `url` (through the proxy first, when configured), or null when
+ *  we could not read it, which is not a verdict. */
+async function fetchCapped(url: string, opts: Fetch): Promise<Buffer | null> {
   if (!isFetchableArticleUrl(url)) return null
   const proxy = proxyConfig()
   if (proxy) {
     try {
       const res = await fetch(`${proxy.url}?url=${encodeURIComponent(url)}`, {
-        headers: { ...PAGE_HEADERS, 'x-proxy-key': proxy.secret },
+        headers: { ...opts.headers, 'x-proxy-key': proxy.secret },
         signal: AbortSignal.timeout(IMAGE_FILL_TIMEOUT_MS),
       })
-      if (res.ok) return await readCapped(res)
+      if (res.ok) return await readCapped(res, opts.maxBytes)
       await res.body?.cancel().catch(() => {})
     } catch {
       // fall through to direct
     }
   }
   try {
-    return await fetchDirect(url)
+    return await fetchDirect(url, opts)
   } catch {
     return null
   }
+}
+
+/** The page's HTML, or null when we could not read it (not a verdict). */
+async function fetchHtml(url: string): Promise<string | null> {
+  const body = await fetchCapped(url, { headers: PAGE_HEADERS, maxBytes: MAX_PAGE_BYTES })
+  return body === null ? null : new TextDecoder().decode(body)
+}
+
+const MAX_IMAGE_BYTES = 12_000_000
+const IMAGE_HEADERS = { ...PAGE_HEADERS, 'Accept': 'image/avif,image/webp,image/*;q=0.9,*/*;q=0.5' }
+
+/** A newsroom image's bytes, or null when it could not be read (not a verdict). */
+export async function fetchImage(url: string): Promise<Buffer | null> {
+  const body = await fetchCapped(url, { headers: IMAGE_HEADERS, maxBytes: MAX_IMAGE_BYTES })
+  return body && body.byteLength > 0 ? body : null
 }
 
 class Unreadable extends Error {}

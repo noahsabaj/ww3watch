@@ -217,7 +217,9 @@ export type Database = {
           id: string
           image_fetched_at: string | null
           image_height: number | null
+          image_hash: string | null
           image_url: string | null
+          image_verdict: string | null
           image_width: number | null
           jev_relevant: number | null
           opinion: number | null
@@ -246,7 +248,9 @@ export type Database = {
           id?: string
           image_fetched_at?: string | null
           image_height?: number | null
+          image_hash?: string | null
           image_url?: string | null
+          image_verdict?: string | null
           image_width?: number | null
           jev_relevant?: number | null
           opinion?: number | null
@@ -275,7 +279,9 @@ export type Database = {
           id?: string
           image_fetched_at?: string | null
           image_height?: number | null
+          image_hash?: string | null
           image_url?: string | null
+          image_verdict?: string | null
           image_width?: number | null
           jev_relevant?: number | null
           opinion?: number | null

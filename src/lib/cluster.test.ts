@@ -137,6 +137,15 @@ describe('storyTimeline', () => {
 })
 
 describe('storyImage', () => {
+  it('shows only an image the photo check passed', () => {
+    for (const verdict of [null, undefined, 'emblem', 'reused']) {
+      const [cluster] = groupByStoryId([article({ image_url: 'https://cdn.example/un.jpg', image_verdict: verdict })])
+      expect(storyImage(cluster)).toBeNull()
+    }
+    const [ok] = groupByStoryId([article({ image_url: 'https://cdn.example/un.jpg', image_verdict: 'photo' })])
+    expect(storyImage(ok)?.url).toBe('https://cdn.example/un.jpg')
+  })
+
   it('returns null when no member has a photograph', () => {
     const [cluster] = groupByStoryId([article({ story_id: 's' }), article({ story_id: 's' })])
     expect(storyImage(cluster)).toBeNull()
@@ -148,6 +157,7 @@ describe('storyImage', () => {
       published_at: '2026-06-10T08:00:00Z',
       source_name: 'TASS',
       image_url: 'https://cdn.example/tass.jpg',
+      image_verdict: 'photo',
       image_width: 1600,
       image_height: 900,
     })
@@ -156,6 +166,7 @@ describe('storyImage', () => {
       published_at: '2026-06-10T14:00:00Z',
       source_name: 'Reuters',
       image_url: 'https://cdn.example/reuters.jpg',
+      image_verdict: 'photo',
       image_width: 400,
       image_height: 300,
     })
@@ -176,6 +187,7 @@ describe('storyImage', () => {
       published_at: '2026-06-10T10:00:00Z',
       source_name: 'AP',
       image_url: 'https://cdn.example/ap.jpg',
+      image_verdict: 'photo',
       image_width: 400,
       image_height: 300,
     })
@@ -184,6 +196,7 @@ describe('storyImage', () => {
       published_at: '2026-06-10T09:00:00Z',
       source_name: 'TASS',
       image_url: 'https://cdn.example/tass.jpg',
+      image_verdict: 'photo',
       image_width: 1600,
       image_height: 900,
     })
@@ -203,7 +216,7 @@ describe('isShareCard', () => {
   })
 
   it('a story whose only photo is a share card shows none', () => {
-    const [cluster] = groupByStoryId([article({ image_url: 'https://cdnn21.img.ria.ru/images/sharing/article/1.jpg' })])
+    const [cluster] = groupByStoryId([article({ image_url: 'https://cdnn21.img.ria.ru/images/sharing/article/1.jpg', image_verdict: 'photo' })])
     expect(storyImage(cluster)).toBeNull()
   })
 })
@@ -230,7 +243,7 @@ describe('isReusedUpload', () => {
     expect(isReusedUpload('https://www.alquds.co.uk/wp-content/uploads/2024/08/x.jpg', null)).toBe(false)
   })
   it('a story whose only photo is a reused template shows none', () => {
-    const [cluster] = groupByStoryId([article({ published_at: at, image_url: 'https://www.alquds.co.uk/wp-content/uploads/2024/08/br-20082024.jpg' })])
+    const [cluster] = groupByStoryId([article({ published_at: at, image_url: 'https://www.alquds.co.uk/wp-content/uploads/2024/08/br-20082024.jpg', image_verdict: 'photo' })])
     expect(storyImage(cluster)).toBeNull()
   })
 })

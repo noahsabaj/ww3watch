@@ -177,7 +177,7 @@ export function isReusedUpload(url: string, publishedAt: string | null): boolean
 
 export function storyImage(cluster: Cluster): StoryPhoto | null {
   const usable = (a: Article): a is Article & { image_url: string } =>
-    !!a.image_url && !isShareCard(a.image_url) && !isReusedUpload(a.image_url, a.published_at)
+    !!a.image_url && a.image_verdict === 'photo' && !isShareCard(a.image_url) && !isReusedUpload(a.image_url, a.published_at)
   const withPhoto = cluster.articles.filter(usable)
   if (withPhoto.length === 0) return null
   const rep = cluster.representative

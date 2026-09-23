@@ -58,6 +58,17 @@ export interface RunStats {
   images_deferred?: number
   images_failed?: number
   images_error?: string
+  // photo check (photo-check.ts)
+  photos_ok?: number
+  /** Logos, seals and emblems: never shown. */
+  photos_emblem?: number
+  /** Rows retired because their picture is on REUSE_MIN+ different stories. */
+  photos_reused?: number
+  /** Images we could not download this run: left unchecked, retried next run. */
+  photos_unreadable?: number
+  photos_deferred?: number
+  photos_failed?: number
+  photos_error?: string
   // finalize
   trending?: string
   db?: Record<string, unknown>

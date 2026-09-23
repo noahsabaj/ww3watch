@@ -27,7 +27,9 @@ const SHARE_CARD =
 
 export function sanitizeImageUrl(raw: unknown, baseUrl: string): string | null {
   if (typeof raw !== 'string') return null
-  const trimmed = raw.trim().replace(/[\u0000-\u001F\u007F]/g, '')
+  // Feeds and page markup often leave the query string HTML-escaped
+  // (?fit=770%2C468&amp;ssl=1), which is a different URL.
+  const trimmed = raw.trim().replace(/[\u0000-\u001F\u007F]/g, '').replace(/&amp;/gi, '&')
   if (!trimmed || trimmed.length > MAX_URL_LEN) return null
   let url: URL
   try {

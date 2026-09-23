@@ -12,11 +12,11 @@ import { storyImage } from './cluster'
 import { headlineText } from './utils'
 
 export const CARD_COLUMNS =
-  'id,title,source_name,source_lang,published_at,story_id,image_url,image_width,image_height'
+  'id,title,source_name,source_lang,published_at,story_id,image_url,image_width,image_height,image_verdict'
 
 export type CardRow = Pick<
   Article,
-  'id' | 'title' | 'source_name' | 'source_lang' | 'published_at' | 'story_id' | 'image_url' | 'image_width' | 'image_height'
+  'id' | 'title' | 'source_name' | 'source_lang' | 'published_at' | 'story_id' | 'image_url' | 'image_width' | 'image_height' | 'image_verdict'
 >
 
 export interface ShareCard {
