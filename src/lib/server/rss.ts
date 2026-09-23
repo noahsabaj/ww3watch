@@ -189,6 +189,17 @@ function imageFields(item: unknown, url: string, fetchedAt: string): {
   }
 }
 
+// WordPress appends "The post <title> appeared first on <site>." to every feed
+// excerpt (194 summaries from 9 outlets over a week). It is boilerplate, not
+// the story, and a phone story without a photo shows the summary in full.
+const WP_FOOTER = /\s*The post [\s\S]{1,400}? appeared first on [\s\S]*$/
+
+export function feedSummary(raw: string | null | undefined): string | null {
+  if (raw == null) return null
+  const text = raw.replace(WP_FOOTER, '').trim()
+  return text ? text.slice(0, 500) : null
+}
+
 function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInsert[]; clamped: number }> {
   const now = Date.now()
   const fetchedAt = new Date(now).toISOString()
@@ -199,7 +210,7 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
         // RDF feeds such as DW expose dc:date as isoDate, without pubDate.
         const published = item.pubDate ?? item.isoDate
         if (isClampedDate(published, now)) clamped++
-        const summary = item.contentSnippet?.slice(0, 500) ?? item.summary?.slice(0, 500) ?? null
+        const summary = feedSummary(item.contentSnippet ?? item.summary)
         const url = articleUrl(item.link, feed.url)
         return {
           guid: buildGuid(item),
@@ -265,8 +276,7 @@ function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInser
     .map((item) => {
       const pubRaw = textOf(item.pubDate) ?? textOf(item.published) ?? textOf(item.updated) ?? textOf(item['dc:date'])
       if (isClampedDate(pubRaw, now)) clamped++
-      const summaryRaw = textOf(item.description) ?? textOf(item.summary) ?? textOf(item.content)
-      const summary = summaryRaw ? summaryRaw.slice(0, 500) : null
+      const summary = feedSummary(textOf(item.description) ?? textOf(item.summary) ?? textOf(item.content))
       const link = pickLink(item)
       const url = articleUrl(link, feed.url)
       return {
