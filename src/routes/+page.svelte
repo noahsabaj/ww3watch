@@ -5,6 +5,10 @@
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import SignalFeed from '$lib/components/SignalFeed.svelte'
   import StoryDesk from '$lib/components/StoryDesk.svelte'
+  import TheatersPage from '$lib/components/TheatersPage.svelte'
+  import TheaterBar from '$lib/components/TheaterBar.svelte'
+  import { theaterBoard, theaterById, theaterOf } from '$lib/theaters'
+  import { clock } from '$lib/now.svelte'
   import { createFeed } from '$lib/feed.svelte'
   import { createSearch } from '$lib/search.svelte'
   import { createReaderRouting } from '$lib/deeplink.svelte'
@@ -49,6 +53,25 @@
   // and an afterNavigate callback.
   const reader = createReaderRouting(feed)
 
+  // Theaters (src/lib/theaters.ts): where stories are happening. Picking one
+  // narrows the feed to it, on top of any search, until "All stories".
+  let theaterId = $state<string | null>(null)
+  let theatersOpen = $state(false)
+  const theater = $derived(theaterById(theaterId))
+  const theaters = $derived(theaterBoard(feed.allClustered, clock.now))
+  const stories = $derived(theater ? search.clustered.filter((c) => theaterOf(c) === theater) : search.clustered)
+  // Narrowing and widening keep the reader on the story they were looking at:
+  // tapping a story's place stays on that story, and "All stories" lands on the
+  // one they had swiped to. Picked from the Theaters page, a theater starts at
+  // its newest.
+  let viewing: string | null = null
+  let landOn = $state<string | null>(null)
+  function pickTheater(id: string | null, from: string | null = null) {
+    landOn = id ? from : (viewing ?? stories[0]?.id ?? null)
+    viewing = landOn
+    theaterId = id
+  }
+
 
   // Install prompt
   let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null)
@@ -62,6 +85,7 @@
   // the browser sends that story, same link as the Share button. Left alone
   // while the reader is open; it owns the URL then.
   function onSignalView(cluster: Cluster) {
+    viewing = cluster.id
     if (reader.selectedArticle) return
     const { search } = new URL(shareTarget(cluster.representative, cluster).url)
     replaceState(`${base}/${search}`, {})
@@ -168,13 +192,18 @@
 <div bind:this={frame} data-app-frame class="fixed inset-0 overflow-hidden bg-ink flex flex-col">
   <Header
     bind:searchQuery={search.query}
-    storyCount={search.clustered.length}
+    storyCount={stories.length}
     totalCount={Math.max(feed.allClustered.length, search.clustered.length)}
-    isFiltered={search.active}
+    isFiltered={search.active || theater !== null}
     realtimeStatus={feed.realtimeStatus}
     lastUpdatedAt={feed.lastUpdatedAt}
     staleness={feed.staleness}
+    ontheaters={desk === false ? () => (theatersOpen = true) : undefined}
   />
+
+  {#if theater}
+    <TheaterBar {theater} count={stories.length} onclear={() => pickTheater(null)} />
+  {/if}
 
   <!-- Install prompt (phones only, dismissible) -->
   {#if installPromptEvent && !installDismissed && desk === false}
@@ -187,7 +216,7 @@
     </div>
   {/if}
 
-  {#if search.clustered.length === 0}
+  {#if stories.length === 0}
     <div class="flex-1 px-6 py-24 text-center text-sm text-fg-3">
       {#if loading || desk === null}
         Loading the latest reporting…
@@ -201,8 +230,11 @@
         </button>
       {:else if feed.articles.length === 0}
         No stories yet — new ones appear here live.
+      {:else if theater && !search.active}
+        <p class="mb-4 font-serif text-xl text-fg">No {theater.label} stories right now.</p>
+        <button onclick={() => pickTheater(null)} class="btn-ghost">All stories</button>
       {:else}
-        <p class="mb-4 font-serif text-xl text-fg">No stories match “{search.query.trim()}”.</p>
+        <p class="mb-4 font-serif text-xl text-fg">No {theater ? `${theater.label} ` : ''}stories match “{search.query.trim()}”.</p>
         <button
           onclick={search.clear}
           class="btn-ghost"
@@ -213,8 +245,8 @@
     </div>
   {:else if desk}
     <StoryDesk
-      clusters={search.clustered}
-      trending={feed.topStories}
+      clusters={stories}
+      trending={theater ? feed.topStories.filter((c) => theaterOf(c) === theater) : feed.topStories}
       {reader}
       hasMore={feed.hasMore}
       loadingMore={feed.loadingMore}
@@ -223,12 +255,15 @@
       newCount={feed.newQueue.length}
       onFlush={flushQueue}
       onrefresh={feed.refresh}
+      {theaters}
+      {theaterId}
+      ontheater={pickTheater}
       bind:paused={railPaused}
     />
   {:else if desk === false}
     <!-- New articles banner -->
     {#if feed.newQueue.length > 0}
-      <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc(6.5rem + env(safe-area-inset-top, 0px))">
+      <div class="fixed left-1/2 -translate-x-1/2 z-20" style="top: calc({theater ? '9.5rem' : '6.5rem'} + env(safe-area-inset-top, 0px))">
         <button
           onclick={flushQueue}
           class="btn min-h-9 gap-1.5 px-4 text-[13px] shadow-lg shadow-black/50"
@@ -238,9 +273,9 @@
       </div>
     {/if}
     <div class="relative min-h-0 flex-1">
-      {#key signalEpoch}
+      {#key `${signalEpoch}:${theaterId}`}
         <SignalFeed
-          clusters={search.clustered}
+          clusters={stories}
           onselect={reader.openArticle}
           onLoadOlder={loadOlder}
           hasMore={feed.hasMore}
@@ -248,9 +283,15 @@
           focusId={reader.selectedCluster?.id ?? null}
           onview={onSignalView}
           onrefresh={feed.refresh}
+          startId={landOn}
+          ontheater={theater ? undefined : pickTheater}
         />
       {/key}
     </div>
+  {/if}
+
+  {#if desk === false}
+    <TheatersPage bind:open={theatersOpen} board={theaters} onpick={(id) => pickTheater(id)} />
   {/if}
 
   <!-- On a phone the reader is a full-screen dialog; the desk hosts it in its pane. -->

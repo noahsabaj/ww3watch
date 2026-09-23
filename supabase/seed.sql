@@ -144,3 +144,16 @@ update public.articles set image_url = '/fixtures/story-photo.jpg', image_width 
   where id = '33333333-3333-4333-8333-000000000003';
 update public.articles set image_url = '/no-such-photo.jpg', image_fetched_at = now()
   where id = '33333333-3333-4333-8333-000000000008';
+
+-- ── Theaters ────────────────────────────────────────────────────────────────
+-- Jev's actor tags place stories in theaters (src/lib/theaters.ts): the port
+-- strike and the Russian-language single are Ukraine's, the corridor talks
+-- Israel & Gaza's, and every third filler story is the Korean Peninsula's.
+update public.articles set actors = array['ukraine', 'russia']
+  where story_id = '22222222-2222-4222-8222-000000000001' or id = '33333333-3333-4333-8333-000000000008';
+update public.articles set severity = 0.7
+  where story_id = '22222222-2222-4222-8222-000000000001';
+update public.articles set actors = array['israel', 'palestine']
+  where story_id = '22222222-2222-4222-8222-000000000002';
+update public.articles set actors = array['koreas']
+  where guid like 'fx-bulk-%' and split_part(guid, '-', 3)::int % 3 = 0;

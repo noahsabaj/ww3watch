@@ -11,6 +11,8 @@
   import ArticlePanel from '$lib/components/ArticlePanel.svelte'
   import PullIndicator from '$lib/components/PullIndicator.svelte'
   import { createPullRefresh } from '$lib/pull-refresh.svelte'
+  import type { TheaterSummary } from '$lib/theaters'
+  import { untrack } from 'svelte'
 
   // The desktop home: every story in a scannable column on the left, the
   // selected one on the right in Signal's treatment, and reading happens in
@@ -26,6 +28,9 @@
     newCount,
     onFlush,
     onrefresh,
+    theaters,
+    theaterId,
+    ontheater,
     paused = $bindable(false),
   }: {
     clusters: Cluster[]
@@ -39,6 +44,12 @@
     onFlush: () => void
     /** Pull the rail down from its top to fetch the newest (touch only). */
     onrefresh?: () => Promise<unknown>
+    /** Where things are happening, busiest first (src/lib/theaters.ts). */
+    theaters: TheaterSummary[]
+    /** The theater the rail is narrowed to, if any. */
+    theaterId: string | null
+    /** Narrow to a theater, or null for every story. */
+    ontheater: (id: string | null) => void
     paused?: boolean
   } = $props()
 
@@ -52,7 +63,8 @@
   const selected = $derived.by(() => {
     const reading = reader.selectedCluster
     if (reading) return clusters.find((c) => c.id === reading.id) ?? reading
-    const picked = pickedId && (clusters.find((c) => c.id === pickedId) ?? trending.find((c) => c.id === pickedId))
+    // A trending pick outside the theater gives way to the theater's own opening.
+    const picked = pickedId && (clusters.find((c) => c.id === pickedId) ?? (theaterId ? undefined : trending.find((c) => c.id === pickedId)))
     return picked || opening || null
   })
 
@@ -74,6 +86,21 @@
     }
     return -1
   })
+
+  // The busiest few, with the rest a tap away: the rail is for stories.
+  const THEATERS_SHOWN = 5
+  let allTheaters = $state(false)
+  const theaterRows = $derived.by(() => {
+    const rows = allTheaters ? theaters : theaters.slice(0, THEATERS_SHOWN)
+    const current = theaters.find((t) => t.theater.id === theaterId)
+    return current && !rows.includes(current) ? [...rows, current] : rows
+  })
+
+  // The story in the pane stays there when the rail narrows or widens around it.
+  function narrow(id: string | null) {
+    pickedId = selected?.id ?? pickedId
+    ontheater(id)
+  }
 
   function select(c: Cluster) {
     pickedId = c.id
@@ -107,6 +134,22 @@
     onFlush()
     rail?.scrollTo({ top: 0 })
   }
+
+  // Narrowing to a theater or back out keeps the story in the pane and brings
+  // its row into view in the new, shorter or longer, rail.
+  let railTheater: string | null = untrack(() => theaterId)
+  $effect(() => {
+    if (theaterId === railTheater) return
+    railTheater = theaterId
+    untrack(() => {
+      rail?.scrollTo({ top: 0 })
+      const id = selected?.id
+      if (!id) return
+      requestAnimationFrame(() => {
+        rail?.querySelector<HTMLElement>(`[data-desk-story="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'center' })
+      })
+    })
+  })
 
   // A different story (or opening/closing the reader) starts the pane at the top.
   $effect(() => {
@@ -171,6 +214,35 @@
       </section>
     {/if}
 
+    {#if theaters.length > 0}
+      <section class="border-b border-line px-4 pt-3 pb-2" aria-labelledby="theaters-heading">
+        <h2 id="theaters-heading" class="label mb-1">Theaters</h2>
+        <ul>
+          {#each theaterRows as t (t.theater.id)}
+            {@const current = t.theater.id === theaterId}
+            <li>
+              <button
+                type="button"
+                data-theater={t.theater.id}
+                onclick={() => narrow(current ? null : t.theater.id)}
+                aria-pressed={current}
+                class="flex w-full items-center gap-2.5 rounded py-1.5 text-start text-[13px] transition-colors {current ? 'text-accent' : 'text-fg-2 hover:text-fg'}"
+              >
+                <span class="h-3.5 w-[3px] shrink-0 rounded-full" style="background: {t.theater.color}" aria-hidden="true"></span>
+                <span class="min-w-0 flex-1 truncate">{t.theater.label}</span>
+                <span class="shrink-0 text-[11px] tabular-nums {current ? 'text-accent' : 'text-fg-3'}">{t.today > 0 ? `${t.today} today` : t.stories.length}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+        {#if theaters.length > THEATERS_SHOWN}
+          <button type="button" class="action mt-0.5 min-h-7 text-xs" onclick={() => (allTheaters = !allTheaters)} aria-expanded={allTheaters}>
+            {allTheaters ? 'Fewer' : `All ${theaters.length} theaters`}
+          </button>
+        {/if}
+      </section>
+    {/if}
+
     <ol class="pb-10">
       {#each clusters as c, i (c.id)}
         {@const rep = c.representative}
@@ -228,7 +300,7 @@
       <ArticlePanel inline article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
     {:else if selected}
       {#key selected.id}
-        <DeskStory cluster={selected} onread={reader.openArticle} />
+        <DeskStory cluster={selected} onread={reader.openArticle} ontheater={theaterId ? undefined : narrow} />
       {/key}
     {/if}
   </div>

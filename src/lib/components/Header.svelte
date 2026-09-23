@@ -13,6 +13,7 @@
     realtimeStatus,
     lastUpdatedAt,
     staleness,
+    ontheaters,
   }: {
     searchQuery: string
     storyCount: number
@@ -21,6 +22,8 @@
     realtimeStatus: string
     lastUpdatedAt: string | null
     staleness: 'ok' | 'amber' | 'red' | null
+    /** Phones: open the Theaters page. The desk lists theaters in its rail. */
+    ontheaters?: () => void
   } = $props()
 
   const live = $derived(realtimeStatus === 'SUBSCRIBED')
@@ -94,6 +97,11 @@
 
     <div class="ml-auto flex items-center gap-1">
       <p class="mr-3 hidden text-xs text-fg-3 min-[820px]:block" aria-live="off">{@render status()}</p>
+      {#if ontheaters}
+        <button type="button" class="icon-btn min-[820px]:hidden" aria-label="Theaters" onclick={ontheaters}>
+          <Icon name="globe" size={20} />
+        </button>
+      {/if}
       <button
         type="button"
         class="icon-btn min-[820px]:hidden"

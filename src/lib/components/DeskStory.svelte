@@ -13,10 +13,20 @@
   import ShareControls from '$lib/components/ShareControls.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
+  import TheaterTag from '$lib/components/TheaterTag.svelte'
 
   // The desk's right pane: one story, Signal's treatment, with the thing a wide
   // screen has room for — every newsroom's headline side by side.
-  let { cluster, onread }: { cluster: Cluster; onread: (a: Article) => void } = $props()
+  let {
+    cluster,
+    onread,
+    ontheater,
+  }: {
+    cluster: Cluster
+    onread: (a: Article) => void
+    /** Narrow the feed to this story's theater; absent once it is narrowed. */
+    ontheater?: (id: string) => void
+  } = $props()
 
   const rep = $derived(cluster.representative)
   const translation = createHeadlineTranslation(() => rep)
@@ -89,7 +99,8 @@
   {/if}
   <div class="relative mx-auto max-w-4xl px-6 lg:px-10 pb-16 {photo.shown ? 'pt-6' : 'pt-14'}">
     <div class="mb-4 flex flex-wrap items-center gap-2">
-      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg-2">{rep.source_region}</span>
+      <TheaterTag {cluster} onpick={ontheater} />
+      <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-fg-2">{rep.source_region} outlet</span>
       {#if repLang}
         <span class="text-[9px] font-mono uppercase tracking-wide text-fg-3 border border-line rounded px-1">{repLang}</span>
       {/if}

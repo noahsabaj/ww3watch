@@ -14,6 +14,8 @@
     focusId = null,
     onview,
     onrefresh,
+    ontheater,
+    startId = null,
   }: {
     clusters: Cluster[]
     onselect?: (a: Article) => void
@@ -26,6 +28,10 @@
     onview?: (cluster: Cluster) => void
     /** Pull down on the first story to fetch the newest; resolves when done. */
     onrefresh?: () => Promise<unknown>
+    /** Narrow to a story's theater from its label; absent once narrowed. */
+    ontheater?: (id: string, from: string) => void
+    /** Open on this story instead of the first (read once, at mount). */
+    startId?: string | null
   } = $props()
 
   // A first-time visitor sees one story and no scrollbar, so nothing says there
@@ -45,6 +51,19 @@
     void clusters.length
     const story = scroller.querySelector<HTMLElement>(`[data-story="${CSS.escape(focusId)}"]`)
     if (!story || Math.abs(story.offsetTop - scroller.scrollTop) < 2) return
+    jumpedAt = performance.now()
+    scroller.scrollTo({ top: story.offsetTop, behavior: 'instant' })
+  })
+
+  // Narrowing to a theater or back out remounts the feed; it opens on the story
+  // the reader was on rather than jumping them to the top.
+  let started = false
+  $effect(() => {
+    if (started || !scroller) return
+    started = true
+    if (!startId) return
+    const story = scroller.querySelector<HTMLElement>(`[data-story="${CSS.escape(startId)}"]`)
+    if (!story) return
     jumpedAt = performance.now()
     scroller.scrollTo({ top: story.offsetTop, behavior: 'instant' })
   })
@@ -82,7 +101,7 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller relative h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-ink outline-none" aria-busy={pullRefresh.refreshing} style={pullRefresh.style} {onscroll}>
     {#each clusters as cluster, i (cluster.id)}
-      <SignalStory {cluster} {onselect} hint={i === 0 && !swiped && clusters.length > 1} />
+      <SignalStory {cluster} {onselect} ontheater={ontheater && ((id) => ontheater(id, cluster.id))} hint={i === 0 && !swiped && clusters.length > 1} />
     {/each}
     {#if hasMore}
       <div class="flex h-full snap-start items-center justify-center px-6 text-center">
