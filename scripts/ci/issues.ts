@@ -2,6 +2,7 @@
 //
 //   node --import tsx scripts/ci/issues.ts disabled-sources      # reads DISABLED
 //   node --import tsx scripts/ci/issues.ts low-yield             # reads LOW_YIELD
+//   node --import tsx scripts/ci/issues.ts silent                # reads SILENT
 //   node --import tsx scripts/ci/issues.ts close --label <l> --message <m>
 //
 // Source lists come from ENV VARS the workflow already sets from the pipeline's
@@ -191,6 +192,24 @@ export function lowYieldIssue(lowYield: string): FileOrCommentOptions {
   }
 }
 
+// Feeds that answer 200 but deliver nothing new (silent_sources RPC). Same
+// shape as low yield: one open issue, commented on only when the list changes.
+export function silentIssue(silent: string): FileOrCommentOptions {
+  const names = echoLines(silent).map((l) => l.split(':')[0]).sort(byCodePoint).map((n) => `${n},`).join('')
+  const marker = `<!-- silent: ${names} -->`
+  return {
+    label: LABELS.feedHealth,
+    title: 'Feed sources gone silent — re-curation suggested',
+    body:
+      `${marker}\n` +
+      'Fetching fine, but 2 or fewer new items in the last 7 days: the feed is probably a stale file the publisher stopped updating.\n\n' +
+      `${bullets(silent)}\n\n` +
+      "Find the publisher's current feed and re-point the source with a reviewed roster plan (docs/SOURCE_AUDIT.md), or disable it.",
+    search: 'gone silent in:title',
+    dedupeMarker: marker,
+  }
+}
+
 // "Pipeline run succeeded: <url>. Auto-closing issue."
 export function resolvedComment(message: string, url: string): string {
   return `${message}: ${url}. Auto-closing issue.`
@@ -219,12 +238,15 @@ async function main(): Promise<void> {
   } else if (cmd === 'low-yield') {
     const r = await fileOrComment(defaultGh, lowYieldIssue(requireEnv('LOW_YIELD')))
     console.log(`[issues] low-yield: ${r.action}`)
+  } else if (cmd === 'silent') {
+    const r = await fileOrComment(defaultGh, silentIssue(requireEnv('SILENT')))
+    console.log(`[issues] silent: ${r.action}`)
   } else if (cmd === 'close') {
     if (!values.label || !values.message) throw new Error('close needs --label and --message')
     const r = await closeOpen(defaultGh, { label: values.label, comment: resolvedComment(values.message, runUrl()) })
     console.log(r.closed === null ? `[issues] no open ${values.label} issue` : `[issues] closed #${r.closed}`)
   } else {
-    throw new Error('usage: issues.ts <disabled-sources | low-yield | close --label <l> --message <m>>')
+    throw new Error('usage: issues.ts <disabled-sources | low-yield | silent | close --label <l> --message <m>>')
   }
 }
 

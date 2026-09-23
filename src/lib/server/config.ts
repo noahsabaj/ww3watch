@@ -53,6 +53,9 @@ export const PURGE_CAP_PER_RUN = 25
 export const PAIR_CHUNK = 20
 // Feeds that fetch fine but almost never yield an accepted article.
 export const LOW_YIELD = { days: 7, minItems: 100, maxPct: 2 }
+// Feeds that fetch fine but deliver (almost) nothing new: a stale file served
+// with 200, every item a duplicate (20260923170000_silent_sources.sql).
+export const SILENT = { days: 7, maxItems: 2 }
 // Jev (TypeSafe) judges up to this many of the still-unsettled articles per run.
 // No daily cap and ~150ms a call, so the bound is wall-clock, not quota.
 export const JEV_POOL_CAP = num('JEV_POOL_CAP', 2000)
@@ -136,6 +139,6 @@ export function configSnapshot(): Record<string, unknown> {
     STALE_WRITEOFF_HOURS, AUTO_DISABLE_AFTER,
     RUN_BUDGET_MS, CLASSIFY_BUDGET_MS,
     IMAGE_FILL_CAP, IMAGE_FILL_CONCURRENCY, IMAGE_FILL_LOOKBACK_HOURS,
-    LOW_YIELD,
+    LOW_YIELD, SILENT,
   }
 }

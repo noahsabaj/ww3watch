@@ -2,7 +2,7 @@
 import { appendFileSync } from 'node:fs'
 import type { Json } from '../../database.types'
 import { supabaseAdmin } from '../supabase'
-import { LOW_YIELD } from '../config'
+import { LOW_YIELD, SILENT } from '../config'
 import type { RunStats } from './stats'
 
 // Feeds that fetch fine but almost never yield an accepted article. Fetch health
@@ -22,6 +22,24 @@ export async function reportLowYield(stats: RunStats): Promise<void> {
     }
   } catch (err) {
     console.error('[pipeline] low-yield report failed (non-fatal):', err)
+  }
+}
+
+// Feeds that answer 200 with the same stale file, so every item is a duplicate
+// and nothing is written: neither fetch health nor source_yield sees them.
+// Same reporting path as low yield, its own feed-health issue.
+export async function reportSilentFeeds(stats: RunStats): Promise<void> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('silent_sources', { p_days: SILENT.days, p_max_items: SILENT.maxItems })
+    if (error) throw new Error(JSON.stringify(error))
+    const rows = data ?? []
+    stats.silent_sources = rows.map((r) => r.r_name)
+    if (rows.length > 0 && process.env.GITHUB_OUTPUT) {
+      const lines = rows.map((r) => `${r.r_name}: last item ${r.r_last_item ? r.r_last_item.slice(0, 10) : 'never'}`)
+      appendFileSync(process.env.GITHUB_OUTPUT, `silent_sources<<EOF\n${lines.join('\n')}\nEOF\n`)
+    }
+  } catch (err) {
+    console.error('[pipeline] silent-feed report failed (non-fatal):', err)
   }
 }
 

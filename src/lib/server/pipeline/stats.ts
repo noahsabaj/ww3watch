@@ -16,6 +16,8 @@ export interface RunStats {
   dates_clamped?: number
   sources_disabled?: string[]
   low_yield_sources?: Array<{ name: string; accepted: number; rejected: number }>
+  /** Enabled feeds that fetch fine but delivered at most SILENT.maxItems in SILENT.days. */
+  silent_sources?: string[]
   // classify
   cls_head?: Record<string, unknown>
   cls_jev?: Record<string, unknown>
