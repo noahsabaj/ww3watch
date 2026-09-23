@@ -75,6 +75,19 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     Math.max(Date.now(), ...rows.map((a) => Date.parse(a.fetched_at) || 0))
   let rankedAt = $state(orderTime(initial.articles))
 
+  // What the "new stories" pill offers: queued reports that start a story the
+  // reader doesn't hold yet. Most arrivals (about 60%) join a story already in
+  // the feed, so counting reports overstated the pill ~2.5×. A report the
+  // pipeline hasn't assigned yet counts on its own until its assignment
+  // arrives, seconds later in the same run.
+  let newStoryCount = $derived.by(() => {
+    if (newQueue.length === 0) return 0
+    const held = new Set(articles.map((a) => a.story_id).filter(Boolean))
+    const stories = new Set<string>()
+    for (const a of newQueue) if (!a.story_id || !held.has(a.story_id)) stories.add(a.story_id ?? a.id)
+    return stories.size
+  })
+
   let staleness = $derived.by((): 'ok' | 'amber' | 'red' | null => {
     if (!lastUpdatedAt) return null
     const age = clock.now - Date.parse(lastUpdatedAt)
@@ -208,11 +221,14 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     }
   }
 
-  /** Move the queued realtime inserts into the feed. Scrolling back to the top
-   *  is the caller's job. */
+  /** Move the queued realtime inserts into the feed and rank it afresh, as pull
+   *  to refresh does, so arrivals take their place by coverage instead of
+   *  stacking newest first above it. Scrolling back to the top is the caller's
+   *  job. */
   function flushQueue() {
     articles = [...newQueue, ...articles].slice(0, articleCap)
     newQueue = []
+    rankedAt = orderTime(articles)
   }
 
   // Pull to refresh: the newest page again, merged over what is held. Fresh
@@ -396,6 +412,8 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     get allClustered() { return allClustered },
     /** When the phone feed was last ranked (load or pull to refresh). */
     get rankedAt() { return rankedAt },
+    /** Stories the "new stories" pill would add (see newStoryCount). */
+    get newStoryCount() { return newStoryCount },
     /** The Trending Now selection (pipeline picks, or the fallback window). */
     get topStories() { return topStories },
     get lastUpdatedAt() { return lastUpdatedAt },
@@ -415,6 +433,8 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
       rankedAt = orderTime(articles)
     },
     flushQueue,
+    /** Take the phone feed's order again from what is held now. */
+    rerank() { rankedAt = orderTime(articles) },
     refresh,
     loadOlder,
     recoverDeepLink,

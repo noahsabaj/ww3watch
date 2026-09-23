@@ -149,11 +149,13 @@ describe('rankStories', () => {
     expect(ids(rankStories([stale, lone], now))).toEqual(['lone', 'stale'])
   })
 
-  it('puts arrivals since the order was taken first, newest first', () => {
+  // Arrivals released by the "new stories" pill are ranked with everything
+  // else; they no longer stack newest first above the ranked feed.
+  it('ranks reports that arrived after the order was taken like any other', () => {
     const wide = story('wide', 8, 1)
     const late1 = story('late1', 1, 0.2, true)
     const late2 = story('late2', 1, 0.1, true)
-    expect(ids(rankStories([wide, late1, late2], now))).toEqual(['late2', 'late1', 'wide'])
+    expect(ids(rankStories([late2, late1, wide], now))).toEqual(['wide', 'late2', 'late1'])
   })
 
   it('sends undated stories to the end', () => {

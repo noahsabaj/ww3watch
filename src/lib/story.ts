@@ -99,4 +99,34 @@ export function bySide(articles: Article[]): SideGroup[] {
   return [...groups.values()].sort((x, y) => y.articles.length - x.articles.length || x.region.localeCompare(y.region))
 }
 
+export interface OutletRow {
+  /** The report that stands for the outlet. */
+  lead: Article
+  /** The outlet's other reports on the story, oldest first. */
+  more: Article[]
+}
+
+// One row per outlet. RIA Novosti files a meeting as a dozen items, one per
+// quote, and listed flat they buried the other newsrooms: 11 of the 15 rows in
+// a four-outlet story. The lead is the outlet's newest report (what it says
+// now) or, for a timeline, its first (when it had it). Rows keep the input
+// order of their leads.
+export function byOutlet(articles: Article[], lead: 'newest' | 'first'): OutletRow[] {
+  const groups = new Map<string, Article[]>()
+  for (const a of articles) {
+    const g = groups.get(a.source_name)
+    if (g) g.push(a)
+    else groups.set(a.source_name, [a])
+  }
+  const t = (a: Article) => publishedAt(a) || (lead === 'first' ? Infinity : 0) // undated never leads
+  const position = new Map(articles.map((a, i) => [a.id, i]))
+  const rows: OutletRow[] = []
+  for (const group of groups.values()) {
+    const chosen = group.reduce((best, a) => (lead === 'first' ? t(a) < t(best) : t(a) > t(best)) ? a : best)
+    const more = group.filter((a) => a !== chosen).sort((x, y) => (publishedAt(x) || Infinity) - (publishedAt(y) || Infinity))
+    rows.push({ lead: chosen, more })
+  }
+  return rows.sort((x, y) => position.get(x.lead.id)! - position.get(y.lead.id)!)
+}
+
 export { MAJOR_SEVERITY }
