@@ -99,7 +99,7 @@ test('Report and Source profile lead back to the article, not the top of the fee
   const headline = await reader.getByRole('heading').first().textContent()
 
   for (const name of ['Report','Source profile']) {
-    await reader.getByRole('link',{ name }).click()
+    await reader.getByRole('link', { name, exact: true }).click()
     const back = page.locator('header').getByRole('link',{ name: 'Back to article' })
     await expect(back).toBeVisible()
     await expect(page.locator('header').getByRole('link',{ name: 'Latest reporting' })).toHaveCount(0)
