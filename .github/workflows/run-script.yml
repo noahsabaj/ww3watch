@@ -36,3 +36,8 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          # The pipeline's fetch proxy: without it a backfill cannot read what
+          # the pipeline read. Newsroom CDNs refuse datacenter IPs, and the
+          # photo recheck (#177) left 9 known graphics shown because of it.
+          FEED_PROXY_URL: ${{ secrets.FEED_PROXY_URL }}
+          FEED_PROXY_SECRET: ${{ secrets.FEED_PROXY_SECRET }}
