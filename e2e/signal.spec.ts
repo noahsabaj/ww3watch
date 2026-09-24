@@ -146,14 +146,25 @@ test('Signal carries the newsroom photograph and its credit, and falls back with
   await expect(broken.locator('img')).toHaveCount(0)
 })
 
-test('a story without a photograph starts at the top, its summary in the photo’s place', async ({ page }) => {
+test('a story without a photograph sits in the middle of the screen, its summary under the headline', async ({ page }) => {
   const story = page.locator('[data-signal-story]:not([data-photo])').filter({ has: page.locator('[data-story-summary]') }).first()
   await story.scrollIntoViewIfNeeded()
-  const frame = await story.boundingBox()
+  // The space above the story and below it (the two flex-1 spacers are the
+  // space, not the story).
+  const { above, below } = await story.evaluate((el) => {
+    const frame = el.getBoundingClientRect()
+    const parts = [...el.lastElementChild!.children]
+      .filter((k) => !k.matches('.flex-1, [data-swipe-hint]'))
+      .map((k) => k.getBoundingClientRect())
+      .filter((r) => r.height > 0)
+    return { above: Math.min(...parts.map((r) => r.top)) - frame.top, below: frame.bottom - Math.max(...parts.map((r) => r.bottom)) }
+  })
+  // Not pinned to the top with the bottom half empty (#160), nor to the bottom.
+  expect(above).toBeGreaterThan(60)
+  expect(Math.abs(above - below)).toBeLessThan(40)
   const headline = await story.locator('a[href]').first().boundingBox()
-  expect(frame && headline).toBeTruthy()
-  // In the top third of the screen, not pinned above the home indicator.
-  expect(headline!.y - frame!.y).toBeLessThan(frame!.height / 3)
+  const summary = await story.locator('[data-story-summary]').boundingBox()
+  expect(summary!.y).toBeGreaterThan(headline!.y + headline!.height - 1)
 })
 
 // Every iPad but the mini gets the desk: an 11" iPad in portrait is 820-834px

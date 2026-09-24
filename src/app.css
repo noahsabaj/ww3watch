@@ -17,6 +17,11 @@
   --color-accent: #8fb4f5;       /* links, the current selection */
 }
 
+/* A phone tall enough for a photo-less Signal story's larger type: every
+   iPhone since the X, not the SE (667px), where that type squeezed the
+   summary mid-line. */
+@custom-variant tall (@media (min-height: 740px));
+
 @layer base {
   html {
     background-color: var(--color-ink);
