@@ -93,6 +93,9 @@ jobs:
           # runner IPs risk anonymous 429s), and an emergency threshold knob.
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           EMBED_SIM_THRESHOLD: ${{ vars.EMBED_SIM_THRESHOLD }}
+          # Signs the alarm's pushes (src/lib/server/pipeline/alerts.ts; the
+          # public half is in the code). Without it alerts are recorded, not sent.
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
 
       - id: model-ok
         if: steps.model-cache.outputs.cache-hit != 'true'

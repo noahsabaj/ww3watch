@@ -30,6 +30,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // The alarm's push and notification-tap handlers (static/push-sw.js).
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // og.png is a 1200×630 social-share card scraped by external crawlers —
         // it's never rendered in-app, so precaching it just bloats every install.

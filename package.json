@@ -25,6 +25,7 @@
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/vite": "^4.2.1",
+		"@types/web-push": "^3.6.4",
 		"@vite-pwa/assets-generator": "^1.0.2",
 		"@vite-pwa/sveltekit": "^1.1.0",
 		"@vitest/ui": "^4.1.11",
@@ -44,7 +45,8 @@
 		"@huggingface/transformers": "4.2.0",
 		"@supabase/supabase-js": "^2.98.0",
 		"fast-xml-parser": "^5.9.0",
-		"rss-parser": "^3.13.0"
+		"rss-parser": "^3.13.0",
+		"web-push": "^3.6.7"
 	},
 	"overrides": {
 		"onnxruntime-node": "1.24.3",

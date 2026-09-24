@@ -163,6 +163,28 @@ test('a story covered from both sides shows the other side first, labelled, and 
   await expect(stories(page).first().getByRole('button', { name: 'disputed', exact: true })).toHaveCount(0)
 })
 
+test('the menu offers alerts, off until the reader turns them on', async ({ page }) => {
+  // The test browser answers "denied" for notifications without asking; a
+  // real one has not been asked yet.
+  await page.addInitScript(() => { Object.defineProperty(Notification, 'permission', { get: () => 'default' }) })
+  await page.reload()
+  await page.locator('header').getByRole('button', { name: 'Menu' }).click()
+  await expect(page.getByRole('switch', { name: 'Alerts' })).toHaveAttribute('aria-checked', 'false')
+  await expect(page.locator('[data-alerts]')).toContainText('only when something world-changing happens')
+})
+
+test.describe('in Safari on an iPhone', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' })
+  test('alerts point to the Home Screen app, the only place iOS allows them', async ({ page }) => {
+    // Safari outside the Home Screen app has no Push API.
+    await page.addInitScript(() => { delete (window as { PushManager?: unknown }).PushManager })
+    await page.reload()
+    await page.locator('header').getByRole('button', { name: 'Menu' }).click()
+    await expect(page.locator('[data-alerts]')).toContainText('Add WW3Watch to your Home Screen')
+    await expect(page.getByRole('switch', { name: 'Alerts' })).toHaveCount(0)
+  })
+})
+
 test('a story without a photograph sits in the middle of the screen, its summary under the headline', async ({ page }) => {
   const story = page.locator('[data-signal-story]:not([data-photo])').filter({ has: page.locator('[data-story-summary]') }).first()
   await story.scrollIntoViewIfNeeded()

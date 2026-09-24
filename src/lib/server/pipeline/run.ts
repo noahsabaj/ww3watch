@@ -14,6 +14,7 @@ import { fillMissingImages } from './images'
 import { checkPhotosIsolated } from './photo-check-isolated'
 import { gatherEvidence } from './evidence'
 import { judgeSides } from './sides'
+import { checkAlerts } from './alerts'
 import { timed as timedStage, type RunStats } from './stats'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
@@ -27,6 +28,8 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await timed('merge', () => mergeStories(stats))
   // Before trending, which ranks on these.
   await timed('signals', () => enrichSignals(stats, startedAt + RUN_BUDGET_MS))
+  // As soon as severity is known: an alarm is no use late (alerts.ts).
+  await timed('alerts', () => checkAlerts(stats, startedAt + RUN_BUDGET_MS))
   stats.trending = await timed('trending', () => updateTrending(startedAt + RUN_BUDGET_MS, stats))
   // After trending: photographs are cosmetic and must never spend the budget
   // that ranking needs.

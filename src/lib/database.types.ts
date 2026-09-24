@@ -126,6 +126,45 @@ export type Database = {
           },
         ]
       }
+      alerts: {
+        Row: {
+          created_at: string
+          failed: number
+          headline: string
+          id: number
+          outlets: number
+          p_confirm: number
+          regions: number
+          sent: number
+          status: string
+          story_id: string
+        }
+        Insert: {
+          created_at?: string
+          failed?: number
+          headline: string
+          id?: never
+          outlets: number
+          p_confirm: number
+          regions: number
+          sent?: number
+          status: string
+          story_id: string
+        }
+        Update: {
+          created_at?: string
+          failed?: number
+          headline?: string
+          id?: never
+          outlets?: number
+          p_confirm?: number
+          regions?: number
+          sent?: number
+          status?: string
+          story_id?: string
+        }
+        Relationships: []
+      }
       article_content: {
         Row: {
           byline: string | null
@@ -400,6 +439,33 @@ export type Database = {
           id?: never
           started_at?: string
           stats?: Json | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          failures: number
+          last_sent_at: string | null
+          p256dh: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          failures?: number
+          last_sent_at?: string | null
+          p256dh: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          failures?: number
+          last_sent_at?: string | null
+          p256dh?: string
         }
         Relationships: []
       }
@@ -1020,6 +1086,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      subscribe_alerts: {
+        Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
+        Returns: undefined
+      }
+      unsubscribe_alerts: { Args: { p_endpoint: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
