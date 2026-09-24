@@ -50,6 +50,7 @@ export interface Article {
   claim?: number | null
   unverified?: number | null
   opinion?: number | null
+  retrospective?: number | null
   actors?: Actor[] | null
   // Publisher photograph (RSS media or og:image). Optional: SW-cached pre-image
   // REST rows omit it, and the pipeline leaves it null when the newsroom published none.

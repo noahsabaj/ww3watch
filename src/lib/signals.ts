@@ -67,13 +67,26 @@ export type ArticleSignals = {
   unverified: number | null
   /** P(opinion / analysis / explainer rather than a news report). */
   opinion: number | null
+  /** P(chiefly about something long ago — history, an anniversary, a new study
+   *  of an old event). Null on rows annotated before 2026-09-24. */
+  retrospective?: number | null
   actors: Actor[] | null
   /** Jev's P(relevant), recorded for every accepted article — a free audit of
    *  whichever tier accepted it. */
   jev_relevant: number | null
 }
 
-export const isMajor = (a: Pick<ArticleSignals, 'severity'>): boolean => (a.severity ?? 0) >= MAJOR_SEVERITY
+export const isRetrospective = (a: Pick<ArticleSignals, 'retrospective'>): boolean => (a.retrospective ?? 0) >= SIGNAL_YES
+
+/** The severity of what an article reports happening now. Jev's severity rates
+ *  the event a report describes, whenever it happened: two Iranian pieces on
+ *  the first hours of the 1980 Iraqi invasion scored 0.99, and a new study of
+ *  North Korea's 2017 nuclear test 0.87 (week of 2026-09-24). A report that
+ *  looks back reports nothing new, so it counts as 0. */
+export const eventSeverity = (a: Pick<ArticleSignals, 'severity' | 'retrospective'>): number | null =>
+  a.severity == null ? null : isRetrospective(a) ? 0 : a.severity
+
+export const isMajor = (a: Pick<ArticleSignals, 'severity' | 'retrospective'>): boolean => (eventSeverity(a) ?? 0) >= MAJOR_SEVERITY
 export const isClaim = (a: Pick<ArticleSignals, 'claim'>): boolean => (a.claim ?? 0) >= SIGNAL_YES
 export const isUnverified = (a: Pick<ArticleSignals, 'unverified'>): boolean => (a.unverified ?? 0) >= SIGNAL_YES
 export const isOpinion = (a: Pick<ArticleSignals, 'opinion'>): boolean => (a.opinion ?? 0) >= SIGNAL_YES

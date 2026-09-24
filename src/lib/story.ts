@@ -4,7 +4,7 @@
 // mean one thing everywhere. Nothing here may import server-only code.
 import type { Article } from './types'
 import { publishedAt, wireDuplicateIds, type Cluster } from './cluster'
-import { isClaim, isMajor, isOpinion, isUnverified, MAJOR_SEVERITY, type ArticleSignals } from './signals'
+import { eventSeverity, isClaim, isMajor, isOpinion, isUnverified, MAJOR_SEVERITY, type ArticleSignals } from './signals'
 
 // Counting is code's job, not a model's. Log-scaled: the step from 1 source to 3
 // is worth more than from 9 to 11. Breadth across regions and languages is the
@@ -46,10 +46,10 @@ export function storySignals(articles: Article[]): StorySignals {
   const wire = wireDuplicateIds(articles)
   const own = articles.filter((a) => !wire.has(a.id))
   const annotated = own.filter((a) => a.severity != null || a.claim != null)
-  const severities = annotated.map((a) => a.severity).filter((s): s is number => s != null)
+  const severities = annotated.map((a) => eventSeverity({ severity: a.severity ?? null, retrospective: a.retrospective })).filter((s): s is number => s != null)
   return {
     topSeverity: severities.length ? Math.max(...severities) : null,
-    major: annotated.some((a) => isMajor({ severity: a.severity ?? null })),
+    major: annotated.some((a) => isMajor({ severity: a.severity ?? null, retrospective: a.retrospective })),
     unconfirmed: annotated.length > 0 && annotated.every((a) => isUnverified({ unverified: a.unverified ?? null })),
     talkOnly: annotated.length > 0 && annotated.every((a) => memberKind(a) !== 'event'),
     independent: new Set(own.map((a) => a.source_name)).size,

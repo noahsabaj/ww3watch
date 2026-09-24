@@ -42,6 +42,28 @@ const annotationQuestions: Record<string, unknown> = {
     instructions:
       'Is `article` an opinion piece, editorial, analysis, explainer, interview, or live-blog summary, rather than a news report of a specific current event?',
   },
+  // Severity rates the event a report describes, whenever it happened, so a
+  // look back at the 1980 invasion of Iran scored 0.99. Over 227 hand-labelled
+  // headlines from the week of 2026-09-24, at 0.7 this caught 15 of 18 looks
+  // back and flagged no report of a current event (3 analysis pieces, which
+  // are not news either). Rewording severity itself instead pushed real
+  // strikes and North Korea's missile tests below "major"
+  // (docs/evals/2026-09-24-jev-retrospective.md).
+  retrospective: {
+    type: 'noul',
+    instructions:
+      'Is `article` chiefly about something that happened long ago (more than a few weeks before it was written): history, an anniversary or commemoration, or a new study, trial or revelation about an old event?',
+    criteria: {
+      true: {
+        what: 'It looks back: the main event happened months or years ago',
+        examples: ['Forty years on, survivors recall the siege of the city', 'Declassified files show the 1983 standoff nearly went nuclear', 'The day the invasion began: what happened in its first hours'],
+      },
+      false: {
+        what: 'The main event happened in the past few days, or is still unfolding',
+        examples: ['Missile strike on a market kills 12', 'President warns of retaliation on the war anniversary', 'Fuel prices climb as the war enters its seventh month'],
+      },
+    },
+  },
   ...Object.fromEntries(
     ALL_ACTORS.map((k) => [
       `actor_${k}`,
@@ -83,6 +105,7 @@ export async function askSignals(
     claim: num(answers.claim?.noul),
     unverified: num(answers.unverified?.noul),
     opinion: num(answers.opinion?.noul),
+    retrospective: num(answers.retrospective?.noul),
     actors,
     jev_relevant: knownRelevant ?? num(answers.relevant?.noul),
     inputTokens,
