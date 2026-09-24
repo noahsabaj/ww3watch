@@ -15,15 +15,17 @@
 //     event sat on at most 5 (the same meeting reported as several stories).
 //     REUSE_MIN sits between.
 //
-// An image we cannot download stays unchecked and is tried again next run;
-// IMAGE_CHECK_LOOKBACK_HOURS retires it.
+// An image we cannot download or decode stays unchecked and is tried again
+// after UNREADABLE_RETRY_MINUTES (every run, it took ~140 of each run's 150
+// slots); IMAGE_CHECK_LOOKBACK_HOURS retires it.
 import { join } from 'node:path'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import sharp from 'sharp'
 import { supabaseAdmin } from '../supabase'
 import { mapPool } from '../pool'
 import { EMBEDDINGS_CACHE_DIR } from '../embeddings'
-import { fetchImage } from './images'
+import { dueForRetry, fetchImage, stampUnreadable } from './images'
+import { UNREADABLE_RETRY_MINUTES } from '../config'
 import { bump, type RunStats } from './stats'
 
 export const PHOTO_MODEL = 'Xenova/clip-vit-base-patch32'
@@ -144,6 +146,7 @@ export async function checkPhotos(
       .select('id, image_url')
       .not('image_url', 'is', null)
       .is('image_verdict', null)
+      .or(dueForRetry('image_check_failed_at'))
       .gte('published_at', since)
       .order('published_at', { ascending: false, nullsFirst: false })
       .limit(deps.cap ?? IMAGE_CHECK_CAP)
@@ -155,13 +158,20 @@ export async function checkPhotos(
     const judge = oneAtATime((image: Buffer) => judgeImage(image, scorer, deps.hash))
     const download = deps.fetch ?? fetchImage
     const hashes = new Set<string>()
+    const unreadable: string[] = []
     const result = await mapPool(
       rows,
       IMAGE_CHECK_CONCURRENCY,
       async (row) => {
         const image = await download(row.image_url)
-        if (!image) return null
-        const { verdict, hash } = await judge(image)
+        if (!image) {
+          unreadable.push(row.id)
+          return null
+        }
+        const { verdict, hash } = await judge(image).catch((err: unknown) => {
+          unreadable.push(row.id)
+          throw err
+        })
         const { error: updateError } = await supabaseAdmin
           .from('articles')
           .update({ image_verdict: verdict, image_hash: hash })
@@ -173,6 +183,7 @@ export async function checkPhotos(
       { deadlineMs },
     )
 
+    await stampUnreadable('image_check_failed_at', unreadable)
     const verdicts = result.done.map((d) => d.value)
     bump(stats, 'photos_ok', verdicts.filter((v) => v === 'photo').length)
     bump(stats, 'photos_emblem', verdicts.filter((v) => v === 'emblem').length)
@@ -182,7 +193,7 @@ export async function checkPhotos(
     bump(stats, 'photos_reused', await markReused([...hashes]))
     console.log(
       `[pipeline] photo check: ok=${stats.photos_ok ?? 0} emblem=${stats.photos_emblem ?? 0} ` +
-        `reused=${stats.photos_reused ?? 0} unreadable=${stats.photos_unreadable ?? 0} (retried next run)`,
+        `reused=${stats.photos_reused ?? 0} unreadable=${stats.photos_unreadable ?? 0} (tried again in ${UNREADABLE_RETRY_MINUTES} min)`,
     )
   } catch (err) {
     stats.photos_error = String(err).slice(0, 200)

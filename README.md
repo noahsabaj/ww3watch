@@ -139,6 +139,7 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `IMAGE_FILL_CAP` | `60` | most articles missing a photo that get an og:image fetch per run |
 | `IMAGE_FILL_CONCURRENCY` | `8` | parallel page fetches for og:image |
 | `IMAGE_FILL_LOOKBACK_HOURS` | `48` | how far back the image-fill worklist looks |
+| `UNREADABLE_RETRY_MINUTES` | `60` | a page or photo that could not be read waits this long before the next try |
 | `LOW_YIELD` | `{"days":7,"minItems":100,"maxPct":2}` | feeds reported as low-yield: ≥ minItems judged, ≤ maxPct accepted |
 | `SILENT` | `{"days":7,"maxItems":2}` | feeds reported as silent: fetched fine, ≤ maxItems new items in days (a stale file) |
 | `MAJOR_SEVERITY` | `0.55` | "major" badge, Major-only filter, major-events RSS, /trends |

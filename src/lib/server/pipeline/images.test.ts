@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const state = vi.hoisted(() => ({
   rows: [] as Array<{ id: string; url: string }>,
   updates: [] as Array<{ id: string; payload: Record<string, unknown> }>,
+  stamps: [] as Array<{ ids: string[]; payload: Record<string, unknown> }>,
+  retryFilter: '',
   html: {} as Record<string, string>,
   selectError: null as string | null,
 }))
@@ -12,20 +14,29 @@ vi.mock('../supabase', () => ({
     from: () => ({
       select: () => ({
         is: () => ({
-          gte: () => ({
-            order: () => ({
-              limit: () =>
-                Promise.resolve({
-                  data: state.selectError ? null : state.rows,
-                  error: state.selectError ? { message: state.selectError } : null,
+          or: (expr: string) => {
+            state.retryFilter = expr
+            return {
+              gte: () => ({
+                order: () => ({
+                  limit: () =>
+                    Promise.resolve({
+                      data: state.selectError ? null : state.rows,
+                      error: state.selectError ? { message: state.selectError } : null,
+                    }),
                 }),
-            }),
-          }),
+              }),
+            }
+          },
         }),
       }),
       update: (payload: Record<string, unknown>) => ({
         eq: (col: string, id: string) => {
           if (col === 'id') state.updates.push({ id, payload })
+          return Promise.resolve({ error: null })
+        },
+        in: (col: string, ids: string[]) => {
+          if (col === 'id') state.stamps.push({ ids, payload })
           return Promise.resolve({ error: null })
         },
       }),
@@ -34,11 +45,14 @@ vi.mock('../supabase', () => ({
 }))
 
 import { fillMissingImages, isFetchableArticleUrl } from './images'
+import { UNREADABLE_RETRY_MINUTES } from '../config'
 import type { RunStats } from './stats'
 
 beforeEach(() => {
   state.rows = []
   state.updates = []
+  state.stamps = []
+  state.retryFilter = ''
   state.html = {}
   state.selectError = null
   vi.stubGlobal(
@@ -74,13 +88,22 @@ describe('fillMissingImages', () => {
     expect(typeof none.payload.image_fetched_at).toBe('string')
   })
 
-  it('leaves a page that did not answer unstamped, so the next run retries it', async () => {
+  it('leaves a page that did not answer unstamped, and has it wait an hour before the next try', async () => {
     state.rows = [{ id: 'blocked', url: 'https://news.example/403' }]
     const stats: RunStats = {}
     await fillMissingImages(stats, Date.now() + 10_000)
     expect(state.updates).toEqual([])
+    expect(state.stamps).toEqual([{ ids: ['blocked'], payload: { image_fetch_failed_at: expect.any(String) } }])
     expect(stats.images_unreadable).toBe(1)
     expect(stats.images_none ?? 0).toBe(0)
+  })
+
+  it('asks only for pages never unreadable, or last unreadable an hour ago or more', async () => {
+    await fillMissingImages({}, Date.now() + 10_000)
+    const m = /^image_fetch_failed_at\.is\.null,image_fetch_failed_at\.lt\."(.+)"$/.exec(state.retryFilter)
+    expect(m).not.toBeNull()
+    const waited = Date.now() - Date.parse(m![1])
+    expect(Math.abs(waited - UNREADABLE_RETRY_MINUTES * 60_000)).toBeLessThan(5_000)
   })
 
   it('never fetches a private or loopback address from a feed, and records it as no photo', async () => {
