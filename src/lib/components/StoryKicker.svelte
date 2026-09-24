@@ -4,6 +4,7 @@
   import { storyBadgeSignals } from '$lib/story'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
   import TheaterTag from '$lib/components/TheaterTag.svelte'
+  import { disputedFor } from '$lib/story-notes.svelte'
 
   // The line above a story's headline, the same on Signal and the desk: where
   // it's happening, whose newsroom leads it and in what language, the story's
@@ -31,7 +32,7 @@
   {#if lang}
     <span class="rounded border border-line px-1 font-mono text-[9px] uppercase tracking-wide text-fg-3">{lang}</span>
   {/if}
-  <SignalBadges article={storyBadgeSignals(cluster)} />
+  <SignalBadges article={storyBadgeSignals(cluster)} disputed={disputedFor(cluster.storyId)} />
   {#if translated}
     <span class="text-[10px] font-medium uppercase tracking-[0.12em] text-fg-3">Translated</span>
   {/if}

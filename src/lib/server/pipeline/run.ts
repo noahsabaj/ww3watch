@@ -13,6 +13,7 @@ import { checkOpsHealth, reportLowYield, reportSilentFeeds, previousRunJevDown }
 import { fillMissingImages } from './images'
 import { checkPhotosIsolated } from './photo-check-isolated'
 import { gatherEvidence } from './evidence'
+import { judgeSides } from './sides'
 import { timed as timedStage, type RunStats } from './stats'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
@@ -35,6 +36,8 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await timed('photo_check', () => checkPhotosIsolated(stats, startedAt + RUN_BUDGET_MS))
   // Last of the extras: sensor readings set against strike stories (evidence.ts).
   await timed('evidence', () => gatherEvidence(stats, startedAt + RUN_BUDGET_MS))
+  // Whether a story's two sides contradict each other (sides.ts).
+  await timed('sides', () => judgeSides(stats, startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
   await reportLowYield(stats)
   await reportSilentFeeds(stats)

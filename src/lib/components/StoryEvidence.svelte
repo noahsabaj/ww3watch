@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte'
-  import { evidenceFor } from '$lib/evidence.svelte'
+  import { evidenceFor } from '$lib/story-notes.svelte'
   import { EVIDENCE_SOURCE, evidenceLine } from '$lib/evidence-text'
 
   // What sensors saw where and when a story says something happened: a new

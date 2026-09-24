@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test'
 import { openHome, stories } from './home'
 
 // Theaters (src/lib/theaters.ts): where a story is happening, from the actors
-// Jev tags. The fixture places the port strike and the RT single in Ukraine,
+// Jev tags. The fixture places the port strike, the RT single and the both-sides
+// story in Ukraine,
 // the corridor talks in Israel & Gaza, and 18 filler stories on the Korean
 // Peninsula (supabase/seed.sql).
 const bar = (page: import('@playwright/test').Page) => page.locator('[data-theater-bar]')
@@ -25,9 +26,9 @@ test.describe('on a phone', () => {
     await theaters.locator('[data-theater="ukraine"]').click()
     await expect(theaters).toBeHidden()
     await expect(bar(page)).toContainText('Ukraine')
-    await expect(bar(page)).toContainText('2 stories')
-    await expect(stories(page)).toHaveCount(2)
-    await expect(page.locator('[data-signal-story] [data-theater-tag]')).toHaveText(['Ukraine', 'Ukraine'])
+    await expect(bar(page)).toContainText('3 stories')
+    await expect(stories(page)).toHaveCount(3)
+    await expect(page.locator('[data-signal-story] [data-theater-tag]')).toHaveText(['Ukraine', 'Ukraine', 'Ukraine'])
     await bar(page).getByRole('button', { name: 'All stories' }).click()
     await expect(bar(page)).toBeHidden()
     expect(await stories(page).count()).toBeGreaterThan(20)

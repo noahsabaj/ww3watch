@@ -14,6 +14,7 @@
   import StoryEvidence from '$lib/components/StoryEvidence.svelte'
   import { tips } from '$lib/tips.svelte'
   import { byOutlet } from '$lib/story'
+  import { blocOf, sideLabel, storySides } from '$lib/sides'
 
   let {
     cluster,
@@ -29,11 +30,17 @@
   } = $props()
 
   const rep = $derived(cluster.representative)
+  // Covered from both sides of a conflict: the other side's first report
+  // leads the lines below, labelled with its side, so the story reads as each
+  // side headlines it (src/lib/sides.ts).
+  const sides = $derived(storySides(cluster.articles))
+  const rival = $derived(sides ? sides.first.filter((a) => a.source_name !== rep.source_name && blocOf(a) !== blocOf(rep)) : [])
   // Up to three other newsrooms, one line each: an outlet that filed the story
   // ten times still gets one line, and the headline's own outlet none.
-  const others = $derived(
-    byOutlet(cluster.articles.filter((a) => a.source_name !== rep.source_name), 'newest').slice(0, 3).map((r) => r.lead),
-  )
+  const others = $derived([
+    ...rival,
+    ...byOutlet(cluster.articles.filter((a) => a.source_name !== rep.source_name && !rival.some((r) => r.source_name === a.source_name)), 'newest').map((r) => r.lead),
+  ].slice(0, 3))
   const translation = createHeadlineTranslation(() => rep)
   const photo = createStoryPhoto(() => cluster, 360)
   $effect(tips.load)
@@ -111,7 +118,7 @@
           <li class="flex {photo.shown ? 'items-center' : 'items-start'} gap-2 text-sm text-fg-2 min-w-0">
             <span class="w-2 h-2 rounded-full shrink-0 {photo.shown ? '' : 'mt-1.5'} {REGION_COLORS[article.source_region]?.split(' ')[0] ?? 'bg-gray-500'}"></span>
             <span class="truncate {photo.shown ? '' : 'tall:whitespace-normal tall:line-clamp-2'} text-fg-2" dir="auto">
-              {article.source_name} · {headlineText(article.title)}
+              {article.source_name}{#if rival.includes(article)}{' '}<span data-side class="text-fg-3">({sideLabel(article)})</span>{/if} · {headlineText(article.title)}
             </span>
           </li>
         {/each}
