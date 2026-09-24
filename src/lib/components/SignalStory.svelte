@@ -11,6 +11,7 @@
   import ShareControls from '$lib/components/ShareControls.svelte'
   import StoryKicker from '$lib/components/StoryKicker.svelte'
   import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
+  import StoryEvidence from '$lib/components/StoryEvidence.svelte'
   import { tips } from '$lib/tips.svelte'
   import { byOutlet } from '$lib/story'
 
@@ -102,6 +103,7 @@
         {translation.shown?.summary ?? rep.summary}
       </p>
     {/if}
+    <StoryEvidence storyId={cluster.storyId} compact class="mt-3 shrink-0" />
 
     {#if others.length > 0}
       <ul class="mt-4 space-y-1.5">

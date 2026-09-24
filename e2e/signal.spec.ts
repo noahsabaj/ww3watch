@@ -146,6 +146,13 @@ test('Signal carries the newsroom photograph and its credit, and falls back with
   await expect(broken.locator('img')).toHaveCount(0)
 })
 
+test('a strike story says what satellites saw there, linked to the reading', async ({ page }) => {
+  const line = stories(page).first().locator('[data-story-evidence] a')
+  await expect(line).toHaveText('NASA satellites saw a new fire 8 km from Odesa, 30 min after the first report')
+  await expect(line).toHaveAttribute('href', 'https://firms.modaps.eosdis.nasa.gov/map/')
+  await expect(stories(page).nth(1).locator('[data-story-evidence]')).toHaveCount(0)
+})
+
 test('a story without a photograph sits in the middle of the screen, its summary under the headline', async ({ page }) => {
   const story = page.locator('[data-signal-story]:not([data-photo])').filter({ has: page.locator('[data-story-summary]') }).first()
   await story.scrollIntoViewIfNeeded()

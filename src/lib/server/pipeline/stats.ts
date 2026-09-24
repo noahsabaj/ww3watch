@@ -86,6 +86,18 @@ export interface RunStats {
   photos_deferred?: number
   photos_failed?: number
   photos_error?: string
+  // sensor evidence (evidence.ts)
+  /** Readings stored this run: FIRMS fires hourly, USGS quakes and IODA outages every 15 minutes. */
+  sensors_fire?: number
+  sensors_quake?: number
+  sensors_outage?: number
+  sensors_error?: string
+  /** Strike stories given a place this run, and ones whose reports named none Jev would pick. */
+  stories_located?: number
+  stories_unlocated?: number
+  evidence_found?: number
+  evidence_tokens?: number
+  evidence_error?: string
   // finalize
   trending?: string
   db?: Record<string, unknown>

@@ -16,6 +16,7 @@
   import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
   import SignalBadges from '$lib/components/SignalBadges.svelte'
   import OutletFold from '$lib/components/OutletFold.svelte'
+  import StoryEvidence from '$lib/components/StoryEvidence.svelte'
   import { byOutlet } from '$lib/story'
   import { modal } from '$lib/modal'
 
@@ -276,6 +277,7 @@
           </p>
         {/if}
       {/if}
+      <StoryEvidence storyId={cluster?.storyId ?? null} class="mt-4" />
 
       <!-- Tools: translation, sharing, and the two ways to question a source. -->
       <div class="mt-4 mb-7 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line pb-3 text-[13px]">
