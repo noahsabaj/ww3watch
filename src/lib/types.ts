@@ -78,6 +78,9 @@ export interface Feed {
   region: SourceRegion
   lang: string
   affiliation?: string | null
+  /** When the feed last fetched cleanly; null before its first fetch, when
+   *  every item is new to us at once (rss.ts keeps those undated). */
+  last_ok_at?: string | null
 }
 
 export const ALL_REGIONS = Object.keys(REGIONS) as SourceRegion[]

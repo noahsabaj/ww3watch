@@ -103,33 +103,95 @@ export function buildGuid(item: { guid?: unknown; link?: string }): string {
 const MAX_FUTURE_SKEW_MS = 10 * 60 * 1000 // tolerate minor publisher clock skew
 const MAX_PAST_AGE_MS = 365 * 24 * 60 * 60 * 1000 // 1 year
 
+// Feeds whose date strings carry the wrong UTC offset: the clock time is right
+// for the zone named here, whatever offset the string states. Checked on
+// 2026-09-24 against each article page's own time (JSON-LD or meta):
+//   - Al Jazeera Arabic writes UTC and labels it +0300, so every report looked
+//     three hours old on arrival and ranked lower (all 363 in a week).
+//   - Walla writes Israel time, Hurriyet Daily News Turkish time and Qatar News
+//     Agency Doha time, each labelled GMT or Z. Their reports looked hours in
+//     the future and lost their date (84 of Walla's 91 in a week, 66 of QNA's
+//     84), and an undated report never reaches the feed.
+const FEED_CLOCK_ZONES: Record<string, string> = {
+  'www.aljazeera.net': 'UTC',
+  'rss.walla.co.il': 'Asia/Jerusalem',
+  'www.hurriyetdailynews.com': 'Europe/Istanbul',
+  'qna.org.qa': 'Asia/Qatar',
+}
+
+export function feedClockZone(feedUrl: string): string | undefined {
+  try {
+    return FEED_CLOCK_ZONES[new URL(feedUrl).hostname]
+  } catch {
+    return undefined
+  }
+}
+
+// How far `zone`'s clocks are ahead of UTC at an instant.
+function zoneOffsetMs(zone: string, atMs: number): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: zone, hourCycle: 'h23',
+      year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric',
+    })
+      .formatToParts(new Date(atMs))
+      .map((p) => [p.type, Number(p.value)]),
+  )
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) - (atMs - (atMs % 1000))
+}
+
+// The instant a feed's date string names. With a zone, the string's clock time
+// is read in that zone and its stated offset ignored.
+function instantOf(raw: string, zone?: string): number {
+  if (!zone) return new Date(raw).getTime()
+  const s = raw.trim()
+  // "2026-09-24T02:40:11+03:00" | "Thu, 24 Sep 2026 02:40:11 +0300" (or GMT, Z)
+  const clock = /^\d{4}-\d{2}-\d{2}T/.test(s)
+    ? Date.parse(s.replace(/(?:Z|[+-]\d{2}:?\d{2})$/i, '') + 'Z')
+    : Date.parse(s.replace(/\s+(?:[+-]\d{4}|[A-Z]{1,5})$/i, '') + ' GMT')
+  if (isNaN(clock)) return NaN
+  // Twice, so a time next to a daylight-saving change settles on its own offset.
+  return clock - zoneOffsetMs(zone, clock - zoneOffsetMs(zone, clock))
+}
+
 // Some feeds (notably locale-formatted Persian/Arabic ones) emit pubDate strings
 // that `new Date()` can't parse. `new Date('garbage').toISOString()` throws a
 // RangeError — and because the throw happens inside the items .map() below, it
 // used to drop the ENTIRE feed. Return null on any unparseable date instead.
 //
-// ALSO clamp out-of-range dates to null: a feed with a broken timezone/year emits
-// future- or ancient-dated items that otherwise poison every recency calc —
-// trending's 4h window (a future date reads as "0m ago" forever), the cluster
-// representative (= newest published member), and the ±window assignment anchor.
+// A future date becomes the time we read the feed: nothing was published after
+// we first saw it, and a date left in the future poisons every recency calc —
+// trending's 4h window ("0m ago" forever), the cluster representative (= newest
+// published member), and the ±window assignment anchor. It used to become null,
+// which kept the report out of the feed entirely: Taipei Times stamps a whole
+// edition with the next morning, and Jerusalem Post runs over an hour ahead.
+// An ancient date (a broken year, an archive item) still becomes null.
 // nowMs is injected (matching utils.ts) so the function stays pure and testable.
-export function parseDate(pubDate: string | undefined, nowMs: number = Date.now()): string | null {
+export function parseDate(pubDate: string | undefined, nowMs: number = Date.now(), zone?: string): string | null {
   if (!pubDate) return null
-  const t = new Date(pubDate).getTime()
+  const t = instantOf(pubDate, zone)
   if (isNaN(t)) return null
-  if (t > nowMs + MAX_FUTURE_SKEW_MS) return null
+  if (t > nowMs + MAX_FUTURE_SKEW_MS) return new Date(nowMs).toISOString()
   if (t < nowMs - MAX_PAST_AGE_MS) return null
   return new Date(t).toISOString()
 }
 
 // True when a pubDate parsed cleanly but fell outside the accepted window (i.e.
-// parseDate clamped it to null). Lets the pipeline count clamps — a misconfigured
+// parseDate replaced it). Lets the pipeline count clamps — a misconfigured
 // feed — distinctly from missing/unparseable dates, for the curation pass.
-export function isClampedDate(pubDate: string | undefined, nowMs: number = Date.now()): boolean {
+export function isClampedDate(pubDate: string | undefined, nowMs: number = Date.now(), zone?: string): boolean {
   if (!pubDate) return false
-  const t = new Date(pubDate).getTime()
+  const t = instantOf(pubDate, zone)
   if (isNaN(t)) return false
   return t > nowMs + MAX_FUTURE_SKEW_MS || t < nowMs - MAX_PAST_AGE_MS
+}
+
+// A report with no usable date gets the time we first saw it (runs are minutes
+// apart; Nikkei Asia's feed has no dates at all). Not on a feed's first fetch,
+// when its whole backlog is new to us at once: that stays undated.
+function itemDate(raw: string | undefined, feed: Feed, nowMs: number, zone?: string): string | null {
+  if (raw && !isNaN(instantOf(raw, zone))) return parseDate(raw, nowMs, zone)
+  return feed.last_ok_at ? new Date(nowMs).toISOString() : null
 }
 
 // ── Fetching ─────────────────────────────────────────────────────────────────
@@ -249,13 +311,14 @@ export function feedSummary(raw: string | null | undefined): string | null {
 function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInsert[]; clamped: number }> {
   const now = Date.now()
   const fetchedAt = new Date(now).toISOString()
+  const zone = feedClockZone(feed.url)
   return parser.parseString(xml).then((parsed) => {
     let clamped = 0
     const articles = parsed.items
       .map((item) => {
         // RDF feeds such as DW expose dc:date as isoDate, without pubDate.
         const published = item.pubDate ?? item.isoDate
-        if (isClampedDate(published, now)) clamped++
+        if (isClampedDate(published, now, zone)) clamped++
         const summary = feedSummary(item.contentSnippet ?? item.summary)
         const url = articleUrl(item.link, feed.url)
         return {
@@ -263,7 +326,7 @@ function parseArticles(feed: Feed, xml: string): Promise<{ articles: ArticleInse
           title: item.title?.trim() ?? '(no title)',
           url,
           summary,
-          published_at: parseDate(published, now),
+          published_at: itemDate(published, feed, now, zone),
           source_name: feed.name,
           source_region: feed.region as SourceRegion,
           source_lang: feed.lang,
@@ -313,6 +376,7 @@ function pickLink(item: Record<string, unknown>): string | undefined {
 function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInsert[]; clamped: number } {
   const now = Date.now()
   const fetchedAt = new Date(now).toISOString()
+  const zone = feedClockZone(feed.url)
   const tree = lenientParser.parse(xml) as Record<string, any>
   const channel = tree?.rss?.channel ?? tree?.['rdf:RDF'] ?? tree?.channel
   const raw = channel?.item ?? tree?.feed?.entry ?? []
@@ -321,7 +385,7 @@ function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInser
   const articles = items
     .map((item) => {
       const pubRaw = textOf(item.pubDate) ?? textOf(item.published) ?? textOf(item.updated) ?? textOf(item['dc:date'])
-      if (isClampedDate(pubRaw, now)) clamped++
+      if (isClampedDate(pubRaw, now, zone)) clamped++
       const summary = feedSummary(textOf(item.description) ?? textOf(item.summary) ?? textOf(item.content))
       const link = pickLink(item)
       const url = articleUrl(link, feed.url)
@@ -330,7 +394,7 @@ function parseArticlesLenient(feed: Feed, xml: string): { articles: ArticleInser
         title: (textOf(item.title) ?? '(no title)').trim(),
         url,
         summary,
-        published_at: parseDate(pubRaw, now),
+        published_at: itemDate(pubRaw, feed, now, zone),
         source_name: feed.name,
         source_region: feed.region as SourceRegion,
         source_lang: feed.lang,
