@@ -4,7 +4,7 @@
 // mean one thing everywhere. Nothing here may import server-only code.
 import type { Article } from './types'
 import { publishedAt, wireDuplicateIds, type Cluster } from './cluster'
-import { eventSeverity, isClaim, isMajor, isOpinion, isUnverified, MAJOR_SEVERITY, type ArticleSignals } from './signals'
+import { eventSeverity, isClaim, isOpinion, isUnverified, MAJOR_SEVERITY, type ArticleSignals } from './signals'
 
 // Counting is code's job, not a model's. Log-scaled: the step from 1 source to 3
 // is worth more than from 9 to 11. Breadth across regions and languages is the
@@ -29,8 +29,6 @@ export function memberKind(a: Pick<Article, 'claim' | 'opinion'>): MemberKind | 
 export interface StorySignals {
   /** Highest severity among independent (non-wire) members; null if none annotated. */
   topSeverity: number | null
-  /** At least one independent member reports a significant event. */
-  major: boolean
   /** EVERY annotated independent member hedges its central fact. One outlet
    *  stating it flatly is enough to drop the tag. */
   unconfirmed: boolean
@@ -49,7 +47,6 @@ export function storySignals(articles: Article[]): StorySignals {
   const severities = annotated.map((a) => eventSeverity({ severity: a.severity ?? null, retrospective: a.retrospective })).filter((s): s is number => s != null)
   return {
     topSeverity: severities.length ? Math.max(...severities) : null,
-    major: annotated.some((a) => isMajor({ severity: a.severity ?? null, retrospective: a.retrospective })),
     unconfirmed: annotated.length > 0 && annotated.every((a) => isUnverified({ unverified: a.unverified ?? null })),
     talkOnly: annotated.length > 0 && annotated.every((a) => memberKind(a) !== 'event'),
     independent: new Set(own.map((a) => a.source_name)).size,
@@ -59,8 +56,7 @@ export function storySignals(articles: Article[]): StorySignals {
 }
 
 // The badges a story wears. They describe the STORY, not whichever member
-// happens to represent it: major if any independent source reports a
-// significant event, unconfirmed only if every one of them hedges,
+// happens to represent it: unconfirmed only if every independent source hedges,
 // statement/analysis only if nobody reports something that happened. A single
 // article is its own story.
 export function storyBadgeSignals(cluster: Cluster): Partial<ArticleSignals> {

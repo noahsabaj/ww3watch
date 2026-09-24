@@ -1,16 +1,10 @@
 // The sides of a conflict whose newsrooms the site carries, and the rivalries
 // between them (#2): when a story is covered from both sides of one, its
-// reader sees each side's headline, and Jev checks whether their accounts
-// conflict (src/lib/server/pipeline/sides.ts). Shared by the pipeline and the
-// client, so nothing here may import server-only code.
+// reader sees each side's headline. Nothing here may import server-only code.
 import type { Article } from './types'
 import type { Actor } from './signals'
 
 export type Bloc = 'russia' | 'ukraine' | 'iran' | 'israel' | 'china' | 'west'
-
-/** Jev's P(the two sides' first reports contradict each other) at or above
- *  which a story is tagged "disputed" (story_sides.p_disputed). */
-export const DISPUTED_YES = 0.7
 
 const BLOC_COUNTRY: Record<Bloc, string> = {
   russia: 'Russian', ukraine: 'Ukrainian', iran: 'Iranian', israel: 'Israeli', china: 'Chinese', west: 'Western',

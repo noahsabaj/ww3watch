@@ -104,11 +104,6 @@ export interface RunStats {
   alerts_sent?: number
   alerts_tokens?: number
   alerts_error?: string
-  // sides (sides.ts)
-  /** Stories covered from both sides whose first reports Jev compared this run. */
-  sides_judged?: number
-  sides_tokens?: number
-  sides_error?: string
   // finalize
   trending?: string
   db?: Record<string, unknown>

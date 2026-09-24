@@ -19,7 +19,7 @@ const NOTES: Record<string, string> = {
   STORY_MERGE: 'story-merge pass: window, candidate similarity, P(same) needed, caps',
   PURGE_BELOW: 'an accepted article Jev scores below this is removed again',
   EMBED_SIM_THRESHOLD: 'decides only the pairs Jev was unsure about or could not be asked about',
-  MAJOR_SEVERITY: '"major" badge, Major-only filter, major-events RSS, /trends',
+  MAJOR_SEVERITY: 'stories at or above it are checked against sensor readings (not shown to readers)',
   SIGNAL_YES: 'a yes/no signal at or above this shows as a badge',
   TRENDING_WEIGHTS: 'trending score = weighted Jev judgments + corroboration − talk penalty',
   JEV_POOL_CAP: 'most articles Jev judges for relevance per run',

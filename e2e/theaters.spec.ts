@@ -22,7 +22,6 @@ test.describe('on a phone', () => {
     const theaters = page.getByRole('dialog', { name: 'Where it’s happening' })
     await expect(theaters).toBeVisible()
     await expect(theaters.locator('[data-theater]')).toHaveText([/Korean Peninsula/, /Ukraine/, /Israel & Gaza/])
-    await expect(theaters.locator('[data-theater="ukraine"]')).toContainText('1 major')
     await theaters.locator('[data-theater="ukraine"]').click()
     await expect(theaters).toBeHidden()
     await expect(bar(page)).toContainText('Ukraine')

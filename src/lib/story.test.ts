@@ -26,29 +26,27 @@ describe('memberKind', () => {
 })
 
 describe('storySignals', () => {
-  it('is major when any independent member reports a significant event', () => {
+  it('takes the gravest event any independent member reports', () => {
     const s = storySignals([statement(), event(), art()])
-    expect(s.major).toBe(true)
     expect(s.topSeverity).toBeCloseTo(0.67)
     expect(s.talkOnly).toBe(false)
   })
 
-  it('is not major for a look back at an old war, however grave the war was', () => {
+  it('does not count a look back at an old war, however grave the war was', () => {
     // Tabnak, 2026-09-22: the first hours of the 1980 invasion, severity 0.99.
     const lookBack = event({ severity: 0.99, retrospective: 0.98 })
     const s = storySignals([lookBack, statement()])
-    expect(s.major).toBe(false)
     expect(s.topSeverity).toBe(0.1)
     // Rows annotated before the question existed read as current.
-    expect(storySignals([event({ retrospective: null })]).major).toBe(true)
-    expect(storySignals([event({ retrospective: 0.4 })]).major).toBe(true)
+    expect(storySignals([event({ retrospective: null })]).topSeverity).toBeCloseTo(0.67)
+    expect(storySignals([event({ retrospective: 0.4 })]).topSeverity).toBeCloseTo(0.67)
   })
 
-  it('does not let a wire reprint make a story major or count as a source', () => {
+  it('does not let a wire reprint raise the severity or count as a source', () => {
     const origin = statement({ body_hash: 'h', published_at: '2026-09-19T09:00:00Z' })
     const reprint = event({ body_hash: 'h', published_at: '2026-09-19T09:30:00Z' })
     const s = storySignals([origin, reprint])
-    expect(s.major).toBe(false)
+    expect(s.topSeverity).toBe(0.1)
     expect(s.independent).toBe(1)
   })
 

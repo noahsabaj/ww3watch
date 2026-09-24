@@ -123,7 +123,7 @@
           judges three things: how consequential the event is, whether it is a new development, and whether it is
           only talk. Code weighs those against how many independent sources, regions and languages carry the
           story. The weights are in the source, not in a prompt.</li>
-        <li><strong>Tags</strong> — "major", "statement", "analysis", "unconfirmed" and the parties
+        <li><strong>Tags</strong> — "statement", "analysis", "unconfirmed" and the parties
           involved are the same kind of judgment, made once per article from its headline and summary. They are a
           classifier's reading, not an editor's — they label stories and feed the Trends page; they hide nothing
           and change nothing you read.</li>
@@ -195,11 +195,8 @@
     <section>
       <h2 class="mb-4 font-serif text-2xl text-fg">Follow it elsewhere</h2>
       <p class="page-prose">
-        Two RSS feeds, one item per story, opening in the reader here:
-        <a href="https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss" class="link">everything</a>,
-        and
-        <a href="https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss?major=1" class="link">major events only</a>
-        — the low-volume one to point a phone's notifications at. How each party's activity has moved
+        An <a href="https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss" class="link">RSS feed</a>,
+        one item per story, opening in the reader here. How each party's activity has moved
         over the last month is on <a href="{base}/trends" class="link">Trends</a>.
       </p>
     </section>

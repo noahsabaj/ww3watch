@@ -153,14 +153,11 @@ test('a strike story says what satellites saw there, linked to the reading', asy
   await expect(stories(page).nth(1).locator('[data-story-evidence]')).toHaveCount(0)
 })
 
-test('a story covered from both sides shows the other side first, labelled, and tags a contradiction', async ({ page }) => {
+test('a story covered from both sides shows the other side first, labelled', async ({ page }) => {
   const story = page.locator('[data-signal-story]', { hasText: 'Air defences downed all drones over the border region' })
   await story.scrollIntoViewIfNeeded()
   await expect(story.locator('li').first()).toContainText('Українська правда')
   await expect(story.locator('[data-side]')).toHaveText('(Ukrainian media)')
-  await expect(story.getByRole('button', { name: 'disputed', exact: true })).toBeVisible()
-  // A story no side contradicts carries no tag.
-  await expect(stories(page).first().getByRole('button', { name: 'disputed', exact: true })).toHaveCount(0)
 })
 
 test('the menu offers alerts, off until the reader turns them on', async ({ page }) => {

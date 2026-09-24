@@ -183,5 +183,3 @@ values
    now() - interval '290 minutes', now() - interval '285 minutes', 'Українська правда', 'Ukrainian', 'uk', null,
    'https://fixture.test/pravda.xml', null, '22222222-2222-4222-8222-000000000003', null, array['russia', 'ukraine'], 0.3)
 on conflict (id) do nothing;
-insert into public.story_sides (story_id, sides, first_a, first_b, p_disputed) values
-  ('22222222-2222-4222-8222-000000000003', 'russia|ukraine', '33333333-3333-4333-8333-000000000030', '33333333-3333-4333-8333-000000000031', 0.9);

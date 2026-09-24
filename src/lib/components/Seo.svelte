@@ -3,7 +3,7 @@
   const pages: Record<string, [string, string]> = {
     '/': ['WW3Watch — Global conflict news from multiple perspectives', 'Follow global conflict and geopolitical reporting, compare sources, and read original articles. Automated labels help organize coverage; they do not verify claims.'],
     '/about': ['About & methodology — WW3Watch', 'How WW3Watch selects sources, groups reporting and labels stories, with the active source roster and source health.'],
-    '/trends': ['Trends — WW3Watch', 'Explore the last 30 days of conflict reporting by party and the stories classified as major events.'],
+    '/trends': ['Trends — WW3Watch', 'Explore the last 30 days of conflict reporting by party, day by day.'],
     '/privacy': ['Privacy — WW3Watch', 'How WW3Watch handles local preferences, security records, article images, translation requests and private feedback.'],
     '/feedback': ['Feedback & corrections — WW3Watch', 'Privately report a problem, request a correction or suggest a news source. No account required.'],
   }

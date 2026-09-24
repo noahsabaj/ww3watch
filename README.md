@@ -19,10 +19,10 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 - **Cross-language story grouping** — multilingual embeddings (e5-base, run locally in the pipeline) group a Persian headline with the Norwegian and English coverage of the same event. Similarity means *same subject*, not *same event*, so nearest-story matches in the grey band (0.78–0.90) get one Jev judgment — "same news story?" — before joining
 - **Local relevance head** — a logistic-regression layer over those same embeddings, distilled monthly from Jev's verdicts, settles the confident mass of new articles on the runner for free; only the uncertain band goes to Jev, and a random ~3% audit slice of the head's confident verdicts is judged by Jev anyway, so head/Jev agreement is measured every run
 - **Jev, the final relevance judge** — everything the head doesn't settle goes to [TypeSafe's Jev](https://docs.typesafe.ai), a decision model that returns calibrated probabilities for typed questions and cannot generate text. Its verdict is final at P(relevant) ≥ 0.5; there is no generative model behind it. If a Jev call fails or the run is out of time, the article gets no verdict and simply stays new for the next run
-- **Per-article signals** — one Jev request per accepted article: topic, severity, statement-vs-event, unconfirmed, analysis, and the parties involved. They drive the *Major only* / topic / *Involving* filters and the card badges
+- **Per-article signals** — one Jev request per accepted article: severity, statement-vs-event, unconfirmed, analysis, and the parties involved. They drive the card badges, Theaters and Trends; severity decides which stories are checked against sensor readings and which can raise the alarm
 - **Trending Now** — Jev judges each candidate story's severity, novelty and talk-only-ness; code weighs those against exact corroboration counts (`src/lib/server/trending-jev.ts`). Updating live
-- **Story badges, "By side"** — a story is badged *major* if any independent source reports a significant event and *unconfirmed* only if every one of them hedges; an expanded story can be read as a timeline or grouped by region, state media split out
-- **Trends + major-events feed** — [/trends](https://ww3watch.org/trends): stories per day involving each party over 30 days, and how many were major; the RSS feed takes `?major=1` for significant events only
+- **Story badges, "By side"** — a story is badged *unconfirmed* only if every independent source hedges; an expanded story can be read as a timeline or grouped by region, state media split out
+- **Trends + RSS** — [/trends](https://ww3watch.org/trends): stories per day involving each party over 30 days; an RSS feed of the newest stories
 - **Wire detection** — near-identical copies inside a story are marked, so "12 sources" doesn't overstate independent confirmation
 - **In-app reader + translation** — cached extraction (survives link rot), on-demand translation into your reading language (set once; defaults from your browser locale), the original one click away
 - **Source roster with live health** — every feed and its fetch health, public on [/about](https://ww3watch.org/about); a feed that fails for ~2 days straight is switched off and a feed-health issue is filed for re-curation
@@ -142,7 +142,7 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `UNREADABLE_RETRY_MINUTES` | `60` | a page or photo that could not be read waits this long before the next try |
 | `LOW_YIELD` | `{"days":7,"minItems":100,"maxPct":2}` | feeds reported as low-yield: ≥ minItems judged, ≤ maxPct accepted |
 | `SILENT` | `{"days":7,"maxItems":2}` | feeds reported as silent: fetched fine, ≤ maxItems new items in days (a stale file) |
-| `MAJOR_SEVERITY` | `0.55` | "major" badge, Major-only filter, major-events RSS, /trends |
+| `MAJOR_SEVERITY` | `0.55` | stories at or above it are checked against sensor readings (not shown to readers) |
 | `SIGNAL_YES` | `0.7` | a yes/no signal at or above this shows as a badge |
 | `TRENDING_WEIGHTS` | `{"severity":0.45,"corroboration":0.3,"fresh":0.25,"talkPenalty":0.15}` | trending score = weighted Jev judgments + corroboration − talk penalty |
 
