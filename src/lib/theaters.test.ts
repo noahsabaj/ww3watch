@@ -58,7 +58,7 @@ describe('theaterBoard', () => {
   const now = Date.parse('2026-06-10T13:00:00Z')
   const old = '2026-06-08T12:00:00Z'
 
-  it('lists busiest first, counts the last day and its major stories, and leads with the widest coverage', () => {
+  it('lists busiest first, counts the last day, and leads with the widest coverage', () => {
     const clusters = groupByStoryId([
       article(['ukraine'], { story_id: 'u1', severity: 0.8 }),
       article(['ukraine'], { story_id: 'u2' }),
@@ -69,14 +69,14 @@ describe('theaterBoard', () => {
     ])
     const board = theaterBoard(clusters, now)
     expect(board.map((b) => b.theater.id)).toEqual(['ukraine', 'koreas'])
-    expect(board[0]).toMatchObject({ today: 2, major: 1 })
+    expect(board[0]).toMatchObject({ today: 2 })
     expect(board[0].stories).toHaveLength(3)
     expect(board[0].lead.id).toBe('u2')
   })
 
   it('still leads a quiet theater with its newest story', () => {
     const board = theaterBoard(groupByStoryId([article(['africa'], { story_id: 'a1', published_at: old })]), now)
-    expect(board[0]).toMatchObject({ today: 0, major: 0 })
+    expect(board[0]).toMatchObject({ today: 0 })
     expect(board[0].lead.id).toBe('a1')
   })
 })

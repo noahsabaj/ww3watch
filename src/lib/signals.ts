@@ -50,7 +50,8 @@ export const SEVERITY_LEVELS = [
   'A significant event: a deadly strike or attack, a major offensive, mass casualties, a ceasefire collapsing, one state openly escalating against another',
   'An event with global consequences: war between states beginning or widening, nuclear use, test or direct nuclear threat, a head of state killed or overthrown, great powers clashing directly',
 ] as const
-/** The "major" badge: at or above a significant event. */
+/** At or above a significant event: the stories checked against sensor
+ *  readings (pipeline/evidence.ts). Nothing shown to readers uses it. */
 export const MAJOR_SEVERITY = 0.55
 /** A Noul at or above this reads as yes for badges. */
 export const SIGNAL_YES = 0.7
@@ -86,7 +87,6 @@ export const isRetrospective = (a: Pick<ArticleSignals, 'retrospective'>): boole
 export const eventSeverity = (a: Pick<ArticleSignals, 'severity' | 'retrospective'>): number | null =>
   a.severity == null ? null : isRetrospective(a) ? 0 : a.severity
 
-export const isMajor = (a: Pick<ArticleSignals, 'severity' | 'retrospective'>): boolean => (eventSeverity(a) ?? 0) >= MAJOR_SEVERITY
 export const isClaim = (a: Pick<ArticleSignals, 'claim'>): boolean => (a.claim ?? 0) >= SIGNAL_YES
 export const isUnverified = (a: Pick<ArticleSignals, 'unverified'>): boolean => (a.unverified ?? 0) >= SIGNAL_YES
 export const isOpinion = (a: Pick<ArticleSignals, 'opinion'>): boolean => (a.opinion ?? 0) >= SIGNAL_YES

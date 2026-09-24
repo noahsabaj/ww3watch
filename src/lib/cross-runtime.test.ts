@@ -2,18 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { MAJOR_SEVERITY } from './signals'
 
-// MAJOR_SEVERITY has to exist in three runtimes: here (Node + browser), in the
-// Deno `rss` edge function (which cannot import from src/), and as a literal in
-// the actor_daily SQL function. Nothing can share the constant, so this test is
-// what keeps the copies equal: change one and it fails until all three agree.
+// MAJOR_SEVERITY has to exist in two runtimes: here (Node + browser) and as a
+// literal in the actor_daily SQL function. Nothing can share the constant, so
+// this test is what keeps the copies equal: change one and it fails until both
+// agree.
 describe('MAJOR_SEVERITY across runtimes', () => {
-  it('matches the Deno rss function', () => {
-    const src = readFileSync('supabase/functions/rss/index.ts', 'utf8')
-    const m = src.match(/const MAJOR_SEVERITY = ([0-9.]+)/)
-    expect(m, 'rss/index.ts no longer declares MAJOR_SEVERITY').not.toBeNull()
-    expect(Number(m![1])).toBe(MAJOR_SEVERITY)
-  })
-
   it('matches the latest actor_daily definition in the migrations', () => {
     const dir = 'supabase/migrations'
     const defs = readdirSync(dir)

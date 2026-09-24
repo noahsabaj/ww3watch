@@ -4,7 +4,6 @@
 // so there is nothing new to classify or store.
 import type { Cluster } from './cluster'
 import type { Actor } from './signals'
-import { isMajor } from './signals'
 
 export interface Theater {
   id: string
@@ -71,8 +70,6 @@ export interface TheaterSummary {
   stories: Cluster[]
   /** Stories in the last 24 hours. */
   today: number
-  /** Of those, how many are major (a significant event or worse). */
-  major: number
   /** The one to lead with: the most widely covered of the last day. */
   lead: Cluster
 }
@@ -103,7 +100,6 @@ export function theaterBoard(clusters: Cluster[], now: number): TheaterSummary[]
         theater,
         stories,
         today: recent.length,
-        major: recent.filter((c) => c.articles.some((a) => isMajor({ severity: a.severity ?? null, retrospective: a.retrospective }))).length,
         lead,
       }
     })

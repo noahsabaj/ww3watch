@@ -27,9 +27,6 @@
       <span class="ml-auto shrink-0 text-xs text-fg-3 tabular-nums">{count}</span>
     </span>
     <span dir="auto" class="mt-1 block text-sm leading-snug text-fg-2 line-clamp-2">{headlineText(headline.title)}</span>
-    {#if summary.major > 0}
-      <span class="mt-1.5 block text-[10px] font-medium uppercase tracking-[0.12em] text-amber-400">{summary.major} major</span>
-    {/if}
   </span>
   <StoryPhotoImg {photo} lazy class="h-16 w-16 shrink-0 rounded-lg object-cover" />
 </button>

@@ -22,9 +22,6 @@ export interface FeedMeta {
   feedUrl: string
   /** ISO timestamp for lastBuildDate (typically the newest item) */
   buildDate: string
-  /** Channel title / description overrides (the major-events feed). */
-  title?: string
-  description?: string
 }
 
 // XML text escaping. '&' first so we don't double-escape the entities we emit.
@@ -73,10 +70,10 @@ export function buildRssXml(items: FeedItem[], meta: FeedMeta): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${xmlEscape(meta.title ?? 'WW3Watch — Real-time global conflict tracker')}</title>
+    <title>WW3Watch — Real-time global conflict tracker</title>
     <link>${xmlEscape(meta.siteUrl)}</link>
     <atom:link href="${xmlEscape(meta.feedUrl)}" rel="self" type="application/rss+xml" />
-    <description>${xmlEscape(meta.description ?? 'Latest stories from WW3Watch: global conflict news aggregated across 200+ sources and languages.')}</description>
+    <description>Latest stories from WW3Watch: global conflict news aggregated across 200+ sources and languages.</description>
     <language>en</language>
     <lastBuildDate>${build}</lastBuildDate>
     <ttl>15</ttl>

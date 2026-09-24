@@ -68,10 +68,6 @@ Deno.test('buildRssXml falls back to epoch lastBuildDate on a bad buildDate', ()
   assertStringIncludes(xml, `<lastBuildDate>${new Date(0).toUTCString()}</lastBuildDate>`)
 })
 
-Deno.test('channel title and description can be overridden (the major-events feed), escaped', () => {
-  const xml = buildRssXml([item()], { ...META, title: 'WW3Watch — Major <events>', description: 'Only significant & corroborated' })
-  assertStringIncludes(xml, '<title>WW3Watch — Major &lt;events&gt;</title>')
-  assertStringIncludes(xml, '<description>Only significant &amp; corroborated</description>')
-  // The default feed is unchanged.
+Deno.test('the channel carries the site title', () => {
   assertStringIncludes(buildRssXml([item()], META), '<title>WW3Watch — Real-time global conflict tracker</title>')
 })
