@@ -110,7 +110,7 @@ test('Report and Source profile lead back to the article, not the top of the fee
   }
 
   // Opened cold (a reload, or a shared link), the way back deep-links the article.
-  await reader.getByRole('link',{ name: 'Report' }).click()
+  await reader.getByRole('link', { name: 'Report', exact: true }).click()
   await page.waitForURL(/\/feedback\?article=/)
   await page.reload()
   await page.locator('header').getByRole('link',{ name: 'Back to article' }).click()
