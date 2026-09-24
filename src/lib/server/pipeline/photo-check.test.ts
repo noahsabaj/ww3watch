@@ -41,7 +41,7 @@ vi.mock('../supabase', () => {
   return { supabaseAdmin: { from: () => query(() => db.rows) } }
 })
 
-import { checkPhotos, differenceHash, isEmblem, judgeImage, oneAtATime, recheckPhotos, EMBLEM_MIN, REUSE_MIN, type LabelScores } from './photo-check'
+import { checkPhotos, differenceHash, judgeImage, oneAtATime, recheckPhotos, REUSE_MIN, type PhotoJudge } from './photo-check'
 import { UNREADABLE_RETRY_MINUTES } from '../config'
 import type { RunStats } from './stats'
 
@@ -64,9 +64,9 @@ async function picture(seed: number): Promise<Buffer> {
 
 let pictures: Record<string, Buffer>
 const fetchPicture = async (url: string) => pictures[url] ?? null
-const PHOTO: LabelScores = { photo: 0.85, logo: 0.1, graphic: 0.05 }
-const EMBLEM: LabelScores = { photo: 0.005, logo: 0.99, graphic: 0.005 }
-const scorer = async (image: Buffer) => (image.equals(pictures['emblem.jpg']) ? EMBLEM : PHOTO)
+// 'emblem.jpg' stands for any graphic: the head gives it a low P(photograph).
+const scorer = async (image: Buffer) => (image.equals(pictures['emblem.jpg']) ? 0.02 : 0.95)
+const judge: PhotoJudge = { score: scorer, photoMin: 0.5 }
 
 beforeEach(async () => {
   db.rows = []
@@ -74,21 +74,10 @@ beforeEach(async () => {
 })
 
 describe('judgeImage', () => {
-  it('calls an image an emblem at or above EMBLEM_MIN', async () => {
+  it('calls a picture a photograph at or above photo_min, and a graphic below it', async () => {
     const img = pictures['a.jpg']
-    expect((await judgeImage(img, async () => ({ photo: 0, logo: EMBLEM_MIN, graphic: 1 - EMBLEM_MIN }))).verdict).toBe('emblem')
-    expect((await judgeImage(img, async () => ({ photo: 0.05, logo: EMBLEM_MIN - 0.01, graphic: 0.04 }))).verdict).toBe('photo')
-  })
-
-  it('calls a logo with words in it an emblem when next to nothing reads as a photograph', () => {
-    // The UAE aviation authority's logo (Kurdistan 24, 2026-09-24): passed as
-    // a photo, since part of what is not one went to the graphic label.
-    expect(isEmblem({ photo: 0.0029, logo: 0.921, graphic: 0.076 })).toBe(true)
-    // The nearest photograph of people: the Palestinian president on the UN's
-    // screen beside its emblem (The National, the same day).
-    expect(isEmblem({ photo: 0.0078, logo: 0.706, graphic: 0.286 })).toBe(false)
-    // A TV graphic is neither.
-    expect(isEmblem({ photo: 0, logo: 0, graphic: 1 })).toBe(false)
+    expect((await judgeImage(img, { score: async () => 0.5, photoMin: 0.5 })).verdict).toBe('photo')
+    expect((await judgeImage(img, { score: async () => 0.49, photoMin: 0.5 })).verdict).toBe('graphic')
   })
 
   it('hashes, then calls the model, never both at once', async () => {
@@ -99,7 +88,7 @@ describe('judgeImage', () => {
       steps.push(`${name} end`)
       return value
     }
-    await judgeImage(pictures['a.jpg'], step('model', PHOTO) as () => Promise<LabelScores>, step('hash', '0') as () => Promise<string>)
+    await judgeImage(pictures['a.jpg'], { score: step('model', 0.9) as () => Promise<number>, photoMin: 0.5 }, step('hash', '0') as () => Promise<string>)
     expect(steps).toEqual(['hash start', 'hash end', 'model start', 'model end'])
   })
 
@@ -111,14 +100,14 @@ describe('judgeImage', () => {
 })
 
 describe('checkPhotos', () => {
-  const run = (stats: RunStats = {}) => checkPhotos(stats, Date.now() + 10_000, { scorer, fetch: fetchPicture }).then(() => stats)
+  const run = (stats: RunStats = {}) => checkPhotos(stats, Date.now() + 10_000, { judge, fetch: fetchPicture }).then(() => stats)
 
-  it('passes photographs and holds back emblems', async () => {
+  it('passes photographs and holds back graphics', async () => {
     db.rows = [row('1', 's1', 'a.jpg'), row('2', 's2', 'emblem.jpg')]
     const stats = await run()
-    expect(db.rows.map((r) => r.image_verdict)).toEqual(['photo', 'emblem'])
+    expect(db.rows.map((r) => r.image_verdict)).toEqual(['photo', 'graphic'])
     expect(db.rows.every((r) => r.image_hash?.length === 16)).toBe(true)
-    expect(stats).toMatchObject({ photos_ok: 1, photos_emblem: 1 })
+    expect(stats).toMatchObject({ photos_ok: 1, photos_graphic: 1 })
   })
 
   const onStories = (n: number, url: string, from = 1) =>
@@ -149,9 +138,9 @@ describe('checkPhotos', () => {
   it('leaves an image it could not download unchecked, and tries it again an hour later, not every run', async () => {
     db.rows = [row('1', 's1', 'gone.jpg')]
     const fetch = vi.fn(fetchPicture)
-    const go = () => checkPhotos({}, Date.now() + 10_000, { scorer, fetch })
+    const go = () => checkPhotos({}, Date.now() + 10_000, { judge, fetch })
     const stats: RunStats = {}
-    await checkPhotos(stats, Date.now() + 10_000, { scorer, fetch })
+    await checkPhotos(stats, Date.now() + 10_000, { judge, fetch })
     expect(db.rows[0].image_verdict).toBeNull()
     expect(stats.photos_unreadable).toBe(1)
     expect(db.rows[0].image_check_failed_at).not.toBeNull()
@@ -195,11 +184,11 @@ describe('checkPhotos', () => {
         return fetchPicture(url)
       },
       hash: (image) => busy(() => differenceHash(image)),
-      scorer: (image) => busy(() => scorer(image)),
+      judge: { score: (image) => busy(() => scorer(image)), photoMin: 0.5 },
     })
     expect(mostDownloads).toBeGreaterThan(1)
     expect(mostNative).toBe(1)
-    expect(db.rows.map((r) => r.image_verdict)).toEqual(['photo', 'photo', 'photo', 'emblem'])
+    expect(db.rows.map((r) => r.image_verdict)).toEqual(['photo', 'photo', 'photo', 'graphic'])
   })
 
   it('keeps the queue moving after a failed call', async () => {
@@ -216,14 +205,20 @@ describe('checkPhotos', () => {
 })
 
 describe('recheckPhotos', () => {
-  it('judges passed pictures again, once each, and retires only those the rule now catches', async () => {
-    const passed = (id: string, url: string, hash: string): Row => ({ ...row(id, `s${id}`, url), image_verdict: 'photo', image_hash: hash })
-    db.rows = [passed('1', 'emblem.jpg', 'e'), passed('2', 'emblem.jpg', 'e'), passed('3', 'a.jpg', 'a'), { ...row('4', 's4', 'b.jpg'), image_verdict: 'reused', image_hash: 'b' }]
+  it('judges checked pictures again, once each, and writes only verdicts that change', async () => {
+    const judged = (id: string, url: string, hash: string, verdict: string): Row => ({ ...row(id, `s${id}`, url), image_verdict: verdict, image_hash: hash })
+    db.rows = [
+      judged('1', 'emblem.jpg', 'e', 'photo'), // shown, now caught
+      judged('2', 'emblem.jpg', 'e', 'photo'),
+      judged('3', 'a.jpg', 'a', 'photo'), // stays
+      judged('4', 'b.jpg', 'b', 'emblem'), // a photograph the old rule hid
+      judged('5', 'card.jpg', 'c', 'reused'), // where a picture appears is not re-judged
+    ]
     let calls = 0
-    const counting = async (image: Buffer) => { calls++; return scorer(image) }
-    const result = await recheckPhotos(Date.now() + 10_000, { scorer: counting, fetch: fetchPicture })
-    expect(db.rows.map((r) => r.image_verdict)).toEqual(['emblem', 'emblem', 'photo', 'reused'])
-    expect(calls).toBe(2)
-    expect(result).toMatchObject({ pictures: 2, retired: 2, unreadable: 0 })
+    const counting: PhotoJudge = { score: async (image) => { calls++; return scorer(image) }, photoMin: 0.5 }
+    const result = await recheckPhotos(Date.now() + 10_000, { judge: counting, fetch: fetchPicture })
+    expect(db.rows.map((r) => r.image_verdict)).toEqual(['graphic', 'graphic', 'photo', 'photo', 'reused'])
+    expect(calls).toBe(3)
+    expect(result).toMatchObject({ pictures: 3, hidden: 2, shown: 1, unreadable: 0 })
   })
 })
