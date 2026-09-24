@@ -1,13 +1,26 @@
 // The photo check: every newsroom image is looked at once before the site
 // shows it (articles.image_verdict; the client shows only 'photo').
 //
-// Two things feeds pass off as photographs, measured on 386 images from the
+// What feeds pass off as photographs, first measured on 386 images from the
 // live feed on 2026-09-23:
 //   - emblems: a logo, seal or emblem on a plain ground (the UN emblem on a UN
 //     story, the Iranian armed forces' seal on two outlets' stories). A local
 //     CLIP model scores "a logo, emblem or seal" against "a photograph". The
 //     three emblems scored 0.993-0.994; the highest photograph (a Saudi flag
 //     on a pole) 0.934. EMBLEM_MIN sits between, nearer the emblems.
+//   - logos with words in them: the model splits what is not a photograph
+//     between the logo label and the TV-graphic one. The UAE aviation
+//     authority's logo, its name printed under the bird, read 0.92 logo, 0.08
+//     graphic and 0.003 photograph, so it passed EMBLEM_MIN and was shown
+//     (2026-09-24). Weighed against a photograph alone it reads 0.997. Over
+//     4,614 images from the two days to 2026-09-24, LOGO_OVER_PHOTO_MIN caught
+//     17 that EMBLEM_MIN missed: 6 logos and statement graphics (the IRGC
+//     emblem, Kayhan's masthead, Al Jazeera's "breaking" card), 8 photographs
+//     of a seal or emblem on a podium, wall or floor, 2 close-ups of uniform
+//     patches and a flag. The nearest photograph of people, the Palestinian
+//     president on the UN's screen beside its emblem, read 0.989; below it,
+//     flags on poles and speakers at seal-fronted podiums mix with logos, so
+//     the line stays above them.
 //   - reuse: one picture on many unrelated stories. Over 48 hours of production
 //     house pictures sat on 8 (The Print's default image), 25 (Arutz Sheva's
 //     "Breaking News" card) and 34 stories (one Middle East Eye UN General
@@ -33,9 +46,11 @@ export const PHOTO_MODEL_REVISION = 'd15189d7028b43f1d3e65039190477f6af591c2a'
 /** Written after the model loads and scores a probe; gates the workflow's cache save. */
 export const PHOTO_CACHE_SENTINEL = join(EMBEDDINGS_CACHE_DIR, `.ok-clip32-q8@${PHOTO_MODEL_REVISION.slice(0, 7)}`)
 
-// The labels are part of the calibration: change one and re-measure EMBLEM_MIN.
+// The labels are part of the calibration: change one and re-measure EMBLEM_MIN
+// and LOGO_OVER_PHOTO_MIN.
 const LABELS = ['a photograph', 'a logo, emblem or seal', 'a graphic with a TV channel logo and text'] as const
 export const EMBLEM_MIN = 0.97
+export const LOGO_OVER_PHOTO_MIN = 0.99
 export const REUSE_MIN = 6
 export const IMAGE_CHECK_CAP = 150
 export const IMAGE_CHECK_CONCURRENCY = 6
@@ -43,8 +58,17 @@ export const IMAGE_CHECK_LOOKBACK_HOURS = 48
 const REUSE_WINDOW_HOURS = 72
 
 export type Verdict = 'photo' | 'emblem' | 'reused'
-/** P("a logo, emblem or seal") for an image, from the model. */
-export type EmblemScorer = (image: Buffer) => Promise<number>
+/** The model's reading of an image on each label; the three sum to 1. */
+export type LabelScores = { photo: number; logo: number; graphic: number }
+export type EmblemScorer = (image: Buffer) => Promise<LabelScores>
+
+/** An emblem: the logo label alone is sure, or it is when weighed against a
+ *  photograph alone, leaving out what went to the TV-graphic label. */
+export function isEmblem(s: LabelScores): boolean {
+  if (s.logo >= EMBLEM_MIN) return true
+  const photoOrLogo = s.photo + s.logo
+  return photoOrLogo > 0 && s.logo / photoOrLogo >= LOGO_OVER_PHOTO_MIN
+}
 
 /** 64-bit difference hash: survives resizing and recompression, so the same
  *  picture served at two sizes still matches. */
@@ -72,11 +96,12 @@ async function loadScorer(): Promise<EmblemScorer> {
   const scorer: EmblemScorer = async (image) => {
     const raw = await RawImage.fromBlob(new Blob([new Uint8Array(await thumbnail(image))], { type: 'image/jpeg' }))
     const out = (await classify(raw, [...LABELS])) as Array<{ label: string; score: number }>
-    return out.find((o) => o.label === LABELS[1])?.score ?? 0
+    const p = (label: string) => out.find((o) => o.label === label)?.score ?? 0
+    return { photo: p(LABELS[0]), logo: p(LABELS[1]), graphic: p(LABELS[2]) }
   }
   // Probe, then drop the sentinel that lets the workflow cache the model.
   const probe = await sharp({ create: { width: 160, height: 100, channels: 3, background: '#808080' } }).jpeg().toBuffer()
-  const score = await scorer(probe)
+  const { logo: score } = await scorer(probe)
   if (!(score >= 0 && score <= 1)) throw new Error(`[photo-check] probe scored ${score}`)
   try {
     mkdirSync(EMBEDDINGS_CACHE_DIR, { recursive: true })
@@ -123,8 +148,8 @@ export async function judgeImage(
 ): Promise<{ verdict: Verdict; hash: string }> {
   // One after the other, never together (see oneAtATime).
   const hashed = await hash(image)
-  const emblem = await scorer(image)
-  return { hash: hashed, verdict: emblem >= EMBLEM_MIN ? 'emblem' : 'photo' }
+  const scores = await scorer(image)
+  return { hash: hashed, verdict: isEmblem(scores) ? 'emblem' : 'photo' }
 }
 
 type Row = { id: string; image_url: string }
@@ -199,6 +224,62 @@ export async function checkPhotos(
     stats.photos_error = String(err).slice(0, 200)
     console.error('[pipeline] photo check failed (non-fatal):', err)
   }
+}
+
+/** Judge again every picture passed within IMAGE_CHECK_LOOKBACK_HOURS, after
+ *  the rule changes (scripts/recheck-photos.ts). A picture is scored once
+ *  however many articles carry it, and only a verdict that changes is written. */
+export async function recheckPhotos(
+  deadlineMs: number,
+  deps: { scorer?: EmblemScorer; fetch?: (url: string) => Promise<Buffer | null> } = {},
+): Promise<{ pictures: number; retired: number; unreadable: number; deferred: number }> {
+  const since = new Date(Date.now() - IMAGE_CHECK_LOOKBACK_HOURS * 3600_000).toISOString()
+  const rows: Array<{ id: string; image_url: string; image_hash: string | null }> = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from('articles')
+      .select('id, image_url, image_hash')
+      .eq('image_verdict', 'photo')
+      .gte('published_at', since)
+      .order('id')
+      .range(from, from + 999)
+    if (error) throw new Error(error.message)
+    rows.push(...((data ?? []) as typeof rows))
+    if (!data || data.length < 1000) break
+  }
+  const pictures = new Map<string, { url: string; ids: string[] }>()
+  for (const r of rows) {
+    const key = r.image_hash ?? r.image_url
+    const p = pictures.get(key)
+    if (p) p.ids.push(r.id)
+    else pictures.set(key, { url: r.image_url, ids: [r.id] })
+  }
+  const scorer = deps.scorer ?? (await photoScorer())
+  const judge = oneAtATime((image: Buffer) => judgeImage(image, scorer))
+  const download = deps.fetch ?? fetchImage
+  let retired = 0
+  let unreadable = 0
+  const result = await mapPool(
+    [...pictures.values()],
+    IMAGE_CHECK_CONCURRENCY,
+    async (p) => {
+      const image = await download(p.url)
+      if (!image) {
+        unreadable++
+        return
+      }
+      const { verdict } = await judge(image)
+      if (verdict === 'photo') return
+      for (let i = 0; i < p.ids.length; i += 100) {
+        const { error } = await supabaseAdmin.from('articles').update({ image_verdict: verdict }).in('id', p.ids.slice(i, i + 100))
+        if (error) throw new Error(error.message)
+      }
+      retired += p.ids.length
+    },
+    { deadlineMs },
+  )
+  if (result.failed.length) console.error(`[photo-check] recheck: ${result.failed.length} failed:`, String(result.failed[0].error).slice(0, 200))
+  return { pictures: pictures.size, retired, unreadable, deferred: result.skipped.length }
 }
 
 /** Retire every copy of a picture that is on REUSE_MIN or more different
