@@ -1,6 +1,6 @@
 // src/lib/server/rss.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildGuid, feedSummary, fetchFeed, parseDate, isClampedDate } from './rss'
+import { buildGuid, feedClockZone, feedSummary, fetchFeed, parseDate, isClampedDate } from './rss'
 import type { Feed } from '../types'
 
 const mockFeed: Feed = { name: 'Test', url: 'https://example.com/rss', region: 'US/Western', lang: 'en' }
@@ -25,8 +25,9 @@ describe('parseDate', () => {
     expect(parseDate('Mon, 03 Mar 2026 10:00:00 GMT', NOW)).toBe('2026-03-03T10:00:00.000Z')
   })
 
-  it('clamps a far-future date to null (broken feed timezone/year)', () => {
-    expect(parseDate(at(2 * DAY), NOW)).toBeNull()
+  it('reads a far-future date as the time we read the feed (nothing is published after we see it)', () => {
+    expect(parseDate(at(2 * DAY), NOW)).toBe(new Date(NOW).toISOString())
+    expect(parseDate(at(3 * 3600_000), NOW)).toBe(new Date(NOW).toISOString())
   })
 
   it('tolerates a few minutes of future clock skew', () => {
@@ -39,6 +40,34 @@ describe('parseDate', () => {
 
   it('keeps a date within the last year', () => {
     expect(parseDate(at(-30 * DAY), NOW)).not.toBeNull()
+  })
+})
+
+describe('feed clocks that state the wrong offset', () => {
+  // Each pair checked against the article page's own time on 2026-09-24.
+  const LATER = Date.parse('2026-09-25T00:00:00Z')
+
+  it('reads Al Jazeera Arabic\'s "+0300" as the UTC it really is', () => {
+    const zone = feedClockZone('https://www.aljazeera.net/aljazeerarss/a2/a2.xml')
+    expect(parseDate('Thu, 24 Sep 2026 02:40:11 +0300', LATER, zone)).toBe('2026-09-24T02:40:11.000Z')
+  })
+
+  it("reads Walla's GMT as Israel time, summer and winter", () => {
+    const zone = feedClockZone('https://rss.walla.co.il/feed/22')
+    expect(parseDate('Tue, 22 Sep 2026 15:35:00 GMT', LATER, zone)).toBe('2026-09-22T12:35:00.000Z')
+    expect(parseDate('Tue, 15 Dec 2026 15:35:00 GMT', Date.parse('2026-12-16T00:00:00Z'), zone)).toBe('2026-12-15T13:35:00.000Z')
+  })
+
+  it("reads Hurriyet's and QNA's Z as Turkish and Doha time", () => {
+    expect(parseDate('Wed, 23 Sep 2026 11:47:02 Z', LATER, feedClockZone('https://www.hurriyetdailynews.com/rss/world'))).toBe('2026-09-23T08:47:02.000Z')
+    expect(parseDate('Thu, 24 Sep 2026 01:36:04 Z', LATER, feedClockZone('https://qna.org.qa/en/Pages/RSS-Feeds/General'))).toBe('2026-09-23T22:36:04.000Z')
+  })
+
+  it('reads an ISO date in the zone too, and leaves other feeds alone', () => {
+    expect(parseDate('2026-09-24T02:40:11+03:00', LATER, 'UTC')).toBe('2026-09-24T02:40:11.000Z')
+    expect(feedClockZone('https://www.aljazeera.com/xml/rss/all.xml')).toBeUndefined()
+    expect(feedClockZone('not a url')).toBeUndefined()
+    expect(parseDate('Thu, 24 Sep 2026 02:40:11 +0300', LATER, undefined)).toBe('2026-09-23T23:40:11.000Z')
   })
 })
 
@@ -311,6 +340,30 @@ describe('fetchFeed', () => {
     const result = await fetchFeed(mockFeed)
     expect(result.articles).toHaveLength(1) // previously this threw and dropped the whole feed
     expect(result.articles[0].published_at).toBeNull()
+  })
+
+  it('dates an undated report from a feed read before by when we first saw it (not on its first fetch)', async () => {
+    const rssXml = `<?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
+      <item><title>No date at all</title><link>https://example.com/undated</link></item>
+    </channel></rss>`
+    const ok = () => new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/rss+xml' } })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok())
+    const before = Date.now()
+    const seen = await fetchFeed({ ...mockFeed, last_ok_at: '2026-09-24T00:00:00Z' })
+    const first = await fetchFeed({ ...mockFeed, last_ok_at: null })
+    expect(Date.parse(seen.articles[0].published_at!)).toBeGreaterThanOrEqual(before)
+    expect(first.articles[0].published_at).toBeNull()
+  })
+
+  it("corrects a known feed's clock on the way in (Al Jazeera Arabic)", async () => {
+    const stamp = new Date(Date.now() - 20 * 60_000)
+    const wall = stamp.toUTCString().replace('GMT', '+0300') // UTC clock labelled +0300, as the feed does
+    const rssXml = `<?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
+      <item><title>Fresh</title><link>https://www.aljazeera.net/news/1</link><pubDate>${wall}</pubDate></item>
+    </channel></rss>`
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(rssXml, { status: 200, headers: { 'Content-Type': 'application/rss+xml' } }))
+    const result = await fetchFeed({ ...mockFeed, url: 'https://www.aljazeera.net/aljazeerarss/a2/a2.xml' })
+    expect(result.articles[0].published_at).toBe(new Date(Math.floor(stamp.getTime() / 1000) * 1000).toISOString())
   })
 
   it('fetches PROXY-FIRST when proxy env is set (first call hits the proxy)', async () => {

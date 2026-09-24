@@ -89,7 +89,7 @@ export function logFeedSummary(results: FeedFetchResult[]) {
   for (const r of failed) {
     console.log(`[feed-fail] ${r.feed.name} [${r.feed.region}] ${r.error!.kind}: ${r.error!.detail}`)
   }
-  if (datesClamped > 0) console.log(`[pipeline] clamped ${datesClamped} out-of-range pubDate(s) to null`)
+  if (datesClamped > 0) console.log(`[pipeline] ${datesClamped} pubDate(s) out of range (a future one reads as first seen, one over a year old as undated)`)
 
   return {
     feeds_ok: ok.length,
