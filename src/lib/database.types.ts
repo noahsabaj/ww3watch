@@ -685,6 +685,41 @@ export type Database = {
           },
         ]
       }
+      story_sides: {
+        Row: {
+          first_a: string
+          first_b: string
+          judged_at: string
+          p_disputed: number | null
+          sides: string
+          story_id: string
+        }
+        Insert: {
+          first_a: string
+          first_b: string
+          judged_at?: string
+          p_disputed?: number | null
+          sides: string
+          story_id: string
+        }
+        Update: {
+          first_a?: string
+          first_b?: string
+          judged_at?: string
+          p_disputed?: number | null
+          sides?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_sides_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: true
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trending: {
         Row: {
           article_id: string

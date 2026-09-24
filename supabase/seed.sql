@@ -164,3 +164,24 @@ update public.articles set actors = array['koreas']
 insert into public.story_evidence (story_id, kind, at, place, distance_km, value, detail) values
   ('22222222-2222-4222-8222-000000000001', 'fire', now() - interval '90 minutes', 'Odesa', 8.3, 64.9,
    '{"hours_from_first": 0.5, "detections": 2, "url": "https://firms.modaps.eosdis.nasa.gov/map/"}');
+
+-- ── Both sides ──────────────────────────────────────────────────────────────
+-- s-sides: Russian state media and a Ukrainian outlet on the same attack, their
+-- accounts contradicting each other (src/lib/sides.ts, pipeline/sides.ts).
+insert into public.stories (id, created_at, last_article_at, article_count, source_count, region_count) values
+  ('22222222-2222-4222-8222-000000000003', now() - interval '5 hours', now() - interval '290 minutes', 2, 2, 2)
+on conflict (id) do nothing;
+insert into public.articles
+  (id, guid, title, url, summary, published_at, fetched_at, source_name, source_region, source_lang, source_affiliation, feed_url, source_id, story_id, body_hash, actors, severity)
+values
+  ('33333333-3333-4333-8333-000000000030', 'fx-sides-1', 'Air defences downed all drones over the border region', 'https://fixture.test/a/sides-1',
+   'The defence ministry said every drone launched overnight was destroyed.',
+   now() - interval '5 hours', now() - interval '295 minutes', 'TASS', 'Russian', 'en', 'state',
+   'https://fixture.test/tass.xml', null, '22222222-2222-4222-8222-000000000003', null, array['russia', 'ukraine'], 0.3),
+  ('33333333-3333-4333-8333-000000000031', 'fx-sides-2', 'Дрони вразили нафтобазу в прикордонному регіоні', 'https://fixture.test/a/sides-2',
+   'Після атаки на нафтобазі спалахнула пожежа.',
+   now() - interval '290 minutes', now() - interval '285 minutes', 'Українська правда', 'Ukrainian', 'uk', null,
+   'https://fixture.test/pravda.xml', null, '22222222-2222-4222-8222-000000000003', null, array['russia', 'ukraine'], 0.3)
+on conflict (id) do nothing;
+insert into public.story_sides (story_id, sides, first_a, first_b, p_disputed) values
+  ('22222222-2222-4222-8222-000000000003', 'russia|ukraine', '33333333-3333-4333-8333-000000000030', '33333333-3333-4333-8333-000000000031', 0.9);

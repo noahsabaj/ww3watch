@@ -12,9 +12,9 @@ import { openHome, openReader, reader, selectStory, stories, storyCard } from '.
 //
 // The live site keeps its own watchdog in .github/workflows/prod-smoke.yml.
 
-// 64 seeded articles group into 59 stories: one 4-member story, one 3-member
-// story, and 57 singletons.
-const STORIES = 59
+// 66 seeded articles group into 60 stories: one 4-member story, one 3-member
+// story, the 2-member both-sides story, and 57 singletons.
+const STORIES = 60
 
 const multiSource = { hasText: /\d+ outlets/ }
 const russian = (page: import('@playwright/test').Page) => ({ has: page.getByText('RU', { exact: true }) })
