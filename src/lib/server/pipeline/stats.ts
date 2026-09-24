@@ -98,6 +98,12 @@ export interface RunStats {
   evidence_found?: number
   evidence_tokens?: number
   evidence_error?: string
+  // the alarm (alerts.ts)
+  /** Stories Jev confirmed as world-changing this run, and the pushes sent for them. */
+  alerts_confirmed?: number
+  alerts_sent?: number
+  alerts_tokens?: number
+  alerts_error?: string
   // sides (sides.ts)
   /** Stories covered from both sides whose first reports Jev compared this run. */
   sides_judged?: number

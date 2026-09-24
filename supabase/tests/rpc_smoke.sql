@@ -160,6 +160,24 @@ begin
      or has_function_privilege('authenticated','public.record_source_health(jsonb,integer)','EXECUTE') then raise exception 'public health writes allowed'; end if;
 end $$;
 
+-- ── alarm subscriptions: push services only, gone on unsubscribe ─────────────
+do $$
+begin
+  perform public.subscribe_alerts('https://fcm.googleapis.com/fcm/send/smoke-test', 'key', 'auth');
+  if (select count(*) from public.push_subscriptions where endpoint like '%/smoke-test') <> 1 then raise exception 'subscription not stored'; end if;
+  perform public.unsubscribe_alerts('https://fcm.googleapis.com/fcm/send/smoke-test');
+  if exists (select 1 from public.push_subscriptions where endpoint like '%/smoke-test') then raise exception 'unsubscribe kept it'; end if;
+  begin
+    perform public.subscribe_alerts('https://attacker.example/smoke-test', 'key', 'auth');
+    raise exception 'foreign endpoint accepted';
+  exception when raise_exception then
+    if sqlerrm = 'foreign endpoint accepted' then raise; end if;
+  end;
+  if not has_function_privilege('anon', 'public.subscribe_alerts(text,text,text)', 'EXECUTE')
+     or not has_function_privilege('anon', 'public.unsubscribe_alerts(text)', 'EXECUTE') then raise exception 'browsers cannot manage alerts'; end if;
+  if has_table_privilege('anon', 'public.push_subscriptions', 'SELECT') then raise exception 'subscriptions readable'; end if;
+end $$;
+
 -- ── coverage: every public function must be called above ────────────────────
 do $$
 declare
@@ -169,7 +187,8 @@ declare
     'pipeline_status', 'purge_irrelevant_articles', 'reelect_story_reps', 'replace_trending',
     'run_retention', 'source_yield', 'silent_sources', 'story_join_sims', 'story_merge_candidates', 'merge_stories',
     -- event-trigger function: fires on DDL, cannot be called directly.
-    'rls_auto_enable', 'reserve_ai', 'settle_ai', 'submit_report', 'run_private_retention', 'record_source_health'
+    'rls_auto_enable', 'reserve_ai', 'settle_ai', 'submit_report', 'run_private_retention', 'record_source_health',
+    'subscribe_alerts', 'unsubscribe_alerts'
   ];
   missing text;
 begin
