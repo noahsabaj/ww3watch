@@ -6,6 +6,7 @@
   let { article }: { article: Partial<ArticleSignals> } = $props()
   const s = $derived({
     severity: article.severity ?? null,
+    retrospective: article.retrospective ?? null,
     claim: article.claim ?? null,
     unverified: article.unverified ?? null,
     opinion: article.opinion ?? null,

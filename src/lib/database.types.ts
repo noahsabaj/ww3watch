@@ -226,6 +226,7 @@ export type Database = {
           jev_relevant: number | null
           opinion: number | null
           published_at: string | null
+          retrospective: number | null
           severity: number | null
           signals_at: string | null
           source_affiliation: string | null
@@ -259,6 +260,7 @@ export type Database = {
           jev_relevant?: number | null
           opinion?: number | null
           published_at?: string | null
+          retrospective?: number | null
           severity?: number | null
           signals_at?: string | null
           source_affiliation?: string | null
@@ -292,6 +294,7 @@ export type Database = {
           jev_relevant?: number | null
           opinion?: number | null
           published_at?: string | null
+          retrospective?: number | null
           severity?: number | null
           signals_at?: string | null
           source_affiliation?: string | null

@@ -48,7 +48,7 @@ async function annotatedCopies(pending: Pending[], since: string): Promise<Map<s
   for (const chunk of titleChunks([...new Set(pending.map((a) => a.title))])) {
     const { data, error } = await supabaseAdmin
       .from('articles')
-      .select('title, summary, source_lang, topic, severity, claim, unverified, opinion, actors, jev_relevant')
+      .select('title, summary, source_lang, topic, severity, claim, unverified, opinion, retrospective, actors, jev_relevant')
       .in('title', chunk)
       .not('signals_at', 'is', null)
       .gte('fetched_at', since)
@@ -56,7 +56,7 @@ async function annotatedCopies(pending: Pending[], since: string): Promise<Map<s
     for (const d of data ?? []) {
       found.set(stateKey(d), {
         topic: d.topic, severity: d.severity, claim: d.claim, unverified: d.unverified, opinion: d.opinion,
-        actors: d.actors ?? [], jev_relevant: d.jev_relevant,
+        retrospective: d.retrospective, actors: d.actors ?? [], jev_relevant: d.jev_relevant,
       } as ArticleSignals)
     }
   }

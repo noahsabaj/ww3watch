@@ -108,11 +108,11 @@ describe('enrichSignals', () => {
   it('a copy of an article annotated in an earlier run takes its answers without asking', async () => {
     const copy = row('Strike on port')
     state.pending = [copy]
-    state.annotated = [{ title: 'Strike on port', summary: 'Same wire copy.', source_lang: 'en', topic: 'diplomacy', severity: 0.25, claim: 0.9, unverified: 0.1, opinion: 0, actors: ['iran'], jev_relevant: 0.8 }]
+    state.annotated = [{ title: 'Strike on port', summary: 'Same wire copy.', source_lang: 'en', topic: 'diplomacy', severity: 0.25, claim: 0.9, unverified: 0.1, opinion: 0, retrospective: 0.1, actors: ['iran'], jev_relevant: 0.8 }]
     const stats: RunStats = {}
     await enrichSignals(stats, Date.now() + 60_000)
     expect(state.asked).toEqual([])
-    expect(state.applied).toEqual([{ id: copy.id, topic: 'diplomacy', severity: 0.25, claim: 0.9, unverified: 0.1, opinion: 0, actors: ['iran'], jev_relevant: 0.8 }])
+    expect(state.applied).toStrictEqual([{ id: copy.id, topic: 'diplomacy', severity: 0.25, claim: 0.9, unverified: 0.1, opinion: 0, retrospective: 0.1, actors: ['iran'], jev_relevant: 0.8 }])
     expect(stats.signals_reused).toBe(1)
   })
 

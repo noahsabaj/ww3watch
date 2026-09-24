@@ -77,7 +77,7 @@ values ('smoke-1', 'jev', 'accept', 0.97, 0.5, 'smoke', 'en'), ('smoke-3', 'head
 select count(*) as verdict_days from public.verdict_daily;
 
 -- ── signals + purge ─────────────────────────────────────────────────────────
-select public.apply_article_signals('[{"id":"00000000-0000-0000-0000-000000000001","topic":"armed_conflict","severity":0.67,"claim":0.1,"unverified":0.2,"opinion":0.05,"actors":["russia","ukraine"],"jev_relevant":0.97}]'::jsonb) as signals_applied;
+select public.apply_article_signals('[{"id":"00000000-0000-0000-0000-000000000001","topic":"armed_conflict","severity":0.67,"claim":0.1,"unverified":0.2,"opinion":0.05,"retrospective":0.02,"actors":["russia","ukraine"],"jev_relevant":0.97}]'::jsonb) as signals_applied;
 
 select public.replace_trending(
   '[{"article_id":"00000000-0000-0000-0000-000000000004","story_id":null,"rank":0}]'::jsonb,

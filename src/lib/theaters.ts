@@ -103,7 +103,7 @@ export function theaterBoard(clusters: Cluster[], now: number): TheaterSummary[]
         theater,
         stories,
         today: recent.length,
-        major: recent.filter((c) => c.articles.some((a) => isMajor({ severity: a.severity ?? null }))).length,
+        major: recent.filter((c) => c.articles.some((a) => isMajor({ severity: a.severity ?? null, retrospective: a.retrospective }))).length,
         lead,
       }
     })
