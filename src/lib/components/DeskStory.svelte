@@ -15,6 +15,7 @@
   import StoryKicker from '$lib/components/StoryKicker.svelte'
   import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
   import OutletFold from '$lib/components/OutletFold.svelte'
+  import StoryEvidence from '$lib/components/StoryEvidence.svelte'
 
   // The desk's right pane: one story, Signal's treatment, with the thing a wide
   // screen has room for — every newsroom's headline side by side.
@@ -114,6 +115,7 @@
         {translation.shown?.summary ?? rep.summary}
       </p>
     {/if}
+    <StoryEvidence storyId={cluster.storyId} class="mt-5 max-w-3xl" />
 
     <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
       <button

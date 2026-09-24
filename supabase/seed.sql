@@ -158,3 +158,9 @@ update public.articles set actors = array['israel', 'palestine']
   where story_id = '22222222-2222-4222-8222-000000000002';
 update public.articles set actors = array['koreas']
   where guid like 'fx-bulk-%' and split_part(guid, '-', 3)::int % 3 = 0;
+
+-- ── Sensor evidence ─────────────────────────────────────────────────────────
+-- A new satellite fire by the port strike (src/lib/server/pipeline/evidence.ts).
+insert into public.story_evidence (story_id, kind, at, place, distance_km, value, detail) values
+  ('22222222-2222-4222-8222-000000000001', 'fire', now() - interval '90 minutes', 'Odesa', 8.3, 64.9,
+   '{"hours_from_first": 0.5, "detections": 2, "url": "https://firms.modaps.eosdis.nasa.gov/map/"}');

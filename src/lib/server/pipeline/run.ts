@@ -12,6 +12,7 @@ import { classifyFresh } from './classify'
 import { checkOpsHealth, reportLowYield, reportSilentFeeds, previousRunJevDown } from './ops'
 import { fillMissingImages } from './images'
 import { checkPhotosIsolated } from './photo-check-isolated'
+import { gatherEvidence } from './evidence'
 import { timed as timedStage, type RunStats } from './stats'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
@@ -32,6 +33,8 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   // After the fill, so a photo found this run is also checked this run; the
   // site shows none until it has been (photo-check.ts).
   await timed('photo_check', () => checkPhotosIsolated(stats, startedAt + RUN_BUDGET_MS))
+  // Last of the extras: sensor readings set against strike stories (evidence.ts).
+  await timed('evidence', () => gatherEvidence(stats, startedAt + RUN_BUDGET_MS))
   await timed('ops_health', () => checkOpsHealth(stats))
   await reportLowYield(stats)
   await reportSilentFeeds(stats)

@@ -424,6 +424,63 @@ export type Database = {
         }
         Relationships: []
       }
+      sensor_events: {
+        Row: {
+          at: string
+          cell: string | null
+          detail: Json | null
+          ext_id: string
+          id: number
+          kind: string
+          lat: number | null
+          lon: number | null
+          place: string | null
+          source: string
+          value: number | null
+        }
+        Insert: {
+          at: string
+          cell?: string | null
+          detail?: Json | null
+          ext_id: string
+          id?: never
+          kind: string
+          lat?: number | null
+          lon?: number | null
+          place?: string | null
+          source: string
+          value?: number | null
+        }
+        Update: {
+          at?: string
+          cell?: string | null
+          detail?: Json | null
+          ext_id?: string
+          id?: never
+          kind?: string
+          lat?: number | null
+          lon?: number | null
+          place?: string | null
+          source?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
+      sensor_fetches: {
+        Row: {
+          fetched_at: string
+          source: string
+        }
+        Insert: {
+          fetched_at: string
+          source: string
+        }
+        Update: {
+          fetched_at?: string
+          source?: string
+        }
+        Relationships: []
+      }
       sources: {
         Row: {
           affiliation: string | null
@@ -516,6 +573,47 @@ export type Database = {
           },
         ]
       }
+      story_evidence: {
+        Row: {
+          at: string
+          detail: Json | null
+          distance_km: number | null
+          found_at: string
+          kind: string
+          place: string
+          story_id: string
+          value: number | null
+        }
+        Insert: {
+          at: string
+          detail?: Json | null
+          distance_km?: number | null
+          found_at?: string
+          kind: string
+          place: string
+          story_id: string
+          value?: number | null
+        }
+        Update: {
+          at?: string
+          detail?: Json | null
+          distance_km?: number | null
+          found_at?: string
+          kind?: string
+          place?: string
+          story_id?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_evidence_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       story_merge_judged: {
         Row: {
           judged_at: string
@@ -536,6 +634,56 @@ export type Database = {
           verdict?: string
         }
         Relationships: []
+      }
+      story_places: {
+        Row: {
+          country: string | null
+          first_report_at: string
+          lat: number | null
+          located_at: string
+          lon: number | null
+          name: string | null
+          p_blast: number | null
+          p_fire: number | null
+          p_outage: number | null
+          place_id: number | null
+          story_id: string
+        }
+        Insert: {
+          country?: string | null
+          first_report_at: string
+          lat?: number | null
+          located_at?: string
+          lon?: number | null
+          name?: string | null
+          p_blast?: number | null
+          p_fire?: number | null
+          p_outage?: number | null
+          place_id?: number | null
+          story_id: string
+        }
+        Update: {
+          country?: string | null
+          first_report_at?: string
+          lat?: number | null
+          located_at?: string
+          lon?: number | null
+          name?: string | null
+          p_blast?: number | null
+          p_fire?: number | null
+          p_outage?: number | null
+          place_id?: number | null
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_places_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: true
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trending: {
         Row: {

@@ -130,6 +130,15 @@
         <li><strong>Wire detection</strong> — articles whose text is near-identical to an earlier article in the
           same story are marked "wire", so "12 sources covered this" doesn't overstate independent
           confirmation when most are reprinting one agency's copy.</li>
+        <li><strong>Sensor evidence</strong> — when a story reports a strike or blast, the decision model picks
+          where it happened from the places its reports name. If public sensors saw something there around the
+          first report, the story says so, with a link to the reading: a new fire seen by
+          <a href="https://firms.modaps.eosdis.nasa.gov/" target="_blank" rel="noopener noreferrer" class="link">NASA FIRMS</a> satellites
+          (not a spot that burns every night, like a gas flare), a tremor recorded by the
+          <a href="https://earthquake.usgs.gov/" target="_blank" rel="noopener noreferrer" class="link">USGS</a>, or an internet outage
+          measured by <a href="https://ioda.inetintel.cc.gatech.edu/" target="_blank" rel="noopener noreferrer" class="link">IODA</a> at
+          Georgia Tech. It is evidence, not proof. Place names come from
+          <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer" class="link">GeoNames</a> (CC BY 4.0).</li>
       </ul>
     </section>
 
