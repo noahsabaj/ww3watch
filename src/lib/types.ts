@@ -56,7 +56,7 @@ export interface Article {
   // REST rows omit it, and the pipeline leaves it null when the newsroom published none.
   image_url?: string | null
   // The pipeline's photo check (photo-check.ts): only 'photo' is ever shown;
-  // null (not looked at yet), 'emblem' and 'reused' are not.
+  // null (not looked at yet), 'graphic', 'reused' and the older 'emblem' are not.
   image_verdict?: string | null
   image_width?: number | null
   image_height?: number | null

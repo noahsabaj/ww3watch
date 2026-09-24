@@ -219,7 +219,7 @@ describe('storyTimeline', () => {
 
 describe('storyImage', () => {
   it('shows only an image the photo check passed', () => {
-    for (const verdict of [null, undefined, 'emblem', 'reused']) {
+    for (const verdict of [null, undefined, 'graphic', 'emblem', 'reused']) {
       const [cluster] = groupByStoryId([article({ image_url: 'https://cdn.example/un.jpg', image_verdict: verdict })])
       expect(storyImage(cluster)).toBeNull()
     }

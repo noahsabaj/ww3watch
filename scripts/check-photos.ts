@@ -25,7 +25,7 @@ async function main() {
     const stats: RunStats = {}
     await checkPhotos(stats, Date.now() + 10 * 60_000, { cap: 400 })
     if (stats.photos_error) throw new Error(String(stats.photos_error))
-    const judged = Number(stats.photos_ok ?? 0) + Number(stats.photos_emblem ?? 0)
+    const judged = Number(stats.photos_ok ?? 0) + Number(stats.photos_graphic ?? 0)
     console.log(`[check-photos] pass ${pass}: ${JSON.stringify(stats)}`)
     if (judged === 0) break
   }

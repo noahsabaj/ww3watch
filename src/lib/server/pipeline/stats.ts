@@ -77,8 +77,8 @@ export interface RunStats {
   images_error?: string
   // photo check (photo-check.ts)
   photos_ok?: number
-  /** Logos, seals and emblems: never shown. */
-  photos_emblem?: number
+  /** Not photographs by the photo head (logos, cards, maps, composites): never shown. */
+  photos_graphic?: number
   /** Rows retired because their picture is on REUSE_MIN+ different stories. */
   photos_reused?: number
   /** Images we could not download this run: left unchecked, retried next run. */
