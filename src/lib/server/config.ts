@@ -100,6 +100,12 @@ export const IMAGE_FILL_CAP = num('IMAGE_FILL_CAP', 60)
 export const IMAGE_FILL_CONCURRENCY = Math.max(1, num('IMAGE_FILL_CONCURRENCY', 8))
 export const IMAGE_FILL_LOOKBACK_HOURS = 48
 export const IMAGE_FILL_TIMEOUT_MS = 8000
+// A page (image fill) or photo (photo check) that could not be read waits this
+// long before the next try, instead of being fetched again on every run. At
+// 5-minute runs the same ~60 pages and ~150 photos went through the feed proxy
+// every run: ~60k of its 100k free requests a day (2026-09-24). An hour keeps a
+// passing outage from costing a photo for long.
+export const UNREADABLE_RETRY_MINUTES = 60
 
 // ── Jev: relevance ──────────────────────────────────────────────────────────
 // docs/evals/2026-09-19-jev-relevance.md — 1,475 LLM-labelled titles in 7
@@ -146,6 +152,7 @@ export function configSnapshot(): Record<string, unknown> {
     STALE_WRITEOFF_HOURS, AUTO_DISABLE_AFTER,
     RUN_BUDGET_MS, CLASSIFY_BUDGET_MS,
     IMAGE_FILL_CAP, IMAGE_FILL_CONCURRENCY, IMAGE_FILL_LOOKBACK_HOURS,
+    UNREADABLE_RETRY_MINUTES,
     LOW_YIELD, SILENT,
   }
 }

@@ -4,9 +4,10 @@
 //
 // Only a page we actually READ is a verdict. A timeout, a 403 from a WAF or a
 // DNS failure says nothing about whether the newsroom published a photo, so
-// those rows stay NULL and the next run tries again; the lookback window
-// (IMAGE_FILL_LOOKBACK_HOURS) is what eventually retires a page that never
-// answers.
+// those rows stay NULL and are tried again after UNREADABLE_RETRY_MINUTES (not
+// every run: that re-fetched the same pages through the proxy all day); the
+// lookback window (IMAGE_FILL_LOOKBACK_HOURS) is what eventually retires a page
+// that never answers.
 import { isIP } from 'node:net'
 import { supabaseAdmin } from '../supabase'
 import { extractPageImage } from '../image'
@@ -16,6 +17,7 @@ import {
   IMAGE_FILL_CONCURRENCY,
   IMAGE_FILL_LOOKBACK_HOURS,
   IMAGE_FILL_TIMEOUT_MS,
+  UNREADABLE_RETRY_MINUTES,
 } from '../config'
 import { bump, type RunStats } from './stats'
 
@@ -146,6 +148,28 @@ export async function fetchImage(url: string): Promise<Buffer | null> {
 
 class Unreadable extends Error {}
 
+type FailedAtColumn = 'image_fetch_failed_at' | 'image_check_failed_at'
+
+/** PostgREST filter for a worklist: rows never unreadable, or last unreadable
+ *  over UNREADABLE_RETRY_MINUTES ago. */
+export function dueForRetry(column: FailedAtColumn, now = Date.now()): string {
+  const before = new Date(now - UNREADABLE_RETRY_MINUTES * 60_000).toISOString()
+  return `${column}.is.null,${column}.lt."${before}"`
+}
+
+/** Stamp rows that could not be read, so they wait UNREADABLE_RETRY_MINUTES
+ *  before the next try. Best-effort: an unstamped row is only tried sooner. */
+export async function stampUnreadable(column: FailedAtColumn, ids: string[]): Promise<void> {
+  const at = new Date().toISOString()
+  const patch = column === 'image_fetch_failed_at' ? { image_fetch_failed_at: at } : { image_check_failed_at: at }
+  // 100 uuids is ~3.7KB of URL, far under the 16KB response-header limit
+  // (the .in() echo that broke signals, #162).
+  for (let i = 0; i < ids.length; i += 100) {
+    const { error } = await supabaseAdmin.from('articles').update(patch).in('id', ids.slice(i, i + 100))
+    if (error) console.error(`[pipeline] could not stamp ${column} (non-fatal):`, error.message)
+  }
+}
+
 export async function fillMissingImages(stats: RunStats, deadlineMs: number): Promise<void> {
   try {
     const since = new Date(Date.now() - IMAGE_FILL_LOOKBACK_HOURS * 3600_000).toISOString()
@@ -153,6 +177,7 @@ export async function fillMissingImages(stats: RunStats, deadlineMs: number): Pr
       .from('articles')
       .select('id, url')
       .is('image_fetched_at', null)
+      .or(dueForRetry('image_fetch_failed_at'))
       .gte('published_at', since)
       .order('published_at', { ascending: false, nullsFirst: false })
       .limit(IMAGE_FILL_CAP)
@@ -165,7 +190,7 @@ export async function fillMissingImages(stats: RunStats, deadlineMs: number): Pr
       IMAGE_FILL_CONCURRENCY,
       async (row) => {
         // A URL we will never fetch is a verdict (no photo); a page that did
-        // not answer is not — leave it NULL so the next run retries it.
+        // not answer is not: leave it NULL and try it again later.
         const html = isFetchableArticleUrl(row.url) ? await fetchHtml(row.url) : ''
         if (html === null) throw new Unreadable(row.url)
         const image = html ? extractPageImage(html, row.url) : null
@@ -184,15 +209,16 @@ export async function fillMissingImages(stats: RunStats, deadlineMs: number): Pr
       { deadlineMs },
     )
 
-    const unreadable = result.failed.filter((f) => f.error instanceof Unreadable).length
+    const unreadable = result.failed.filter((f) => f.error instanceof Unreadable).map((f) => f.item.id)
+    await stampUnreadable('image_fetch_failed_at', unreadable)
     bump(stats, 'images_filled', result.done.filter((d) => d.value).length)
     bump(stats, 'images_none', result.done.filter((d) => !d.value).length)
-    bump(stats, 'images_unreadable', unreadable)
+    bump(stats, 'images_unreadable', unreadable.length)
     bump(stats, 'images_deferred', result.skipped.length)
-    bump(stats, 'images_failed', result.failed.length - unreadable)
+    bump(stats, 'images_failed', result.failed.length - unreadable.length)
     console.log(
       `[pipeline] images: filled=${stats.images_filled ?? 0} none=${stats.images_none ?? 0} ` +
-        `unreadable=${stats.images_unreadable ?? 0} (retried next run) failed=${stats.images_failed ?? 0}`,
+        `unreadable=${stats.images_unreadable ?? 0} (tried again in ${UNREADABLE_RETRY_MINUTES} min) failed=${stats.images_failed ?? 0}`,
     )
   } catch (err) {
     stats.images_error = String(err).slice(0, 200)

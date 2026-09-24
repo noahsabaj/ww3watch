@@ -215,6 +215,8 @@ export type Database = {
           fetched_at: string
           guid: string
           id: string
+          image_check_failed_at: string | null
+          image_fetch_failed_at: string | null
           image_fetched_at: string | null
           image_height: number | null
           image_hash: string | null
@@ -246,6 +248,8 @@ export type Database = {
           fetched_at?: string
           guid: string
           id?: string
+          image_check_failed_at?: string | null
+          image_fetch_failed_at?: string | null
           image_fetched_at?: string | null
           image_height?: number | null
           image_hash?: string | null
@@ -277,6 +281,8 @@ export type Database = {
           fetched_at?: string
           guid?: string
           id?: string
+          image_check_failed_at?: string | null
+          image_fetch_failed_at?: string | null
           image_fetched_at?: string | null
           image_height?: number | null
           image_hash?: string | null

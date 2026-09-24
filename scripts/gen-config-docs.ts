@@ -39,6 +39,7 @@ const NOTES: Record<string, string> = {
   IMAGE_FILL_CAP: 'most articles missing a photo that get an og:image fetch per run',
   IMAGE_FILL_CONCURRENCY: 'parallel page fetches for og:image',
   IMAGE_FILL_LOOKBACK_HOURS: 'how far back the image-fill worklist looks',
+  UNREADABLE_RETRY_MINUTES: 'a page or photo that could not be read waits this long before the next try',
   LOW_YIELD: 'feeds reported as low-yield: ≥ minItems judged, ≤ maxPct accepted',
   SILENT: 'feeds reported as silent: fetched fine, ≤ maxItems new items in days (a stale file)',
 }

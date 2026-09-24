@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import sharp from 'sharp'
 
-type Row = { id: string; story_id: string | null; image_url: string | null; published_at: string; image_verdict: string | null; image_hash: string | null }
+type Row = { id: string; story_id: string | null; image_url: string | null; published_at: string; image_verdict: string | null; image_hash: string | null; image_check_failed_at: string | null }
 const db = vi.hoisted(() => ({ rows: [] as Row[] }))
 
 // A tiny in-memory articles table: just the filters the stage uses.
@@ -18,6 +18,14 @@ vi.mock('../supabase', () => {
       gte: (col: keyof Row, v: string) => { filters.push((r) => String(r[col]) >= v); return q },
       eq: (col: keyof Row, v: unknown) => { filters.push((r) => r[col] === v); return q },
       in: (col: keyof Row, vs: unknown[]) => { filters.push((r) => vs.includes(r[col])); return q },
+      // Only the retry filter the stage builds: `<col>.is.null,<col>.lt."<iso>"`.
+      or: (expr: string) => {
+        const m = /^(\w+)\.is\.null,\1\.lt\."([^"]+)"$/.exec(expr)
+        if (!m) throw new Error(`unexpected or(): ${expr}`)
+        const col = m[1] as keyof Row
+        filters.push((r) => r[col] === null || String(r[col]) < m[2])
+        return q
+      },
       order: () => q,
       limit: (n: number) => { limit = n; return q },
       then(resolve: (v: { data: Row[] | null; error: null }) => void) {
@@ -32,11 +40,12 @@ vi.mock('../supabase', () => {
 })
 
 import { checkPhotos, differenceHash, judgeImage, oneAtATime, EMBLEM_MIN, REUSE_MIN } from './photo-check'
+import { UNREADABLE_RETRY_MINUTES } from '../config'
 import type { RunStats } from './stats'
 
 const now = new Date().toISOString()
 const row = (id: string, story: string | null, url: string | null): Row =>
-  ({ id, story_id: story, image_url: url, published_at: now, image_verdict: null, image_hash: null })
+  ({ id, story_id: story, image_url: url, published_at: now, image_verdict: null, image_hash: null, image_check_failed_at: null })
 
 // Distinct pictures: a gradient in a different direction or colour each.
 async function picture(seed: number): Promise<Buffer> {
@@ -122,11 +131,32 @@ describe('checkPhotos', () => {
     expect(db.rows.every((r) => r.image_verdict === 'reused')).toBe(true)
   })
 
-  it('leaves an image it could not download unchecked for the next run', async () => {
+  it('leaves an image it could not download unchecked, and tries it again an hour later, not every run', async () => {
     db.rows = [row('1', 's1', 'gone.jpg')]
-    const stats = await run()
+    const fetch = vi.fn(fetchPicture)
+    const go = () => checkPhotos({}, Date.now() + 10_000, { scorer, fetch })
+    const stats: RunStats = {}
+    await checkPhotos(stats, Date.now() + 10_000, { scorer, fetch })
     expect(db.rows[0].image_verdict).toBeNull()
     expect(stats.photos_unreadable).toBe(1)
+    expect(db.rows[0].image_check_failed_at).not.toBeNull()
+    await go()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    // An hour on, the picture is back.
+    db.rows[0].image_check_failed_at = new Date(Date.now() - (UNREADABLE_RETRY_MINUTES + 1) * 60_000).toISOString()
+    pictures['gone.jpg'] = pictures['a.jpg']
+    await go()
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(db.rows[0].image_verdict).toBe('photo')
+  })
+
+  it('makes a picture that will not decode wait an hour too', async () => {
+    db.rows = [row('1', 's1', 'bad.jpg')]
+    pictures['bad.jpg'] = Buffer.from('not an image')
+    const stats = await run()
+    expect(stats.photos_failed).toBe(1)
+    expect(db.rows[0].image_verdict).toBeNull()
+    expect(db.rows[0].image_check_failed_at).not.toBeNull()
   })
 
   it('hashes and calls the model for one image at a time, though downloads run in parallel', async () => {
