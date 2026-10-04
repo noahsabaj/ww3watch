@@ -42,7 +42,9 @@ front of users by default is out of scope by design.
   drift silently breaks equality).
 - **Scheduling**: pg_cron for anything that doesn't need a runner
   (`run_retention`, daily). Retention derives: child tables orphan-prune
-  against articles rather than carrying second time horizons.
+  against articles rather than carrying second time horizons. The one
+  exception is `article_embeddings` (7 days, longer for an active story's
+  representative): the largest rows in the database, only read while fresh.
 - **Text columns fed from the wild**: strip control characters first —
   Postgres `text` rejects NUL, and one bad row poisons a whole batched upsert.
 - **Every DELETE/UPDATE needs a WHERE clause** — production runs Supabase's
