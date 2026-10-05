@@ -325,7 +325,7 @@
   },
   {
     "id": "faa96f08-002a-49fc-9504-0533e9337e88",
-    "url": "http://feeds.feedburner.com/cfr_main",
+    "url": "https://www.cfr.org/feed",
     "name": "CFR",
     "region": "Independent/OSINT",
     "lang": "en",
@@ -671,7 +671,7 @@
     "name": "Global Times",
     "region": "Chinese",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
@@ -748,7 +748,7 @@
   },
   {
     "id": "8c2945df-6b2d-47bc-a227-bc6a54d73fb8",
-    "url": "https://www.hindustantimes.com/feeds/rss/world/rssfeed.xml",
+    "url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml",
     "name": "Hindustan Times",
     "region": "South Asian",
     "lang": "en",
@@ -766,7 +766,7 @@
   },
   {
     "id": "57ff2adf-7a0a-4c1e-b91a-bac7787c7e95",
-    "url": "https://www.hurriyetdailynews.com/rss",
+    "url": "https://www.hurriyetdailynews.com/rss/world",
     "name": "Hurriyet Daily",
     "region": "Turkish",
     "lang": "en",
@@ -946,7 +946,7 @@
   },
   {
     "id": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
-    "url": "https://www.jpost.com/Rss/RssFeedsHeadlines.aspx",
+    "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
     "name": "Jerusalem Post",
     "region": "Israeli",
     "lang": "en",
@@ -1301,7 +1301,7 @@
     "name": "People's Daily 人民网 国际",
     "region": "Chinese",
     "lang": "zh",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
@@ -1877,7 +1877,7 @@
     "name": "Times of Israel",
     "region": "Israeli",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": null
   },
   {
@@ -1904,7 +1904,7 @@
     "name": "Voice of America",
     "region": "US/Western",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "public"
   },
   {
@@ -1940,7 +1940,7 @@
     "name": "Xinhua",
     "region": "Chinese",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
@@ -1949,7 +1949,7 @@
     "name": "Xinhua Middle East",
     "region": "Arab/Gulf",
     "lang": "en",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
@@ -1958,7 +1958,7 @@
     "name": "Xinhua 新华 国际",
     "region": "Chinese",
     "lang": "zh",
-    "enabled": true,
+    "enabled": false,
     "affiliation": "state"
   },
   {
