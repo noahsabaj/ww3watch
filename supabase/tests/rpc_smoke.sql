@@ -160,6 +160,13 @@ begin
   perform public.record_source_health(batch,2);
   if (select consecutive_failures from public.sources where id=sid) <> 0
      or (select last_error from public.sources where id=sid) is not null then raise exception 'recovery not recorded'; end if;
+  -- Fetching fine with nothing new and no dated item: silent. A recent item in the feed: not.
+  if not exists (select 1 from public.silent_sources(7,2) where r_name='Curated name') then raise exception 'stale feed not reported silent'; end if;
+  select updated_at into snapshot from public.sources where id=sid;
+  batch := jsonb_set(jsonb_set(batch,'{0,observed_updated_at}',to_jsonb(snapshot)),'{0,newest_item_at}',to_jsonb(now() - interval '2 days'));
+  perform public.record_source_health(batch,2);
+  if (select newest_item_at from public.sources where id=sid) is null then raise exception 'newest item not recorded'; end if;
+  if exists (select 1 from public.silent_sources(7,2) where r_name='Curated name') then raise exception 'weekly feed reported silent'; end if;
   if has_function_privilege('anon','public.record_source_health(jsonb,integer)','EXECUTE')
      or has_function_privilege('authenticated','public.record_source_health(jsonb,integer)','EXECUTE') then raise exception 'public health writes allowed'; end if;
 end $$;

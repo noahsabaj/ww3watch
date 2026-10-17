@@ -26,7 +26,9 @@ export async function reportLowYield(stats: RunStats): Promise<void> {
 }
 
 // Feeds that answer 200 with the same stale file, so every item is a duplicate
-// and nothing is written: neither fetch health nor source_yield sees them.
+// and nothing is written: neither fetch health nor source_yield sees them. A
+// weekly publisher is not silent: the feed's newest item (sources.newest_item_at)
+// is recent.
 // Same reporting path as low yield, its own feed-health issue.
 export async function reportSilentFeeds(stats: RunStats): Promise<void> {
   try {

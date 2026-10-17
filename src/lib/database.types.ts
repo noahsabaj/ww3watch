@@ -554,6 +554,7 @@ export type Database = {
           enabled: boolean
           feed_etag: string | null
           feed_last_modified: string | null
+          newest_item_at: string | null
           id: string
           lang: string
           last_error: string | null
@@ -571,6 +572,7 @@ export type Database = {
           enabled?: boolean
           feed_etag?: string | null
           feed_last_modified?: string | null
+          newest_item_at?: string | null
           id?: string
           lang: string
           last_error?: string | null
@@ -588,6 +590,7 @@ export type Database = {
           enabled?: boolean
           feed_etag?: string | null
           feed_last_modified?: string | null
+          newest_item_at?: string | null
           id?: string
           lang?: string
           last_error?: string | null
