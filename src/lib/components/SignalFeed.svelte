@@ -70,7 +70,20 @@
 
   // The story on screen, so the address bar (and Safari's own Share button)
   // names it rather than the homepage.
-  let onScreen = 0
+  let onScreen = $state(0)
+
+  // Stories are mounted as the reader nears them, not all ~300 at landing:
+  // mounting every one was a single 845 ms task on a phone (Lighthouse,
+  // 2026-10-17). One swipe moves one story, so staying RENDER_AHEAD ahead of
+  // the screen is never caught up with. A story the feed must jump to
+  // (startId, focusId) is always mounted.
+  const RENDER_FIRST = 20
+  const RENDER_AHEAD = 10
+  const jumpTo = $derived(Math.max(
+    startId ? clusters.findIndex((c) => c.id === startId) : -1,
+    focusId ? clusters.findIndex((c) => c.id === focusId) : -1,
+  ))
+  const mounted = $derived(Math.min(clusters.length, Math.max(RENDER_FIRST, onScreen + RENDER_AHEAD, jumpTo + RENDER_AHEAD)))
   let reported = false
   function reportView(el: HTMLElement) {
     const i = Math.round(el.scrollTop / Math.max(1, el.clientHeight))
@@ -98,9 +111,11 @@
   <!-- No counter, no scrollbar: one story fills the screen and a swipe is the only control. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div bind:this={scroller} tabindex="0" aria-label="Stories"class="signal-scroller relative h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-ink outline-none" aria-busy={pullRefresh.refreshing} style={pullRefresh.style} {onscroll}>
-    {#each clusters as cluster, i (cluster.id)}
-      <SignalStory {cluster} {onselect} ontheater={ontheater && ((id) => ontheater(id, cluster.id))} hint={i === 0 && tips.shown('swipe') && clusters.length > 1} />
+    {#each clusters.slice(0, mounted) as cluster, i (cluster.id)}
+      <SignalStory {cluster} {onselect} ontheater={ontheater && ((id) => ontheater(id, cluster.id))} hint={i === 0 && tips.shown('swipe') && clusters.length > 1} near={Math.abs(i - onScreen) <= 2} priority={i === 0} />
     {/each}
-    <FeedEnd {hasMore} {loadingMore} {onLoadOlder} class="flex h-full snap-start items-center justify-center px-6 text-center" />
+    {#if mounted === clusters.length}
+      <FeedEnd {hasMore} {loadingMore} {onLoadOlder} class="flex h-full snap-start items-center justify-center px-6 text-center" />
+    {/if}
   </div>
 </div>

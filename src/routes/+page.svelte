@@ -2,7 +2,8 @@
   import Icon from '$lib/components/Icon.svelte'
   import { onMount, untrack, tick } from 'svelte'
   import Header from '$lib/components/Header.svelte'
-  import ArticlePanel from '$lib/components/ArticlePanel.svelte'
+  // The reader (with DOMPurify) is its own chunk: most visits never open it.
+  const articlePanel = import('$lib/components/ArticlePanel.svelte')
   import SignalFeed from '$lib/components/SignalFeed.svelte'
   import StoryDesk from '$lib/components/StoryDesk.svelte'
   import TheatersPage from '$lib/components/TheatersPage.svelte'
@@ -329,7 +330,9 @@
 
   <!-- On a phone the reader is a full-screen dialog; the desk hosts it in its pane. -->
   {#if !desk}
-    <ArticlePanel article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
+    {#await articlePanel then { default: ArticlePanel }}
+      <ArticlePanel article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
+    {/await}
   {/if}
 
   <!-- Persistent polite live region: mounted up-front (empty) so screen readers
