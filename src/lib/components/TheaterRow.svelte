@@ -28,5 +28,5 @@
     </span>
     <span dir="auto" class="mt-1 block text-sm leading-snug text-fg-2 line-clamp-2">{headlineText(headline.title)}</span>
   </span>
-  <StoryPhotoImg {photo} lazy class="h-16 w-16 shrink-0 rounded-lg object-cover" />
+  <StoryPhotoImg {photo} lazy drawnPx={64} class="h-16 w-16 shrink-0 rounded-lg object-cover" />
 </button>

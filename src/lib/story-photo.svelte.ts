@@ -16,6 +16,8 @@ export function createStoryPhoto(getCluster: () => Cluster, minWidth: number) {
   return {
     /** The photograph to show, or null for the colour field. */
     get shown() { return shown },
+    /** The narrowest natural width this surface accepts. */
+    minWidth,
     /** Call from the <img> onerror. */
     fail() { if (photo) brokenUrl = photo.url },
     /** Call from the <img> onload. */
