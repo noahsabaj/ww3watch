@@ -21,10 +21,13 @@ async function main() {
     await release(0)
     await run(stats)
     assertBudgetHealthy()
+    assertJevServed()
   } catch (err) {
     runError = err
     throw err
   } finally {
+    const outage = jevOutage()
+    if (outage) stats.jev_outage = outage
     // Exactly one run-log row per run — including the no-new-articles early
     // return and fatal paths (finally runs before the rethrow propagates).
     await recordRun(startedAt, stats, runError)
@@ -38,4 +41,4 @@ main()
     process.exit(1)
   })
 import { reserveClassification, assertBudgetHealthy } from '../src/lib/server/ai-budget'
-import { JEV_MODEL } from '../src/lib/server/jev'
+import { JEV_MODEL, assertJevServed, jevOutage } from '../src/lib/server/jev'
