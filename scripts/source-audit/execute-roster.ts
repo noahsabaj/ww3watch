@@ -14,9 +14,17 @@ export type HealthReset = {
   last_error_kind: null
   last_via: null
 }
+/** A new URL also drops what the old one answered: its ETag/Last-Modified would
+ *  be sent to the new endpoint, which may answer 304 and never deliver an item
+ *  (Brookings, 2026-10-17), and its newest item says nothing about the new feed. */
+export type EndpointReset = HealthReset & {
+  feed_etag: null
+  feed_last_modified: null
+  newest_item_at: null
+}
 export interface RosterStore {
   read(id: string): Promise<Snapshot>
-  compareAndSet(id: string, observedUpdatedAt: string, after: Curated, reset: HealthReset | Record<string, never>): Promise<boolean>
+  compareAndSet(id: string, observedUpdatedAt: string, after: Curated, reset: EndpointReset | HealthReset | Record<string, never>): Promise<boolean>
 }
 
 /** Preflight all rows and journal each before-value before attempting its write. */
@@ -39,8 +47,10 @@ export async function executeRoster(plan: RosterPlan, dryRun: boolean, store: Ro
     }
     save(entries)
     if (dryRun) continue
-    const reset: HealthReset | Record<string, never> = c.before.url !== c.after.url || (!c.before.enabled && c.after.enabled)
-      ? { consecutive_failures: 0, last_ok_at: null, last_error: null, last_error_kind: null, last_via: null } : {}
+    const health: HealthReset = { consecutive_failures: 0, last_ok_at: null, last_error: null, last_error_kind: null, last_via: null }
+    const reset: EndpointReset | HealthReset | Record<string, never> = c.before.url !== c.after.url
+      ? { ...health, feed_etag: null, feed_last_modified: null, newest_item_at: null }
+      : !c.before.enabled && c.after.enabled ? health : {}
     const applied = await store.compareAndSet(c.sourceId, snapshot.updated_at, c.after, reset)
     if (!applied) throw new Error(`Curation write failed or snapshot changed: ${c.sourceId}; inspect the journal before retrying`)
     entry.state = 'applied'
