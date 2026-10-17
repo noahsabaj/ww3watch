@@ -83,6 +83,16 @@ describe('serialized curation execution', () => {
     await executeRoster(plan, false, f.store, f.save)
     expect(f.store.compareAndSet).toHaveBeenCalledWith('a', 'first', after, {
       consecutive_failures: 0, last_ok_at: null, last_error: null, last_error_kind: null, last_via: null,
+      feed_etag: null, feed_last_modified: null, newest_item_at: null,
+    })
+  })
+
+  it('keeps the validators when a source is re-enabled at the same URL', async () => {
+    const f = fixture()
+    const reenable = { ...before, enabled: true }
+    await executeRoster({ ...plan, changes: plan.changes.map(c => ({ ...c, after: reenable })) }, false, f.store, f.save)
+    expect(f.store.compareAndSet).toHaveBeenCalledWith('a', 'first', reenable, {
+      consecutive_failures: 0, last_ok_at: null, last_error: null, last_error_kind: null, last_via: null,
     })
   })
 })
