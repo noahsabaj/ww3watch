@@ -360,6 +360,43 @@ export const sourceAudit = {
       "reviewedAt": "2026-09-20"
     },
     {
+      "id": "brookings",
+      "name": "Brookings Institution",
+      "ownership": "A US 501(c)(3) nonprofit research institution governed by a Board of Trustees and led by President Cecilia Rouse, per its own pages. It states that the institution takes no positions and that published work represents its authors’ conclusions. This is policy analysis rather than a news organization.",
+      "funding": "The finances page describes support from individuals, foundations, corporations and governments and says donor lists have been published in annual reports since 1983. The fiscal 2024–25 honor roll lists donors by band, including foreign-government bodies such as Norway’s foreign ministry, JICA and the Taipei Economic and Cultural Representative Office, and defense contractors such as Northrop Grumman. Brookings says it does not grant anonymity to corporate or government donors. Revenue proportions were not established.",
+      "purpose": "Nonpartisan research and policy recommendations; its stated goals include economic growth, expanded opportunity, revitalized US democratic institutions and advancing peace and security worldwide.",
+      "sourcing": "Sampled foreign-policy items are signed scholar commentary and papers that link government documents, official transcripts, surveys and press reporting. Authors’ assessments and recommendations are analysis, not reporting, and the press accounts they cite were not independently reproduced.",
+      "corrections": "The integrity policies page describes conflict-of-interest, disclosure, quality-review and research-misconduct policies and an anonymous misconduct reporting channel. A standalone public corrections policy was not established in the reviewed material; this does not mean the institution has no correction process.",
+      "coverage": "US domestic and economic policy, governance, and international affairs",
+      "limitations": [
+        "Donor bands cover fiscal 2024–25 and are ranges; links between specific gifts and specific programs or papers were not reviewed.",
+        "Audited financial statements and Form 990 filings are listed on the finances page but were not analysed."
+      ],
+      "evidence": [
+        {
+          "url": "https://www.brookings.edu/about-us/",
+          "title": "Mission, goals and leadership",
+          "accessedAt": "2026-10-17"
+        },
+        {
+          "url": "https://www.brookings.edu/about-us/finances/",
+          "title": "Funding overview, donor anonymity and foreign-funding review",
+          "accessedAt": "2026-10-17"
+        },
+        {
+          "url": "https://www.brookings.edu/about-us/research-independence-and-integrity-policies/",
+          "title": "Research independence, conflict-of-interest and misconduct policies",
+          "accessedAt": "2026-10-17"
+        },
+        {
+          "url": "https://www.brookings.edu/wp-content/uploads/2026/03/Brookings-Intitution-Honor-Roll-2025-Fiscal-Year.pdf",
+          "title": "Fiscal 2024–25 donor honor roll",
+          "accessedAt": "2026-10-17"
+        }
+      ],
+      "reviewedAt": "2026-10-17"
+    },
+    {
       "id": "paramount-cbs",
       "name": "CBS News / Paramount",
       "ownership": "CBS is part of Paramount Skydance, as reflected in the company’s May 2026 investor filing. No uncompleted merger is treated as current ownership.",
@@ -3057,6 +3094,49 @@ export const sourceAudit = {
       "reviewedAt": "2026-09-21"
     },
     {
+      "id": "fij-the-wire",
+      "name": "The Wire / Foundation for Independent Journalism",
+      "ownership": "The publisher’s ownership page says The Wire has been run since 2015 by the Foundation for Independent Journalism, a not-for-profit company incorporated under Section 8 of India’s Companies Act, whose board comprises its founding editors M.K. Venu, Sidharth Bhatia and Siddharth Varadarajan. The page was last modified in 2021; later board changes were not verified.",
+      "funding": "A 2021-dated funding page charts income since 2015: the Independent and Public Spirited Media Foundation is the largest listed source, followed by reader support, then advertising and sponsorships, with smaller amounts from Tata Trusts and the Pirojsha Godrej Foundation (2018–2019), other commercial income and early support for its science section. It solicits donations from Indian citizens. Current proportions were not established.",
+      "purpose": "The founding editors’ note describes a reader-supported, editorially and financially independent publication committed to the public interest, offering analysis and commentary and aiming to expand reporting on national and international issues.",
+      "sourcing": "The world section mixes staff reports built on Indian and foreign official statements and documents, credited Associated Press copy, and signed analysis by outside contributors. Official accounts and contributors’ arguments remain attributed claims; republished agency copy is not separate confirmation.",
+      "corrections": "The publisher describes an ombudsperson (public editor) role created in 2016, independent of its editorial structure, to examine reader complaints; the page naming the post-holder dates from 2021 and current staffing was not verified. In October 2022 it retracted its Meta stories after it could not authenticate emails used in the reporting and a cited expert denied sending one, and said it would review earlier work by the team involved. A standalone corrections policy was not established in the reviewed material; this does not mean none exists.",
+      "coverage": "India, South Asia and international, with Indian diplomacy and Indian nationals abroad prominent in the world section",
+      "limitations": [
+        "The site renders client-side; its policy pages were read through the publisher’s own content API, and sampled article bodies through its feed, rather than from rendered pages.",
+        "The ownership, funding and ombudsperson pages were last modified in 2021; later changes were not verified.",
+        "The 2022 Meta retraction is recorded from the publisher’s own statement; the outcome of the review it announced was not located in this pass."
+      ],
+      "evidence": [
+        {
+          "url": "https://thewire.in/who-owns-the-wire",
+          "title": "Ownership and board of the Foundation for Independent Journalism",
+          "accessedAt": "2026-10-17"
+        },
+        {
+          "url": "https://thewire.in/how-we-are-funded",
+          "title": "Funding sources since 2015 (2021-dated chart)",
+          "accessedAt": "2026-10-17"
+        },
+        {
+          "url": "https://thewire.in/about-thewire",
+          "title": "Note from the founding editors",
+          "accessedAt": "2026-10-17"
+        },
+        {
+          "url": "https://thewire.in/ombudsperson",
+          "title": "Ombudsperson / public editor role",
+          "accessedAt": "2026-10-17"
+        },
+        {
+          "url": "https://thewire.in/media/the-wire-retracts-meta-stories",
+          "title": "October 2022 retraction statement on Meta coverage",
+          "accessedAt": "2026-10-17"
+        }
+      ],
+      "reviewedAt": "2026-10-17"
+    },
+    {
       "id": "trt",
       "name": "TRT World",
       "ownership": "TRT World is part of the Turkish Radio and Television Corporation (TRT), Türkiye’s public broadcaster.",
@@ -3589,6 +3669,18 @@ export const sourceAudit = {
       "disabledReason": null,
       "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check.",
       "sampleCount": 5
+    },
+    {
+      "sourceId": "de9e5b6e-a440-42e2-8af3-c1b7917945c0",
+      "publisherId": "brookings",
+      "name": "Brookings",
+      "feedUrl": "https://www.brookings.edu/feed/?post_type=article",
+      "decision": "retain with limitations",
+      "rationale": "Each feed page holds ten items, mostly US economic, education and health policy; across the 40 latest items only five or six were security or international-relations pieces. Descriptions are boilerplate with no excerpt, and the creator field names a web staffer rather than the author. Some entries link to scholars’ pieces published elsewhere (Foreign Affairs, Time, The Lancet, Project Syndicate), which may be paywalled and carry the repost date rather than the original. The donor list’s Taiwan and defense-industry funders are relevant context for such commentary; no influence on sampled items was established.",
+      "reviewedAt": "2026-10-17",
+      "disabledReason": null,
+      "sampleCount": 5,
+      "sampleLimitations": "The Foreign Affairs essay was paywalled after its opening, so only a publisher excerpt was read. The current feed page held only one qualifying item; the other four were reached through the feed’s paged archive (pages 2–3)."
     },
     {
       "sourceId": "b24b3eba-62b0-476c-8435-bdb0b18236ec",
@@ -5197,6 +5289,18 @@ export const sourceAudit = {
       "disabledReason": null,
       "sampleLimitations": "Review examined publisher excerpts and article openings, not an exhaustive full-text fact check.",
       "sampleCount": 5
+    },
+    {
+      "sourceId": "929a23f8-8dfd-4c5b-8522-89a08f5bd501",
+      "publisherId": "fij-the-wire",
+      "name": "The Wire",
+      "feedUrl": "https://cms.thewire.in/category/world/feed",
+      "decision": "retain with limitations",
+      "rationale": "The world category is broadly tagged: alongside diplomacy and security it carries film, economics and Indian domestic-politics items, so relevance filtering decides what reaches the site. Sampled conflict items frame foreign events through Indian government statements and the safety of Indian nationals. The feed carries full article bodies; the article pages themselves render client-side.",
+      "reviewedAt": "2026-10-17",
+      "disabledReason": null,
+      "sampleCount": 5,
+      "sampleLimitations": null
     },
     {
       "sourceId": "4a24ae26-16b2-4316-9267-5692b49ad791",
