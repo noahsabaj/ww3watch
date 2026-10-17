@@ -21,7 +21,7 @@
 import sharp from 'sharp'
 import { supabaseAdmin } from '../supabase'
 import { mapPool } from '../pool'
-import { dueForRetry, fetchImage, stampUnreadable } from './images'
+import { dueForRetry, fetchImage, skipFailingHosts, stampUnreadable } from './images'
 import { UNREADABLE_RETRY_MINUTES } from '../config'
 import { bump, type RunStats } from './stats'
 import { loadPhotoHead, photoProbability, type PhotoHead } from './photo-head'
@@ -121,7 +121,7 @@ export async function checkPhotos(
 
     const photo = deps.judge ?? (await photoJudge())
     const judge = oneAtATime((image: Buffer) => judgeImage(image, photo, deps.hash))
-    const download = deps.fetch ?? fetchImage
+    const download = skipFailingHosts(deps.fetch ?? fetchImage)
     const hashes = new Set<string>()
     const unreadable: string[] = []
     const result = await mapPool(

@@ -146,6 +146,36 @@ export async function fetchImage(url: string): Promise<Buffer | null> {
   return body && body.byteLength > 0 ? body : null
 }
 
+/** Failures from one host, with no success between them, before a run stops
+ *  asking it. */
+export const HOST_FAIL_LIMIT = 3
+
+/** `fetch`, except that once a host has failed HOST_FAIL_LIMIT times in a row
+ *  this run, its other URLs answer null at once. On 2026-10-17 two hosts that
+ *  never answer the runner (cdn.mashreghnews.ir, www.jahannews.com) held ~140
+ *  unreadable pictures; they all came due together every hour, and waiting out
+ *  each one's proxy and direct timeouts took the photo check to six minutes.
+ *  A skipped URL reads as unreadable, so it is stamped and tried next time. */
+export function skipFailingHosts<T>(fetch: (url: string) => Promise<T | null>, limit = HOST_FAIL_LIMIT) {
+  const streak = new Map<string, number>()
+  const hostOf = (url: string) => {
+    try {
+      return new URL(url).host
+    } catch {
+      return url
+    }
+  }
+  return async (url: string): Promise<T | null> => {
+    const host = hostOf(url)
+    if ((streak.get(host) ?? 0) >= limit) return null
+    const body = await fetch(url)
+    const fails = body === null ? (streak.get(host) ?? 0) + 1 : 0
+    streak.set(host, fails)
+    if (fails === limit) console.log(`[pipeline] ${host} failed ${limit} times in a row; skipping it for the rest of this run`)
+    return body
+  }
+}
+
 class Unreadable extends Error {}
 
 type FailedAtColumn = 'image_fetch_failed_at' | 'image_check_failed_at'
@@ -185,13 +215,14 @@ export async function fillMissingImages(stats: RunStats, deadlineMs: number): Pr
     const rows = data ?? []
     if (rows.length === 0) return
 
+    const fetchPage = skipFailingHosts(fetchHtml)
     const result = await mapPool(
       rows,
       IMAGE_FILL_CONCURRENCY,
       async (row) => {
         // A URL we will never fetch is a verdict (no photo); a page that did
         // not answer is not: leave it NULL and try it again later.
-        const html = isFetchableArticleUrl(row.url) ? await fetchHtml(row.url) : ''
+        const html = isFetchableArticleUrl(row.url) ? await fetchPage(row.url) : ''
         if (html === null) throw new Unreadable(row.url)
         const image = html ? extractPageImage(html, row.url) : null
         const { error: updateError } = await supabaseAdmin

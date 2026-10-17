@@ -164,3 +164,23 @@ describe('isFetchableArticleUrl', () => {
     expect(isFetchableArticleUrl(url)).toBe(ok)
   })
 })
+
+describe('skipFailingHosts', () => {
+  it('stops asking a host after HOST_FAIL_LIMIT failures in a row, and only that host', async () => {
+    const { skipFailingHosts, HOST_FAIL_LIMIT } = await import('./images')
+    const fetch = vi.fn(async (url: string) => (url.includes('dead.example') ? null : 'ok'))
+    const get = skipFailingHosts(fetch)
+    for (let i = 0; i < HOST_FAIL_LIMIT + 5; i++) expect(await get(`https://dead.example/${i}.jpg`)).toBeNull()
+    expect(await get('https://live.example/a.jpg')).toBe('ok')
+    expect(fetch.mock.calls.filter(([u]) => u.includes('dead.example'))).toHaveLength(HOST_FAIL_LIMIT)
+  })
+
+  it('a success resets the count: a host that fails now and then keeps being asked', async () => {
+    const { skipFailingHosts, HOST_FAIL_LIMIT } = await import('./images')
+    let n = 0
+    const fetch = vi.fn(async () => (++n % HOST_FAIL_LIMIT === 0 ? 'ok' : null))
+    const get = skipFailingHosts(fetch)
+    for (let i = 0; i < 12; i++) await get(`https://flaky.example/${i}.jpg`)
+    expect(fetch).toHaveBeenCalledTimes(12)
+  })
+})
