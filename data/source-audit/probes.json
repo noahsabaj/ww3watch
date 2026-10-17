@@ -395,6 +395,60 @@
       "itemCount": 100,
       "via": "proxy",
       "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/35826166628"
+    },
+    {
+      "sourceId": "929a23f8-8dfd-4c5b-8522-89a08f5bd501",
+      "url": "https://cms.thewire.in/category/world/feed",
+      "checkedAt": "2026-10-17T18:35:04.911Z",
+      "error": null,
+      "itemCount": 40,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/39058682669"
+    },
+    {
+      "sourceId": "de9e5b6e-a440-42e2-8af3-c1b7917945c0",
+      "url": "https://www.brookings.edu/feed/?post_type=article",
+      "checkedAt": "2026-10-17T18:35:05.002Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/39058682669"
+    },
+    {
+      "sourceId": "b6ce1d43-00ca-4ad7-af7d-400c9f5500d8",
+      "url": "https://www.justsecurity.org/feed/",
+      "checkedAt": "2026-10-17T18:34:48.043Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/39058682669"
+    },
+    {
+      "sourceId": "929a23f8-8dfd-4c5b-8522-89a08f5bd501",
+      "url": "https://cms.thewire.in/category/world/feed",
+      "checkedAt": "2026-10-17T18:51:54.825Z",
+      "error": null,
+      "itemCount": 40,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/39059921059"
+    },
+    {
+      "sourceId": "de9e5b6e-a440-42e2-8af3-c1b7917945c0",
+      "url": "https://www.brookings.edu/feed/?post_type=article",
+      "checkedAt": "2026-10-17T18:51:55.333Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/39059921059"
+    },
+    {
+      "sourceId": "b6ce1d43-00ca-4ad7-af7d-400c9f5500d8",
+      "url": "https://www.justsecurity.org/feed/",
+      "checkedAt": "2026-10-17T18:51:40.257Z",
+      "error": null,
+      "itemCount": 10,
+      "via": "proxy",
+      "runUrl": "https://github.com/noahsabaj/ww3watch/actions/runs/39059921059"
     }
   ]
 }

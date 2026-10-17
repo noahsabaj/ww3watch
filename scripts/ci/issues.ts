@@ -206,7 +206,7 @@ export function silentIssue(silent: string): FileOrCommentOptions {
     title: 'Feed sources gone silent — re-curation suggested',
     body:
       `${marker}\n` +
-      'Fetching fine, but 2 or fewer new items in the last 7 days: the feed is probably a stale file the publisher stopped updating.\n\n' +
+      'Fetching fine, but 2 or fewer new items in the last 7 days and nothing in the feed newer than that: the feed is probably a stale file the publisher stopped updating.\n\n' +
       `${bullets(silent)}\n\n` +
       "Find the publisher's current feed and re-point the source with a reviewed roster plan (docs/SOURCE_AUDIT.md), or disable it.",
     search: 'gone silent in:title',

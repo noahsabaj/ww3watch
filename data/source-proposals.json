@@ -1,38 +1,20 @@
 [
   {
-    "id": "faa96f08-002a-49fc-9504-0533e9337e88",
-    "name": "CFR",
-    "region": "Independent/OSINT",
-    "lang": "en",
-    "affiliation": null,
-    "url": "https://www.cfr.org/feed",
-    "evidenceUrl": "https://www.cfr.org/feed"
-  },
-  {
-    "id": "8c2945df-6b2d-47bc-a227-bc6a54d73fb8",
-    "name": "Hindustan Times",
+    "id": "929a23f8-8dfd-4c5b-8522-89a08f5bd501",
+    "name": "The Wire",
     "region": "South Asian",
     "lang": "en",
     "affiliation": null,
-    "url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml",
-    "evidenceUrl": "https://www.hindustantimes.com/rss"
+    "url": "https://cms.thewire.in/category/world/feed",
+    "evidenceUrl": "https://cms.thewire.in/wp-json/wp/v2/categories?search=world"
   },
   {
-    "id": "57ff2adf-7a0a-4c1e-b91a-bac7787c7e95",
-    "name": "Hurriyet Daily",
-    "region": "Turkish",
+    "id": "de9e5b6e-a440-42e2-8af3-c1b7917945c0",
+    "name": "Brookings",
+    "region": "Independent/OSINT",
     "lang": "en",
     "affiliation": null,
-    "url": "https://www.hurriyetdailynews.com/rss/world",
-    "evidenceUrl": "https://www.hurriyetdailynews.com/rss/world"
-  },
-  {
-    "id": "63ecf7a3-36b5-4b10-9dd8-9d0e5f2e37ea",
-    "name": "Jerusalem Post",
-    "region": "Israeli",
-    "lang": "en",
-    "affiliation": null,
-    "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
-    "evidenceUrl": "https://www.jpost.com/rss"
+    "url": "https://www.brookings.edu/feed/?post_type=article",
+    "evidenceUrl": "https://www.brookings.edu/"
   }
 ]

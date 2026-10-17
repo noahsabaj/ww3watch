@@ -46,6 +46,8 @@ export async function updateSourceHealth(results: FeedFetchResult[]): Promise<st
     // Next run's If-None-Match / If-Modified-Since (rss.ts); a failure keeps the stored pair.
     etag: r.validators?.etag ?? null,
     last_modified: r.validators?.lastModified ?? null,
+    // The feed's own newest item; silent_sources tells a stale file by it.
+    newest_item_at: newestItem(r.articles),
   }))
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const { data, error } = await supabaseAdmin.rpc('record_source_health', {
@@ -67,6 +69,13 @@ export async function updateSourceHealth(results: FeedFetchResult[]): Promise<st
     }
   }
   return disabled
+}
+
+/** Latest pubDate among a fetch's items, or null for a 304 or an undated feed. */
+export function newestItem(articles: { published_at?: string | null }[]): string | null {
+  let newest: string | null = null
+  for (const a of articles) if (a.published_at && (!newest || Date.parse(a.published_at) > Date.parse(newest))) newest = a.published_at
+  return newest
 }
 
 export function logFeedSummary(results: FeedFetchResult[]) {
