@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "id": "recurate-silent-low-yield",
+  "reviewedAt": "2026-10-17T18:40:00Z",
+  "changes": [
+    {
+      "sourceId": "929a23f8-8dfd-4c5b-8522-89a08f5bd501",
+      "before": { "url": "https://cms.thewire.in/feed", "name": "The Wire", "region": "South Asian", "lang": "en", "enabled": true, "affiliation": null },
+      "after": { "url": "https://cms.thewire.in/category/world/feed", "name": "The Wire", "region": "South Asian", "lang": "en", "enabled": true, "affiliation": null },
+      "reason": "Low yield (#188): the all-sections feed is mostly domestic Indian news, 5 accepted of 470 in 7 days (1.1%). Re-pointed to the publisher's World section feed (WordPress category 98), current on 2026-10-17. Operational, not editorial.",
+      "evidence": ["https://cms.thewire.in/category/world/feed", "https://cms.thewire.in/wp-json/wp/v2/categories?search=world"]
+    },
+    {
+      "sourceId": "de9e5b6e-a440-42e2-8af3-c1b7917945c0",
+      "before": { "url": "https://www.brookings.edu/feed/", "name": "Brookings", "region": "Independent/OSINT", "lang": "en", "enabled": true, "affiliation": null },
+      "after": { "url": "https://www.brookings.edu/feed/?post_type=article", "name": "Brookings", "region": "Independent/OSINT", "lang": "en", "enabled": true, "affiliation": null },
+      "reason": "Gone silent (#156): the advertised /feed/ now answers 200 with an HTML page and has never delivered an item. The same WordPress feed scoped to the site's article post type returns current RSS (newest 2026-10-16). Operational, not editorial.",
+      "evidence": ["https://www.brookings.edu/feed/?post_type=article", "https://www.brookings.edu/"]
+    },
+    {
+      "sourceId": "ea8f2e46-714b-4ba7-9e05-f0d35c59000c",
+      "before": { "url": "https://sana.sy/en/?feed=rss2", "name": "SANA (Syria)", "region": "Arab/Gulf", "lang": "en", "enabled": true, "affiliation": "state" },
+      "after": { "url": "https://sana.sy/en/?feed=rss2", "name": "SANA (Syria)", "region": "Arab/Gulf", "lang": "en", "enabled": false, "affiliation": "state" },
+      "reason": "Gone silent (#156): the publisher's server caches each feed URL indefinitely. /en/?feed=rss2 and the advertised /en/feed/ both still serve 2026-09-29 items on 2026-10-17 (no-cache request headers do not help), while a never-requested query string returns current items, so any fixed URL freezes on first fetch. Switched off until the publisher's feed refreshes. Operational, not editorial: the review stands.",
+      "evidence": ["https://sana.sy/en/feed/", "https://sana.sy/en/"]
+    },
+    {
+      "sourceId": "35bef871-edfa-424b-8b94-89bf58d2011f",
+      "before": { "url": "https://sputnikglobe.com/export/rss2/index.xml", "name": "Sputnik", "region": "Russian", "lang": "en", "enabled": true, "affiliation": "state" },
+      "after": { "url": "https://sputnikglobe.com/export/rss2/index.xml", "name": "Sputnik", "region": "Russian", "lang": "en", "enabled": false, "affiliation": "state" },
+      "reason": "Gone silent (#156), but not stale: this feed carries the same items as Sputnik World (export/rss2/archive/index.xml), which ingests them first, so this source has stored nothing since 2026-09-20. Switched off as a duplicate; Sputnik World keeps the coverage. Operational, not editorial.",
+      "evidence": ["https://sputnikglobe.com/export/rss2/index.xml", "https://sputnikglobe.com/export/rss2/archive/index.xml"]
+    },
+    {
+      "sourceId": "b6ce1d43-00ca-4ad7-af7d-400c9f5500d8",
+      "before": { "url": "https://www.justsecurity.org/feed/", "name": "Just Security", "region": "Independent/OSINT", "lang": "en", "enabled": false, "affiliation": null },
+      "after": { "url": "https://www.justsecurity.org/feed/", "name": "Just Security", "region": "Independent/OSINT", "lang": "en", "enabled": true, "affiliation": null },
+      "reason": "Auto-disabled 2026-09-19 (#101) after the publisher's WAF blocked datacenter egress with 403. On 2026-10-17 the production proxy fetches it again (10 items, newest the same day). Re-enabled; Middle East Monitor (502/timeout) and Yemen Monitor (403) still fail and stay off.",
+      "evidence": ["https://www.justsecurity.org/feed/"]
+    }
+  ]
+}
