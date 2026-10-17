@@ -117,6 +117,10 @@ begin
   perform public.settle_ai(rid,10,10);
   perform public.settle_ai(rid,0,0);
   if (select charged_usd from public.ai_months where service='translation') <> 0.00002 then raise exception 'settlement was not idempotent'; end if;
+  rid := (public.reserve_ai('translation','test-model',100,100)->>'id')::uuid;
+  perform public.settle_ai(rid,0,0);
+  if exists(select 1 from public.ai_reservations where id=rid) then raise exception 'unbilled reservation kept'; end if;
+  if (select charged_usd from public.ai_months where service='translation') <> 0.00002 then raise exception 'unbilled reservation charged'; end if;
   if public.reserve_ai('translation','test-model',4000000,0)->>'error' <> 'budget_exhausted' then raise exception 'budget cap bypassed'; end if;
   if not public.submit_report('problem','Marked smoke test report',null,null,'smoke-report') then raise exception 'report failed'; end if;
   perform public.submit_report('problem','Marked smoke test report',null,null,'smoke-report');

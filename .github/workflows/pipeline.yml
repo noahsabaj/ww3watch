@@ -134,13 +134,21 @@ jobs:
         run: |
           gh label create pipeline-failure --color B60205 --description "Ingestion pipeline failure" --force >/dev/null 2>&1 || true
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          existing=$(gh issue list --label pipeline-failure --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "Pipeline run failed again: $run_url"
-          else
-            gh issue create --title "Ingestion pipeline failing" --label pipeline-failure \
-              --body "The ingestion pipeline failed — see $run_url. The issue will automatically close on a subsequent successful run, or repeat failures will append here."
+          # One comment a day at most: at a 5-minute cadence a comment per failure
+          # reached GitHub's 2,500-comment cap in nine days (#191), after which
+          # commenting failed and the alert itself went red. An open issue
+          # already says "still failing"; the daily comment says "still today".
+          # If commenting fails anyway, start a fresh issue rather than go quiet.
+          existing=$(gh issue list --label pipeline-failure --state open --json number,updatedAt --jq '.[0] | "\(.number) \(.updatedAt)"' 2>/dev/null || echo "")
+          number=${existing%% *}
+          if [ -n "$number" ]; then
+            updated=$(date -d "${existing#* }" +%s)
+            if [ $(( $(date +%s) - updated )) -lt 86400 ]; then exit 0; fi
+            if gh issue comment "$number" --body "Pipeline still failing: $run_url"; then exit 0; fi
+            gh issue close "$number" --comment "Continued in a new issue: commenting here failed." || true
           fi
+          gh issue create --title "Ingestion pipeline failing" --label pipeline-failure \
+            --body "The ingestion pipeline failed — see $run_url. The issue will automatically close on a subsequent successful run; while it stays open, a failing run adds a comment at most once a day."
 
       # A source the run just switched off (AUTO_DISABLE_AFTER consecutive
       # failures) needs a person: a moved feed URL, a WAF that now blocks the
