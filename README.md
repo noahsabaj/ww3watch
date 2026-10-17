@@ -123,7 +123,7 @@ Every number the pipeline runs with is declared in [src/lib/server/config.ts](sr
 | `STORY_MERGE` | `{"hours":24,"minSim":0.85,"minP":0.8,"candidates":60,"maxPerRun":15}` | story-merge pass: window, candidate similarity, P(same) needed, caps |
 | `HEAD_POOL_CAP` | `2000` | most new articles the local head scores per run |
 | `HEAD_AUDIT_RATE` | `0.03` | share of the head's confident verdicts Jev judges anyway (agreement is recorded) |
-| `HEAD_REJECT_BELOW` | `0.235` |  |
+| `HEAD_REJECT_BELOW` | `0` |  |
 | `HEAD_ACCEPT_ABOVE` | `0` |  |
 | `PURGE_BELOW` | `0.2` | an accepted article Jev scores below this is removed again |
 | `PURGE_CAP_PER_RUN` | `25` | most removals per run — a bad question edit cannot empty the feed |

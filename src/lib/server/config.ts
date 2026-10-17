@@ -69,9 +69,10 @@ export const HEAD_AUDIT_RATE = num('HEAD_AUDIT_RATE', 0.03)
 // widening Jev's relevance question (#102) left the 2026-09-19 head auto-rejecting
 // 4.2% of what Jev now accepts — roughly 126 articles a day it never saw — against
 // a 2% design floor. Measured on 500 live head-rejects, 0.235 brings that to 1.2%
-// for ~12% more Jev calls (~$0.01/day). Set to 0 to use the trained value; the
-// next retrain recalibrates against wide-scope labels and should make this a no-op.
-export const HEAD_REJECT_BELOW = num('HEAD_REJECT_BELOW', 0.235)
+// for ~12% more Jev calls (~$0.01/day). The 2026-10-01 retrain (#186) is
+// calibrated on wide-scope labels (false-reject 1.94% at its own 0.275), so the
+// trained value applies again. Set above 0 to override it.
+export const HEAD_REJECT_BELOW = num('HEAD_REJECT_BELOW', 0)
 export const HEAD_ACCEPT_ABOVE = num('HEAD_ACCEPT_ABOVE', 0)
 // Consecutive failed fetches after which a source is switched off. With a run
 // every ~5 min this is roughly two days of solid failure — a moved feed URL or
