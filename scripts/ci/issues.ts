@@ -107,7 +107,11 @@ export async function fileOrComment(gh: Gh, opts: FileOrCommentOptions): Promise
 export async function closeOpen(gh: Gh, opts: { label: string; comment: string }): Promise<{ closed: number | null }> {
   const existing = await findOpenIssue(gh, opts.label)
   if (existing === null) return { closed: null }
-  await ghOrThrow(gh, ['issue', 'close', String(existing), '--comment', opts.comment, '--reason', 'completed'])
+  const close = ['issue', 'close', String(existing), '--reason', 'completed']
+  // The comment is a courtesy; closing is the point. An issue past GitHub's
+  // 2,500-comment cap (#191) refuses the comment, and `gh` then leaves it open.
+  const res = await gh([...close.slice(0, 3), '--comment', opts.comment, ...close.slice(3)])
+  if (res.code !== 0) await ghOrThrow(gh, close)
   return { closed: existing }
 }
 
