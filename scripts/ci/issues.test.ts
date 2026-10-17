@@ -168,6 +168,15 @@ describe('closeOpen', () => {
     expect(calls[1]).toEqual(['issue', 'close', '11', '--comment', comment, '--reason', 'completed'])
   })
 
+  it('closes without the comment when the comment is refused (an issue past the 2,500-comment cap)', async () => {
+    const { gh, calls } = fakeGh([
+      [['issue', 'list'], open(11)],
+      [['issue', 'close'], (args) => (args.includes('--comment') ? { code: 1, stderr: 'Commenting is disabled' } : {})],
+    ])
+    expect(await closeOpen(gh, { label: 'pipeline-failure', comment: 'c' })).toEqual({ closed: 11 })
+    expect(calls[2]).toEqual(['issue', 'close', '11', '--reason', 'completed'])
+  })
+
   it('no-ops when the lookup fails (bash: `2>/dev/null || echo ""`) — the next green run retries', async () => {
     const { gh, calls } = fakeGh([[['issue', 'list'], { code: 1 }]])
     expect(await closeOpen(gh, { label: 'pipeline-failure', comment: 'c' })).toEqual({ closed: null })
