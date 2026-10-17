@@ -86,7 +86,7 @@
        sits on top of one. Without a photo the region wash carries the story. -->
   {#if photo.shown}
     <div class="relative h-[26rem] overflow-hidden">
-      <StoryPhotoImg {photo} class="h-full w-full object-cover" />
+      <StoryPhotoImg {photo} drawnPx={window.innerWidth - 280} class="h-full w-full object-cover" />
       <div class="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#070809] to-transparent"></div>
     </div>
   {/if}
