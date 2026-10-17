@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { openHome, openReader, reader, stories } from './home'
+import { feedSize, openHome, openReader, reader, stories } from './home'
 
 // Every surface that opens over the page (menu, phone reader, Theaters page)
 // shares one keyboard and focus behaviour: src/lib/modal.ts.
@@ -56,7 +56,8 @@ test.describe('on a phone', () => {
       Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('blocked', 'SecurityError') } })
     })
     await openHome(page)
-    expect(await stories(page).count()).toBeGreaterThan(20)
+    expect(await feedSize(page)).toBeGreaterThan(20)
+    await expect(stories(page).first()).toBeVisible()
   })
 })
 

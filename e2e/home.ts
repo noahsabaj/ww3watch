@@ -9,6 +9,15 @@ export const isDesk = (page: Page) => (page.viewportSize()?.width ?? 1280) >= 82
 export const stories = (page: Page): Locator =>
   isDesk(page) ? page.locator('[data-desk-story]') : page.locator('[data-signal-story]')
 
+/** How many stories the feed holds, from its own count in the header. Signal
+ *  mounts stories as the reader nears them (SignalFeed.svelte), so counting
+ *  [data-signal-story] says how many are mounted, not how many loaded. */
+export async function feedSize(page: Page): Promise<number> {
+  // The header renders the count twice (phone row, desk row); both say the same.
+  const text = await page.locator('header').getByText(/^[\d,]+ stories$/).first().textContent()
+  return Number((text ?? '').replace(/\D/g, ''))
+}
+
 /** The story on show: the desk's pane, or Signal's first story. */
 export const storyCard = (page: Page): Locator =>
   isDesk(page) ? page.locator('[data-desk-story-pane]') : page.locator('[data-signal-story]').first()

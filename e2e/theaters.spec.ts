@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { openHome, stories } from './home'
+import { feedSize, openHome, stories } from './home'
 
 // Theaters (src/lib/theaters.ts): where a story is happening, from the actors
 // Jev tags. The fixture places the port strike, the RT single and the both-sides
@@ -30,7 +30,7 @@ test.describe('on a phone', () => {
     await expect(page.locator('[data-signal-story] [data-theater-tag]')).toHaveText(['Ukraine', 'Ukraine', 'Ukraine'])
     await bar(page).getByRole('button', { name: 'All stories' }).click()
     await expect(bar(page)).toBeHidden()
-    expect(await stories(page).count()).toBeGreaterThan(20)
+    expect(await feedSize(page)).toBeGreaterThan(20)
   })
 
   test('tapping a story’s place narrows to it and stays on that story, and back out again', async ({ page }) => {
