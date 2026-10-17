@@ -21,13 +21,27 @@
     onselect,
     ontheater,
     hint = false,
+    near = true,
+    priority = false,
   }: {
     cluster: Cluster
     onselect?: (a: Article) => void
     /** Narrow the feed to this story's theater; absent once it is narrowed. */
     ontheater?: (id: string) => void
     hint?: boolean
+    /** Within a couple of screens of the one shown. The photograph and the
+     *  evidence wait for it: the phone feed mounts every story at once, and
+     *  every photo at full size came to ~40 MB on first load (2026-10-17). */
+    near?: boolean
+    /** The first screen's photo: fetched ahead of everything else. */
+    priority?: boolean
   } = $props()
+
+  // Once loaded, kept: scrolling back must not fetch the photo again.
+  let reached = $state(false)
+  $effect(() => {
+    if (near) reached = true
+  })
 
   const rep = $derived(cluster.representative)
   // Covered from both sides of a conflict: the other side's first report
@@ -59,7 +73,7 @@
        of words on one surface are unreadable. -->
   {#if photo.shown}
     <div class="relative min-h-0 flex-1 overflow-hidden">
-      <StoryPhotoImg {photo} class="absolute inset-0 h-full w-full object-cover" />
+      {#if reached}<StoryPhotoImg {photo} {priority} class="absolute inset-0 h-full w-full object-cover" />{/if}
       <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#070809] to-transparent"></div>
     </div>
   {:else}
@@ -110,7 +124,7 @@
         {translation.shown?.summary ?? rep.summary}
       </p>
     {/if}
-    <StoryEvidence storyId={cluster.storyId} compact class="mt-3 shrink-0" />
+    {#if reached}<StoryEvidence storyId={cluster.storyId} compact class="mt-3 shrink-0" />{/if}
 
     {#if others.length > 0}
       <ul class="mt-4 space-y-1.5">

@@ -8,7 +8,7 @@
   import type { ReaderRouting } from '$lib/deeplink.svelte'
   import { base } from '$app/paths'
   import DeskStory from '$lib/components/DeskStory.svelte'
-  import ArticlePanel from '$lib/components/ArticlePanel.svelte'
+  const articlePanel = import('$lib/components/ArticlePanel.svelte')
   import PullIndicator from '$lib/components/PullIndicator.svelte'
   import FeedEnd from '$lib/components/FeedEnd.svelte'
   import { createPullRefresh } from '$lib/pull-refresh.svelte'
@@ -289,7 +289,9 @@
   <!-- Pane -->
   <div bind:this={pane} data-desk-pane class="min-h-0 overflow-y-auto bg-ink">
     {#if reader.selectedArticle}
-      <ArticlePanel inline article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
+      {#await articlePanel then { default: ArticlePanel }}
+        <ArticlePanel inline article={reader.selectedArticle} cluster={reader.selectedCluster} onclose={reader.closeArticle} onselect={reader.openArticle} />
+      {/await}
     {:else if selected}
       {#key selected.id}
         <DeskStory cluster={selected} onread={reader.openArticle} ontheater={theaterId ? undefined : narrow} />

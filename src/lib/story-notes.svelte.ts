@@ -16,20 +16,24 @@ async function flush(): Promise<void> {
   timer = null
   const ids = [...queue]
   queue.clear()
-  for (let i = 0; i < ids.length; i += 100) {
-    const chunk = ids.slice(i, i + 100)
-    const ev = await supabase.from('story_evidence').select('story_id, kind, at, place, distance_km, value, detail').in('story_id', chunk)
-    if (ev.error) {
-      // Try again next time the story is shown.
-      for (const id of chunk) askedAt.delete(id)
-      continue
-    }
-    const found = new Map<string, StoryEvidence[]>()
-    for (const row of (ev.data ?? []) as StoryEvidence[]) found.set(row.story_id, [...(found.get(row.story_id) ?? []), row])
-    for (const id of chunk) {
-      const rows = found.get(id) ?? []
-      if (rows.length || evidence.has(id)) evidence.set(id, rows)
-    }
+  const chunks: string[][] = []
+  for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100))
+  // All at once, not one after another: chained, six chunks cost ~0.5 s on a phone.
+  await Promise.all(chunks.map(load))
+}
+
+async function load(chunk: string[]): Promise<void> {
+  const ev = await supabase.from('story_evidence').select('story_id, kind, at, place, distance_km, value, detail').in('story_id', chunk)
+  if (ev.error) {
+    // Try again next time the story is shown.
+    for (const id of chunk) askedAt.delete(id)
+    return
+  }
+  const found = new Map<string, StoryEvidence[]>()
+  for (const row of (ev.data ?? []) as StoryEvidence[]) found.set(row.story_id, [...(found.get(row.story_id) ?? []), row])
+  for (const id of chunk) {
+    const rows = found.get(id) ?? []
+    if (rows.length || evidence.has(id)) evidence.set(id, rows)
   }
 }
 
