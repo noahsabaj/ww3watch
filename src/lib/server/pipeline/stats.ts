@@ -1,3 +1,5 @@
+import type { JevOutage } from '../jev'
+
 // What one run records in pipeline_runs.stats. Every key is optional: stages add
 // what they did, and a run that died early still writes whatever it had.
 export interface RunStats {
@@ -24,6 +26,8 @@ export interface RunStats {
   cls_head?: Record<string, unknown>
   cls_jev?: Record<string, unknown>
   cls_all_failed?: boolean
+  /** Set when Jev's breaker opened this run: why, and how many calls it held back (jev.ts). */
+  jev_outage?: JevOutage
   classified?: number
   deferred?: number
   relevant?: number

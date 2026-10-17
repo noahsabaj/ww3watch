@@ -83,6 +83,56 @@ export interface JevVerdict {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const MAX_RETRIES = 4
 
+// The breaker: once Jev has said it will not serve this run, stop asking it.
+// From 2026-10-10 to 10-16 the account had no credits and every call got 402,
+// but each run still sent every deferred judgment, signal, pair and trending
+// question, ~2,500 calls a run that could not succeed. An account refusal
+// (bad key, no credits, forbidden) trips it at once: nothing changes within a
+// run. Overload (429/529 that outlasted its retries) trips it after a few in a
+// row, since one unlucky call is not an outage. A tripped call throws before it
+// reserves budget or touches the network, so its item stays deferred exactly as
+// a failed call leaves it, and the next run (a new process) asks again.
+const ACCOUNT_REFUSALS = new Set([401, 402, 403])
+const OVERLOAD_TRIP = 3
+let outage: { status: number; detail: string } | null = null
+let overloadStreak = 0
+let skipped = 0
+
+export interface JevOutage {
+  status: number
+  /** TypeSafe's own words, e.g. its billing_error message. */
+  detail: string
+  /** 401/402/403: needs a person (key, credits), not another run. */
+  account: boolean
+  /** Calls not sent because the breaker was open. */
+  skipped: number
+}
+
+export function jevOutage(): JevOutage | null {
+  return outage && { ...outage, account: ACCOUNT_REFUSALS.has(outage.status), skipped }
+}
+
+/** Fails the run on an account refusal: credits or a key do not come back on
+ *  their own, so this alerts on the first run rather than the second
+ *  (run.ts's two-runs-in-a-row guard is for outages that might pass). */
+export function assertJevServed() {
+  const o = jevOutage()
+  if (o?.account) throw new Error(`TypeSafe refused Jev with ${o.status} (${o.skipped} calls not sent): ${o.detail}`)
+}
+
+/** Tests only: each pipeline run is its own process, so it starts closed. */
+export function resetJevBreaker() {
+  outage = null
+  overloadStreak = 0
+  skipped = 0
+}
+
+function trip(status: number, detail: string) {
+  if (outage) return
+  outage = { status, detail: detail.slice(0, 300) }
+  console.error(`[jev] ${status} — not calling Jev again this run: ${outage.detail}`)
+}
+
 export function jevState(a: JevArticle) {
   const summary = (a.summary ?? '').replace(/\s+/g, ' ').trim().slice(0, 300)
   // Only what the question needs — Jev loses accuracy to irrelevant state.
@@ -99,6 +149,10 @@ export async function callJev(state: unknown, questions: Record<string, unknown>
   const apiKey = process.env.TYPESAFE_API_KEY
   if (!apiKey) throw new Error('TYPESAFE_API_KEY is not set')
   for (let attempt = 0; ; attempt++) {
+    if (outage) {
+      skipped++
+      throw new Error(`jev unavailable this run (${outage.status}): not sent`)
+    }
     const request = JSON.stringify({ state, model: JEV_MODEL, questions })
     const settle = await reserveClassification(JEV_MODEL, request, deadlineMs)
     let res: Response
@@ -121,7 +175,13 @@ export async function callJev(state: unknown, questions: Record<string, unknown>
       await sleep(backoff)
       continue
     }
-    if (!res.ok) throw new Error(`jev ${res.status}: ${(await res.text()).slice(0, 300)}`)
+    if (!res.ok) {
+      const detail = (await res.text()).slice(0, 300)
+      if (ACCOUNT_REFUSALS.has(res.status)) trip(res.status, detail)
+      else if ((res.status === 429 || res.status === 529) && ++overloadStreak >= OVERLOAD_TRIP) trip(res.status, detail)
+      throw new Error(`jev ${res.status}: ${detail}`)
+    }
+    overloadStreak = 0
     if (!data?.answers || typeof data.answers !== 'object') throw new Error(`jev: no answers in ${JSON.stringify(data).slice(0, 200)}`)
     return { answers: data.answers, inputTokens: Number(data.usage?.input_tokens) || 0 }
   }

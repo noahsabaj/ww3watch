@@ -15,6 +15,7 @@ import { checkPhotosIsolated } from './photo-check-isolated'
 import { gatherEvidence } from './evidence'
 import { checkAlerts } from './alerts'
 import { timed as timedStage, type RunStats } from './stats'
+import { jevOutage } from '../jev'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
 // no-new-articles path and the main path so every run captures trending status
@@ -127,6 +128,7 @@ export async function run(stats: RunStats): Promise<void> {
   const jevDown = jevPool >= 5 && jevFailed > jevPool / 2
   stats.cls_all_failed = jevDown
   if (jevDown && (await previousRunJevDown())) {
-    throw new Error(`jev failed ${jevFailed}/${jevPool} calls on two consecutive runs — TypeSafe appears down`)
+    const why = jevOutage()
+    throw new Error(`jev failed ${jevFailed}/${jevPool} calls on two consecutive runs — TypeSafe appears down${why ? ` (${why.status}: ${why.detail})` : ''}`)
   }
 }
