@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import Icon from '$lib/components/Icon.svelte'
-  import type { Article } from '$lib/types'
-  import type { OutletRow } from '$lib/story'
+  import Icon from '#lib/components/Icon.svelte'
+  import type { Article } from '#lib/types.js'
+  import type { OutletRow } from '#lib/story.js'
 
   // One outlet's row in a story's source list (src/lib/story.ts byOutlet): its
   // lead report, and the rest folded behind "N more from …" so one outlet

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { base } from '$app/paths'
+  import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { supabase } from '$lib/supabase'
-  import PageShell from '$lib/components/PageShell.svelte'
+  import { supabase } from '#lib/supabase.js'
+  import PageShell from '#lib/components/PageShell.svelte'
   let category = $state('problem'), message = $state(''), email = $state(''), website = $state('')
   let sending = $state(false), sent = $state(false), error = $state('')
   async function submit(event: SubmitEvent) {
@@ -41,7 +41,7 @@
         <input type="email" maxlength="254" bind:value={email} class="field" />
       </label>
       <div class="hidden" aria-hidden="true"><label>Website<input tabindex="-1" autocomplete="off" bind:value={website} /></label></div>
-      <p class="text-sm text-fg-3">Do not include passwords or sensitive information. <a href="{base}/privacy" class="link">Privacy details</a></p>
+      <p class="text-sm text-fg-3">Do not include passwords or sensitive information. <a href={resolve('/privacy')} class="link">Privacy details</a></p>
       <button disabled={sending} class="btn">{sending ? 'Sending…' : 'Send private report'}</button>
       {#if error}<p role="alert" class="text-sm text-amber-300">{error} <a href="https://github.com/noahsabaj/ww3watch/issues/new/choose" class="link">GitHub issues</a></p>{/if}
     </form>

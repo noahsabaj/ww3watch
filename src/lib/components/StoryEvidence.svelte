@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import { evidenceFor } from '$lib/story-notes.svelte'
-  import { EVIDENCE_SOURCE, evidenceLine } from '$lib/evidence-text'
+  import Icon from '#lib/components/Icon.svelte'
+  import { evidenceFor } from '#lib/story-notes.svelte.js'
+  import { EVIDENCE_SOURCE, evidenceLine } from '#lib/evidence-text.js'
 
   // What sensors saw where and when a story says something happened: a new
   // fire from NASA's satellites, a tremor on seismometers, an internet outage.

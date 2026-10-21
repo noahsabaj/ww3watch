@@ -1,5 +1,5 @@
 // Runtime env access for the Node ingestion pipeline (GitHub Actions / local).
-// NOT used by the static frontend build — the browser uses $env/static/public
+// NOT used by the static frontend build — the browser uses $app/env/public
 // via src/lib/supabase.ts. Reading from process.env keeps these modules
 // independent of SvelteKit so scripts/run-pipeline.ts can run them under tsx.
 

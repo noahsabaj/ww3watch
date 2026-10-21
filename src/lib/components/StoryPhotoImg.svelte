@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { createStoryPhoto } from '$lib/story-photo.svelte'
-  import { photoSrc, resizable } from '$lib/photo-src'
+  import type { createStoryPhoto } from '#lib/story-photo.svelte.js'
+  import { photoSrc, resizable } from '#lib/photo-src.js'
 
   // A newsroom photograph from createStoryPhoto(): resized through wsrv.nl
   // (src/lib/photo-src.ts), the original hotlinked without a referrer if that

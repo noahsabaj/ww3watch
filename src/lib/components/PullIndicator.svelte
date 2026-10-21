@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import { PULL_HOLD, PULL_LINE, type PullRefresh } from '$lib/pull-refresh.svelte'
+  import Icon from '#lib/components/Icon.svelte'
+  import { PULL_HOLD, PULL_LINE, type PullRefresh } from '#lib/pull-refresh.svelte.js'
 
   // Sits behind the list and is uncovered as it is pulled down: turns to the
   // accent at the line, spins while fetching.

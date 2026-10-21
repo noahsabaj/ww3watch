@@ -1,19 +1,19 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import { base } from '$app/paths'
+  import Icon from '#lib/components/Icon.svelte'
+  import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import Sheet from '$lib/components/Sheet.svelte'
-  import { alerts } from '$lib/alerts.svelte'
+  import Sheet from '#lib/components/Sheet.svelte'
+  import { alerts } from '#lib/alerts.svelte.js'
 
   // The site menu: one icon in every header, the same sheet everywhere.
   let open = $state(false)
 
   const items: { href: string; title: string; note: string; external?: boolean }[] = [
-    { href: `${base}/`, title: 'Latest reporting', note: 'Every story, every side' },
-    { href: `${base}/trends`, title: 'Trends', note: 'How each party’s coverage moved over 30 days' },
-    { href: `${base}/about`, title: 'About & methodology', note: 'How stories are gathered, grouped and labelled' },
-    { href: `${base}/feedback`, title: 'Feedback & corrections', note: 'Report a problem or suggest a source' },
-    { href: `${base}/privacy`, title: 'Privacy', note: 'No accounts, no trackers' },
+    { href: resolve('/'), title: 'Latest reporting', note: 'Every story, every side' },
+    { href: resolve('/trends'), title: 'Trends', note: 'How each party’s coverage moved over 30 days' },
+    { href: resolve('/about'), title: 'About & methodology', note: 'How stories are gathered, grouped and labelled' },
+    { href: resolve('/feedback'), title: 'Feedback & corrections', note: 'Report a problem or suggest a source' },
+    { href: resolve('/privacy'), title: 'Privacy', note: 'No accounts, no trackers' },
     { href: 'https://github.com/noahsabaj/ww3watch', title: 'Source code', note: 'Open source under AGPL-3.0', external: true },
   ]
 

@@ -13,16 +13,17 @@
 # The volume mount persists the embedding model (~280MB) between runs;
 # without it every run re-downloads from Hugging Face.
 
-FROM node:22-slim
+FROM node:24-slim
 
 WORKDIR /app
 
-# .npmrc BEFORE npm ci: it carries the onnxruntime-node install-skip flags —
-# without them the postinstall downloads ~300MB of CUDA binaries.
+# package.json and .npmrc BEFORE npm ci: between them (allowScripts for npm 11,
+# the install-skip flags for npm 10) they keep onnxruntime-node's postinstall
+# from downloading ~300MB of CUDA binaries.
 COPY .npmrc package.json package-lock.json ./
 RUN npm ci --ignore-scripts=false
 
-COPY tsconfig.json svelte.config.js vite.config.ts ./
+COPY tsconfig.json vite.config.ts ./
 COPY scripts ./scripts
 COPY src ./src
 

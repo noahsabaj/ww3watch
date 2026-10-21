@@ -1,5 +1,5 @@
-import { supabase } from '$lib/supabase'
-import { FEED_COLUMNS } from '$lib/feed-columns'
+import { supabase } from '#lib/supabase.js'
+import { FEED_COLUMNS } from '#lib/feed-columns.js'
 
 export async function loadFeed() {
   const [articlesResult, trendingResult, statusResult] = await Promise.all([

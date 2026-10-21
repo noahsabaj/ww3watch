@@ -1,24 +1,24 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import { headlineText } from '$lib/utils'
-  import type { Article } from '$lib/types'
-  import type { Cluster } from '$lib/cluster'
-  import { storyTimeline } from '$lib/cluster'
-  import { timeAgo, langTag, offsetLabel, LANG_NAMES, TARGET_LANGS, isRtlLang } from '$lib/utils'
-  import { prefs, setReadingLang } from '$lib/prefs.svelte'
-  import { clock } from '$lib/now.svelte'
-  import { supabase } from '$lib/supabase'
-  import { failureLabel, failureReason, type TranslateFailure } from '$lib/translate'
-  import { cleanHtml } from '$lib/sanitize-html'
-  import { base } from '$app/paths'
-  import ShareControls from '$lib/components/ShareControls.svelte'
-  import RegionBadge from '$lib/components/RegionBadge.svelte'
-  import AffiliationBadge from '$lib/components/AffiliationBadge.svelte'
-  import SignalBadges from '$lib/components/SignalBadges.svelte'
-  import OutletFold from '$lib/components/OutletFold.svelte'
-  import StoryEvidence from '$lib/components/StoryEvidence.svelte'
-  import { byOutlet } from '$lib/story'
-  import { modal } from '$lib/modal'
+  import Icon from '#lib/components/Icon.svelte'
+  import { headlineText } from '#lib/utils.js'
+  import type { Article } from '#lib/types.js'
+  import type { Cluster } from '#lib/cluster.js'
+  import { storyTimeline } from '#lib/cluster.js'
+  import { timeAgo, langTag, offsetLabel, LANG_NAMES, TARGET_LANGS, isRtlLang } from '#lib/utils.js'
+  import { prefs, setReadingLang } from '#lib/prefs.svelte.js'
+  import { clock } from '#lib/now.svelte.js'
+  import { supabase } from '#lib/supabase.js'
+  import { failureLabel, failureReason, type TranslateFailure } from '#lib/translate.js'
+  import { cleanHtml } from '#lib/sanitize-html.js'
+  import { resolve } from '$app/paths'
+  import ShareControls from '#lib/components/ShareControls.svelte'
+  import RegionBadge from '#lib/components/RegionBadge.svelte'
+  import AffiliationBadge from '#lib/components/AffiliationBadge.svelte'
+  import SignalBadges from '#lib/components/SignalBadges.svelte'
+  import OutletFold from '#lib/components/OutletFold.svelte'
+  import StoryEvidence from '#lib/components/StoryEvidence.svelte'
+  import { byOutlet } from '#lib/story.js'
+  import { modal } from '#lib/modal.js'
 
   // inline: the desk's story pane hosts the reader in place (no backdrop, no
   // focus trap, the page keeps scrolling). Otherwise it is a modal dialog over
@@ -283,8 +283,8 @@
       <div class="mt-4 mb-7 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line pb-3 text-[13px]">
         {#if reader.status !== 'loading'}{@render translateControls()}{/if}
         <ShareControls {article} {cluster} />
-        <a href="{base}/feedback?article={article.id}" class="action gap-1.5"><Icon name="flag" size={15} />Report</a>
-        <a href="{base}/about?article={article.id}{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="action gap-1.5"><Icon name="info" size={15} />Source profile</a>
+        <a href="{resolve('/feedback')}?article={article.id}" class="action gap-1.5"><Icon name="flag" size={15} />Report</a>
+        <a href="{resolve('/about')}?article={article.id}{article.source_id ? `#source-${encodeURIComponent(article.source_id)}` : '#sources'}" class="action gap-1.5"><Icon name="info" size={15} />Source profile</a>
       </div>
 
       {#if reader.status === 'loading'}

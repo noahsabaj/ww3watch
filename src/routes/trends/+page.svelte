@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { supabase } from '$lib/supabase'
-  import { ACTORS, type Actor } from '$lib/signals'
-  import PageShell from '$lib/components/PageShell.svelte'
-  import { buildActorSeries, type ActorDailyRow, type ActorSeries } from '$lib/trends'
+  import { supabase } from '#lib/supabase.js'
+  import { ACTORS, type Actor } from '#lib/signals.js'
+  import PageShell from '#lib/components/PageShell.svelte'
+  import { buildActorSeries, type ActorDailyRow, type ActorSeries } from '#lib/trends.js'
 
   const DAYS = 30
   let series = $state<ActorSeries[]>([])

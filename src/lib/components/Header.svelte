@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
+  import Icon from '#lib/components/Icon.svelte'
   import { tick } from 'svelte'
-  import { timeAgo } from '$lib/utils'
-  import { clock } from '$lib/now.svelte'
-  import SiteMenu from '$lib/components/SiteMenu.svelte'
+  import { timeAgo } from '#lib/utils.js'
+  import { clock } from '#lib/now.svelte.js'
+  import SiteMenu from '#lib/components/SiteMenu.svelte'
 
   let {
     searchQuery = $bindable(),

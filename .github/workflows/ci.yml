@@ -9,10 +9,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm test
@@ -28,16 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # The suite runs against a SEEDED local backend, not production. Asserting
       # against live data meant a PR went red when the ingestion pipeline was
       # having a bad morning, and a red CI that might not be your fault is a red
       # CI nobody reads. The deployed site keeps its own watchdog in
       # prod-smoke.yml.
-      - uses: supabase/setup-cli@v2
+      - uses: supabase/setup-cli@v3
         with:
           version: latest
-          github-token: ${{ secrets.GITHUB_TOKEN }}
       # `supabase start` would apply supabase/migrations itself. A later step does
       # that explicitly instead — file by file with ON_ERROR_STOP, so a failure
       # names the file — so the directory is hidden from the CLI's own pass.
@@ -56,15 +55,15 @@ jobs:
           mv supabase/migrations /tmp/ww3watch-migrations
           (supabase start -x studio,mailpit,imgproxy,storage-api,edge-runtime,logflare,vector,supavisor > /tmp/supabase-start.log 2>&1; echo $? > /tmp/supabase-start.exit) &
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
 
       # The browser (and its system libraries) installs in the background while
       # the site builds; neither needs the other.
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('package-lock.json') }}
@@ -130,7 +129,7 @@ jobs:
           docker exec supabase_db_ww3watch psql -U postgres -At -c "select 'publication: '||pubname||' <- '||schemaname||'.'||tablename from pg_publication_tables order by 1" > /tmp/publications.txt
           docker exec supabase_db_ww3watch psql -U postgres -At -c "select jobname||' | '||schedule||' | '||command from cron.job order by 1" > /tmp/cron.txt || true
           wc -l /tmp/schema.sql /tmp/publications.txt /tmp/cron.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: migrated-schema
           path: |
@@ -142,7 +141,7 @@ jobs:
       - name: Browser tests, and the type-check against the migrated schema
         # The type-check needs types generated from the database just migrated;
         # the browser tests need neither, so both run at once.
-        # svelte-check resolves $env/static/public, so it needs the same two
+        # svelte-check resolves $app/env/public (src/env.ts), so it needs the same two
         # PUBLIC_ values the build step was given.
         env:
           PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
@@ -176,7 +175,7 @@ jobs:
   functions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x

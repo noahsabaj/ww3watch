@@ -1,20 +1,13 @@
 {
-	"extends": "./.svelte-kit/tsconfig.json",
+	"extends": "$app/tsconfig",
 	"compilerOptions": {
 		"rewriteRelativeImportExtensions": true,
-		"allowJs": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
 		"sourceMap": true,
-		"strict": true,
-		"moduleResolution": "bundler"
-	}
-	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
-	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
-	//
-	// To make changes to top-level options such as include and exclude, we recommend extending
-	// the generated config; see https://svelte.dev/docs/kit/configuration#typescript
+		"strict": true
+	},
+	// $app/tsconfig (generated into node_modules by `svelte-kit sync`) carries
+	// SvelteKit's essential and recommended options but no file list, so the one
+	// svelte-check covers is declared here: what the generated config used to
+	// cover. scripts/ has its own project (tsconfig.scripts.json).
+	"include": ["src", "vite.config.ts"]
 }

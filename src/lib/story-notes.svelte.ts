@@ -2,7 +2,7 @@
 // stories render and kept per story for a few minutes: sensor evidence (a
 // satellite pass can add a fire hours after a story was first read).
 import { SvelteMap } from 'svelte/reactivity'
-import { browser } from '$app/environment'
+import { browser } from '$app/env'
 import { supabase } from './supabase'
 import type { StoryEvidence } from './evidence-text'
 

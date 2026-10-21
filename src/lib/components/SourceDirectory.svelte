@@ -1,13 +1,13 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
-  import { sourceAudit } from '$lib/data/source-audit'
-  import { sourceCatalog } from '$lib/data/source-catalog'
-  import { sourceHealth } from '$lib/source-health'
-  import { clock } from '$lib/now.svelte'
-  import { timeAgo } from '$lib/utils'
+  import { sourceAudit } from '#lib/data/source-audit.js'
+  import { sourceCatalog } from '#lib/data/source-catalog.js'
+  import { sourceHealth } from '#lib/source-health.js'
+  import { clock } from '#lib/now.svelte.js'
+  import { timeAgo } from '#lib/utils.js'
   import type { SourceRosterRow } from '../../routes/about/+page'
-  import { base } from '$app/paths'
-  import type { ArticleSample } from '$lib/source-audit'
+  import { asset } from '$app/paths'
+  import type { ArticleSample } from '#lib/source-audit.js'
 
   let { sources, loadError = false }: { sources: SourceRosterRow[]; loadError?: boolean } = $props()
   let search = $state('')
@@ -25,7 +25,7 @@
     if (samples || samplesFailed || loading) return
     loading = true
     try {
-      const res = await fetch(`${base}/source-samples.json`)
+      const res = await fetch(asset('source-samples.json'))
       if (!res.ok) throw new Error(String(res.status))
       samples = await res.json()
     } catch { samplesFailed = true } finally { loading = false }

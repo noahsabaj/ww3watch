@@ -1,6 +1,7 @@
 // Regenerates the PNG icon set + favicon.ico from static/favicon.svg:
 //   npx pwa-assets-generator
-// (minimal-2023 preset emits exactly the filenames vite.config.ts references:
+// (minimal-2023 preset emits exactly the filenames the site references —
+// static/manifest.webmanifest, src/app.html, static/push-sw.js:
 // pwa-64/192/512, maskable-icon-512, apple-touch-icon-180, favicon.ico.)
 // Apple/maskable padding is filled with the brand background instead of the
 // preset's default white.

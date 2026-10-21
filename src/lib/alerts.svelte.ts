@@ -2,7 +2,7 @@
 // holds a push subscription and the pipeline (src/lib/server/pipeline/alerts.ts)
 // sends to it only when a world-changing event is confirmed. The subscription
 // is the only record; nothing about the reader is stored.
-import { browser } from '$app/environment'
+import { browser } from '$app/env'
 import { supabase } from './supabase'
 import { VAPID_PUBLIC_KEY } from './vapid'
 

@@ -45,7 +45,13 @@ for (const width of [320,390,430]) {
 test('source evidence remains readable without live status or JavaScript', async ({ page, request }) => {
   const response = await request.get('/about')
   expect(await response.text()).toContain('972 – Advancement of Citizen Journalism')
-  await page.route('**/rest/v1/sources?*',route => route.fulfill({ status: 503, body: '{}' }))
+  // supabase-js retries a 503 three times before the page hears of it, waiting
+  // as long as Retry-After says (1s, 2s, 4s without one, which outlasts the
+  // expect below). The header crosses origins only when exposed; 0 keeps the
+  // retries instant.
+  await page.route('**/rest/v1/sources?*',route => route.fulfill({
+    status: 503, headers: { 'Retry-After': '0', 'Access-Control-Expose-Headers': 'Retry-After' }, body: '{}',
+  }))
   await page.goto(`/about#source-${first.id}`)
   await expect(page.getByText('Live fetch status is unavailable. Profiles remain readable.')).toBeVisible()
   await expect(page.locator(`#source-${first.id}`)).toContainText('Fetch status: unknown.')

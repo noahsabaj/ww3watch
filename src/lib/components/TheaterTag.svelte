@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import type { Cluster } from '$lib/cluster'
-  import { theaterOf } from '$lib/theaters'
+  import Icon from '#lib/components/Icon.svelte'
+  import type { Cluster } from '#lib/cluster.js'
+  import { theaterOf } from '#lib/theaters.js'
 
   // Where a story is happening, above its headline. A tap narrows the feed to
   // that theater; once it is narrowed the place is just a label.

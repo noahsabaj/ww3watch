@@ -304,7 +304,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
   // past the initial window — fetch the missing row(s) on demand.
   //
   // `open` installs the reader state; it is supplied by deeplink.svelte.ts,
-  // which owns the routing side (and the reason it is replaceState).
+  // which owns the routing side (and the reason it replaces the history entry).
   async function recoverDeepLink(
     articleId: string | null,
     storyId: string | null,

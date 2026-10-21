@@ -1,6 +1,6 @@
 <script>
-  import { base } from '$app/paths'
-  import PageShell from '$lib/components/PageShell.svelte'
+  import { resolve } from '$app/paths'
+  import PageShell from '#lib/components/PageShell.svelte'
 </script>
 
 <PageShell title="Privacy" lede="No visitor accounts, no advertising trackers, no visitor analytics.">
@@ -14,6 +14,6 @@
   <p>Alerts are off unless you turn them on in the menu. Turning them on gives WW3Watch your browser's push address for this site, issued by your browser's push service (Apple, Google, Mozilla or Microsoft), and nothing else: no account, name or email. It is used only to send an alert when a world-changing event is confirmed, and it is deleted when you turn alerts off, or when the push service reports that the address no longer works.</p>
   <h2 class="mt-10 mb-3 font-serif text-2xl text-fg">Feedback</h2>
   <p>Feedback is private to the maintainer. An email address is optional and is used only to respond. Do not send passwords or sensitive personal information. Reports are not published automatically. Reports and optional email addresses expire after 90 days, with hourly cleanup; encrypted backups may retain a copy for up to seven additional days.</p>
-  <p><a class="link" href="{base}/feedback">Contact the maintainer or request removal of a report</a>.</p>
+  <p><a class="link" href={resolve('/feedback')}>Contact the maintainer or request removal of a report</a>.</p>
   </div>
 </PageShell>

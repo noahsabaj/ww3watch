@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AFFILIATION_LABELS, AFFILIATION_TITLES } from '$lib/utils'
+  import { AFFILIATION_LABELS, AFFILIATION_TITLES } from '#lib/utils.js'
 
   let { affiliation }: { affiliation: string | null | undefined } = $props()
 
