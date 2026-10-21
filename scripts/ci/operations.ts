@@ -7,16 +7,19 @@ import { checkSite } from '../ops/site-health'
 const failures: string[] = []
 failures.push(...await checkSite())
 const month = new Date().toISOString().slice(0,7)+'-01'
-const [pipeline,health,budgets,usage,reports,backup,infrastructure] = await Promise.all([
+const [pipeline,health,budgets,usage,reports,backup,fullBackup,infrastructure] = await Promise.all([
   db.rpc('pipeline_status'),db.rpc('ops_health'),db.from('ai_budgets').select('*'),
   db.from('ai_months').select('*'),
   db.from('visitor_reports').select('id',{head:true,count:'exact'}).eq('status','new'),
   db.from('ops_events').select('occurred_at').eq('name','backup_success').maybeSingle(),
+  db.from('ops_events').select('occurred_at').eq('name','full_backup_success').maybeSingle(),
   db.from('ops_events').select('occurred_at,details').eq('name','infrastructure_usage').maybeSingle(),
 ])
-for (const [name,result] of Object.entries({pipeline,health,budgets,usage,reports,backup})) if(result.error) failures.push(`${name}: check unavailable`)
+for (const [name,result] of Object.entries({pipeline,health,budgets,usage,reports,backup,fullBackup})) if(result.error) failures.push(`${name}: check unavailable`)
 if (!pipeline.data || Date.now()-Date.parse(pipeline.data)>3600_000) failures.push('Ingestion has not succeeded within 60 minutes')
 if (!backup.data || Date.now()-Date.parse(backup.data.occurred_at)>30*3600_000) failures.push('No successful backup within 30 hours')
+// The full copy runs on Mondays (database-backup.yml); a day of slack.
+if (!fullBackup.data || Date.now()-Date.parse(fullBackup.data.occurred_at)>8*24*3600_000) failures.push('No successful full backup within 8 days')
 for (const b of budgets.data ?? []) {
   // No row this month means nothing reserved yet: the first reserve_ai opens
   // the month verified, provided an earlier month was (launch_safeguards.sql).

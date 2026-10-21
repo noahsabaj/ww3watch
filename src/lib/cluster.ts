@@ -1,12 +1,15 @@
 import type { Article } from './types'
 
-export interface Cluster {
+/** What grouping reads. The pipeline's trending stage selects only this much. */
+export type Groupable = Pick<Article, 'id' | 'story_id' | 'published_at' | 'source_name' | 'source_lang' | 'body_hash'>
+
+export interface Cluster<A extends Groupable = Article> {
   /** Grouping key: the story uuid, or the article's own id for singletons. */
   id: string
   /** The real stories.id when the group came from the DB; null for unassigned singletons. */
   storyId: string | null
-  representative: Article
-  articles: Article[]
+  representative: A
+  articles: A[]
   sourceCount: number
   /** When its newest member was published, in ms; 0 when none is dated. */
   updatedAt: number
@@ -23,8 +26,8 @@ const ts = publishedAt
 // reprints can be badged in the UI and excluded from independent-source counts
 // (the story pane badges them; trending collapses them before ranking). Shared so
 // the two never drift.
-export function wireDuplicateIds(articles: Article[]): Set<string> {
-  const byHash = new Map<string, Article[]>()
+export function wireDuplicateIds(articles: Pick<Article, 'id' | 'body_hash' | 'published_at'>[]): Set<string> {
+  const byHash = new Map<string, Pick<Article, 'id' | 'body_hash' | 'published_at'>[]>()
   for (const a of articles) {
     if (!a.body_hash) continue
     const g = byHash.get(a.body_hash)
@@ -106,7 +109,7 @@ export function storyTimeline(articles: Article[]): StoryTimeline {
 // toll) is never buried under an older headline in the preferred language.
 const LEAD_LANG_WINDOW_MS = 6 * 60 * 60 * 1000
 
-export function pickRepresentative(group: Article[], langs: readonly string[] = []): Article {
+export function pickRepresentative<A extends Pick<Article, 'published_at' | 'source_lang'>>(group: A[], langs: readonly string[] = []): A {
   const newest = group.reduce((best, a) => (ts(a) > ts(best) ? a : best), group[0])
   const floor = ts(newest) - LEAD_LANG_WINDOW_MS
   for (const lang of langs) {
@@ -128,8 +131,8 @@ export function pickRepresentative(group: Article[], langs: readonly string[] = 
 // Representative: pickRepresentative, kept at articles[0] (consumers render
 // articles.slice(1) as "the others"). Output sorted by the newest member's
 // published_at DESC (updatedAt), undated last.
-export function groupByStoryId(articles: Article[], langs: readonly string[] = []): Cluster[] {
-  const groups = new Map<string, Article[]>()
+export function groupByStoryId<A extends Groupable = Article>(articles: A[], langs: readonly string[] = []): Cluster<A>[] {
+  const groups = new Map<string, A[]>()
   for (const a of articles) {
     const key = a.story_id ?? a.id
     const g = groups.get(key)
