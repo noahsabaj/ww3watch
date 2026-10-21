@@ -35,7 +35,7 @@ jobs:
       run:
         working-directory: cloudflare
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # PRs: build-only validation. No secrets needed, so it runs on forks too.
       - name: Validate (dry-run)

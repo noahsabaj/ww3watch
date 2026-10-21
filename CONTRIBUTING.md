@@ -20,6 +20,8 @@ rationale and the rest of the house rules live in
 
 ## Local setup
 
+Node 24 LTS, as CI and the pipeline image run (on Node 22, 22.22.2 or later).
+
 ```bash
 npm install            # .npmrc pins onnxruntime CUDA off — keep it
 cp .env.example .env    # then fill in the public values below
