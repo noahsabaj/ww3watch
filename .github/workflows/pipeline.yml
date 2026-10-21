@@ -139,7 +139,10 @@ jobs:
           # commenting failed and the alert itself went red. An open issue
           # already says "still failing"; the daily comment says "still today".
           # If commenting fails anyway, start a fresh issue rather than go quiet.
-          existing=$(gh issue list --label pipeline-failure --state open --json number,updatedAt --jq '.[0] | "\(.number) \(.updatedAt)"' 2>/dev/null || echo "")
+          # `// empty`: with no open issue, `.[0]` is null and the line read
+          # "null null", so `date -d null` failed this step before it filed the
+          # first issue (October 2026: three days of failed runs, no issue).
+          existing=$(gh issue list --label pipeline-failure --state open --json number,updatedAt --jq '.[0] // empty | "\(.number) \(.updatedAt)"' 2>/dev/null || echo "")
           number=${existing%% *}
           if [ -n "$number" ]; then
             updated=$(date -d "${existing#* }" +%s)
