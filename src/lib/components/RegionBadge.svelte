@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { SourceRegion } from '$lib/types'
-  import { REGION_COLORS } from '$lib/types'
+  import type { SourceRegion } from '#lib/types.js'
+  import { REGION_COLORS } from '#lib/types.js'
 
   // A region is a coloured dot and its name, never a filled block: colour
   // stays a cue, not the loudest thing on the line.

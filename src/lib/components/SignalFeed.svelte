@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { Cluster } from '$lib/cluster'
-  import type { Article } from '$lib/types'
-  import SignalStory from '$lib/components/SignalStory.svelte'
-  import PullIndicator from '$lib/components/PullIndicator.svelte'
-  import FeedEnd from '$lib/components/FeedEnd.svelte'
-  import { createPullRefresh } from '$lib/pull-refresh.svelte'
-  import { tips } from '$lib/tips.svelte'
+  import type { Cluster } from '#lib/cluster.js'
+  import type { Article } from '#lib/types.js'
+  import SignalStory from '#lib/components/SignalStory.svelte'
+  import PullIndicator from '#lib/components/PullIndicator.svelte'
+  import FeedEnd from '#lib/components/FeedEnd.svelte'
+  import { createPullRefresh } from '#lib/pull-refresh.svelte.js'
+  import { tips } from '#lib/tips.svelte.js'
 
   let {
     clusters,

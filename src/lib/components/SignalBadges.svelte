@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isClaim, isOpinion, isUnverified, type ArticleSignals } from '$lib/signals'
+  import { isClaim, isOpinion, isUnverified, type ArticleSignals } from '#lib/signals.js'
 
   // Reader cues judged by Jev at ingest (src/lib/signals.ts). Same muted weight
   // as the affiliation / wire tags: they qualify a headline, never compete with it.

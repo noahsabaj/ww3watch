@@ -1,25 +1,25 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
+  import Icon from '#lib/components/Icon.svelte'
   import { onMount, untrack, tick } from 'svelte'
-  import Header from '$lib/components/Header.svelte'
+  import Header from '#lib/components/Header.svelte'
   // The reader (with DOMPurify) is its own chunk: most visits never open it.
-  const articlePanel = import('$lib/components/ArticlePanel.svelte')
-  import SignalFeed from '$lib/components/SignalFeed.svelte'
-  import StoryDesk from '$lib/components/StoryDesk.svelte'
-  import TheatersPage from '$lib/components/TheatersPage.svelte'
-  import TheaterBar from '$lib/components/TheaterBar.svelte'
-  import { theaterBoard, theaterById, theaterOf } from '$lib/theaters'
-  import { clock } from '$lib/now.svelte'
-  import { load, save } from '$lib/saved'
-  import { createFeed } from '$lib/feed.svelte'
-  import { createSearch } from '$lib/search.svelte'
-  import { createReaderRouting } from '$lib/deeplink.svelte'
-  import { loadFeed } from '$lib/load-feed'
-  import { loadSnapshot, saveSnapshot } from '$lib/feed-snapshot'
-  import { shareTarget } from '$lib/share'
-  import { replaceState } from '$app/navigation'
-  import { base } from '$app/paths'
-  import { rankStories, type Cluster } from '$lib/cluster'
+  const articlePanel = import('#lib/components/ArticlePanel.svelte')
+  import SignalFeed from '#lib/components/SignalFeed.svelte'
+  import StoryDesk from '#lib/components/StoryDesk.svelte'
+  import TheatersPage from '#lib/components/TheatersPage.svelte'
+  import TheaterBar from '#lib/components/TheaterBar.svelte'
+  import { theaterBoard, theaterById, theaterOf } from '#lib/theaters.js'
+  import { clock } from '#lib/now.svelte.js'
+  import { load, save } from '#lib/saved.js'
+  import { createFeed } from '#lib/feed.svelte.js'
+  import { createSearch } from '#lib/search.svelte.js'
+  import { createReaderRouting } from '#lib/deeplink.svelte.js'
+  import { loadFeed } from '#lib/load-feed.js'
+  import { loadSnapshot, saveSnapshot } from '#lib/feed-snapshot.js'
+  import { shareTarget } from '#lib/share.js'
+  import { goto } from '$app/navigation'
+  import { resolve } from '$app/paths'
+  import { rankStories, type Cluster } from '#lib/cluster.js'
 
   // One home, two shapes, chosen by the screen rather than a toggle: Signal (one
   // story at a time, full screen) on a phone; the story desk (every story in a
@@ -94,7 +94,7 @@
     viewing = cluster.id
     if (reader.selectedArticle) return
     const { search } = new URL(shareTarget(cluster.representative, cluster).url)
-    replaceState(`${base}/${search}`, {})
+    void goto(resolve('/') + search, { shallow: true, replace: true })
   }
 
   function flushQueue() {

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import TheaterRow from '$lib/components/TheaterRow.svelte'
-  import type { TheaterSummary } from '$lib/theaters'
-  import { modal } from '$lib/modal'
+  import Icon from '#lib/components/Icon.svelte'
+  import TheaterRow from '#lib/components/TheaterRow.svelte'
+  import type { TheaterSummary } from '#lib/theaters.js'
+  import { modal } from '#lib/modal.js'
 
   // A phone's overview of where things are happening: one row per theater,
   // busiest first. Picking one closes the page onto that theater's stories.

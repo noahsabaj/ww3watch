@@ -5,9 +5,9 @@
 // createReaderRouting() registers an $effect and an afterNavigate callback, so
 // it MUST be called during component initialisation (top level of the page's
 // <script>), never from onMount or an event handler.
-import { afterNavigate, pushState, replaceState } from '$app/navigation'
+import { afterNavigate, goto } from '$app/navigation'
 import { page } from '$app/state'
-import { base } from '$app/paths'
+import { resolve } from '$app/paths'
 import type { Article } from './types'
 import type { Feed } from './feed.svelte'
 
@@ -36,8 +36,8 @@ export function createReaderRouting(feed: Feed) {
 
   // True when WE pushed the history entry the panel sits on, so closing can pop
   // it. A cold deep link has no entry of ours behind it — history.back() there
-  // would leave the site — so that path installs state with replaceState and
-  // closing rewrites the URL instead.
+  // would leave the site — so that path installs state by replacing the entry,
+  // and closing rewrites the URL instead.
   let openedByPush = false
 
   function openArticle(a: Article) {
@@ -46,9 +46,9 @@ export function createReaderRouting(feed: Feed) {
       // Switching articles inside an open panel (the in-panel source list):
       // replace, so moving between sources of one story doesn't stack entries
       // the visitor then has to press Back through.
-      replaceState(`?article=${a.id}`, { articleId: a.id })
+      void goto(`?article=${a.id}`, { shallow: true, replace: true, state: { articleId: a.id } })
     } else {
-      pushState(`?article=${a.id}`, { articleId: a.id })
+      void goto(`?article=${a.id}`, { shallow: true, state: { articleId: a.id } })
       openedByPush = true
     }
   }
@@ -56,9 +56,9 @@ export function createReaderRouting(feed: Feed) {
   function closeArticle() {
     if (openedByPush) {
       openedByPush = false
-      history.back() // native back is fine — only push/replaceState conflict with the router
+      history.back() // native back is fine — only a native pushState/replaceState conflicts with the router
     } else {
-      replaceState(`${base}/`, {})
+      void goto(resolve('/'), { shallow: true, replace: true })
     }
   }
 
@@ -71,12 +71,12 @@ export function createReaderRouting(feed: Feed) {
   // Deep-link targets (see feed.recoverDeepLink, which fetches them when they
   // scrolled past the initial window) are opened through this.
   //
-  // Installs page.state with replaceState, NOT pushState: the visitor arrived
+  // Installs page.state by replacing the entry, NOT pushing one: the visitor arrived
   // here directly, so there is no entry of ours behind this one and adding a new
   // one would mean Back leaves the site. The URL is left exactly as they typed
   // or were sent it — `?story=` links stay `?story=` links.
   const openDeepLink = (id: string, sid?: string) =>
-    replaceState('', sid ? { articleId: id, storyId: sid } : { articleId: id })
+    void goto('', { shallow: true, replace: true, state: sid ? { articleId: id, storyId: sid } : { articleId: id } })
 
   // Deep link: ?article=<id> opens that article, ?story=<id> that story — both
   // recovering targets that scrolled past the initial window.
@@ -85,7 +85,8 @@ export function createReaderRouting(feed: Feed) {
   // history.replaceState while hydrating, which lands AFTER onMount and wipes
   // any page.state set there (sveltekit:states goes back to {}), so the panel
   // silently failed to open. afterNavigate fires once the initial navigation has
-  // settled, which is the only safe moment to install state.
+  // settled, which is the only safe moment to install state. (Shallow
+  // navigations — this file's own — call it again; only the first one counts.)
   let deepLinkHandled = false
   afterNavigate(() => {
     if (deepLinkHandled) return

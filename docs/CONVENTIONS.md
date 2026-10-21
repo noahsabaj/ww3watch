@@ -161,7 +161,7 @@ fields from SW-cached REST rows (`story_id ?? id`).
   no-op). Cache content RAW so sanitizer upgrades apply retroactively — the
   hook that absolutizes URLs and forces `target="_blank"` fixed every cached
   article the moment it shipped.
-- Time-derived labels read `clock.now` (`$lib/now.svelte.ts`) so they tick;
+- Time-derived labels read `clock.now` (`#lib/now.svelte.ts`) so they tick;
   anchor values refresh via realtime events, not polling.
 - No `backdrop-filter` on ancestors of `position: fixed` children — it creates
   a containing block and quietly reanchors them (the sticky header's dropdown).

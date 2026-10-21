@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
+  import Icon from '#lib/components/Icon.svelte'
   import { onMount } from 'svelte'
-  import type { Article } from '$lib/types'
-  import type { Cluster } from '$lib/cluster'
-  import { shareTarget } from '$lib/share'
+  import type { Article } from '#lib/types.js'
+  import type { Cluster } from '#lib/cluster.js'
+  import { shareTarget } from '#lib/share.js'
 
   let { article, cluster = null }: { article: Article; cluster?: Cluster | null } = $props()
   const target = $derived(shareTarget(article, cluster))

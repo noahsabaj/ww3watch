@@ -33,7 +33,7 @@ A real-time global news aggregator focused on geopolitical conflict and world ev
 
 Free-tier everywhere except Jev (pay-per-token, roughly $0.50/day at this volume); no provider that pauses idle hobby projects:
 
-- [SvelteKit](https://kit.svelte.dev/) + Svelte 5 runes — static SPA (`adapter-static`)
+- [SvelteKit 3](https://svelte.dev/docs/kit) + Svelte 5 runes on [Vite 8](https://vite.dev/) — static SPA (`adapter-static`); a [Workbox](https://developer.chrome.com/docs/workbox) service worker makes it an installable, offline-capable PWA and carries the alarm's push handlers
 - [GitHub Pages](https://pages.github.com/) — hosting · [GitHub Actions](https://docs.github.com/actions) — scheduled ingestion (also runs as a container, see `Dockerfile`)
 - [Supabase](https://supabase.com/) — Postgres (+pgvector, pg_cron retention) + Realtime + two Deno Edge Functions (`reader`, `translate`)
 - [Transformers.js](https://huggingface.co/docs/transformers.js) — multilingual-e5-base embeddings, locally on the runner (story grouping)

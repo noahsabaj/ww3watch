@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
+  import Icon from '#lib/components/Icon.svelte'
   import type { Snippet } from 'svelte'
-  import { modal } from '$lib/modal'
+  import { modal } from '#lib/modal.js'
 
   // One surface for everything that opens over the page (the site menu):
   // a bottom sheet on a phone, a panel under the header's right edge on a

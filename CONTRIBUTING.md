@@ -1,7 +1,7 @@
 # Contributing to WW3Watch
 
 Thanks for your interest. WW3Watch is a real-time global-conflict news aggregator:
-a SvelteKit 2 / Svelte 5 static SPA on GitHub Pages, backed by Supabase (Postgres +
+a SvelteKit 3 / Svelte 5 static SPA on GitHub Pages, backed by Supabase (Postgres +
 Realtime + Edge Functions) and a model-assisted ingestion pipeline (a local
 classifier, local embeddings, and TypeSafe's Jev decision model — no generative
 LLM). It runs on free tiers everywhere except Jev (pay-per-token, well under a

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import type { Theater } from '$lib/theaters'
+  import Icon from '#lib/components/Icon.svelte'
+  import type { Theater } from '#lib/theaters.js'
 
   // Says which theater the feed is narrowed to and how to leave it — the same
   // shape as search: what you're looking at, and one way back to everything.

@@ -35,7 +35,7 @@ export const AFFILIATION_TITLES: Record<string, string> = {
 }
 
 // Time-anchored helpers take an optional nowMs so components can pass the
-// shared reactive clock ($lib/now.svelte.ts) — labels then re-render as time
+// shared reactive clock (#lib/now.svelte.ts) — labels then re-render as time
 // passes instead of freezing on quiet tabs. Defaulting to Date.now() keeps
 // server/pipeline callers unchanged.
 

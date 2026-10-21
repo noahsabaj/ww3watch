@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { TheaterSummary } from '$lib/theaters'
-  import { headlineText } from '$lib/utils'
-  import { createStoryPhoto } from '$lib/story-photo.svelte'
-  import StoryPhotoImg from '$lib/components/StoryPhotoImg.svelte'
+  import type { TheaterSummary } from '#lib/theaters.js'
+  import { headlineText } from '#lib/utils.js'
+  import { createStoryPhoto } from '#lib/story-photo.svelte.js'
+  import StoryPhotoImg from '#lib/components/StoryPhotoImg.svelte'
 
   // One theater on the Theaters page: its name and how busy it is, the story
   // leading it, and that story's photograph beside the words, never under them.

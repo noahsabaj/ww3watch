@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { Cluster } from '$lib/cluster'
-  import { langTag } from '$lib/utils'
-  import { storyBadgeSignals } from '$lib/story'
-  import SignalBadges from '$lib/components/SignalBadges.svelte'
-  import TheaterTag from '$lib/components/TheaterTag.svelte'
+  import type { Cluster } from '#lib/cluster.js'
+  import { langTag } from '#lib/utils.js'
+  import { storyBadgeSignals } from '#lib/story.js'
+  import SignalBadges from '#lib/components/SignalBadges.svelte'
+  import TheaterTag from '#lib/components/TheaterTag.svelte'
 
   // The line above a story's headline, the same on Signal and the desk: where
   // it's happening, whose newsroom leads it and in what language, the story's

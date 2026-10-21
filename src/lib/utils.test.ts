@@ -14,7 +14,7 @@ describe('offsetLabel', () => {
 })
 
 // The explicit nowMs param lets components anchor labels to the shared
-// reactive clock ($lib/now.svelte.ts) so they re-render as time passes.
+// reactive clock (#lib/now.svelte.ts) so they re-render as time passes.
 describe('explicit nowMs anchoring', () => {
   const NOW = new Date('2026-06-10T15:00:00').getTime()
 

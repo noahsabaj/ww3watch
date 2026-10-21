@@ -1,18 +1,18 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import type { Cluster } from '$lib/cluster'
-  import type { Article } from '$lib/types'
-  import { REGION_BORDER } from '$lib/types'
-  import { dayKey, dayLabel, headlineText, langTag, timeAgo } from '$lib/utils'
-  import { clock } from '$lib/now.svelte'
-  import type { ReaderRouting } from '$lib/deeplink.svelte'
-  import { base } from '$app/paths'
-  import DeskStory from '$lib/components/DeskStory.svelte'
-  const articlePanel = import('$lib/components/ArticlePanel.svelte')
-  import PullIndicator from '$lib/components/PullIndicator.svelte'
-  import FeedEnd from '$lib/components/FeedEnd.svelte'
-  import { createPullRefresh } from '$lib/pull-refresh.svelte'
-  import type { TheaterSummary } from '$lib/theaters'
+  import Icon from '#lib/components/Icon.svelte'
+  import type { Cluster } from '#lib/cluster.js'
+  import type { Article } from '#lib/types.js'
+  import { REGION_BORDER } from '#lib/types.js'
+  import { dayKey, dayLabel, headlineText, langTag, timeAgo } from '#lib/utils.js'
+  import { clock } from '#lib/now.svelte.js'
+  import type { ReaderRouting } from '#lib/deeplink.svelte.js'
+  import { resolve } from '$app/paths'
+  import DeskStory from '#lib/components/DeskStory.svelte'
+  const articlePanel = import('#lib/components/ArticlePanel.svelte')
+  import PullIndicator from '#lib/components/PullIndicator.svelte'
+  import FeedEnd from '#lib/components/FeedEnd.svelte'
+  import { createPullRefresh } from '#lib/pull-refresh.svelte.js'
+  import type { TheaterSummary } from '#lib/theaters.js'
   import { untrack } from 'svelte'
 
   // The desktop home: every story in a scannable column on the left, the
@@ -192,7 +192,7 @@
     {#if lastVisitAt === null}
       <section class="border-b border-line px-4 py-3 text-xs leading-relaxed text-fg-2" aria-label="About this feed">
         Global conflict reporting from every side, grouped into stories. Automated labels and grouping do not verify a claim.
-        <a class="link" href="{base}/about">How WW3Watch works</a>
+        <a class="link" href={resolve('/about')}>How WW3Watch works</a>
       </section>
     {/if}
 

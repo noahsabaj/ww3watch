@@ -1,0 +1,17 @@
+{
+	"name": "WW3Watch",
+	"short_name": "WW3Watch",
+	"description": "Real-time global conflict news aggregator",
+	"lang": "en",
+	"start_url": "./",
+	"scope": "./",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#070809",
+	"theme_color": "#070809",
+	"icons": [
+		{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "pwa-512x512.png", "sizes": "512x512", "type": "image/png" },
+		{ "src": "maskable-icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+	]
+}

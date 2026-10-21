@@ -1,15 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { base } from '$app/paths'
-  import { supabase } from '$lib/supabase'
-  import { REGION_COLORS } from '$lib/types'
-  import { timeAgo } from '$lib/utils'
-  import { clock } from '$lib/now.svelte'
-  import RegionBadge from '$lib/components/RegionBadge.svelte'
-  import type { SourceRegion } from '$lib/types'
+  import { resolve } from '$app/paths'
+  import { supabase } from '#lib/supabase.js'
+  import { REGION_COLORS } from '#lib/types.js'
+  import { timeAgo } from '#lib/utils.js'
+  import { clock } from '#lib/now.svelte.js'
+  import RegionBadge from '#lib/components/RegionBadge.svelte'
+  import type { SourceRegion } from '#lib/types.js'
   import type { SourceRosterRow } from './+page'
-  import SourceDirectory from '$lib/components/SourceDirectory.svelte'
-  import PageShell from '$lib/components/PageShell.svelte'
+  import SourceDirectory from '#lib/components/SourceDirectory.svelte'
+  import PageShell from '#lib/components/PageShell.svelte'
 
   type Highlight = {
     article_id: string
@@ -178,7 +178,7 @@
             <div class="flex items-center gap-2 text-xs">
               <RegionBadge region={h.source_region as SourceRegion} size="sm" />
               <a
-                href="{base}/?{h.story_id ? `story=${h.story_id}` : `article=${h.article_id}`}"
+                href="{resolve('/')}?{h.story_id ? `story=${h.story_id}` : `article=${h.article_id}`}"
                 dir="auto"
                 class="text-fg-2 hover:text-fg transition-colors line-clamp-1 flex-1 min-w-0"
               >{h.title}</a>
@@ -197,7 +197,7 @@
       <p class="page-prose">
         An <a href="https://qusjbpknlduuklnfciws.supabase.co/functions/v1/rss" class="link">RSS feed</a>,
         one item per story, opening in the reader here. How each party's activity has moved
-        over the last month is on <a href="{base}/trends" class="link">Trends</a>.
+        over the last month is on <a href={resolve('/trends')} class="link">Trends</a>.
       </p>
     </section>
 
@@ -209,7 +209,7 @@
            class="link">open source under AGPL-3.0</a>:
         anyone running a modified version as a service must publish their changes, so every
         derivative of this site stays as auditable as this one. Reader content is cached to survive
-        link rot. No visitor accounts or advertising analytics. Abuse-prevention records protect the service; see our <a href="{base}/privacy" class="link">privacy details</a>.
+        link rot. No visitor accounts or advertising analytics. Abuse-prevention records protect the service; see our <a href={resolve('/privacy')} class="link">privacy details</a>.
       </p>
     </section>
   </div>
