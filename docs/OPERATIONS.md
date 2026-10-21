@@ -91,10 +91,14 @@ After restoration, run private retention before opening production access.
 ## Backups and restoration
 
 The encrypted database workflow has its own concurrency group and runs daily
-at 04:43 UTC. It backs up the public schema and persistent application data,
-including reports, configuration and budget accounting. Archives use AES-256-GCM
-with RSA-OAEP wrapped keys. Only the public key is supplied to backup jobs.
-GitHub retains encrypted artifacts seven days. The job refuses an upload if
+at 04:43 UTC. On Mondays (and on any manual run) it makes a full backup: the
+public schema and persistent application data, including the news tables. The
+other days copy only what nothing else can rebuild — the source roster,
+reports, alarm subscriptions, budget accounting and ops records — because a
+full dump re-reads 30 days of articles every time, and daily full dumps were
+most of the egress that got the project restricted in October 2026. Archives
+use AES-256-GCM with RSA-OAEP wrapped keys. Only the public key is supplied to
+backup jobs. GitHub retains daily archives seven days and full ones fifteen. The job refuses an upload if
 repository artifact storage plus the new archive exceeds 400 MiB; investigate
 capacity rather than deleting the last good recovery copy. Account-wide storage
 is a separate billing concern.
@@ -122,9 +126,11 @@ secret and dispatch `Isolated encrypted backup restore` with a successful backup
 run ID. It downloads and decrypts only on an ephemeral runner, starts an empty
 local Supabase instance, restores schema/data, checks foreign keys and private
 access restrictions, and renders the restored feed. Only timestamps/counts are
-uploaded as proof. Remove the temporary recovery secret after the drill. The
-target is a 24-hour recovery point and basic service within two hours; a passing
-crypto unit test alone does not establish either target.
+uploaded as proof. Remove the temporary recovery secret after the drill; it
+needs a full archive. The target is a 24-hour recovery point for the tables the
+daily archive holds, 7 days for the news tables (the feed refills from its
+sources), and basic service within two hours; a passing crypto unit test alone
+does not establish either target.
 
 Verified September 20, 2026: encrypted backup run `35521790915` restored in
 isolated run `35522026497`. The drill loaded 22,804 articles, 223 sources and
@@ -132,11 +138,13 @@ isolated run `35522026497`. The drill loaded 22,804 articles, 223 sources and
 the restored feed in **92 seconds**. The archive was four minutes old. The
 temporary GitHub recovery-key secret was removed after this successful drill.
 
-For a real outage, select the newest successful encrypted archive, restore into
-an isolated replacement first, run retention, recreate scheduled jobs and
+For a real outage, restore the newest full archive into an isolated
+replacement first, then replace the daily tables with the newest daily
+archive's copies if it is newer, run retention, recreate scheduled jobs and
 Realtime membership using `scripts/ops/restore-services.sql`, and verify the feed before changing live
 credentials. Never restore over the only production copy. A backup older than
-30 hours or a failed backup job raises an issue; a successful job reports recovery.
+30 hours, a full backup older than 8 days or a failed backup job raises an
+issue; a successful job reports recovery.
 
 Before loading a schema into a new Supabase database, clear that target's
 `postgres` default privileges for tables, sequences and functions in `public`

@@ -1,4 +1,11 @@
 name: Encrypted database backup
+# Daily, but the full copy only on Mondays (and on a manual run). Egress is
+# metered, and a full dump re-reads 30 days of articles and stories that the
+# previous day's dump already held: daily full dumps were most of the 5 GB that
+# got the project restricted in October 2026. The other days copy only the
+# tables nothing else can rebuild (the roster, reports, alarm subscriptions,
+# budgets, ops records), so those keep a 24-hour recovery point and the news
+# tables a 7-day one (docs/OPERATIONS.md).
 on:
   schedule:
     - cron: '43 4 * * *'
@@ -21,27 +28,45 @@ jobs:
       - run: npm ci
       - uses: supabase/setup-cli@v3
         with: {version: '2.117.0'}
+      # Caches and buckets that rebuild themselves are never copied. The news
+      # tables (articles and everything hanging off them, sensor readings, run
+      # logs, AI reservations) are copied only in the full backup.
+      - name: Choose full or daily backup
+        id: kind
+        run: |
+          always=public.article_content,public.article_translations,public.article_embeddings,public.classified_rejects,public.verdicts,public.rate_limits
+          news=public.articles,public.stories,public.story_evidence,public.story_merge_judged,public.story_places,public.story_sides,public.alerts,public.trending,public.trending_judgments,public.trending_log,public.sensor_events,public.sensor_fetches,public.pipeline_runs,public.ai_reservations
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || [ "$(date -u +%u)" = 1 ]; then
+            echo "kind=full" >> "$GITHUB_OUTPUT"; echo "exclude=$always" >> "$GITHUB_OUTPUT"
+          else
+            echo "kind=daily" >> "$GITHUB_OUTPUT"; echo "exclude=$always,$news" >> "$GITHUB_OUTPUT"
+          fi
       - name: Dump schema and persistent data
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          EXCLUDE: ${{ steps.kind.outputs.exclude }}
         run: |
           test -n "$SUPABASE_DB_PASSWORD" || { echo '::error::SUPABASE_DB_PASSWORD is required for the documented direct-password fallback.'; exit 1; }
           mkdir -p "$RUNNER_TEMP/backup"
           supabase db dump --project-ref qusjbpknlduuklnfciws --password "$SUPABASE_DB_PASSWORD" --schema public --file "$RUNNER_TEMP/backup/schema.sql"
-          supabase db dump --project-ref qusjbpknlduuklnfciws --password "$SUPABASE_DB_PASSWORD" --schema public --data-only --use-copy --exclude public.article_content,public.article_translations,public.article_embeddings,public.classified_rejects,public.verdicts,public.rate_limits --file "$RUNNER_TEMP/backup/data.sql"
+          supabase db dump --project-ref qusjbpknlduuklnfciws --password "$SUPABASE_DB_PASSWORD" --schema public --data-only --use-copy --exclude "$EXCLUDE" --file "$RUNNER_TEMP/backup/data.sql"
       - name: Encrypt and check artifact storage allowance
         run: node --import tsx scripts/ops/backup.ts encrypt "$RUNNER_TEMP/backup"
         env:
           BACKUP_PUBLIC_KEY: ${{ vars.BACKUP_PUBLIC_KEY }}
+          BACKUP_KIND: ${{ steps.kind.outputs.kind }}
+          BACKUP_EXCLUDED: ${{ steps.kind.outputs.exclude }}
           GH_TOKEN: ${{ github.token }}
+      # A full archive is kept two weeks, so one is always there while the
+      # next Monday's is made (or if it fails).
       - uses: actions/upload-artifact@v7
         with:
           name: encrypted-database-backup
           path: ${{ runner.temp }}/backup/ww3watch-backup.enc
-          retention-days: 7
+          retention-days: ${{ steps.kind.outputs.kind == 'full' && 15 || 7 }}
           if-no-files-found: error
-      - run: node --import tsx scripts/ops/record-backup.ts
+      - run: node --import tsx scripts/ops/record-backup.ts ${{ steps.kind.outputs.kind == 'full' && 'full_backup_success' || '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

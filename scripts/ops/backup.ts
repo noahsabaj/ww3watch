@@ -12,7 +12,7 @@ if (mode==='encrypt') {
   if (!process.env.BACKUP_PUBLIC_KEY) throw new Error('BACKUP_PUBLIC_KEY missing')
   const files = Object.fromEntries(names.map(n=>[n,readFileSync(join(directory,n),'utf8')]))
   if (files['data.sql'].length<1000 || !files['schema.sql'].includes('CREATE TABLE')) throw new Error('Refusing empty/incomplete backup')
-  const manifest = {version:1,createdAt:new Date().toISOString(),commit:process.env.GITHUB_SHA,hashes:Object.fromEntries(names.map(n=>[n,hash(files[n])])),excluded:['article_content','article_translations','article_embeddings','classified_rejects','verdicts','rate_limits']}
+  const manifest = {version:1,createdAt:new Date().toISOString(),commit:process.env.GITHUB_SHA,hashes:Object.fromEntries(names.map(n=>[n,hash(files[n])])),kind:process.env.BACKUP_KIND ?? 'full',excluded:(process.env.BACKUP_EXCLUDED ?? 'article_content,article_translations,article_embeddings,classified_rejects,verdicts,rate_limits').split(',').map(t=>t.replace(/^public\./,''))}
   const encrypted = encryptBackup(Buffer.from(JSON.stringify({manifest,files})),process.env.BACKUP_PUBLIC_KEY)
   const pages = JSON.parse(execFileSync('gh',['api','--paginate','--slurp',`repos/${process.env.GITHUB_REPOSITORY}/actions/artifacts?per_page=100`],{encoding:'utf8'}))
   const stored = pages.flatMap((p:{artifacts:Array<{expired:boolean;size_in_bytes:number}>})=>p.artifacts).filter((a:{expired:boolean})=>!a.expired).reduce((sum:number,a:{size_in_bytes:number})=>sum+a.size_in_bytes,0)
@@ -27,5 +27,5 @@ if (mode==='encrypt') {
     if (typeof files[name]!=='string' || hash(files[name])!==manifest.hashes[name]) throw new Error('Backup integrity check failed')
     writeFileSync(join(directory,'restored',name),files[name],{mode:0o600})
   }
-  console.log(JSON.stringify({restoredAt:new Date().toISOString(),backupCreatedAt:manifest.createdAt,bytes:statSync(join(directory,'ww3watch-backup.enc')).size}))
+  console.log(JSON.stringify({restoredAt:new Date().toISOString(),backupCreatedAt:manifest.createdAt,kind:manifest.kind ?? 'full',bytes:statSync(join(directory,'ww3watch-backup.enc')).size}))
 } else throw new Error('Unknown backup operation')

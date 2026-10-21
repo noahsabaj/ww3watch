@@ -1113,6 +1113,12 @@ export type Database = {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
         Returns: undefined
       }
+      unseen_guids: {
+        Args: { check_guids: string[] }
+        Returns: {
+          guid: string
+        }[]
+      }
       unsubscribe_alerts: { Args: { p_endpoint: string }; Returns: undefined }
     }
     Enums: {

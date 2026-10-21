@@ -98,6 +98,7 @@ select count(*) as actor_days from public.actor_daily(7);
 select count(*) as low_yield from public.source_yield(7, 1, 100);
 select count(*) as silent from public.silent_sources(7, 2);
 select count(*) as known_guids from public.existing_guids(array['smoke-1', 'smoke-3', 'never-seen']);
+select count(*) as unseen_guids from public.unseen_guids(array['smoke-1', 'smoke-3', 'never-seen']);
 select public.ops_health() is not null as ops_health_ok;
 select public.pipeline_status() as pipeline_status;
 select public.check_rate_limit('203.0.113.7', 'smoke', 5) as rate_limit_allows;
@@ -194,7 +195,7 @@ do $$
 declare
   covered text[] := array[
     'actor_daily', 'apply_article_signals', 'assign_story_by_embedding', 'check_rate_limit',
-    'detach_from_story', 'existing_guids', 'nearest_story_candidates', 'ops_health',
+    'detach_from_story', 'existing_guids', 'unseen_guids', 'nearest_story_candidates', 'ops_health',
     'pipeline_status', 'purge_irrelevant_articles', 'reelect_story_reps', 'replace_trending',
     'run_retention', 'source_yield', 'silent_sources', 'story_join_sims', 'story_merge_candidates', 'merge_stories',
     -- event-trigger function: fires on DDL, cannot be called directly.

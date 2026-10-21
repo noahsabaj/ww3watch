@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       backup_run:
-        description: Successful encrypted backup run ID
+        description: Successful full encrypted backup run ID (a Monday or manual run)
         required: true
         type: string
 permissions:
@@ -35,6 +35,8 @@ jobs:
           mkdir -m 700 "$RUNNER_TEMP/recovery"
           gh run download "$BACKUP_RUN" --name encrypted-database-backup --dir "$RUNNER_TEMP/recovery"
           node --import tsx scripts/ops/backup.ts decrypt "$RUNNER_TEMP/recovery" > "$RUNNER_TEMP/recovery-summary.json"
+          # Only a full (Monday or manual) archive holds the feed this drill renders.
+          jq -e '.kind == "full"' "$RUNNER_TEMP/recovery-summary.json" > /dev/null || { echo '::error::That run made a daily archive (no news tables); use a full one: a Monday or manually dispatched backup run.'; exit 1; }
       - name: Start empty isolated database
         run: |
           mv supabase/migrations "$RUNNER_TEMP/migrations"

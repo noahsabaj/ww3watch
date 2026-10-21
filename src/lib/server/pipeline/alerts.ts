@@ -121,22 +121,31 @@ async function send(c: Candidate): Promise<{ sent: number; failed: number }> {
   return { sent, failed }
 }
 
+// What deciding needs, without the text: every run reads ~1,400 fresh story
+// members, and their titles and summaries were most of those bytes (egress is
+// metered). The text is fetched only for the stories that qualify — rarely any.
+const COUNTED = 'story_id, source_name, source_region, source_lang, published_at, severity, opinion, retrospective'
+
+async function freshMembers<T>(columns: string, since: string, storyIds?: string[]): Promise<T[]> {
+  const rows: T[] = []
+  for (let from = 0; ; from += 1000) {
+    let q = supabaseAdmin.from('articles').select(columns).gte('published_at', since).not('story_id', 'is', null)
+    if (storyIds) q = q.in('story_id', storyIds)
+    const { data, error } = await q.order('published_at', { ascending: false }).range(from, from + 999)
+    if (error) throw new Error(error.message)
+    rows.push(...((data ?? []) as T[]))
+    if (!data || data.length < 1000) break
+  }
+  return rows
+}
+
 export async function checkAlerts(stats: RunStats, deadlineMs: number, now = Date.now()): Promise<void> {
   try {
     const since = new Date(now - FRESH_HOURS * 3600_000).toISOString()
-    const members: Member[] = []
-    for (let from = 0; ; from += 1000) {
-      const { data, error } = await supabaseAdmin
-        .from('articles')
-        .select('story_id, title, summary, source_name, source_region, source_lang, published_at, severity, opinion, retrospective')
-        .gte('published_at', since)
-        .not('story_id', 'is', null)
-        .order('published_at', { ascending: false })
-        .range(from, from + 999)
-      if (error) throw new Error(error.message)
-      members.push(...((data ?? []) as Member[]))
-      if (!data || data.length < 1000) break
-    }
+    const counted = await freshMembers<Omit<Member, 'title' | 'summary'>>(COUNTED, since)
+    const qualifying = candidates(counted.map((m) => ({ ...m, title: '', summary: null })))
+    if (!qualifying.length) return
+    const members = await freshMembers<Member>(`${COUNTED}, title, summary`, since, qualifying.map((c) => c.storyId))
     const found = candidates(members)
     if (!found.length) return
     const { data: done, error: e } = await supabaseAdmin

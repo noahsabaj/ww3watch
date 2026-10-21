@@ -1,10 +1,12 @@
 import { groupByStoryId, wireDuplicateIds } from '../cluster'
-import type { Cluster } from '../cluster'
+import type { Cluster, Groupable } from '../cluster'
 import { supabaseAdmin } from './supabase'
 import { rankWithJev, type JudgmentCache, type StoryJudgment } from './trending-jev'
 import { bump, type RunStats } from './pipeline/stats'
 
 const TRENDING_WINDOW_HOURS = 4
+/** The columns the trending stage reads (see the query in updateTrending). */
+type TrendingArticle = Groupable & { title: string; source_region: string }
 const CANDIDATE_LIMIT = 20                      // max clusters to judge
 const PICK_COUNT = 3                            // stories to select
 // Don't re-rank a selection younger than this. Ranking is ~20 Jev calls and
@@ -86,9 +88,11 @@ export async function updateTrending(deadlineMs?: number, stats?: RunStats): Pro
   }
 
   const since = new Date(Date.now() - TRENDING_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
+  // Only what grouping, scoring and the picks use: `*` carried every summary,
+  // URL and guid of 500 articles on each run (egress is metered).
   const { data: recent, error: dbError } = await supabaseAdmin
     .from('articles')
-    .select('*')
+    .select('id, title, published_at, source_name, source_region, source_lang, body_hash, story_id')
     .gte('published_at', since)
     .order('published_at', { ascending: false })
     .limit(500)
@@ -179,7 +183,7 @@ export async function updateTrending(deadlineMs?: number, stats?: RunStats): Pro
 
 // Commit a selection: atomically overwrite `trending` and append the trail to
 // trending_log in a single transaction via replace_trending RPC.
-async function writeTrending(clusters: Cluster[], indices: number[]): Promise<string> {
+async function writeTrending(clusters: Cluster<TrendingArticle>[], indices: number[]): Promise<string> {
   const rows = indices.map((clusterIdx, rank) => ({
     // article_id stays the newest member's id — bit-identical to the
     // pre-stories value, which N-1 clients resolve by membership. New clients
