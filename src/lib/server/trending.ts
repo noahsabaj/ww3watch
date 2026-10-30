@@ -2,6 +2,7 @@ import { groupByStoryId, wireDuplicateIds } from '../cluster'
 import type { Cluster, Groupable } from '../cluster'
 import { supabaseAdmin } from './supabase'
 import { rankWithJev, type JudgmentCache, type StoryJudgment } from './trending-jev'
+import { ID_QUERY_CHUNK } from './config'
 import { bump, type RunStats } from './pipeline/stats'
 
 const TRENDING_WINDOW_HOURS = 4
@@ -88,11 +89,13 @@ export async function updateTrending(deadlineMs?: number, stats?: RunStats): Pro
   }
 
   const since = new Date(Date.now() - TRENDING_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
-  // Only what grouping, scoring and the picks use: `*` carried every summary,
-  // URL and guid of 500 articles on each run (egress is metered).
+  // Only what grouping and scoring use: `*` carried every summary, URL and
+  // guid of 500 articles on each run (egress is metered). Titles are read
+  // below for the candidates alone — 135 of the 500 rows on 2026-10-05: nothing
+  // before that reads one (pickRepresentative goes by date and language).
   const { data: recent, error: dbError } = await supabaseAdmin
     .from('articles')
-    .select('id, title, published_at, source_name, source_region, source_lang, body_hash, story_id')
+    .select('id, published_at, source_name, source_region, source_lang, body_hash, story_id')
     .gte('published_at', since)
     .order('published_at', { ascending: false })
     .limit(500)
@@ -107,7 +110,7 @@ export async function updateTrending(deadlineMs?: number, stats?: RunStats): Pro
   // collapsed via the shared helper, so an AP copy echoed by 5 outlets counts
   // once — and count region/language breadth so the ranking can reward genuine
   // cross-region corroboration over same-region echo.
-  const scored = groupByStoryId(recent)
+  const top = groupByStoryId(recent)
     .map((c) => {
       const wire = wireDuplicateIds(c.articles)
       const independent = new Set(
@@ -120,8 +123,12 @@ export async function updateTrending(deadlineMs?: number, stats?: RunStats): Pro
     .sort((a, b) => b.independent - a.independent)
     .slice(0, CANDIDATE_LIMIT)
 
-  if (scored.length === 0) return 'empty'
-  const clusters = scored.map((s) => s.c)
+  if (top.length === 0) return 'empty'
+  const titles = await titlesOf(top.flatMap((s) => s.c.articles.map((a) => a.id)))
+  if (!titles) return 'error:fetch'
+  const titled = <A extends { id: string }>(a: A): A & { title: string } => ({ ...a, title: titles.get(a.id) ?? '' })
+  const scored = top.map((s) => ({ ...s, c: { ...s.c, representative: titled(s.c.representative), articles: s.c.articles.map(titled) } }))
+  const clusters: Cluster<TrendingArticle>[] = scored.map((s) => s.c)
 
   // With PICK_COUNT or fewer candidates the selection is forced — there is
   // nothing to rank. Skip Jev entirely.
@@ -179,6 +186,21 @@ export async function updateTrending(deadlineMs?: number, stats?: RunStats): Pro
   }
   console.log(`[trending] picks (score): ${ranked.indices.map((i, r) => `${i}=${ranked.scores[r]}`).join(', ')}`)
   return await writeTrending(clusters, ranked.indices)
+}
+
+// The candidates' headlines by article id (an article pruned meanwhile reads as
+// ''), or null when they could not be read.
+async function titlesOf(ids: string[]): Promise<Map<string, string> | null> {
+  const titles = new Map<string, string>()
+  for (let i = 0; i < ids.length; i += ID_QUERY_CHUNK) {
+    const { data, error } = await supabaseAdmin.from('articles').select('id, title').in('id', ids.slice(i, i + ID_QUERY_CHUNK))
+    if (error) {
+      console.error('[trending] Failed to fetch candidate titles:', error)
+      return null
+    }
+    for (const r of data ?? []) titles.set(r.id, r.title)
+  }
+  return titles
 }
 
 // Commit a selection: atomically overwrite `trending` and append the trail to

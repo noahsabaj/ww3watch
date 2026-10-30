@@ -7,6 +7,9 @@ const state = vi.hoisted(() => ({
   rpcParams: null as { p_rows: unknown[]; p_log_picks: unknown[] } | null,
   // The live selection's newest selected_at (null = no selection).
   selectedAt: null as string | null,
+  // Ids whose titles were asked for, one entry per request.
+  titleReads: [] as string[][],
+  titleError: null as unknown,
 }))
 
 vi.mock('./trending-jev', () => ({ rankWithJev: vi.fn() }))
@@ -14,11 +17,25 @@ vi.mock('./supabase', () => ({
   supabaseAdmin: {
     from: (table: string) => {
       if (table === 'articles') {
+        let columns = ''
         const b = {
-          select: () => b,
+          select: (c: string) => ((columns = c), b),
           gte: () => b,
           order: () => b,
-          limit: () => Promise.resolve(state.articlesResult),
+          // The window read: what was selected, so a test sees no title it did not ask for.
+          limit: () => {
+            const { data, error } = state.articlesResult
+            const cols = columns.split(',').map((c) => c.trim())
+            const rows = ((data ?? []) as Array<Record<string, unknown>>).map((r) => Object.fromEntries(cols.map((c) => [c, r[c]])))
+            return Promise.resolve({ data: error ? null : rows, error })
+          },
+          // The candidates' titles.
+          in: (_col: string, ids: string[]) => {
+            state.titleReads.push(ids)
+            if (state.titleError) return Promise.resolve({ data: null, error: state.titleError })
+            const rows = (state.articlesResult.data as Array<{ id: string; title: string }>).filter((r) => ids.includes(r.id))
+            return Promise.resolve({ data: rows.map(({ id, title }) => ({ id, title })), error: null })
+          },
         }
         return b
       }
@@ -78,6 +95,8 @@ beforeEach(() => {
   state.rpcCalled = false
   state.rpcParams = null
   state.selectedAt = null
+  state.titleReads = []
+  state.titleError = null
 })
 
 describe('updateTrending', () => {
@@ -114,6 +133,31 @@ describe('updateTrending', () => {
     expect(firstLog.rank).toBe(0)
     expect(firstLog.title).toBeTruthy()
     expect(firstLog.source_name).toBeTruthy()
+  })
+
+  it('reads headlines for the candidates alone, and gives Jev the same ones', async () => {
+    const singles = Array.from({ length: 25 }, (_, i) => article(`x${i}`, `Single story ${i}`, `Outlet ${i}`, null))
+    state.articlesResult = { data: [...recent.slice(0, 2), ...singles], error: null }
+    mockedRank.mockResolvedValue(picks(0, 1, 2))
+    await updateTrending()
+    const candidates = mockedRank.mock.calls[0][0]
+    expect(candidates).toHaveLength(20)
+    // The two-source story and 19 singles: 21 members, not all 27 rows.
+    const asked = state.titleReads.flat()
+    expect(asked).toHaveLength(21)
+    expect(asked).toEqual(expect.arrayContaining(['a1', 'a2']))
+    expect(candidates[0]).toMatchObject({ independent: 2, otherHeadlines: [expect.stringMatching(/Haifa/)] })
+    expect(candidates[0].headline).toMatch(/Haifa/)
+    expect(candidates.slice(1).every((c: { headline: string }) => /^Single story \d+$/.test(c.headline))).toBe(true)
+    const log = state.rpcParams!.p_log_picks as Array<{ title: string }>
+    expect(log.every((p) => p.title.length > 0)).toBe(true)
+  })
+
+  it('keeps the previous selection when the headlines cannot be read', async () => {
+    state.articlesResult = { data: recent, error: null }
+    state.titleError = { message: 'boom' }
+    expect(await updateTrending()).toBe('error:fetch')
+    expect(state.rpcCalled).toBe(false)
   })
 
   it('writes the picks in the order the ranking returned them', async () => {

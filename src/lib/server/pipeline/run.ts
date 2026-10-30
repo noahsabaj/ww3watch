@@ -16,6 +16,7 @@ import { gatherEvidence } from './evidence'
 import { checkAlerts } from './alerts'
 import { timed as timedStage, type RunStats } from './stats'
 import { jevOutage } from '../jev'
+import { egress, kb } from '../egress'
 
 // Local-model clustering + trending + the ops-health gate. Shared by the
 // no-new-articles path and the main path so every run captures trending status
@@ -43,7 +44,7 @@ async function finalize(stats: RunStats, startedAt: number): Promise<void> {
   await reportLowYield(stats)
   await reportSilentFeeds(stats)
   stats.total_ms = Date.now() - startedAt
-  console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(stats.timings ?? {})}`)
+  console.log(`[pipeline] done in ${stats.total_ms}ms | stages ${JSON.stringify(stats.timings ?? {})} | read ${kb(egress.bytes)} KB from Supabase in ${egress.requests} requests`)
 
   // Loud failure for STUCK trending — after everything else has persisted, so
   // it alerts (freshness stays green: articles did land) without costing the

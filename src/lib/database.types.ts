@@ -1076,6 +1076,18 @@ export type Database = {
           r_rejected: number
         }[]
       }
+      stories_to_locate: {
+        Args: {
+          p_limit: number
+          p_min_severity: number
+          p_retry_before: string
+          p_signal_yes: number
+          p_since: string
+        }
+        Returns: {
+          story_id: string
+        }[]
+      }
       story_join_sims: {
         Args: { p_below: number; p_since: string }
         Returns: {

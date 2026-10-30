@@ -121,31 +121,53 @@ async function send(c: Candidate): Promise<{ sent: number; failed: number }> {
   return { sent, failed }
 }
 
-// What deciding needs, without the text: every run reads ~1,400 fresh story
-// members, and their titles and summaries were most of those bytes (egress is
-// metered). The text is fetched only for the stories that qualify — rarely any.
+// What deciding needs, and only for the stories it can be about. A story
+// qualifies only with a report at the top of the severity scale, and
+// eventSeverity never exceeds severity, so the scan starts from those reports:
+// 1 of the 1,330 fresh story members on 2026-10-05. Counting outlets and
+// regions over every member instead read ~300 KB a run, ~2.5 GB a month of the
+// Free plan's 5 GB of metered egress. The text is fetched only for the stories
+// that qualify — rarely any.
 const COUNTED = 'story_id, source_name, source_region, source_lang, published_at, severity, opinion, retrospective'
+// Story ids travel in the URL, and the response echoes the query in a header
+// (signals.ts TITLE_URL_BUDGET): 100 uuids is ~3.7KB, far under its 16KB limit.
+const STORY_CHUNK = 100
 
-async function freshMembers<T>(columns: string, since: string, storyIds?: string[]): Promise<T[]> {
+async function freshMembers<T extends { published_at: string | null }>(
+  columns: string,
+  since: string,
+  filter: { storyIds?: string[]; minSeverity?: number } = {},
+): Promise<T[]> {
   const rows: T[] = []
-  for (let from = 0; ; from += 1000) {
-    let q = supabaseAdmin.from('articles').select(columns).gte('published_at', since).not('story_id', 'is', null)
-    if (storyIds) q = q.in('story_id', storyIds)
-    const { data, error } = await q.order('published_at', { ascending: false }).range(from, from + 999)
-    if (error) throw new Error(error.message)
-    rows.push(...((data ?? []) as T[]))
-    if (!data || data.length < 1000) break
+  const chunks = filter.storyIds
+    ? Array.from({ length: Math.ceil(filter.storyIds.length / STORY_CHUNK) }, (_, i) => filter.storyIds!.slice(i * STORY_CHUNK, (i + 1) * STORY_CHUNK))
+    : [undefined]
+  for (const storyIds of chunks) {
+    for (let from = 0; ; from += 1000) {
+      let q = supabaseAdmin.from('articles').select(columns).gte('published_at', since).not('story_id', 'is', null)
+      if (storyIds) q = q.in('story_id', storyIds)
+      if (filter.minSeverity !== undefined) q = q.gte('severity', filter.minSeverity)
+      const { data, error } = await q.order('published_at', { ascending: false }).range(from, from + 999)
+      if (error) throw new Error(error.message)
+      rows.push(...((data ?? []) as unknown as T[]))
+      if (!data || data.length < 1000) break
+    }
   }
+  // Newest first across chunks too, as one query would return them: the first
+  // story to qualify is the one alerted on.
+  if (chunks.length > 1) rows.sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
   return rows
 }
 
 export async function checkAlerts(stats: RunStats, deadlineMs: number, now = Date.now()): Promise<void> {
   try {
     const since = new Date(now - FRESH_HOURS * 3600_000).toISOString()
-    const counted = await freshMembers<Omit<Member, 'title' | 'summary'>>(COUNTED, since)
+    const grave = await freshMembers<{ story_id: string; published_at: string | null }>('story_id, published_at', since, { minSeverity: TOP_SEVERITY })
+    if (!grave.length) return
+    const counted = await freshMembers<Omit<Member, 'title' | 'summary'>>(COUNTED, since, { storyIds: [...new Set(grave.map((g) => g.story_id))] })
     const qualifying = candidates(counted.map((m) => ({ ...m, title: '', summary: null })))
     if (!qualifying.length) return
-    const members = await freshMembers<Member>(`${COUNTED}, title, summary`, since, qualifying.map((c) => c.storyId))
+    const members = await freshMembers<Member>(`${COUNTED}, title, summary`, since, { storyIds: qualifying.map((c) => c.storyId) })
     const found = candidates(members)
     if (!found.length) return
     const { data: done, error: e } = await supabaseAdmin

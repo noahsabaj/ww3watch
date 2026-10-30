@@ -99,6 +99,34 @@ select count(*) as low_yield from public.source_yield(7, 1, 100);
 select count(*) as silent from public.silent_sources(7, 2);
 select count(*) as known_guids from public.existing_guids(array['smoke-1', 'smoke-3', 'never-seen']);
 select count(*) as unseen_guids from public.unseen_guids(array['smoke-1', 'smoke-3', 'never-seen']);
+
+-- A story with a major news report is offered for locating until it has a
+-- place; an unlocated try waits p_retry_before out; opinion is not news.
+do $$
+declare
+  s uuid := gen_random_uuid();
+  offered boolean;
+begin
+  insert into public.stories (id) values (s);
+  insert into public.articles (guid, title, url, feed_url, source_name, source_region, source_lang, published_at, severity, opinion, story_id)
+  values ('smoke-locate', 'Depot ablaze after strike', 'https://smoke.example/locate', 'https://smoke.example/rss', 'Smoke Wire', 'US/Western', 'en', now() - interval '1 hour', 0.8, 0.1, s);
+  select exists (select 1 from public.stories_to_locate(now() - interval '36 hours', 0.55, 0.7, now() - interval '2 hours', 40) where story_id = s) into offered;
+  if not offered then raise exception 'stories_to_locate left out a major story with no place'; end if;
+  insert into public.story_places (story_id, located_at, first_report_at) values (s, now() - interval '1 hour', now() - interval '1 hour');
+  select exists (select 1 from public.stories_to_locate(now() - interval '36 hours', 0.55, 0.7, now() - interval '2 hours', 40) where story_id = s) into offered;
+  if offered then raise exception 'stories_to_locate retried an unlocated story too soon'; end if;
+  update public.story_places set located_at = now() - interval '3 hours' where story_id = s;
+  select exists (select 1 from public.stories_to_locate(now() - interval '36 hours', 0.55, 0.7, now() - interval '2 hours', 40) where story_id = s) into offered;
+  if not offered then raise exception 'stories_to_locate never retried an unlocated story'; end if;
+  update public.story_places set place_id = 1 where story_id = s;
+  select exists (select 1 from public.stories_to_locate(now() - interval '36 hours', 0.55, 0.7, now() - interval '2 hours', 40) where story_id = s) into offered;
+  if offered then raise exception 'stories_to_locate offered a located story again'; end if;
+  delete from public.story_places where story_id = s;
+  update public.articles set opinion = 0.9 where guid = 'smoke-locate';
+  select exists (select 1 from public.stories_to_locate(now() - interval '36 hours', 0.55, 0.7, now() - interval '2 hours', 40) where story_id = s) into offered;
+  if offered then raise exception 'stories_to_locate offered an opinion piece'; end if;
+  if has_function_privilege('anon', 'public.stories_to_locate(timestamptz,real,real,timestamptz,integer)', 'EXECUTE') then raise exception 'stories_to_locate is public'; end if;
+end $$;
 select public.ops_health() is not null as ops_health_ok;
 select public.pipeline_status() as pipeline_status;
 select public.check_rate_limit('203.0.113.7', 'smoke', 5) as rate_limit_allows;
@@ -197,7 +225,7 @@ declare
     'actor_daily', 'apply_article_signals', 'assign_story_by_embedding', 'check_rate_limit',
     'detach_from_story', 'existing_guids', 'unseen_guids', 'nearest_story_candidates', 'ops_health',
     'pipeline_status', 'purge_irrelevant_articles', 'reelect_story_reps', 'replace_trending',
-    'run_retention', 'source_yield', 'silent_sources', 'story_join_sims', 'story_merge_candidates', 'merge_stories',
+    'run_retention', 'source_yield', 'silent_sources', 'stories_to_locate', 'story_join_sims', 'story_merge_candidates', 'merge_stories',
     -- event-trigger function: fires on DDL, cannot be called directly.
     'rls_auto_enable', 'reserve_ai', 'settle_ai', 'submit_report', 'run_private_retention', 'record_source_health',
     'subscribe_alerts', 'unsubscribe_alerts'

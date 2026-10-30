@@ -163,8 +163,36 @@ interface Member {
   published_at: string | null
 }
 
+// stories_to_locate answers with the stories to locate only: reading every
+// major report of the window and each of their stories' places to work that
+// out here was ~100 KB a run, ~0.9 GB a month of metered egress (2026-10-05).
+// A database without its migration (20261030170000_stories_to_locate.sql)
+// reports the function missing (PGRST202); the run then reads the rows, as
+// before, for the rest of its life.
+let toLocateAvailable = true
+
 async function storiesToLocate(now: number, lookbackHours: number, cap: number): Promise<Map<string, Member[]>> {
   const since = new Date(now - lookbackHours * H).toISOString()
+  // A story with no place is tried again after a while: a report that names
+  // one may have joined it since.
+  const retryBefore = now - RETRY_UNLOCATED_HOURS * H
+  let todo: string[] | null = null
+  if (toLocateAvailable) {
+    const { data, error } = await supabaseAdmin.rpc('stories_to_locate', {
+      p_since: since, p_min_severity: MAJOR_SEVERITY, p_signal_yes: SIGNAL_YES,
+      p_retry_before: new Date(retryBefore).toISOString(), p_limit: cap,
+    })
+    if (!error) todo = (data ?? []).map((r) => r.story_id)
+    else if (error.code !== 'PGRST202') throw new Error(error.message)
+    else {
+      toLocateAvailable = false
+      console.warn('[pipeline] stories_to_locate is not in this database yet; reading reports and places')
+    }
+  }
+  return membersOf(todo ?? (await storiesToLocateByRows(since, retryBefore, cap)))
+}
+
+async function storiesToLocateByRows(since: string, retryBefore: number, cap: number): Promise<string[]> {
   const { data, error } = await supabaseAdmin
     .from('articles')
     .select('story_id, severity, opinion, retrospective')
@@ -182,16 +210,16 @@ async function storiesToLocate(now: number, lookbackHours: number, cap: number):
         .map((a) => a.story_id as string),
     ),
   ]
-  // A story with no place is tried again after a while: a report that names
-  // one may have joined it since.
-  const retryBefore = now - RETRY_UNLOCATED_HOURS * H
   const located = new Set<string>()
   for (let i = 0; i < ids.length; i += 100) {
     const { data: done, error: e } = await supabaseAdmin.from('story_places').select('story_id, place_id, located_at').in('story_id', ids.slice(i, i + 100))
     if (e) throw new Error(e.message)
     for (const d of done ?? []) if (d.place_id != null || Date.parse(d.located_at) > retryBefore) located.add(d.story_id)
   }
-  const todo = ids.filter((id) => !located.has(id)).slice(0, cap)
+  return ids.filter((id) => !located.has(id)).slice(0, cap)
+}
+
+async function membersOf(todo: string[]): Promise<Map<string, Member[]>> {
   const members = new Map<string, Member[]>()
   for (let i = 0; i < todo.length; i += 100) {
     const { data: rows, error: e } = await supabaseAdmin
