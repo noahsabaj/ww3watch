@@ -36,5 +36,13 @@ as $function$
    limit p_limit
 $function$;
 
-revoke all on function public.stories_to_locate(timestamptz, real, real, timestamptz, integer) from public;
+-- From anon and authenticated too: Supabase's default privileges grant them
+-- every new function in public by name, which revoking from PUBLIC leaves.
+revoke all on function public.stories_to_locate(timestamptz, real, real, timestamptz, integer) from public, anon, authenticated;
 grant execute on function public.stories_to_locate(timestamptz, real, real, timestamptz, integer) to service_role;
+
+-- unseen_guids (20261021170000) was revoked from PUBLIC only, so the
+-- publishable key could call it, and learn which guids sit among the private
+-- rejects. Pipeline only, as existing_guids is.
+revoke all on function public.unseen_guids(text[]) from public, anon, authenticated;
+grant execute on function public.unseen_guids(text[]) to service_role;

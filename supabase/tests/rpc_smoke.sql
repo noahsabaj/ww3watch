@@ -125,7 +125,10 @@ begin
   update public.articles set opinion = 0.9 where guid = 'smoke-locate';
   select exists (select 1 from public.stories_to_locate(now() - interval '36 hours', 0.55, 0.7, now() - interval '2 hours', 40) where story_id = s) into offered;
   if offered then raise exception 'stories_to_locate offered an opinion piece'; end if;
-  if has_function_privilege('anon', 'public.stories_to_locate(timestamptz,real,real,timestamptz,integer)', 'EXECUTE') then raise exception 'stories_to_locate is public'; end if;
+  if has_function_privilege('anon', 'public.stories_to_locate(timestamptz,real,real,timestamptz,integer)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.stories_to_locate(timestamptz,real,real,timestamptz,integer)', 'EXECUTE') then raise exception 'stories_to_locate is public'; end if;
+  if has_function_privilege('anon', 'public.unseen_guids(text[])', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.unseen_guids(text[])', 'EXECUTE') then raise exception 'unseen_guids is public'; end if;
 end $$;
 select public.ops_health() is not null as ops_health_ok;
 select public.pipeline_status() as pipeline_status;
