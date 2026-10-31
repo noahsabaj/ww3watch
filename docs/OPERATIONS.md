@@ -90,7 +90,9 @@ read 38M of its rows, per `pg_stat_statements`), on top of reads every run
 repeats.
 
 A usage restriction lifts when the quota refills at the start of the next
-billing cycle (the 3rd of the month), or at once on upgrading to Pro. The grace
+billing cycle (the 3rd of the month), or at once on upgrading to Pro. While it
+stands, the home page says the news is paused instead of offering Retry
+(`src/lib/load-feed.ts` reads the 402). The grace
 period is spent: the next time a quota is exceeded the project is restricted
 straight away, and the warning clears only after several cycles under the
 limits ([Fair Use Policy](https://supabase.com/docs/guides/platform/billing-faq#fair-use-policy)).

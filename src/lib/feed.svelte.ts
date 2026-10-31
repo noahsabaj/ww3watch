@@ -253,7 +253,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
   // Resolves false when the fetch failed; the feed is then left as it was.
   async function refresh(): Promise<boolean> {
     let result: Awaited<ReturnType<typeof loadFeed>>
-    try { result = await loadFeed() } catch { result = { articles: [], trending: [], lastUpdatedAt: null, loadError: true } }
+    try { result = await loadFeed() } catch { result = { articles: [], trending: [], lastUpdatedAt: null, loadError: true, restricted: false } }
     if (result.loadError) {
       showToast("Couldn't refresh the feed.")
       return false
