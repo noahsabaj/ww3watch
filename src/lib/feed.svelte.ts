@@ -52,6 +52,17 @@ const MAX_LOADED = 2400
 const INITIAL_LIMIT = 500 // keep in sync with +page.ts .limit()
 const PAGE_SIZE = 100
 
+// A tab hidden this long stops taking live updates. Supabase meters every
+// Realtime message as egress, each carries the whole row and its column list
+// (~2.8 KB), and an article reaches every open tab about four times (inserted,
+// then its story, signals and photograph): ~1 MB an hour for one tab left in
+// the background, out of the Free plan's 5 GB a month. Back in view, one read
+// catches it up (catchUp).
+const HIDDEN_PAUSE_MS = 5 * 60_000
+// How far before the pause the catch-up reaches: a run in flight then may
+// still be giving its new rows their stories and photographs.
+const CATCH_UP_OVERLAP_MS = 15 * 60_000
+
 export function createFeed(initial: FeedInitial, options: FeedOptions) {
   let articles = $state<Article[]>(initial.articles)
   let newQueue = $state<Article[]>([])
@@ -338,6 +349,60 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
     }
   }
 
+  /** Rows held are patched in place (late story assignments, photo verdicts);
+   *  new ones arrive exactly as live ones do. Nothing moves under the reader. */
+  function patchAndReceive(rows: Article[]) {
+    const byId = new Map(rows.map((a) => [a.id, a]))
+    articles = articles.map((a) => byId.get(a.id) ?? a)
+    newQueue = newQueue.map((a) => byId.get(a.id) ?? a)
+    const known = new Set([...articles, ...newQueue].map((a) => a.id))
+    receive(rows.filter((a) => !known.has(a.id)))
+  }
+
+  // Back in view after a pause: the rows fetched since a little before it, and
+  // the trending selection and freshness readout again. Realtime is already
+  // back on when this reads, so nothing falls between the two; what both
+  // deliver is deduped. A failed read leaves the feed as it was, and the
+  // header's "updated Xm ago" says how current that is.
+  async function catchUp(pausedAt: number) {
+    scheduleTrendingRefresh()
+    void refreshPipelineStatus()
+    const { data, error } = await supabase
+      .from('articles')
+      .select(FEED_COLUMNS)
+      .gte('fetched_at', new Date(pausedAt - CATCH_UP_OVERLAP_MS).toISOString())
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('fetched_at', { ascending: false })
+      .limit(INITIAL_LIMIT)
+    if (!error && data) patchAndReceive(data as Article[])
+  }
+
+  let pauseTimer: ReturnType<typeof setTimeout> | undefined
+  let hiddenAt: number | null = null
+  let pausedAt: number | null = null
+  // On every visibility change, and at start: a tab opened in the background
+  // is hidden from the first moment, and no change event says so.
+  function pauseWhileHidden() {
+    clearTimeout(pauseTimer)
+    if (document.visibilityState === 'hidden') {
+      hiddenAt ??= Date.now()
+      pauseTimer = setTimeout(() => {
+        pausedAt = Date.now()
+        unsubscribe()
+      }, HIDDEN_PAUSE_MS)
+      return
+    }
+    const away = hiddenAt
+    const paused = pausedAt
+    hiddenAt = pausedAt = null
+    if (away === null || Date.now() - away < HIDDEN_PAUSE_MS) return
+    // Paused, or — a phone suspends a page it puts away, timer and all — its
+    // socket dropped without a word somewhere after it was hidden: either way
+    // the updates since then never came.
+    if (paused !== null) subscribe()
+    void catchUp(paused ?? away)
+  }
+
   let channel: ReturnType<typeof supabase.channel> | undefined
   let updatesChannel: ReturnType<typeof supabase.channel> | undefined
 
@@ -345,6 +410,12 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
   function start() {
     statusPollTimer = setInterval(refreshVisibleStatus, 5 * 60_000)
     document.addEventListener('visibilitychange', refreshVisibleStatus)
+    document.addEventListener('visibilitychange', pauseWhileHidden)
+    subscribe()
+    pauseWhileHidden()
+  }
+
+  function subscribe() {
     channel = supabase
       .channel('articles-feed')
       .on(
@@ -395,17 +466,25 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
       })
   }
 
+  function unsubscribe() {
+    if (channel) supabase.removeChannel(channel)
+    if (updatesChannel) supabase.removeChannel(updatesChannel)
+    channel = updatesChannel = undefined
+    realtimeStatus = 'CLOSED'
+  }
+
   /** Tear down timers and realtime channels — the onMount cleanup. */
   function stop() {
     clearInterval(statusPollTimer)
     document.removeEventListener('visibilitychange', refreshVisibleStatus)
+    document.removeEventListener('visibilitychange', pauseWhileHidden)
     clearTimeout(trendingRefreshTimer)
     clearTimeout(statusRefreshTimer)
     clearTimeout(realtimeFlushTimer)
     clearTimeout(toastTimer)
-    if (channel) supabase.removeChannel(channel)
-    if (updatesChannel) supabase.removeChannel(updatesChannel)
-    channel = updatesChannel = undefined
+    clearTimeout(pauseTimer)
+    hiddenAt = pausedAt = null
+    unsubscribe()
   }
 
   return {
@@ -442,11 +521,7 @@ export function createFeed(initial: FeedInitial, options: FeedOptions) {
      *  patched in place (late story assignments, photo verdicts) and new ones
      *  arrive exactly as live ones do. */
     adopt(value: FeedInitial) {
-      const byId = new Map(value.articles.map((a) => [a.id, a]))
-      articles = articles.map((a) => byId.get(a.id) ?? a)
-      newQueue = newQueue.map((a) => byId.get(a.id) ?? a)
-      const known = new Set([...articles, ...newQueue].map((a) => a.id))
-      receive(value.articles.filter((a) => !known.has(a.id)))
+      patchAndReceive(value.articles)
       trending = value.trending
       if (value.lastUpdatedAt) lastUpdatedAt = value.lastUpdatedAt
       serverOffset = value.articles.length

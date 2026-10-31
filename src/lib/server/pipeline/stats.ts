@@ -1,4 +1,5 @@
 import type { JevOutage } from '../jev'
+import { egress, kb } from '../egress'
 
 // What one run records in pipeline_runs.stats. Every key is optional: stages add
 // what they did, and a run that died early still writes whatever it had.
@@ -6,6 +7,9 @@ export interface RunStats {
   /** Thresholds and caps this run used — so "what produced these numbers?" has an answer. */
   config?: Record<string, unknown>
   timings?: Record<string, number>
+  /** What the run read from Supabase (egress.ts): KB and requests in all, and
+   *  KB by stage. scripts/ci/operations.ts adds a day's up against a budget. */
+  egress?: { kb?: number; requests?: number; stages?: Record<string, number> }
   // fetch
   items?: number
   unique?: number
@@ -135,13 +139,22 @@ export function bump(stats: RunStats, key: CounterKey, n: number): void {
   stats[key] = (stats[key] ?? 0) + n
 }
 
-/** Run a stage, recording its wall-clock under stats.timings[stage]. */
+/** Run a stage, recording its wall-clock under stats.timings[stage] and what it
+ *  read from Supabase under stats.egress.stages[stage]. Stages run one after
+ *  another, so the meter's difference is the stage's own. */
 export async function timed<T>(stats: RunStats, stage: string, fn: () => Promise<T>): Promise<T> {
   const timings = (stats.timings ??= {})
   const t0 = Date.now()
+  const read0 = egress.bytes
   try {
     return await fn()
   } finally {
     timings[stage] = Date.now() - t0
+    const read = egress.bytes - read0
+    if (read > 0) {
+      // Added up, not overwritten: a stage that runs twice reads twice.
+      const stages = ((stats.egress ??= {}).stages ??= {})
+      stages[stage] = kb(read + (stages[stage] ?? 0) * 1024)
+    }
   }
 }

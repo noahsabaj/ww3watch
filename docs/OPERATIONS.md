@@ -76,6 +76,55 @@ showed 0.242/0.5 GB database usage, 0.309/5 GB egress, 63 Edge Function calls,
 charges. The timestamped snapshot is in `ops_events.infrastructure_usage` and
 the operations summary; it must not be mistaken for a live traffic meter.
 
+## Egress and the Free plan's quotas
+
+Supabase restricted the project on 2026-10-17: every API request answered 402,
+so ingestion stopped and the site emptied. Two Free plan quotas had run out.
+The database reached 1,262 MB of its 500 MB: TypeSafe refused every Jev call
+from October 6, each 5-minute run retried its ~2,500 deferred judgments, and
+every attempt left an `ai_reservations` row (3.66M rows, 818 MB by October 17;
+`20261017170000_drop_zero_reservations.sql`). The pipeline's own 450 MB gate
+failed 2,543 runs from September 30 without stopping the growth. And egress
+passed its 5 GB: the daily full backup copied that table each day (35 dumps
+read 38M of its rows, per `pg_stat_statements`), on top of reads every run
+repeats.
+
+A usage restriction lifts when the quota refills at the start of the next
+billing cycle (the 3rd of the month), or at once on upgrading to Pro. The grace
+period is spent: the next time a quota is exceeded the project is restricted
+straight away, and the warning clears only after several cycles under the
+limits ([Fair Use Policy](https://supabase.com/docs/guides/platform/billing-faq#fair-use-policy)).
+
+The pipeline has run every 5 minutes since September 23 (#163; ~7 runs a day
+before, ~270 since), so what one run reads is paid ~8,000 times a month. The
+reads that did not depend on how much news arrived, measured against the
+database at 2026-10-05 12:00 UTC:
+
+| read | per run, before | after |
+|---|---|---|
+| alarm: every story member of 12 hours | 303 KB | ~2 KB: the stories with a top-severity report |
+| evidence: 36 hours of major reports and their stories' places | 102 KB | the stories still to locate (`stories_to_locate`) |
+| trending: 500 articles of 4 hours, every other run | 199 KB | 164 KB: titles for the 20 candidates only |
+| roster: `select *` on the sources | 81 KB | 56 KB |
+| source health: the write echoing every source | 17 KB | only the ones switched off |
+
+About 160 MB a day before, 4.8 GB a month: the whole quota before one visitor.
+About 37 MB a day after. Each run now counts what it reads
+(`src/lib/server/egress.ts`) into `pipeline_runs.stats.egress`: KB and requests
+in all, and KB by stage. Bodies are counted decompressed, so the figure is at
+least what Supabase's meter charges for them; headers are not counted. The
+Operations workflow adds up 24 hours and raises the operations issue above
+80 MB, half the month's quota at that rate.
+
+Visitors spend the rest, and only the usage page (Organization → Usage, Egress,
+broken down by service) measures it. A page load reads the 500 newest articles,
+~650 KB of JSON, and pull to refresh reads them again. Realtime sends every open
+tab each article about four times (inserted, then its story, signals and
+photograph), ~2.8 KB a message with its column list: ~1 MB an hour a tab. A tab
+hidden for 5 minutes now stops taking Realtime and catches up in one read when
+it is shown again (`src/lib/feed.svelte.ts`). Check the usage page weekly while
+the grace-period warning stands.
+
 ## Private reports and retention
 
 Review `visitor_reports` through the Supabase connection in Codex. Only the

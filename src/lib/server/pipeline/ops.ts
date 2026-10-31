@@ -2,6 +2,7 @@
 import { appendFileSync } from 'node:fs'
 import type { Json } from '../../database.types'
 import { supabaseAdmin } from '../supabase'
+import { egress, kb } from '../egress'
 import { LOW_YIELD, SILENT } from '../config'
 import type { RunStats } from './stats'
 
@@ -46,6 +47,8 @@ export async function reportSilentFeeds(stats: RunStats): Promise<void> {
 }
 
 export async function recordRun(startedAt: Date, stats: RunStats, error: unknown): Promise<void> {
+  // Everything the run read from Supabase, up to this write.
+  stats.egress = { ...stats.egress, kb: kb(egress.bytes), requests: egress.requests }
   // Best-effort: a run-log failure must never fail the run (and a total
   // Supabase-connectivity fatal can't record itself — accepted).
   try {

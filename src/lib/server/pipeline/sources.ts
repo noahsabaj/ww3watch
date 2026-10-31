@@ -5,15 +5,19 @@ import type { Feed } from '../../types'
 import { supabaseAdmin } from '../supabase'
 import { AUTO_DISABLE_AFTER, UPSERT_BATCH } from '../config'
 
-// A sources-table row: the fetchable Feed shape plus health bookkeeping.
+// What a run reads of a sources-table row: the fetchable Feed, its conditional
+// GET validators, and updated_at for the snapshot guard below.
 export type SourceRow = Feed & {
   id: string
-  enabled: boolean
-  consecutive_failures: number
   updated_at: string
   feed_etag?: string | null
   feed_last_modified?: string | null
 }
+
+// Read every 5 minutes, so only these columns: `*` also carried each feed's
+// last error and health bookkeeping, 81 KB a run against 56 KB (170 enabled
+// feeds, 2026-10-30), ~0.2 GB a month more of the Free plan's metered egress.
+const ROSTER_COLUMNS = 'id, name, url, region, lang, affiliation, last_ok_at, updated_at, feed_etag, feed_last_modified'
 
 // The roster lives in the DB (sources table). A failed/empty roster query must
 // FAIL the run loudly — a silent zero-feed "success" would record error=null
@@ -21,7 +25,7 @@ export type SourceRow = Feed & {
 export async function loadSources(): Promise<SourceRow[]> {
   const { data, error } = await supabaseAdmin
     .from('sources')
-    .select('*')
+    .select(ROSTER_COLUMNS)
     .eq('enabled', true)
     // Deterministic order ⇒ deterministic guid-dedupe attribution for items
     // cross-posted to multiple feeds.
@@ -50,9 +54,12 @@ export async function updateSourceHealth(results: FeedFetchResult[]): Promise<st
     newest_item_at: newestItem(r.articles),
   }))
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
+    // The function answers with every source it updated, 17 KB a run; only
+    // the ones it switched off matter here, so the rest are filtered out in
+    // the database rather than sent.
     const { data, error } = await supabaseAdmin.rpc('record_source_health', {
       p_results: rows.slice(i, i + UPSERT_BATCH), p_disable_after: AUTO_DISABLE_AFTER,
-    })
+    }).eq('disabled', true)
     if (error) {
       // Never retry using an unguarded table upsert.
       console.error('[pipeline] source health write failed:', error)

@@ -55,6 +55,18 @@ CI (`.github/workflows/ci.yml`) runs the unit, e2e, and Deno jobs on every PR. K
 new pure logic in a testable module (e.g. `src/lib/*.ts` or
 `supabase/functions/_shared/*.ts`) with tests, rather than inline in a component.
 
+## The README's demo
+
+`docs/demo.gif` is recorded, not drawn: when the desk changes, record it again
+against a running site (`npm run dev` shows the live feed, photographs and all).
+
+```bash
+node --import tsx scripts/record-demo.ts --url http://localhost:5173/
+```
+
+The script's header says how to record from a saved copy of the feed when the
+backend is down, which is how the October 2026 one was made.
+
 ## Suggesting or fixing a news source
 
 Sources are **data**, not code — they live in the `sources` table, and feed curation
