@@ -31,6 +31,9 @@
 
   let loading = $state(true)
   let loadError = $state(false)
+  // Supabase answered 402: the project is restricted for going over a Free
+  // plan quota, and every request fails until the quota refills (load-feed.ts).
+  let restricted = $state(false)
 
   // Realtime inserts queue instead of shifting the list under the reader: always
   // in Signal (a swipe in progress must not be yanked), on the desk once the
@@ -197,6 +200,7 @@
       }
       feed.initialize(result)
       loadError = result.loadError
+      restricted = result.restricted
       loading = false
       feed.start()
     }).catch(() => { if (!cancelled && !saved) { loadError = true; loading = false } })
@@ -254,6 +258,15 @@
     <div class="flex-1 px-6 py-24 text-center text-sm text-fg-3">
       {#if loading || desk === null}
         Loading the latest reporting…
+      {:else if restricted && feed.articles.length === 0}
+        <div data-feed-restricted class="mx-auto max-w-sm">
+          <p class="mb-3 font-serif text-xl text-fg">The news is paused.</p>
+          <p class="mb-5 leading-relaxed">
+            WW3Watch went over its database host's free monthly allowance, and the host
+            has paused it until the allowance resets. Stories come back on their own then.
+          </p>
+          <button onclick={() => location.reload()} class="btn-ghost">Check again</button>
+        </div>
       {:else if loadError && feed.articles.length === 0}
         <p class="mb-4 font-serif text-xl text-fg">Couldn't load the feed.</p>
         <button

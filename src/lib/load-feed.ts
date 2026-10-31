@@ -1,6 +1,12 @@
 import { supabase } from '#lib/supabase.js'
 import { FEED_COLUMNS } from '#lib/feed-columns.js'
 
+/** Supabase answers every request with 402 Payment Required while a Free plan
+ *  project is restricted for going over a quota (October 2026: egress), until
+ *  the quota refills at the next billing cycle. Retrying cannot help, so the
+ *  feed says so instead of offering Retry (docs/OPERATIONS.md, Egress). */
+export const QUOTA_RESTRICTED = 402
+
 export async function loadFeed() {
   const [articlesResult, trendingResult, statusResult] = await Promise.all([
     // Explicit column list — only what the feed/reader render. Drops
@@ -19,7 +25,7 @@ export async function loadFeed() {
   ])
 
   if (articlesResult.error) {
-    console.error('[load] Supabase error:', articlesResult.error)
+    console.error('[load] Supabase error:', articlesResult.status, articlesResult.error)
   }
 
   const trending: { article_id: string; story_id: string | null }[] = (trendingResult.data ?? []).map(
@@ -30,5 +36,6 @@ export async function loadFeed() {
     trending,
     lastUpdatedAt: (statusResult.data as string | null) ?? null,
     loadError: !!articlesResult.error,
+    restricted: !!articlesResult.error && articlesResult.status === QUOTA_RESTRICTED,
   }
 }
